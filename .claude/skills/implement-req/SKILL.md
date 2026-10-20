@@ -1,6 +1,6 @@
 ---
 name: implement-req
-description: GitHub Issue 番号、または要求 ID（FR-/NFR-）・設計 ID（DES-）を指定して、設計書どおりに実装し、テスト・文書の更新・プルリクエスト作成まで行う。「#4 をやって」「Issue 5 を実装して」「FR-ITM-04 を実装して」のような依頼で使う。
+description: GitHub Issue 番号、または要求 ID（FR-/NFR-）・設計 ID（DES-）を指定して、設計書どおりに実装し、テスト・文書の更新・プルリクエスト作成まで行う。「#4 をやって」「Issue 5 を実装して」「FR-BTL-01 を実装して」のような依頼で使う。
 argument-hint: "<#Issue番号 | 要求ID | 設計ID> [...]"
 ---
 
@@ -30,7 +30,7 @@ git fetch origin
 git switch -c it<反復番号>/<Issue 番号>-<短い説明> origin/main
 ```
 
-例: `it01/4-inventory`。依存の Issue のマージ結果を取り込むため、最新の `origin/main` から切る。
+例: `it01/4-grid`。依存の Issue のマージ結果を取り込むため、最新の `origin/main` から切る。
 
 すでに作業用のブランチにいる場合は、そのまま使う。
 
@@ -38,7 +38,7 @@ git switch -c it<反復番号>/<Issue 番号>-<短い説明> origin/main
 
 1. テスト仕様書（`docs/04_test/` の今の反復のもの）に、対象のテストケースがあるか確かめる
 2. なければ追記する。1 つの要求に、正常系・境界値・異常系を最低 1 件ずつ考える
-   - ID: `TC-<要求ID>-<連番2桁>`（例: `TC-FR-ITM-04-01`）
+   - ID: `TC-<要求ID>-<連番2桁>`（例: `TC-FR-BTL-01-01`）
    - 列: ID、対象（要求・設計）、前提、入力・操作、期待結果、種別（正常・境界・異常）
 3. テストコードを書く。表駆動テストにして、サブテスト名にテストケース ID を入れる
 4. テストが**失敗する**ことを確かめる（まだ実装していないため）
@@ -71,9 +71,9 @@ go run ./tools/tccheck
 1. コミットする。本文に対象の ID を書く
 
 ```
-feat: 在庫の積み上げと平均品質の計算を実装
+feat: グリッドの上の移動を実装
 
-FR-ITM-03, FR-ITM-04 / DES-INV-01, DES-QLT-01
+FR-BTL-01 / DES-BTL-01
 ```
 
 2. push してプルリクエストを作る。説明は AGENTS.md の形式に従い、先頭に `Closes #<Issue 番号>` を書く（マージで Issue が自動で閉じる）
@@ -89,7 +89,7 @@ gh pr create --base main --title "<要約>" --body "<AGENTS.md の形式>"
 
 1. CI の結果を待つ: `gh pr checks <番号> --watch`。失敗したら直して push し直す
 2. 実装者とは別のエージェントにレビューを頼む。Claude Code では、サブエージェント `spec-reviewer`（`.claude/agents/spec-reviewer.md`）に、Issue 番号とブランチ（またはワークツリーの場所）を渡す。人がいる場合は人でもよい。指摘に対応し、`docs/reviews/REV-<連番>-issue<番号>.md` に記録する（spec-reviewer が下書きを返す）
-3. AGENTS.md の「自動マージの条件」をすべて確かめる。特に、`git diff --name-only origin/main...HEAD` に `docs/01_concept/`、`docs/02_requirements/`、`docs/03_design/`、`docs/adr/` が含まれるなら、人の承認がレビュー記録にあるかを確かめる
+3. AGENTS.md の「自動マージの条件」をすべて確かめる。特に、`git diff --name-only origin/main...HEAD` に `docs/00_plan/`、`docs/01_concept/`、`docs/02_requirements/`、`docs/03_design/`、`docs/adr/` が含まれるなら、人の承認がレビュー記録にあるかを確かめる
 4. 条件を満たせば `gh pr merge <番号> --merge` でマージする。満たさなければマージせず、理由を報告する
 
 ## 9. 報告
