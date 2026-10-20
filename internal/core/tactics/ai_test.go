@@ -33,7 +33,8 @@ func enemy(name string, x, y, mov int) tactics.UnitSetup {
 	return unit(name, tactics.Enemy, x, y, mov)
 }
 
-func mustEndPhase(t *testing.T, b *tactics.Battle) []tactics.Event {
+// aiEndPhase は誤りのない EndPhase を行う（#9 の gimmick_test.go の mustEndPhase と名前が重ならないようにする）。
+func aiEndPhase(t *testing.T, b *tactics.Battle) []tactics.Event {
 	t.Helper()
 	events, err := b.EndPhase()
 	if err != nil {
@@ -83,7 +84,7 @@ func TestEnemyChoice(t *testing.T) {
 			b := mustNew(t, row(lord(1, 3, 2), p1))
 			b.SetHP(1, tc.hp)
 			done := rolls(t, b, tc.rolls...)
-			events := mustEndPhase(t, b)
+			events := aiEndPhase(t, b)
 			done()
 			assertEqual(t, tc.name+": Move", moves(events), []move{tc.move})
 			assertEqual(t, tc.name+": Strike", strikes(events), tc.strikes)
@@ -97,7 +98,7 @@ func TestEnemyChoice(t *testing.T) {
 		p0.Stats.Def = 5
 		b := mustNew(t, row(p0, ally("味方", 5, 3, 2)))
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := mustEndPhase(t, b)
+		events := aiEndPhase(t, b)
 		done()
 		assertEqual(t, "Move", moves(events), []move{{2, pos(3, 3), pos(4, 3)}})
 		assertEqual(t, "Strike", strikes(events), []strike{{Unit: 2, Target: 1}, {Unit: 1, Target: 2}})
@@ -108,7 +109,7 @@ func TestEnemyChoice(t *testing.T) {
 		p1.Stats.Def, p1.Stats.Spd = 5, 1
 		b = mustNew(t, row(lord(1, 3, 2), p1))
 		done = rolls(t, b, 99, 99, 99, 99, 99, 99)
-		events = mustEndPhase(t, b)
+		events = aiEndPhase(t, b)
 		done()
 		assertEqual(t, "回数: Move", moves(events), []move{{2, pos(3, 3), pos(4, 3)}})
 		assertEqual(t, "回数: Strike", strikes(events), []strike{{Unit: 2, Target: 1}, {Unit: 1, Target: 2}, {Unit: 2, Target: 1}})
@@ -120,7 +121,7 @@ func TestEnemyChoice(t *testing.T) {
 		p0.Stats.Str = 7
 		b := mustNew(t, row(p0, ally("味方", 5, 3, 2)))
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := mustEndPhase(t, b)
+		events := aiEndPhase(t, b)
 		done()
 		assertEqual(t, "Move", moves(events), []move{{2, pos(3, 3), pos(4, 3)}})
 		assertEqual(t, "Strike", strikes(events), []strike{{Unit: 2, Target: 1}, {Unit: 1, Target: 2}})
@@ -131,7 +132,7 @@ func TestEnemyChoice(t *testing.T) {
 		// 主人公は (3, 4) から、味方は y の小さい (3, 2) から狙える。比べ方 5 なら味方を選ぶはずの組。
 		b := mustNew(t, plain7(lord(3, 5, 2), ally("味方", 3, 1, 2), enemy("敵", 3, 3, 1), boss(6, 0)))
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := mustEndPhase(t, b)
+		events := aiEndPhase(t, b)
 		done()
 		assertEqual(t, "Move", moves(events), []move{{2, pos(3, 3), pos(3, 4)}})
 		assertEqual(t, "Strike", strikes(events), []strike{{Unit: 2, Target: 0}, {Unit: 0, Target: 2}})
@@ -142,7 +143,7 @@ func TestEnemyChoice(t *testing.T) {
 		// （(3, 2) は主人公を回り込むので 5 かかる）。y の小さい (2, 3)・(4, 3) のうち x の小さい (2, 3)。
 		b := mustNew(t, plain7(lord(3, 3, 2), enemy("敵", 3, 5, 3), boss(6, 0)))
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := mustEndPhase(t, b)
+		events := aiEndPhase(t, b)
 		done()
 		assertEqual(t, "Move", moves(events), []move{{1, pos(3, 5), pos(2, 3)}})
 		assertEqual(t, "Strike", strikes(events), []strike{{Unit: 1, Target: 0}, {Unit: 0, Target: 1}})
@@ -156,7 +157,7 @@ func TestEnemyChoice(t *testing.T) {
 		b := mustNew(t, plain7(lord(3, 3, 2), enemy("敵", 3, 5, 3), bs))
 		// 敵の 1 撃は命中率 100 なので (99, 99) でも当たる。主人公の反撃は命中率 100 − 20 = 80 で外れる。
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := mustEndPhase(t, b)
+		events := aiEndPhase(t, b)
 		done()
 		assertEqual(t, "鼓舞: Move", moves(events), []move{{1, pos(3, 5), pos(4, 3)}})
 		assertEqual(t, "鼓舞: Strike", strikes(events), []strike{{Unit: 1, Target: 0, Hit: true, Amount: 7}, {Unit: 0, Target: 1}})
@@ -169,7 +170,7 @@ func TestEnemyChoice(t *testing.T) {
 		ar.Skill = skillSnipe
 		b = mustNew(t, plain7(lord(3, 3, 2), ar, boss(6, 0)))
 		done = rolls(t, b, 99, 99)
-		events = mustEndPhase(t, b)
+		events = aiEndPhase(t, b)
 		done()
 		assertEqual(t, "狙撃: 出来事", kinds(events), []tactics.EventKind{
 			tactics.EventPhaseStart, tactics.EventStrike, tactics.EventPhaseStart,
@@ -271,7 +272,7 @@ func TestEnemyApproach(t *testing.T) {
 			b := mustNew(t, tc.setup)
 			noRolls(t, b)
 			before := b.Units()
-			events := mustEndPhase(t, b)
+			events := aiEndPhase(t, b)
 			want := phaseOnly
 			if len(tc.want) > 0 {
 				want = []tactics.EventKind{tactics.EventPhaseStart, tactics.EventMove, tactics.EventPhaseStart}
@@ -294,7 +295,7 @@ func TestEnemyHold(t *testing.T) {
 		s := tactics.Setup{Terrain: grid("......", "......", "......", "......"), Units: []tactics.UnitSetup{lord(1, 0, 2), bs}}
 		b := mustNew(t, s)
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := mustEndPhase(t, b)
+		events := aiEndPhase(t, b)
 		done()
 		assertEqual(t, "1 ターン目: Move", moves(events), []move{{1, pos(3, 0), pos(2, 0)}})
 		assertEqual(t, "1 ターン目: Strike", strikes(events), []strike{{Unit: 1, Target: 0}, {Unit: 0, Target: 1}})
@@ -322,7 +323,7 @@ func TestEnemyHold(t *testing.T) {
 		noRolls(t, b)
 		before := b.Units()
 		for turn := 1; turn <= 2; turn++ {
-			events := mustEndPhase(t, b)
+			events := aiEndPhase(t, b)
 			assertEqual(t, "出来事", kinds(events), phaseOnly)
 		}
 		assertEqual(t, "ユニット（動き方は待ち構えるのまま）", b.Units(), before)
@@ -337,7 +338,7 @@ func TestEnemyHold(t *testing.T) {
 		}
 		b := mustNew(t, s)
 		done := rolls(t, b, 99, 99, 99, 99, 99, 99, 99, 99)
-		events := mustEndPhase(t, b)
+		events := aiEndPhase(t, b)
 		done()
 		assertEqual(t, "出来事", kinds(events), []tactics.EventKind{
 			tactics.EventPhaseStart,
