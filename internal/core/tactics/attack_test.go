@@ -367,8 +367,11 @@ func TestAttackFlow(t *testing.T) {
 		done()
 		assertEqual(t, "Strike の数", len(strikes(events)), 1)
 
-		// ミラが 2 マス先の剣士を攻撃する。剣士は速さで 2 上回るが、反撃できないので追撃もしない。
-		b = mustNew(t, arena(lord(6, 6, 0), mira(1, 1), myrmidon(3, 1), farBoss(6, 0)))
+		// ミラ（速さ 7）が 2 マス先の剣士を攻撃する。剣士の速さを 11 にして追撃の条件（差 4）を満たすが、
+		// 反撃できないので追撃もしない（乱数はちょうど 2 つ）。
+		my := myrmidon(3, 1)
+		my.Stats.Spd = 11
+		b = mustNew(t, arena(lord(6, 6, 0), mira(1, 1), my, farBoss(6, 0)))
 		f = mustForecast(t, b, tactics.Command{Unit: 1, To: pos(1, 1), Target: 2})
 		assertEqual(t, "反撃の回数（剣が 2 マス先）", f.Defender.Count, 0)
 		done = rolls(t, b, 99, 99)
@@ -685,6 +688,23 @@ func TestSkills(t *testing.T) {
 			done()
 			assertEqual(t, tc.name, strikes(events)[0], tc.first)
 		}
+
+		// ダメージ 0 で当たっても大盾の乱数を引く（1 撃目で 3 つ）。
+		// 力 0・威力 1 の剣の主人公: 剣は槍に不利で、攻撃力 0 ＋ 1 − 1 = 0。ガルドの反撃は外す。
+		weak := lord(1, 1, 3)
+		weak.Stats.Str = 0
+		weak.Weapon = tactics.Weapon{Name: "木の棒", Type: tactics.Sword, Might: 1, Hit: 100, MinRange: 1, MaxRange: 1}
+		b := mustNew(t, arena(weak, g, farBoss(6, 0)))
+		done := rolls(t, b, 0, 0, 0, 99, 99)
+		events := mustAct(t, b, tactics.Command{Unit: 0, To: pos(1, 1), Action: tactics.Attack, Target: 1})
+		done()
+		assertEqual(t, "ダメージ 0 で当たる", strikes(events)[0], strike{Unit: 0, Target: 1, Hit: true, Amount: 0, Pavise: true})
+
+		// 相手が反撃できなければ、攻撃する側の大盾は効くスキルに入らない（ガルドが隣のアーチャーを攻撃）。
+		b = mustNew(t, arena(leon(6, 6), gald(1, 1), archer(2, 1), farBoss(6, 0)))
+		f := mustForecast(t, b, tactics.Command{Unit: 1, To: pos(1, 1), Target: 2})
+		assertEqual(t, "反撃の回数", f.Defender.Count, 0)
+		assertEqual(t, "攻撃する側の効くスキル", skillNames(f.Attacker), []string(nil))
 	})
 
 	t.Run("TC-FR-UNT-07-04 計算例 3（怒り: HP が最大の半分以下なら、当たれば必殺で 3 倍）", func(t *testing.T) {
@@ -786,6 +806,23 @@ func TestSkills(t *testing.T) {
 		// 弓兵の命中 14 ＋ 85 = 99、ミラの回避 14 → 85。
 		assertEqual(t, "反撃の命中率", f.Defender.HitRate, 85)
 		assertEqual(t, "反撃の効くスキル", skillNames(f.Defender), []string(nil))
+		// Act でも反撃に効かない: ミラの 1 撃目を当て（森の弓兵に 7 ダメージ）、反撃の乱数を (85, 85) にする。
+		// 狙撃が効かない命中率 85 なら和 170 で外れ、効けば命中率 100 で当たる。
+		done = rolls(t, b, 0, 0, 85, 85)
+		events = mustAct(t, b, tactics.Command{Unit: 1, To: pos(1, 3), Action: tactics.Attack, Target: 2})
+		done()
+		assertEqual(t, "Act の反撃", strikes(events), []strike{
+			{Unit: 1, Target: 2, Hit: true, Amount: 7},
+			{Unit: 2, Target: 1},
+		})
+
+		// Act でも移動すると効かない: ミラが (3, 1) に移動して森の剣士を攻撃し、乱数を (65, 65) にする。
+		// 狙撃が効かない命中率 65 なら和 130 で外れ、効けば命中率 85 で当たる。剣士は 2 マス先に反撃できない。
+		b = mustNew(t, arena(leon(0, 0), mira(1, 3), myrmidon(3, 3), farBoss(6, 0)))
+		done = rolls(t, b, 65, 65)
+		events = mustAct(t, b, tactics.Command{Unit: 1, To: pos(3, 1), Action: tactics.Attack, Target: 2})
+		done()
+		assertEqual(t, "Act で移動して攻撃", strikes(events), []strike{{Unit: 1, Target: 2}})
 	})
 }
 

@@ -15,6 +15,7 @@ const (
 	// EventMove は移動したこと。Unit、From、To を持つ。
 	EventMove
 	// EventStrike は 1 撃を行ったこと。Unit、Target、Hit、Amount、Crit、Pavise を持つ。
+	// Amount は必殺・大盾を入れた与えたダメージ（HP の残りで切らない）。外れたら 0。
 	EventStrike
 	// EventFall は倒れたこと。Unit を持つ。
 	EventFall
