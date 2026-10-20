@@ -195,7 +195,7 @@ func TestPhase(t *testing.T) {
 	})
 
 	t.Run("TC-FR-BTL-02-03 全員が行動すると敵軍の番を経て次のターンの自軍の番になる", func(t *testing.T) {
-		b := mustNew(t, baseSetup())
+		b := mustNew(t, quietSetup())
 		if _, err := b.Act(tactics.Command{Unit: 0, To: pos(1, 0), Action: tactics.Wait}); err != nil {
 			t.Fatal(err)
 		}
@@ -222,7 +222,7 @@ func TestPhase(t *testing.T) {
 	})
 
 	t.Run("TC-FR-BTL-02-04 EndPhase で途中でも番を終えられる", func(t *testing.T) {
-		b := mustNew(t, baseSetup())
+		b := mustNew(t, quietSetup())
 		if _, err := b.Act(tactics.Command{Unit: 0, To: pos(1, 0), Action: tactics.Wait}); err != nil {
 			t.Fatal(err)
 		}
@@ -244,7 +244,7 @@ func TestPhase(t *testing.T) {
 	})
 
 	t.Run("TC-FR-BTL-02-05 倒れた自軍は数えず、生きている全員が行動したら進む", func(t *testing.T) {
-		b := mustNew(t, baseSetup())
+		b := mustNew(t, quietSetup())
 		b.KillUnit(1)
 		events, err := b.Act(tactics.Command{Unit: 0, To: pos(0, 0), Action: tactics.Wait})
 		if err != nil {
@@ -256,8 +256,8 @@ func TestPhase(t *testing.T) {
 		assertEqual(t, "Turn", b.Turn, 2)
 	})
 
-	t.Run("TC-FR-BTL-02-06 敵軍の番では、敵は動かず出来事も出さない", func(t *testing.T) {
-		b := mustNew(t, baseSetup())
+	t.Run("TC-FR-BTL-02-06 敵軍の番で動かない敵は出来事を出さない", func(t *testing.T) {
+		b := mustNew(t, quietSetup())
 		before := b.Units()
 		for turn := 1; turn <= 3; turn++ {
 			events, err := b.EndPhase()

@@ -70,6 +70,12 @@ func farBoss(x, y int) tactics.UnitSetup {
 	return u
 }
 
+// reserve は、盤面の隅 (6, 6) で動かない控えの味方。
+// まだ行動していない自軍がいれば、自軍の攻撃のあとに敵軍の番へ進まない（敵が動いて乱数を引かない）。
+func reserve() tactics.UnitSetup {
+	return ally("控え", 6, 6, 0)
+}
+
 // arena は 7 × 7 の盤面で、(3, 3) だけ森、(5, 5) だけ砦にする。
 //
 //	. . . . . . .
@@ -170,9 +176,9 @@ func skillNames(s tactics.ForecastSide) []string {
 
 // example1 は計算例 1: 平地のレオン (2, 3) が、森 (3, 3) のソルジャーを攻撃する。
 //
-//	0: レオン (2, 3)、1: ソルジャー (3, 3)、2: ボス (6, 0)
+//	0: レオン (2, 3)、1: ソルジャー (3, 3)、2: ボス (6, 0)、3: 控え (6, 6)
 func example1() tactics.Setup {
-	return arena(leon(2, 3), soldier(3, 3), farBoss(6, 0))
+	return arena(leon(2, 3), soldier(3, 3), farBoss(6, 0), reserve())
 }
 
 // TestAttackCalculation は攻撃の計算と命中の判定を確かめる（DES-BTL-05、FR-BTL-04）。
@@ -230,7 +236,7 @@ func TestAttackCalculation(t *testing.T) {
 		weak := leon(2, 3)
 		weak.Stats.Skl = 0
 		weak.Weapon.Hit = 0
-		b = mustNew(t, arena(weak, myrmidon(3, 3), farBoss(6, 0)))
+		b = mustNew(t, arena(weak, myrmidon(3, 3), farBoss(6, 0), reserve()))
 		f = mustForecast(t, b, tactics.Command{Unit: 0, To: pos(2, 3), Target: 1})
 		assertEqual(t, "命中率", f.Attacker.HitRate, 0)
 		done = rolls(t, b, 0, 0, 99, 99)
@@ -332,7 +338,7 @@ func TestWeaponTriangle(t *testing.T) {
 		g := gald(2, 1)
 		g.Side = tactics.Enemy
 		g.Skill = tactics.Skill{}
-		b := mustNew(t, arena(weak, g, farBoss(6, 0)))
+		b := mustNew(t, arena(weak, g, farBoss(6, 0), reserve()))
 		f := mustForecast(t, b, tactics.Command{Unit: 0, To: pos(1, 1), Target: 1})
 		assertEqual(t, "ダメージ", f.Attacker.Damage, 0)
 		done := rolls(t, b, 0, 0, 99, 99)
@@ -347,7 +353,7 @@ func TestWeaponTriangle(t *testing.T) {
 func TestAttackFlow(t *testing.T) {
 	t.Run("TC-FR-BTL-06-01 守る側が生きていて、射程に入っていれば反撃する", func(t *testing.T) {
 		// 速さをそろえて追撃をなくす。
-		b := mustNew(t, arena(lord(1, 1, 3), foe("敵", 2, 1), farBoss(6, 0)))
+		b := mustNew(t, arena(lord(1, 1, 3), foe("敵", 2, 1), farBoss(6, 0), reserve()))
 		done := rolls(t, b, 0, 0, 0, 0)
 		events := mustAct(t, b, tactics.Command{Unit: 0, To: pos(1, 1), Action: tactics.Attack, Target: 1})
 		done()
@@ -359,7 +365,7 @@ func TestAttackFlow(t *testing.T) {
 
 	t.Run("TC-FR-BTL-06-02 弓は隣のマスに反撃できず、剣は 2 マス先に反撃できない", func(t *testing.T) {
 		// レオンが隣のアーチャーを攻撃する。速さの差 3 で追撃もない。
-		b := mustNew(t, arena(leon(1, 1), archer(2, 1), farBoss(6, 0)))
+		b := mustNew(t, arena(leon(1, 1), archer(2, 1), farBoss(6, 0), reserve()))
 		f := mustForecast(t, b, tactics.Command{Unit: 0, To: pos(1, 1), Target: 1})
 		assertEqual(t, "反撃の回数（弓が隣）", f.Defender.Count, 0)
 		done := rolls(t, b, 99, 99)
@@ -388,7 +394,7 @@ func TestAttackFlow(t *testing.T) {
 		}{{9, []int{0, 1, 0}, 2}, {8, []int{0, 1}, 1}} {
 			a := lord(1, 1, 3)
 			a.Stats.Spd = tc.spd
-			b := mustNew(t, arena(a, foe("敵", 2, 1), farBoss(6, 0)))
+			b := mustNew(t, arena(a, foe("敵", 2, 1), farBoss(6, 0), reserve()))
 			f := mustForecast(t, b, tactics.Command{Unit: 0, To: pos(1, 1), Target: 1})
 			assertEqual(t, "攻撃の回数", [2]int{f.Attacker.Count, f.Defender.Count}, [2]int{tc.count, 1})
 			b.SetRoll(func() int { return 99 })
@@ -404,7 +410,7 @@ func TestAttackFlow(t *testing.T) {
 	t.Run("TC-FR-BTL-06-04 守る側が速さで 4 以上上回り、反撃できれば、守る側が追撃する", func(t *testing.T) {
 		d := foe("敵", 2, 1)
 		d.Stats.Spd = 9
-		b := mustNew(t, arena(lord(1, 1, 3), d, farBoss(6, 0)))
+		b := mustNew(t, arena(lord(1, 1, 3), d, farBoss(6, 0), reserve()))
 		f := mustForecast(t, b, tactics.Command{Unit: 0, To: pos(1, 1), Target: 1})
 		assertEqual(t, "攻撃の回数", [2]int{f.Attacker.Count, f.Defender.Count}, [2]int{1, 2})
 		b.SetRoll(func() int { return 99 })
@@ -460,13 +466,17 @@ func TestAttackAct(t *testing.T) {
 	t.Run("TC-FR-BTL-03-04 移動してから攻撃し、行動済みになる", func(t *testing.T) {
 		// 主人公が (0, 1) から (1, 1) に移動して、(2, 1) の敵を攻撃する。反撃の距離は移動したあとで測る。
 		b := mustNew(t, arena(lord(0, 1, 3), foe("敵", 2, 1), farBoss(6, 0)))
-		done := rolls(t, b, 0, 0, 0, 0)
+		// 主人公の攻撃はすべて当たり、敵軍の番の敵の攻撃はすべて外れる。
+		done := rolls(t, b, 0, 0, 0, 0, 99, 99, 99, 99)
 		events := mustAct(t, b, tactics.Command{Unit: 0, To: pos(1, 1), Action: tactics.Attack, Target: 1})
 		done()
 		// 自軍は 1 体なので、攻撃のあと敵軍の番と次の自軍の番の始めに進む。
+		// 敵軍の番では、敵が主人公の隣で y の最も小さい (1, 0) に移動して攻撃する（DES-AI-01 の比べ方 5）。
 		assertEqual(t, "出来事", kinds(events), []tactics.EventKind{
-			tactics.EventMove, tactics.EventStrike, tactics.EventStrike, tactics.EventPhaseStart, tactics.EventPhaseStart,
+			tactics.EventMove, tactics.EventStrike, tactics.EventStrike, tactics.EventPhaseStart,
+			tactics.EventMove, tactics.EventStrike, tactics.EventStrike, tactics.EventPhaseStart,
 		})
+		assertEqual(t, "敵の Move", [3]any{events[4].Unit, events[4].From, events[4].To}, [3]any{1, pos(2, 1), pos(1, 0)})
 		assertEqual(t, "Move", [3]any{events[0].Unit, events[0].From, events[0].To}, [3]any{0, pos(0, 1), pos(1, 1)})
 		assertEqual(t, "Move の写しは行動済みでない", events[0].Units[0].Acted, false)
 		assertEqual(t, "Strike の写しは行動済み", events[1].Units[0].Acted, true)
@@ -474,6 +484,8 @@ func TestAttackAct(t *testing.T) {
 		assertEqual(t, "Strike", strikes(events), []strike{
 			{Unit: 0, Target: 1, Hit: true, Amount: 7},
 			{Unit: 1, Target: 0, Hit: true, Amount: 7},
+			{Unit: 1, Target: 0},
+			{Unit: 0, Target: 1},
 		})
 		u := b.Units()[0]
 		assertEqual(t, "位置と HP", [2]any{u.Pos, u.HP}, [2]any{pos(1, 1), 13})
@@ -679,7 +691,7 @@ func TestSkills(t *testing.T) {
 			{"30 で出ない", []int{0, 0, 30, 99, 99}, strike{Unit: 0, Target: 1, Hit: true, Amount: 7}},
 			{"外れたら引かない", []int{99, 99, 99, 99}, strike{Unit: 0, Target: 1}},
 		} {
-			b := mustNew(t, arena(a, g, farBoss(6, 0)))
+			b := mustNew(t, arena(a, g, farBoss(6, 0), reserve()))
 			f := mustForecast(t, b, tactics.Command{Unit: 0, To: pos(1, 1), Target: 1})
 			assertEqual(t, tc.name+": 予測のダメージは半分にしない", f.Attacker.Damage, 7)
 			assertEqual(t, tc.name+": 効くスキル", skillNames(f.Defender), []string{"大盾"})
@@ -694,7 +706,7 @@ func TestSkills(t *testing.T) {
 		weak := lord(1, 1, 3)
 		weak.Stats.Str = 0
 		weak.Weapon = tactics.Weapon{Name: "木の棒", Type: tactics.Sword, Might: 1, Hit: 100, MinRange: 1, MaxRange: 1}
-		b := mustNew(t, arena(weak, g, farBoss(6, 0)))
+		b := mustNew(t, arena(weak, g, farBoss(6, 0), reserve()))
 		done := rolls(t, b, 0, 0, 0, 99, 99)
 		events := mustAct(t, b, tactics.Command{Unit: 0, To: pos(1, 1), Action: tactics.Attack, Target: 1})
 		done()
@@ -746,7 +758,7 @@ func TestSkills(t *testing.T) {
 		my.Side = tactics.Player
 		my.Lord = true
 		my.Stats.HP = 40
-		b := mustNew(t, arena(my, br, farBoss(6, 0)))
+		b := mustNew(t, arena(my, br, farBoss(6, 0), reserve()))
 		b.SetHP(1, 20)
 		f := mustForecast(t, b, tactics.Command{Unit: 0, To: pos(1, 2), Target: 1})
 		assertEqual(t, "攻撃の始めは必殺の条件を満たさない", f.Defender.Crit, false)

@@ -172,9 +172,3 @@ func (b *Battle) healOnForts(events []Event, side Side) []Event {
 	}
 	return events
 }
-
-// actEnemy は敵 1 体を動かす（DES-AI-01）。
-// 敵の動き方の Issue（#10）で作る。今は何もしない（動かない敵は出来事を出さない）。
-func (b *Battle) actEnemy(events []Event, unit int) []Event {
-	return events
-}

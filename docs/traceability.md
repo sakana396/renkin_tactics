@@ -14,7 +14,7 @@
 | FR-BTL-04 | #8 | DES-BTL-05、DES-RNG-01 | TC-FR-BTL-04-01〜06 | `internal/core/tactics` | 実装済み |
 | FR-BTL-05 | #8 | DES-BTL-05 | TC-FR-BTL-05-01〜04 | `internal/core/tactics` | 実装済み |
 | FR-BTL-06 | #8 | DES-BTL-06 | TC-FR-BTL-06-01〜06 | `internal/core/tactics` | 実装済み |
-| FR-BTL-07 | #10 | DES-AI-01（反復 1 は突っ込む・待ち構えるの 2 種類。一部） | — | — | 未着手 |
+| FR-BTL-07 | #10 | DES-AI-01（反復 1 は突っ込む・待ち構えるの 2 種類。一部） | TC-FR-BTL-07-01〜18 | `internal/core/tactics` | 一部実装（反復 1 の 2 種類を実装済み） |
 | FR-BTL-08 | #8、#13 | DES-BTL-07、DES-UI-01 | TC-FR-BTL-08-01〜03 | `internal/core/tactics` | 一部実装（#8） |
 | FR-UNT-01 | #11 | DES-DAT-01、DES-CORE-01 | TC-FR-UNT-01-01〜06 | `internal/core` | 実装済み |
 | FR-UNT-02 | #11 | DES-DAT-01、DES-CORE-01 | TC-FR-UNT-02-01 | `internal/core` | 実装済み |

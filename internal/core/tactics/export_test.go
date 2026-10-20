@@ -9,7 +9,7 @@ func (b *Battle) SetRoll(f func() int) { b.roll = f }
 func (b *Battle) Roll() int { return b.roll() }
 
 // KillUnit は、攻撃で倒れたのと同じ処理（fall）でユニットを倒れた状態にする。
-// 自軍が攻撃で倒れるのは敵の攻撃（#10）からなので、それまでの代わりに使う。
+// 攻撃の乱数をそろえずに、倒れたユニットのいる盤面を手早く作るために使う。
 func (b *Battle) KillUnit(i int) { b.fall(nil, i) }
 
 // SetHP は、ユニットの今の HP を変える（怒りの条件や、回復・勝ち負けの前の HP を作るため）。
