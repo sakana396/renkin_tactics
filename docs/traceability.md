@@ -8,9 +8,9 @@
 | 要求 | Issue | 設計 | テストケース | 実装 | 状態 |
 |---|---|---|---|---|---|
 | QA-02 | — | tools/tccheck | TC-QA-02-01〜04 | `tools/tccheck`、CI | 実装済み（ふしぎ錬金から引き継ぎ） |
-| FR-BTL-01 | #6 | DES-BTL-01、DES-BTL-03、DES-BTL-04 | — | — | 未着手 |
-| FR-BTL-02 | #6 | DES-BTL-02 | — | — | 未着手 |
-| FR-BTL-03 | #6、#8、#9 | DES-BTL-04 | — | — | 未着手 |
+| FR-BTL-01 | #6 | DES-BTL-01、DES-BTL-03、DES-BTL-04 | TC-FR-BTL-01-01〜12 | `internal/core/tactics` | 実装済み |
+| FR-BTL-02 | #6 | DES-BTL-02 | TC-FR-BTL-02-01〜07 | `internal/core/tactics` | 実装済み（敵軍の番は敵が動かない骨組み。動き方は #10） |
+| FR-BTL-03 | #6、#8、#9 | DES-BTL-04 | TC-FR-BTL-03-01〜03 | `internal/core/tactics` | 一部実装（#6） |
 | FR-BTL-04 | #8 | DES-BTL-05、DES-RNG-01 | — | — | 未着手 |
 | FR-BTL-05 | #8 | DES-BTL-05 | — | — | 未着手 |
 | FR-BTL-06 | #8 | DES-BTL-06 | — | — | 未着手 |
@@ -21,7 +21,7 @@
 | FR-UNT-03 | — | （H-01 で確かめる。振り返り。検証は D） | — | — | 振り返りで確かめる |
 | FR-UNT-07 | #8 | DES-SKL-01（反復 1 はキャラのスキルだけ。一部） | — | — | 未着手 |
 | FR-UNT-09 | #13 | DES-UI-01 | — | — | 未着手 |
-| FR-MAP-01 | #6 | DES-BTL-03、DES-MAP-01 | — | — | 未着手 |
+| FR-MAP-01 | #6 | DES-BTL-03、DES-MAP-01 | TC-FR-MAP-01-01〜05 | `internal/core/tactics` | 実装済み |
 | FR-MAP-03 | #9 | DES-MAP-02、DES-MAP-03 | — | — | 未着手 |
 | FR-MAP-05 | #9 | DES-MAP-04（反復 1 はボスを倒す・主人公が倒れるだけ。一部） | — | — | 未着手 |
 | FR-CMP-09 | #9 | DES-MAP-04 | — | — | 未着手 |
@@ -36,6 +36,6 @@
 | NFR-03 | #7 | DES-NFR-02 | — | — | 未着手 |
 | NFR-04 | #7 | DES-NFR-01 | — | — | 未着手 |
 | NFR-05 | #7 | DES-NFR-01 | — | — | 未着手 |
-| NFR-06 | #6 | DES-RNG-01 | — | — | 未着手 |
-| NFR-07 | #6 | DES-ERR-01、DES-BTL-08 | — | — | 未着手 |
+| NFR-06 | #6 | DES-RNG-01 | TC-NFR-06-01〜03 | `internal/core/tactics` | 実装済み |
+| NFR-07 | #6 | DES-ERR-01、DES-BTL-08 | TC-NFR-07-01〜05 | `internal/core/tactics` | 実装済み |
 | NFR-09 | #7 | DES-NFR-03 | — | — | 未着手 |
