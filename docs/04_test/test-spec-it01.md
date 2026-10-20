@@ -93,6 +93,24 @@
 
 ### NFR-03・NFR-04・NFR-05・NFR-09（非機能の検査。#7）
 
+NFR-04・NFR-05 のテストコードは `internal/core/deps_test.go` にある。実際のパッケージは `go list -json ./...`（`internal/core` 以下）で直接の import を、`go list std` で標準ライブラリの一覧を得て調べる。ほかのケースは、import の一覧を Go のコードで組み立てて、判定の関数に渡す。Ebitengine は `github.com/hajimehoshi/ebiten` で始まる import とする。
+
+NFR-03・NFR-09 は、CI（`.github/workflows/ci.yml`）の手順で確かめる（対象の列に「CI」と書いた）。テストコードはなく、tccheck では「テストコードにありません」の警告になる。結果は、プルリクエストと `main` への push ごとの CI の記録に残る。Windows 11 と Linux で起動して遊べること（NFR-03 の D）は、画面ができてから手で確かめる（#7 の範囲外）。
+
+| ID | 対象 | 前提 | 入力・操作 | 期待結果 | 種別 |
+|---|---|---|---|---|---|
+| TC-NFR-03-01 | NFR-03 / DES-NFR-02（CI） | Go のコードを変えたプルリクエスト、または `main` への push | CI の手順「クロスビルド（Windows）」で `GOOS=windows go build ./...` | ビルドが成功し、手順が成功になる | 正常 |
+| TC-NFR-03-02 | NFR-03 / DES-NFR-02（CI） | TC-NFR-03-01 と同じ | CI の手順「クロスビルド（Linux）」で `GOOS=linux go build ./...` | ビルドが成功し、手順が成功になる | 正常 |
+| TC-NFR-04-01 | NFR-04、NFR-05 / DES-NFR-01、ADR-0002 | このリポジトリの `internal/core` 以下 | `go list` で各パッケージの直接の import を得て調べる | 結果に `internal/core/tactics` があり、どのパッケージも Ebitengine と `time` を import せず、`tactics` は標準ライブラリだけを import している | 正常 |
+| TC-NFR-04-02 | NFR-04 / DES-NFR-01、ADR-0002 | — | core が `github.com/hajimehoshi/bitmapfont/v3`、`example.com/hajimehoshi/ebiten/v2`、`internal/defs` を、`tactics` が `errors`、`fmt`、`math/rand/v2` を import する | 違反はない（似た名前は Ebitengine とみなさない。`tactics` 以外は標準ライブラリでなくてもよい） | 境界 |
+| TC-NFR-04-03 | NFR-04 / DES-NFR-01 | — | core が `github.com/hajimehoshi/ebiten/v2` を、`tactics` が `github.com/hajimehoshi/ebiten/v2/inpututil` を import する | 2 つとも Ebitengine の違反になる（`tactics` は標準ライブラリでない違反にもなる） | 異常 |
+| TC-NFR-04-04 | NFR-04 / DES-NFR-01、ADR-0002 | — | core が `github.com/BurntSushi/toml` を、`tactics` が `fmt`、`internal/defs`、`github.com/BurntSushi/toml` を import する | `tactics` の `internal/defs` と `github.com/BurntSushi/toml` だけが、標準ライブラリでない違反になる | 異常 |
+| TC-NFR-05-01 | NFR-05 / DES-NFR-01 | このリポジトリの `internal/core` 以下 | TC-NFR-04-01 と同じ | どのパッケージも `time` を import していない | 正常 |
+| TC-NFR-05-02 | NFR-05 / DES-NFR-01 | — | core が `example.com/time`、`runtime` を、`tactics` が `runtime` を import する | 違反はない（`time` と同じ名前のときだけ違反にする） | 境界 |
+| TC-NFR-05-03 | NFR-05 / DES-NFR-01 | — | core と `tactics` が `time` を import する | 2 つとも `time` の違反になる | 異常 |
+| TC-NFR-09-01 | NFR-09 / DES-NFR-03（CI） | TC-NFR-03-01 と同じ | CI の手順「core の命令網羅率」で `go test -coverprofile` を `./internal/core/...` に行い、`go tool cover -func` の `total` を読む | 合計が 80% 以上なら手順が成功になる | 正常 |
+| TC-NFR-09-02 | NFR-09 / DES-NFR-03（CI） | TC-NFR-03-01 と同じ | TC-NFR-09-01 の合計が 80% 未満、または読めない | 手順が失敗になり、CI が失敗する（80.0% は成功、79.9% は失敗） | 境界 |
+
 ### FR-BTL-04・FR-BTL-05・FR-BTL-06・FR-BTL-08・FR-UNT-07・FR-ITM-01（攻撃。#8。FR-BTL-08 は #13 も）
 
 ### FR-ITM-02・FR-ITM-03・FR-MAP-03・FR-MAP-05・FR-CMP-09（アイテム・砦・増援・勝ち負け。#9。FR-ITM-03 は #11 も）

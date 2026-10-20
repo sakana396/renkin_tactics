@@ -33,9 +33,9 @@
 | IF-01 | #12 | DES-UI-02 | — | — | 未着手 |
 | IF-02 | #12 | DES-UI-01 | — | — | 未着手 |
 | IF-03 | #5 | DES-DAT-02、ADR-0003 | TC-IF-03-01〜02 | `data`、`internal/defload` | 実装済み |
-| NFR-03 | #7 | DES-NFR-02 | — | — | 未着手 |
-| NFR-04 | #7 | DES-NFR-01 | — | — | 未着手 |
-| NFR-05 | #7 | DES-NFR-01 | — | — | 未着手 |
+| NFR-03 | #7 | DES-NFR-02 | TC-NFR-03-01〜02 | `.github/workflows/ci.yml` | 一部実装（#7。Windows と Linux での手の確認は画面ができてから） |
+| NFR-04 | #7 | DES-NFR-01 | TC-NFR-04-01〜04 | `internal/core`（`deps_test.go`） | 実装済み |
+| NFR-05 | #7 | DES-NFR-01 | TC-NFR-05-01〜03 | `internal/core`（`deps_test.go`） | 実装済み |
 | NFR-06 | #6 | DES-RNG-01 | TC-NFR-06-01〜03 | `internal/core/tactics` | 実装済み |
 | NFR-07 | #6 | DES-ERR-01、DES-BTL-08 | TC-NFR-07-01〜05 | `internal/core/tactics` | 実装済み |
-| NFR-09 | #7 | DES-NFR-03 | — | — | 未着手 |
+| NFR-09 | #7 | DES-NFR-03 | TC-NFR-09-01〜02 | `.github/workflows/ci.yml` | 実装済み |

@@ -51,6 +51,24 @@ jobs:
       - name: go test
         if: steps.changes.outputs.code == 'true'
         run: go test ./...
+      # core の命令網羅率の合計が 80% 未満なら失敗にする（DES-NFR-03、NFR-09）
+      - name: core の命令網羅率
+        if: steps.changes.outputs.code == 'true'
+        run: |
+          go test -coverprofile=coverage.out ./internal/core/...
+          total=$(go tool cover -func=coverage.out | awk '$1 == "total:" { sub(/%$/, "", $NF); print $NF }')
+          echo "internal/core 以下の命令網羅率の合計: ${total}%"
+          if ! awk -v t="$total" 'BEGIN { exit !(t != "" && t + 0 >= 80) }'; then
+            echo "命令網羅率が 80% 未満です"
+            exit 1
+          fi
+      # Windows と Linux 向けにビルドできることを確かめる（DES-NFR-02、NFR-03）
+      - name: クロスビルド（Windows）
+        if: steps.changes.outputs.code == 'true'
+        run: GOOS=windows go build ./...
+      - name: クロスビルド（Linux）
+        if: steps.changes.outputs.code == 'true'
+        run: GOOS=linux go build ./...
       # テスト仕様書とトレーサビリティを読むので、文書だけの変更でも行う
       - name: テストケース ID の整合
         run: go run ./tools/tccheck
