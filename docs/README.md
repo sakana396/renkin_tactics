@@ -14,8 +14,9 @@
 | 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.1 承認済み（反復 1 の範囲） |
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.1 承認済み |
 | 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.1 承認済み |
+| 試験 | テスト仕様書（反復 1） | [04_test/test-spec-it01.md](04_test/test-spec-it01.md) | 実装とともに書き足す |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
-| 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具の行だけ |
+| 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
 
 ## エージェント向けのルール
