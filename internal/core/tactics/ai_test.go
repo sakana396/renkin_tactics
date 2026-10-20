@@ -33,16 +33,6 @@ func enemy(name string, x, y, mov int) tactics.UnitSetup {
 	return unit(name, tactics.Enemy, x, y, mov)
 }
 
-// aiEndPhase は誤りのない EndPhase を行う（#9 の gimmick_test.go の mustEndPhase と名前が重ならないようにする）。
-func aiEndPhase(t *testing.T, b *tactics.Battle) []tactics.Event {
-	t.Helper()
-	events, err := b.EndPhase()
-	if err != nil {
-		t.Fatalf("EndPhase: %v", err)
-	}
-	return events
-}
-
 // plain7 は 7 × 7 の平地。
 func plain7(units ...tactics.UnitSetup) tactics.Setup {
 	return tactics.Setup{
@@ -84,12 +74,26 @@ func TestEnemyChoice(t *testing.T) {
 			b := mustNew(t, row(lord(1, 3, 2), p1))
 			b.SetHP(1, tc.hp)
 			done := rolls(t, b, tc.rolls...)
-			events := aiEndPhase(t, b)
+			events := mustEndPhase(t, b)
 			done()
 			assertEqual(t, tc.name+": Move", moves(events), []move{tc.move})
 			assertEqual(t, tc.name+": Strike", strikes(events), tc.strikes)
 			assertEqual(t, tc.name+": 味方が倒れた", !b.Units()[1].Alive, tc.fall)
 		}
+
+		// 回数も掛ける: 味方は守備 6・速さ 1・HP 8 で、ダメージ 4、追撃で 2 回。4 × 2 ≧ 8 で倒せる。
+		// 主人公は守備 0 で 10 × 90 × 1 = 900 が、味方の 4 × 98 × 2 = 784 より大きい。回数を掛けないと主人公を選ぶ組。
+		p0 := lord(1, 3, 2)
+		p0.Stats.Def = 0
+		p1 = ally("味方", 5, 3, 2)
+		p1.Stats.Def, p1.Stats.Spd = 6, 1
+		b := mustNew(t, row(p0, p1))
+		b.SetHP(1, 8)
+		done := rolls(t, b, 99, 99, 99, 99, 99, 99)
+		events := mustEndPhase(t, b)
+		done()
+		assertEqual(t, "回数: Move", moves(events), []move{{2, pos(3, 3), pos(4, 3)}})
+		assertEqual(t, "回数: Strike", strikes(events), []strike{{Unit: 2, Target: 1}, {Unit: 1, Target: 2}, {Unit: 2, Target: 1}})
 	})
 
 	t.Run("TC-FR-BTL-07-02 比べ方 2: ダメージ × 命中率 × 回数 が大きい相手を狙う", func(t *testing.T) {
@@ -98,7 +102,7 @@ func TestEnemyChoice(t *testing.T) {
 		p0.Stats.Def = 5
 		b := mustNew(t, row(p0, ally("味方", 5, 3, 2)))
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := aiEndPhase(t, b)
+		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "Move", moves(events), []move{{2, pos(3, 3), pos(4, 3)}})
 		assertEqual(t, "Strike", strikes(events), []strike{{Unit: 2, Target: 1}, {Unit: 1, Target: 2}})
@@ -109,10 +113,21 @@ func TestEnemyChoice(t *testing.T) {
 		p1.Stats.Def, p1.Stats.Spd = 5, 1
 		b = mustNew(t, row(lord(1, 3, 2), p1))
 		done = rolls(t, b, 99, 99, 99, 99, 99, 99)
-		events = aiEndPhase(t, b)
+		events = mustEndPhase(t, b)
 		done()
 		assertEqual(t, "回数: Move", moves(events), []move{{2, pos(3, 3), pos(4, 3)}})
 		assertEqual(t, "回数: Strike", strikes(events), []strike{{Unit: 2, Target: 1}, {Unit: 1, Target: 2}, {Unit: 2, Target: 1}})
+
+		// 命中率も掛ける: 主人公は速さ 6 で、命中率 100 − 12 = 88、7 × 88 × 1 = 616 < 630。
+		// 命中率を掛けないと 7 と 7 で同じになり、反撃の値も 630 で同じなので、比べ方 4 で主人公を選ぶ組。
+		p0 = lord(1, 3, 2)
+		p0.Stats.Spd = 6
+		b = mustNew(t, row(p0, ally("味方", 5, 3, 2)))
+		done = rolls(t, b, 99, 99, 99, 99)
+		events = mustEndPhase(t, b)
+		done()
+		assertEqual(t, "命中率: Move", moves(events), []move{{2, pos(3, 3), pos(4, 3)}})
+		assertEqual(t, "命中率: Strike", strikes(events), []strike{{Unit: 2, Target: 1}, {Unit: 1, Target: 2}})
 	})
 
 	t.Run("TC-FR-BTL-07-03 比べ方 3: 反撃のダメージ × 命中率 × 回数 が小さい相手を狙う", func(t *testing.T) {
@@ -121,10 +136,32 @@ func TestEnemyChoice(t *testing.T) {
 		p0.Stats.Str = 7
 		b := mustNew(t, row(p0, ally("味方", 5, 3, 2)))
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := aiEndPhase(t, b)
+		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "Move", moves(events), []move{{2, pos(3, 3), pos(4, 3)}})
 		assertEqual(t, "Strike", strikes(events), []strike{{Unit: 2, Target: 1}, {Unit: 1, Target: 2}})
+
+		// 命中率も掛ける: 主人公は技 6 で、反撃の命中率 102 − 10 = 92、7 × 92 × 1 = 644 > 630。
+		// 命中率を掛けないと 7 と 7 で同じになり、比べ方 4 で主人公を選ぶ組。
+		p0 = lord(1, 3, 2)
+		p0.Stats.Skl = 6
+		b = mustNew(t, row(p0, ally("味方", 5, 3, 2)))
+		done = rolls(t, b, 99, 99, 99, 99)
+		events = mustEndPhase(t, b)
+		done()
+		assertEqual(t, "命中率: Move", moves(events), []move{{2, pos(3, 3), pos(4, 3)}})
+		assertEqual(t, "命中率: Strike", strikes(events), []strike{{Unit: 2, Target: 1}, {Unit: 1, Target: 2}})
+
+		// 回数も掛ける: 味方は弓（射程 2）で隣に反撃できず、反撃の回数 0 で値は 0。与える値は弓でも 7 × 90 × 1 = 630。
+		// 回数を掛けないと、味方は 8 × 85 = 680 > 630 になり、主人公を選ぶ組。
+		p1 := ally("味方", 5, 3, 2)
+		p1.Weapon = ironBow
+		b = mustNew(t, row(lord(1, 3, 2), p1))
+		done = rolls(t, b, 99, 99)
+		events = mustEndPhase(t, b)
+		done()
+		assertEqual(t, "回数: Move", moves(events), []move{{2, pos(3, 3), pos(4, 3)}})
+		assertEqual(t, "回数: Strike", strikes(events), []strike{{Unit: 2, Target: 1}})
 	})
 
 	t.Run("TC-FR-BTL-07-04 比べ方 4: 値がすべて同じなら、添字の小さい自軍を狙う", func(t *testing.T) {
@@ -132,7 +169,7 @@ func TestEnemyChoice(t *testing.T) {
 		// 主人公は (3, 4) から、味方は y の小さい (3, 2) から狙える。比べ方 5 なら味方を選ぶはずの組。
 		b := mustNew(t, plain7(lord(3, 5, 2), ally("味方", 3, 1, 2), enemy("敵", 3, 3, 1), boss(6, 0)))
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := aiEndPhase(t, b)
+		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "Move", moves(events), []move{{2, pos(3, 3), pos(3, 4)}})
 		assertEqual(t, "Strike", strikes(events), []strike{{Unit: 2, Target: 0}, {Unit: 0, Target: 2}})
@@ -143,7 +180,7 @@ func TestEnemyChoice(t *testing.T) {
 		// （(3, 2) は主人公を回り込むので 5 かかる）。y の小さい (2, 3)・(4, 3) のうち x の小さい (2, 3)。
 		b := mustNew(t, plain7(lord(3, 3, 2), enemy("敵", 3, 5, 3), boss(6, 0)))
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := aiEndPhase(t, b)
+		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "Move", moves(events), []move{{1, pos(3, 5), pos(2, 3)}})
 		assertEqual(t, "Strike", strikes(events), []strike{{Unit: 1, Target: 0}, {Unit: 0, Target: 1}})
@@ -157,7 +194,7 @@ func TestEnemyChoice(t *testing.T) {
 		b := mustNew(t, plain7(lord(3, 3, 2), enemy("敵", 3, 5, 3), bs))
 		// 敵の 1 撃は命中率 100 なので (99, 99) でも当たる。主人公の反撃は命中率 100 − 20 = 80 で外れる。
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := aiEndPhase(t, b)
+		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "鼓舞: Move", moves(events), []move{{1, pos(3, 5), pos(4, 3)}})
 		assertEqual(t, "鼓舞: Strike", strikes(events), []strike{{Unit: 1, Target: 0, Hit: true, Amount: 7}, {Unit: 0, Target: 1}})
@@ -170,7 +207,7 @@ func TestEnemyChoice(t *testing.T) {
 		ar.Skill = skillSnipe
 		b = mustNew(t, plain7(lord(3, 3, 2), ar, boss(6, 0)))
 		done = rolls(t, b, 99, 99)
-		events = aiEndPhase(t, b)
+		events = mustEndPhase(t, b)
 		done()
 		assertEqual(t, "狙撃: 出来事", kinds(events), []tactics.EventKind{
 			tactics.EventPhaseStart, tactics.EventStrike, tactics.EventPhaseStart,
@@ -210,7 +247,7 @@ func TestEnemyApproach(t *testing.T) {
 		},
 		{
 			// 1 本道 (y = 1) の主人公 (0, 1)、ボス (3, 1)、敵 (5, 1) 移動 1。下に回り道がある。
-			// ユニットを無視すると、近さは (4, 1) が 4、今いるマスが 5、(6, 1) が 10 なので (4, 1) へ。
+			// ユニットを無視すると、近さは (4, 1) が 4、今いるマスが 5、(6, 1) が 6 なので (4, 1) へ。
 			// ボスを通れないものとすると、(4, 1) は 12、(6, 1) は 10 になり、(6, 1) を選んでしまう。
 			id: "TC-FR-BTL-07-09", name: "近さはユニットを無視する",
 			setup: tactics.Setup{
@@ -259,11 +296,12 @@ func TestEnemyApproach(t *testing.T) {
 			},
 		},
 		{
-			// 壁の列 x = 2 で分けられ、どの自軍にもたどり着けない（近さはどのマスも無限大）。
+			// 壁の列 x = 2 で分けられ、敵 (4, 0) 移動 3 はどの自軍にもたどり着けない（近さはどのマスも無限大）。
+			// 壁を費用 1 で通れるものとすると、(3, 0) の近さ 3 が今いるマスの 4 より小さく、(3, 0) に寄ってしまう。
 			id: "TC-FR-BTL-07-14", name: "どの自軍にもたどり着けなければ動かない",
 			setup: tactics.Setup{
 				Terrain: grid("..#..", "..#.."),
-				Units:   []tactics.UnitSetup{lord(0, 0, 2), enemy("敵", 3, 0, 3), boss(4, 1)},
+				Units:   []tactics.UnitSetup{lord(0, 0, 2), enemy("敵", 4, 0, 3), boss(4, 1)},
 			},
 		},
 	}
@@ -272,7 +310,7 @@ func TestEnemyApproach(t *testing.T) {
 			b := mustNew(t, tc.setup)
 			noRolls(t, b)
 			before := b.Units()
-			events := aiEndPhase(t, b)
+			events := mustEndPhase(t, b)
 			want := phaseOnly
 			if len(tc.want) > 0 {
 				want = []tactics.EventKind{tactics.EventPhaseStart, tactics.EventMove, tactics.EventPhaseStart}
@@ -295,7 +333,7 @@ func TestEnemyHold(t *testing.T) {
 		s := tactics.Setup{Terrain: grid("......", "......", "......", "......"), Units: []tactics.UnitSetup{lord(1, 0, 2), bs}}
 		b := mustNew(t, s)
 		done := rolls(t, b, 99, 99, 99, 99)
-		events := aiEndPhase(t, b)
+		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "1 ターン目: Move", moves(events), []move{{1, pos(3, 0), pos(2, 0)}})
 		assertEqual(t, "1 ターン目: Strike", strikes(events), []strike{{Unit: 1, Target: 0}, {Unit: 0, Target: 1}})
@@ -323,7 +361,7 @@ func TestEnemyHold(t *testing.T) {
 		noRolls(t, b)
 		before := b.Units()
 		for turn := 1; turn <= 2; turn++ {
-			events := aiEndPhase(t, b)
+			events := mustEndPhase(t, b)
 			assertEqual(t, "出来事", kinds(events), phaseOnly)
 		}
 		assertEqual(t, "ユニット（動き方は待ち構えるのまま）", b.Units(), before)
@@ -338,7 +376,7 @@ func TestEnemyHold(t *testing.T) {
 		}
 		b := mustNew(t, s)
 		done := rolls(t, b, 99, 99, 99, 99, 99, 99, 99, 99)
-		events := aiEndPhase(t, b)
+		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "出来事", kinds(events), []tactics.EventKind{
 			tactics.EventPhaseStart,
@@ -350,5 +388,23 @@ func TestEnemyHold(t *testing.T) {
 		assertEqual(t, "Strike", strikes(events), []strike{
 			{Unit: 2, Target: 0}, {Unit: 0, Target: 2}, {Unit: 3, Target: 0}, {Unit: 0, Target: 3},
 		})
+	})
+
+	t.Run("TC-FR-BTL-07-18 先に動いた敵の攻撃で倒れた自軍は、後の敵の攻撃の候補にも近さの目標にもならない", func(t *testing.T) {
+		// 7 × 7 の平地。主人公 (0, 0)、HP 7 の味方 (5, 3)、ボス (0, 6)、
+		// 敵 A (5, 4) 移動 0（添字 3）、敵 B (6, 1) 移動 2（添字 4）。
+		// A が味方を倒す（7 ダメージ）。B は倒れた味方の隣 (5, 2)・(6, 3) に行けるが、候補にしない。
+		// 近さは主人公までで数え、5 の (5, 0)・(4, 1) のうち y の小さい (5, 0) へ（味方を数えると (5, 2) へ寄る）。
+		p1 := ally("味方", 5, 3, 2)
+		b := mustNew(t, plain7(lord(0, 0, 2), p1, boss(0, 6), enemy("敵 A", 5, 4, 0), enemy("敵 B", 6, 1, 2)))
+		b.SetHP(1, 7)
+		done := rolls(t, b, 0, 0)
+		events := mustEndPhase(t, b)
+		done()
+		assertEqual(t, "出来事", kinds(events), []tactics.EventKind{
+			tactics.EventPhaseStart, tactics.EventStrike, tactics.EventFall, tactics.EventMove, tactics.EventPhaseStart,
+		})
+		assertEqual(t, "Strike", strikes(events), []strike{{Unit: 3, Target: 1, Hit: true, Amount: 7}})
+		assertEqual(t, "Move", moves(events), []move{{4, pos(6, 1), pos(5, 0)}})
 	})
 }
