@@ -135,23 +135,6 @@ func TestActErrors(t *testing.T) {
 	}
 }
 
-// TestActNotImplemented は、UseItem が検証 0〜5 を通ったあとの扱いを確かめる。
-// アイテム（#9）の Issue で、アイテムのテストに置き換える。
-func TestActNotImplemented(t *testing.T) {
-	t.Run("TC-NFR-07-04 まだ作っていない行動（UseItem）は状態を変えずに誤りを返す", func(t *testing.T) {
-		b := errBattle(t, nil)
-		before := snapshot(b)
-		events, err := b.Act(tactics.Command{Unit: 0, To: pos(0, 0), Action: tactics.UseItem})
-		if !errors.Is(err, tactics.ErrNotImplemented) {
-			t.Errorf("err = %v, want ErrNotImplemented", err)
-		}
-		if events != nil {
-			t.Errorf("出来事 = %v, want nil", events)
-		}
-		assertEqual(t, "状態", snapshot(b), before)
-	})
-}
-
 // TestErrorValues は誤りの値を確かめる（DES-BTL-08）。
 func TestErrorValues(t *testing.T) {
 	t.Run("TC-NFR-07-05 誤りの値は errors.Is で互いに見分けられる", func(t *testing.T) {

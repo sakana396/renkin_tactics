@@ -84,6 +84,7 @@
 | TC-FR-BTL-03-04 | FR-BTL-03 / DES-BTL-04 / DES-BTL-06 / DES-EVT-01 / UC-02 | 自軍 1 体。(0, 1) の主人公、(2, 1) の敵（能力は同じ） | 主人公を (1, 1) に移動して敵を `Attack`（主人公の攻撃と反撃は当たり、敵軍の番の攻撃は外れ）（#8、#10） | 出来事は `Move` → `Strike`（主人公→敵）→ `Strike`（反撃）→ `PhaseStart`（敵軍）→ `Move`（敵が (1, 0) へ。DES-AI-01）→ `Strike`（敵→主人公）→ `Strike`（反撃）→ `PhaseStart`（自軍）。`Move` の写しは行動済みでなく、`Strike` の写しは行動済み。主人公は (1, 1) にいて、反撃の距離は移動したあとで測る | 正常 |
 | TC-FR-BTL-03-05 | FR-BTL-03 / DES-BTL-04 / DES-EVT-01 | 自軍 2 体。主人公の隣に敵 | 今いるマスを `To` にして `Attack`。続けて同じユニットでもう一度 `Attack`（#8） | 出来事は `Strike` 2 つだけ（`Move` を出さない）。主人公は行動済みで、自軍の番が続く。2 回目は `ErrAlreadyActed` | 境界 |
 | TC-FR-BTL-03-06 | FR-BTL-03 / DES-BTL-04 / DES-BTL-08 / DES-ERR-01 | 剣の主人公、弓の味方、味方、敵、倒れた敵 | `Attack` の `Target` が -1・数を超える・味方・自分・倒れた敵（射程の外）、`To` から射程の外、弓で隣・3 マス先、`To` が移動できないうえに `Target` が -1（#8） | 順に `ErrNoTarget`（倒れた敵は射程の外でも `ErrNoTarget`）、`ErrOutOfRange`、`ErrUnreachable`（検証 5 が 6 より先）。出来事は nil で、乱数を引かず、状態は変わらない | 異常 |
+| TC-FR-BTL-03-07 | FR-BTL-03 / DES-BTL-04 / DES-ITM-01 / DES-EVT-01 / UC-02 5a | 敵は動かさない（`SetEnemyTarget` で、敵が何もしないように差し替える）。自軍 2 体。主人公は HP 5、味方は HP 19（最大 20、回復薬 10 × 2） | 主人公を (1, 1) に移動して `UseItem`。続けて、味方を移動せずに `UseItem`（#9） | 主人公の出来事は `Move` → `Heal`（`Item` は「回復薬」）。`Move` の写しは HP 5 で行動済みでなく、`Heal` の写しは HP 15・行動済み・回復薬 × 1。味方の出来事は `Heal` → `PhaseStart`（敵軍）→ `PhaseStart`（自軍）で、2 ターン目の自軍の番になる | 正常 |
 | TC-FR-MAP-01-01 | FR-MAP-01 / DES-BTL-03 / DES-MAP-01 | 森（費用 2）のある 1 本道。森の列と、その下の平地の列 | `Reachable` | 森に入る費用は 2 で数える。森を通るより回り道が安いマスは、回り道の費用になる | 正常 |
 | TC-FR-MAP-01-02 | FR-MAP-01 / DES-BTL-03 / DES-MAP-01 | 壁（費用 0）の列で仕切られた盤面 | `Reachable` | 壁のマスには入れず、壁の向こうへは回り道の費用で行く | 異常 |
 | TC-FR-MAP-01-03 | FR-MAP-01 / DES-BTL-03 | 主人公の隣が森（費用 2） | 移動 1 と移動 2 で `Reachable` | 移動 1 では森に入れず、移動 2 なら入れる | 境界 |
@@ -95,7 +96,7 @@
 | TC-NFR-07-01 | NFR-07 / DES-BTL-04 | 戦闘の終わり・敵軍の番・行動済みで倒れた味方・行動済みの味方などを組み合わせる | 検証 0〜5 の 2 つ以上に当てはまるコマンド（`Wait`、`Attack`、`UseItem`）で `Act` | 番号の小さい検証の誤りを返す（0 `ErrInvalidAction` → 1 `ErrBattleOver` → 2 `ErrNotPlayerPhase` → 3 `ErrInvalidUnit` → 4 `ErrAlreadyActed` → 5 `ErrUnreachable`）。`UseItem` でも 5 を 6 より先に確かめる | 異常 |
 | TC-NFR-07-02 | NFR-07 / DES-BTL-04 / DES-BTL-08 | 1 ターン目の自軍の番 | `Action` が範囲外（3、-1）、勝ち・負けのあと、敵軍の番、`Unit` が -1・数を超える・敵・倒れた味方、行動済み、`To` が壁・マップの外・移動を超える・味方のいるマス・敵のいるマス | それぞれ `ErrInvalidAction`、`ErrBattleOver`、`ErrNotPlayerPhase`、`ErrInvalidUnit`、`ErrAlreadyActed`、`ErrUnreachable` を返す | 異常 |
 | TC-NFR-07-03 | NFR-07 / DES-ERR-01 | TC-NFR-07-01・02 のそれぞれ | 失敗する `Act` | 出来事は nil で、ターン・番・結果・ユニット（位置、HP、行動済み、手持ちなど）が変わらない | 異常 |
-| TC-NFR-07-04 | NFR-07 / DES-ERR-01 | 1 ターン目の自軍の番 | 検証 0〜5 を通る `UseItem` で `Act`（アイテムは #9 で作るまでの扱い。`Attack` は #8 で作ったので外した） | まだ作っていないことを示す誤りを返し、出来事は nil で、状態は変わらない | 異常 |
+| TC-NFR-07-04 | NFR-07 / DES-ERR-01 / DES-BTL-04 | TC-FR-ITM-02-03 と同じ | 検証 0〜5 を通り、検証 6（`UseItem`）で失敗する `Act`（#9。#6 では、まだ作っていない `UseItem` の扱いを確かめていた） | 出来事は nil で、状態は変わらない（`To` が移動できるマスでも移動しない） | 異常 |
 | TC-NFR-07-05 | NFR-07 / DES-BTL-08 | — | 公開の誤り 11 個どうしを `errors.Is` で比べる | 自分とだけ一致し、ほかとは一致しない | 正常 |
 
 ### NFR-03・NFR-04・NFR-05・NFR-09（非機能の検査。#7）
@@ -155,11 +156,31 @@ NFR-03・NFR-09 は、CI（`.github/workflows/ci.yml`）の手順で確かめる
 
 ### FR-ITM-02・FR-ITM-03・FR-MAP-03・FR-MAP-05・FR-CMP-09（アイテム・砦・増援・勝ち負け。#9。FR-ITM-03 は #11 も）
 
-FR-ITM-03 の #11 の分（初めから持つ）のテストは `internal/core` にある。
+FR-ITM-03 の #11 の分（初めから持つ）のテストは `internal/core` にある。#9 の分のテストは `internal/core/tactics` の `item_test.go`（アイテム）、`gimmick_test.go`（砦・増援）、`judge_test.go`（勝ち負け）にある。盤面の図の `T` は砦（費用 1、回避 20、守備 2、回復 20%）。ユニットは最大 HP 20、力 5、技 5、速さ 5、守備 3 で、鉄の剣（威力 5、命中 90）と回復薬（回復 10）× 2 を持つ（同じ能力どうしのダメージは 7）。敵の動き方（#10）はまだないので、敵軍の番の攻撃は `export_test.go` の口（`SetEnemyTarget`）で、敵を「動かずに決まった相手を攻撃する」ものに差し替えて組む。敵軍の番の始めと終わりだけを確かめるテストでは、同じ口で敵が何もしないように差し替え、敵の動き方（DES-AI-01）に左右されないようにする。
 
 | ID | 対象 | 前提 | 入力・操作 | 期待結果 | 種別 |
 |---|---|---|---|---|---|
+| TC-FR-ITM-02-01 | FR-ITM-02 / DES-ITM-01 / UC-02 5a | 主人公（最大 HP 20、回復薬 10 × 2）の HP を 5・10・15・19 にする | 移動せずに `UseItem` | 回復した量（`Heal` の `Amount`）は 10・10・5・1 で、HP は 15・20・20・20（最大 HP を超えない）。回復薬は × 1 になり、行動済みになる | 境界 |
+| TC-FR-ITM-02-02 | FR-ITM-02 / DES-ITM-01 | 手持ちを [回復薬 × 1]、[回復薬 × 1、霊薬 × 2]、[回復薬 × 2、霊薬 × 1] にする | 数が 1 のアイテム、または数が 2 のアイテムを `UseItem` | 数が 0 になったアイテムは手持ちから消え（1 つだけなら手持ちが空になる。後ろのアイテムは前に詰まる）、2 のアイテムは 1 になる。`Heal` の写しも同じ。使う前の `Units()` の写しと、渡した `Setup` の手持ちは変わらない | 境界 |
+| TC-FR-ITM-02-03 | FR-ITM-02 / DES-BTL-04 / DES-BTL-08 / DES-ERR-01 | 主人公の HP が 5 または 20（最大）。手持ちは回復薬 × 2、または空 | 移動できるマス (1, 1) を `To` にして、`Item` が -1・数を超える・手持ちが空、HP が最大、`Item` が数を超えて HP も最大で `UseItem` | 順に `ErrNoItem`、`ErrFullHP`、`ErrNoItem`（アイテムを HP より先に確かめる）。出来事は nil で、乱数を引かず、状態は変わらない | 異常 |
 | TC-FR-ITM-03-01 | FR-ITM-03 / DES-CORE-01、DES-ITM-01 / UC-01 | 本体のデータ。手で組み立てた小さな目録 | `ch01` の戦闘を作る。小さな目録で、敵に回復薬 3 個を持たせて `Setup` を組み立てる | レオンは回復薬（回復 10）× 2、ガルド・ブラン・ミラは × 1 を持つ。`ch01` の敵は何も持たない。回復薬を持たせた敵は手持ちに回復薬 × 3 を持つ | 正常 |
+| TC-FR-ITM-03-02 | FR-ITM-03 / DES-ITM-01 / UC-02 5a | 敵は動かさない（`SetEnemyTarget` で、敵が何もしないように差し替える）。主人公が初めから回復薬 × 2 を持つ | 1・2 ターン目に HP を 5 にして `UseItem`。3 ターン目にもう一度 `UseItem` | 2 回使うと手持ちが空になり、3 回目は `ErrNoItem` | 境界 |
+| TC-FR-MAP-03-01 | FR-MAP-03 / DES-MAP-02 / DES-BTL-02 / UC-06 2・5 | 敵は動かさない（`SetEnemyTarget` で、敵が何もしないように差し替える）。4 隅が砦の盤面。砦の主人公と敵、平地の味方の HP を 10 にする（最大 20） | `EndPhase` | 出来事は `PhaseStart`（敵軍、1）→ `Heal`（敵、4）→ `PhaseStart`（自軍、2）→ `Heal`（主人公、4）。それぞれ自分の陣営の番の始めに 20 × 20% = 4 回復し、`Heal` の `Item` は空。平地の味方は回復しない | 正常 |
+| TC-FR-MAP-03-02 | FR-MAP-03 / DES-MAP-02 | 敵は動かさない（`SetEnemyTarget` で、敵が何もしないように差し替える）。砦の味方の最大 HP と HP を (24, 1)、(25, 1)、(24, 23)、(24, 24)、(4, 1) にする。別に、(24, 1) で倒れた状態にする | `EndPhase` | 回復は 4（4.8 を切り捨て）、5、1（最大 HP まで）。HP が最大のとき、回復が 0（0.8 を切り捨て）のとき、倒れているときは `Heal` を出さず、HP も変わらない | 境界 |
+| TC-FR-MAP-03-03 | FR-MAP-03 / DES-MAP-03 / DES-BTL-02 / UC-06 1 | 敵は動かさない（`SetEnemyTarget` で、敵が何もしないように差し替える）。2 ターン目に (2, 2) に現れる増援が 1 体 | `EndPhase` を 3 回 | 1 ターン目は現れない。2 ターン目の出来事は `PhaseStart`（敵軍、2）→ `Reinforce`（添字 4、(2, 2)）→ `PhaseStart`（自軍、3）で、`Reinforce` の写しから 5 体になる。増援は敵軍で、HP は最大、生きている。3 ターン目には増えない | 正常 |
+| TC-FR-MAP-03-04 | FR-MAP-03 / DES-MAP-03 / DES-BTL-02 | TC-FR-MAP-03-03 と同じ。敵を動かす処理を差し替え、動いた敵を記録する | `EndPhase` を 3 回 | 1・2 ターン目に動くのは初めの敵（2、3）だけで、2 ターン目に現れた増援（4）は 3 ターン目から動く | 正常 |
+| TC-FR-MAP-03-05 | FR-MAP-03 / DES-MAP-03 | 敵は動かさない（`SetEnemyTarget` で、敵が何もしないように差し替える）。2 ターン目の増援が 3 体。1 体目は主人公のいるマス、2・3 体目は同じマス (2, 2) | 2 ターン目まで `EndPhase`。主人公をマスから動かし、4 ターン目まで `EndPhase` | 2 ターン目に現れるのは 2 体目だけ（1 体目はふさがれ、3 体目は 2 体目にふさがれる）。マスが空いても、後のターンには現れない | 境界 |
+| TC-FR-MAP-03-06 | FR-MAP-03 / DES-MAP-03 | 敵は動かさない（`SetEnemyTarget` で、敵が何もしないように差し替える）。2 ターン目に (0, 4) に現れる増援。(0, 4) の味方は倒れている | 2 ターン目まで `EndPhase` | 倒れたユニットのいたマスには現れる | 境界 |
+| TC-FR-MAP-03-07 | FR-MAP-03 / DES-BTL-02 / DES-MAP-02 / DES-MAP-03 / DES-EVT-01 / UC-06 1・2 | 敵は動かさない（`SetEnemyTarget` で、敵が何もしないように差し替える）。4 隅が砦の盤面。増援は定義の順に C（3 ターン目、(2, 3)）、A（2 ターン目、(3, 3)）、B（2 ターン目、(1, 1)）。砦のボス（2）と敵（3）の HP を 10 にする | 2 ターン目と 3 ターン目の `EndPhase` | 2 ターン目は `PhaseStart`（敵軍）→ `Reinforce`（A、4）→ `Reinforce`（B、5）→ `Heal`（2）→ `Heal`（3）→ `PhaseStart`（自軍）。3 ターン目は `PhaseStart` → `Reinforce`（C、6）→ `Heal`（2）→ `Heal`（3）→ `PhaseStart` | 正常 |
+| TC-FR-MAP-05-01 | FR-MAP-05 / DES-MAP-04 / DES-EVT-01 / UC-02 6a / UC-07 1 | 味方は待機した。ボスの HP は 1 | 主人公が移動してボスを `Attack`（1 撃目が当たる） | 出来事は `Move` → `Strike` → `Fall`（ボス）→ `Won`。結果は `Won` で、全員が行動済みでも敵軍の番に進まない（1 ターン目の自軍の番のまま） | 正常 |
+| TC-FR-MAP-05-02 | FR-MAP-05 / DES-MAP-04 / DES-BTL-02 / UC-06 3b | ボス（HP 1）が主人公の隣にいる。敵軍の番に、ボスだけが主人公を攻撃するように差し替える | `EndPhase`（ボスの 1 撃目は外れ、反撃が当たる） | 出来事は `PhaseStart`（敵軍）→ `Strike` → `Strike` → `Fall`（ボス）→ `Won`。ボスのあとの敵は動かず、次の自軍の番は始まらない（1 ターン目の敵軍の番のまま） | 正常 |
+| TC-FR-MAP-05-03 | FR-MAP-05 / DES-MAP-04 / DES-BTL-08 / DES-ERR-01 | TC-FR-MAP-05-01 のあと | `Wait`・`UseItem`・`Attack` の `Act`、`EndPhase` | すべて `ErrBattleOver`。出来事は nil で、乱数を引かず、状態は変わらない | 異常 |
+| TC-FR-MAP-05-04 | FR-MAP-05 / DES-MAP-04 | ボスでない敵の HP が 1 | 主人公が敵を `Attack`（1 撃目が当たる） | 出来事は `Move` → `Strike` → `Fall` で、`Won` を出さない。戦闘は続き、自軍の番のまま | 境界 |
+| TC-FR-CMP-09-01 | FR-CMP-09 / DES-MAP-04 / DES-EVT-01 / UC-02 6a / UC-07 2 | 主人公の HP が 1。味方はまだ行動していない | 主人公が敵を `Attack`（1 撃目は外れ、反撃が当たる） | 出来事は `Move` → `Strike` → `Strike` → `Fall`（主人公）→ `Lost`。結果は `Lost` | 正常 |
+| TC-FR-CMP-09-02 | FR-CMP-09 / DES-MAP-04 / DES-BTL-02 / UC-06 3a | 主人公（HP 1）が敵（3）の隣にいる。敵軍の番に、敵（3）だけが主人公を攻撃するように差し替える | `EndPhase`（1 撃目が当たる） | 出来事は `PhaseStart`（敵軍）→ `Strike` → `Fall`（主人公）→ `Lost`。動いた敵は 2、3 だけで、あとの敵（4）は動かず、次の自軍の番は始まらない | 正常 |
+| TC-FR-CMP-09-03 | FR-CMP-09 / DES-MAP-04 / DES-BTL-08 / DES-ERR-01 | TC-FR-CMP-09-02 のあと（敵軍の番のまま） | `Wait`・`UseItem`・`Attack` の `Act`、`EndPhase` | すべて `ErrBattleOver`（`ErrNotPlayerPhase` より先）。出来事は nil で、乱数を引かず、状態は変わらない | 異常 |
+| TC-FR-CMP-09-04 | FR-CMP-09 / DES-MAP-04 | 味方（HP 1）の隣に敵（4）。敵軍の番に、敵（4）だけが味方を攻撃するように差し替える | `EndPhase`（1 撃目が当たる） | 出来事は `PhaseStart`（敵軍）→ `Strike` → `Fall`（味方）→ `PhaseStart`（自軍、2）。`Lost` を出さず、敵は全員動き、戦闘は続く | 境界 |
+| TC-FR-CMP-09-05 | FR-CMP-09 / DES-MAP-04 / DES-BTL-02 / UC-06 3a | 主人公（HP 1）が、添字が最後の敵（4）の隣にいる。敵軍の番に、敵（4）だけが主人公を攻撃するように差し替える | `EndPhase`（1 撃目が当たる）。続けて `Act`・`EndPhase` | 出来事は `PhaseStart`（敵軍）→ `Strike` → `Fall`（主人公）→ `Lost` で、自軍の `PhaseStart` を出さない。敵は全員動いたが、ターンは 1 のまま、番は敵軍のまま。以後は `ErrBattleOver` | 境界 |
 
 ### FR-BTL-07（敵の動き方。#10）
 

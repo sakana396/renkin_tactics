@@ -153,9 +153,23 @@ func (b *Battle) fall(events []Event, i int) []Event {
 	return b.emit(events, Event{Kind: EventFall, Unit: i})
 }
 
-// judge は、攻撃が終わるたびに勝ち負けを確かめる（DES-MAP-04）。
-// 勝ち負けの Issue（#9）で作る。今は何もしない。
+// judge は、攻撃が終わるたびに勝ち負けを確かめる（DES-MAP-04、FR-MAP-05、FR-CMP-09）。
+// ボスが倒れていれば勝ち（Won を出す）、主人公が倒れていれば負け（Lost を出す）。
+// 1 回の攻撃で倒れるのは 1 体だけなので、両方が同時に起きることはない。
 func (b *Battle) judge(events []Event) []Event {
+	if b.Result != Ongoing {
+		return events
+	}
+	for _, u := range b.units {
+		switch {
+		case u.Boss && !u.Alive:
+			b.Result = Won
+			return b.emit(events, Event{Kind: EventWon})
+		case u.Lord && !u.Alive:
+			b.Result = Lost
+			return b.emit(events, Event{Kind: EventLost})
+		}
+	}
 	return events
 }
 

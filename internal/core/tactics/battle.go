@@ -21,6 +21,9 @@ type Battle struct {
 	rng *rand.Rand
 	// roll は 0〜99 の乱数を 1 つ引く。テストでは export_test.go から差し替える（DES-RNG-01）。
 	roll func() int
+	// actEnemyOverride は、敵 1 体を動かす処理の差し替え。nil なら actEnemy を使う。
+	// テストだけが export_test.go から設定する。
+	actEnemyOverride func(events []Event, unit int) []Event
 }
 
 // New は Setup を検証し、1 ターン目の自軍の番を始めた戦闘を作る（DES-BTL-01、DES-BTL-02、DES-RNG-01）。

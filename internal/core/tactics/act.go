@@ -4,7 +4,7 @@ package tactics
 //
 // 共通の検証 0〜5 と、行動ごとの検証 6 を順に確かめ、最初に当てはまった誤りを返す。
 // 失敗したら状態を変えない（DES-ERR-01）。
-// Attack は移動してから Target を攻撃する（DES-BTL-06）。
+// Attack は移動してから Target を攻撃する（DES-BTL-06）。UseItem は移動してから Item 番目のアイテムを使う（DES-ITM-01）。
 // 行動のあと、戦闘が続いていて、生きている自軍が全員行動済みなら、敵軍の番と次の自軍の番の始めまでを進める（DES-BTL-02）。
 // 返す出来事は、その間に起きたことすべて（DES-EVT-01）。
 func (b *Battle) Act(cmd Command) ([]Event, error) {
@@ -17,8 +17,9 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 			return nil, err
 		}
 	case UseItem:
-		// アイテム（#9）の Issue で作る。検証 6 もそこで足す。
-		return nil, errNotImplemented
+		if err := b.validateUseItem(cmd); err != nil {
+			return nil, err
+		}
 	}
 
 	// ここから状態を変える。まず移動する。
@@ -35,6 +36,8 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 		events = b.emit(events, Event{Kind: EventWait, Unit: cmd.Unit})
 	case Attack:
 		events = b.attack(events, cmd.Unit, cmd.Target, cmd.To == from)
+	case UseItem:
+		events = b.useItem(events, cmd.Unit, cmd.Item)
 	}
 
 	if b.Result != Ongoing {
@@ -126,7 +129,11 @@ func (b *Battle) runEnemyPhase(events []Event) []Event {
 			return events
 		}
 		if u := b.units[i]; u.Alive && u.Side == Enemy {
-			events = b.actEnemy(events, i)
+			if b.actEnemyOverride != nil {
+				events = b.actEnemyOverride(events, i)
+			} else {
+				events = b.actEnemy(events, i)
+			}
 		}
 	}
 	if b.Result != Ongoing {
@@ -138,14 +145,30 @@ func (b *Battle) runEnemyPhase(events []Event) []Event {
 	return b.startPlayerPhase(events)
 }
 
-// placeReinforcements は、このターンの増援を置く（DES-MAP-03）。
-// 増援の Issue（#9）で作る。今は何もしない。
+// placeReinforcements は、このターンの増援を、増援の定義の順に置く（DES-MAP-03）。
+// 現れるマスに生きているユニットがいれば、その増援は現れない（増援はターンを 1 つだけ持つので、後のターンにも現れない）。
+// 現れた増援はユニットの列の終わりに足し、Reinforce を出す。
 func (b *Battle) placeReinforcements(events []Event) []Event {
+	for _, r := range b.reinforcements {
+		if r.Turn != b.Turn || b.unitAt(r.Unit.Pos) >= 0 {
+			continue
+		}
+		b.units = append(b.units, newUnit(r.Unit))
+		events = b.emit(events, Event{Kind: EventReinforce, Unit: len(b.units) - 1, To: r.Unit.Pos})
+	}
 	return events
 }
 
-// healOnForts は、side の陣営で砦にいるユニットを回復する（DES-MAP-02）。
-// 砦の Issue（#9）で作る。今は何もしない。
+// healOnForts は、side の陣営で砦にいる生きているユニットを、ユニットの添字の順に回復する（DES-MAP-02）。
+// 回復する量は 最大 HP × HealPercent ÷ 100（切り捨て）で、最大 HP を超えない。0 なら Heal を出さない。
 func (b *Battle) healOnForts(events []Event, side Side) []Event {
+	for i := range b.units {
+		u := &b.units[i]
+		pct := b.TerrainAt(u.Pos).HealPercent
+		if !u.Alive || u.Side != side || pct < 1 {
+			continue
+		}
+		events = b.heal(events, i, u.Stats.HP*pct/100, "")
+	}
 	return events
 }
