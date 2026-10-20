@@ -71,7 +71,7 @@ func newSetup(cat *defs.Catalog, mapID string) (tactics.Setup, error) {
 }
 
 // convertTerrain は、マップの行の文字を地形の symbol で地形に変える（DES-CORE-01、DES-DAT-02）。
-// 文字は rune で数える。結果は [y][x] の順。
+// 文字は rune で数え、誤りの「N 文字目」は 1 から数える（defload と同じ）。結果は [y][x] の順。
 func convertTerrain(cat *defs.Catalog, m defs.MapDef) ([][]tactics.Terrain, error) {
 	bySymbol := map[string]tactics.Terrain{}
 	for _, t := range cat.Terrains() {
@@ -90,7 +90,7 @@ func convertTerrain(cat *defs.Catalog, m defs.MapDef) ([][]tactics.Terrain, erro
 		for _, r := range row {
 			t, ok := bySymbol[string(r)]
 			if !ok {
-				return nil, fmt.Errorf("core: マップ %q の rows[%d]: %d 文字目の地形の文字 %q がありません", m.ID, y, x, string(r))
+				return nil, fmt.Errorf("core: マップ %q の rows[%d]: %d 文字目の地形の文字 %q がありません", m.ID, y, x+1, string(r))
 			}
 			line = append(line, t)
 			x++

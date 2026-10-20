@@ -379,7 +379,7 @@ func TestNewBattleErrors(t *testing.T) {
 			m.Enemies[0].Items = []defs.ItemCount{{Item: "elixir", Count: 1}}
 		}, `enemies[0]: アイテム "elixir" がありません`},
 		{"敵の動き方が使えない", func(m *defs.MapDef, _ *[]defs.CharacterDef) { m.Enemies[0].AI = "flee" }, `enemies[0]: 動き方 "flee" は使えません`},
-		{"地形の文字がない", func(m *defs.MapDef, _ *[]defs.CharacterDef) { m.Rows[1] = ".森X" }, `rows[1]: 2 文字目の地形の文字 "X" がありません`},
+		{"地形の文字がない", func(m *defs.MapDef, _ *[]defs.CharacterDef) { m.Rows[1] = ".森X" }, `rows[1]: 3 文字目の地形の文字 "X" がありません`},
 	}
 	for _, tt := range tests {
 		t.Run("TC-FR-UNT-01-05 "+tt.name, func(t *testing.T) {
