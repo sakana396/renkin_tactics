@@ -354,3 +354,48 @@ func TestLoad(t *testing.T) {
 		})
 	}
 }
+
+// TestLoadKeyCase は、大文字・小文字だけが違うキーの扱いが、ほかの知らないキーがあっても変わらないことを確かめる（DES-DAT-03 規則 13、REV-006 N-01）。
+// TOML のライブラリは、大文字・小文字だけが違うキーを定義のキーに対応させて読むので、誤りにしない。
+func TestLoadKeyCase(t *testing.T) {
+	tests := []struct {
+		name  string
+		edits []edit
+		want  []string // 誤りの一覧（過不足なく一致すること）
+	}{
+		{"TC-FR-SYS-04-21 大文字・小文字だけが違うキーだけなら誤りがない",
+			[]edit{replace("terrains.toml", "def = 0\nheal_percent = 0", "def = 0\nHeal_Percent = 0")},
+			nil},
+		{"TC-FR-SYS-04-21 同じファイルに知らないキーがあっても、大文字・小文字だけが違うキーは誤りにしない",
+			[]edit{
+				replace("terrains.toml", "def = 0\nheal_percent = 0", "def = 0\nHeal_Percent = 0"),
+				replace("terrains.toml", "def = 1\nheal_percent = 0", "def = 1\nheal_precent = 0"),
+			},
+			[]string{"terrains.toml: terrains[1].heal_precent: 知らないキーです"}},
+		{"TC-FR-SYS-04-21 大文字・小文字だけが違う表の中の知らないキー",
+			[]edit{replace("characters.toml", "bonus = { hp = 2, str = 1, skl = 1", "Bonus = { hpp = 2, str = 1, skl = 1")},
+			[]string{"characters.toml: characters[0].Bonus.hpp: 知らないキーです"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := baseFS(t)
+			for _, e := range tt.edits {
+				e(t, m)
+			}
+			_, err := defload.Load(m)
+			var got []string
+			if err != nil {
+				var errs defload.Errors
+				if !errors.As(err, &errs) {
+					t.Fatalf("誤りの型が defload.Errors でない: %T", err)
+				}
+				for _, d := range errs {
+					got = append(got, d.Error())
+				}
+			}
+			if strings.Join(got, "\n") != strings.Join(tt.want, "\n") {
+				t.Errorf("誤りの一覧が違う\n得たもの:\n%s\n期待:\n%s", strings.Join(got, "\n"), strings.Join(tt.want, "\n"))
+			}
+		})
+	}
+}

@@ -270,12 +270,19 @@ func decode(fsys fs.FS, name string, v any) (d Diagnostic, ok bool, unknown []Di
 
 // unknownKeys は定義にないキーを、配列の添字を含むキーの道筋で示す（DES-DAT-03 規則 13）。
 // MetaData.Undecoded のキーには配列の添字がないため、TOML を汎用の形で読み直し、型と見比べて道筋を作る。
+// 知らないキーかどうかは Undecoded を正とし、道筋から添字を除いたキーが Undecoded にあるものだけを示す（REV-006 N-01）。
 func unknownKeys(name string, b []byte, v any, undecoded []toml.Key) []Diagnostic {
+	known := make(map[string]bool, len(undecoded))
+	for _, k := range undecoded {
+		known[k.String()] = true
+	}
 	var out []Diagnostic
 	var generic map[string]any
 	if _, err := toml.Decode(string(b), &generic); err == nil {
-		walkUnknown(generic, reflect.TypeOf(v), "", func(path string) {
-			out = append(out, Diagnostic{File: name, Path: path, Reason: "知らないキーです"})
+		walkUnknown(generic, reflect.TypeOf(v), "", nil, func(path string, key toml.Key) {
+			if known[key.String()] {
+				out = append(out, Diagnostic{File: name, Path: path, Reason: "知らないキーです"})
+			}
 		})
 	}
 	if len(out) == 0 {
@@ -288,7 +295,9 @@ func unknownKeys(name string, b []byte, v any, undecoded []toml.Key) []Diagnosti
 }
 
 // walkUnknown は値 x を型 t と見比べ、t にないキーの道筋を report に渡す。
-func walkUnknown(x any, t reflect.Type, path string, report func(string)) {
+// path は配列の添字を含む道筋、key は添字を除いたキー（MetaData.Undecoded と同じ形）。
+// キーとタグの対応は toml と同じく、完全に一致するものを先に、なければ大文字・小文字だけが違うものを使う。
+func walkUnknown(x any, t reflect.Type, path string, key toml.Key, report func(path string, key toml.Key)) {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
@@ -297,11 +306,15 @@ func walkUnknown(x any, t reflect.Type, path string, report func(string)) {
 		if t.Kind() != reflect.Struct {
 			return
 		}
-		fields := map[string]reflect.Type{}
+		type field struct {
+			tag string
+			typ reflect.Type
+		}
+		var fields []field
 		for i := 0; i < t.NumField(); i++ {
 			f := t.Field(i)
 			if tag := f.Tag.Get("toml"); tag != "" {
-				fields[tag] = f.Type
+				fields = append(fields, field{tag, f.Type})
 			}
 		}
 		keys := make([]string, 0, len(val))
@@ -314,26 +327,36 @@ func walkUnknown(x any, t reflect.Type, path string, report func(string)) {
 			if path != "" {
 				p = path + "." + k
 			}
-			ft, ok := fields[k]
-			if !ok {
-				report(p)
+			kk := append(key[:len(key):len(key)], k)
+			var ft reflect.Type
+			for _, f := range fields {
+				if f.tag == k {
+					ft = f.typ
+					break
+				}
+				if ft == nil && strings.EqualFold(f.tag, k) {
+					ft = f.typ
+				}
+			}
+			if ft == nil {
+				report(p, kk)
 				continue
 			}
-			walkUnknown(val[k], ft, p, report)
+			walkUnknown(val[k], ft, p, kk, report)
 		}
 	case []map[string]any:
 		if t.Kind() != reflect.Slice {
 			return
 		}
 		for i, e := range val {
-			walkUnknown(e, t.Elem(), fmt.Sprintf("%s[%d]", path, i), report)
+			walkUnknown(e, t.Elem(), fmt.Sprintf("%s[%d]", path, i), key, report)
 		}
 	case []any:
 		if t.Kind() != reflect.Slice {
 			return
 		}
 		for i, e := range val {
-			walkUnknown(e, t.Elem(), fmt.Sprintf("%s[%d]", path, i), report)
+			walkUnknown(e, t.Elem(), fmt.Sprintf("%s[%d]", path, i), key, report)
 		}
 	}
 }
