@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -215,16 +217,20 @@ func Load(fsys fs.FS) (*defs.Catalog, error) {
 		{FileCharacters, &characters},
 		{FileMaps, &maps},
 	}
+	var unknown Errors
 	for _, f := range files {
-		if d, ok := decode(fsys, f.name, f.v); !ok {
+		d, ok, u := decode(fsys, f.name, f.v)
+		if !ok {
 			errs = append(errs, d)
 		}
+		unknown = append(unknown, u...)
 	}
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	v := &validator{}
+	// 知らないキーがあっても中身は読めているので、意味の検証も続ける（規則 13）。
+	v := &validator{errs: unknown}
 	cat := v.build(game, terrains.Terrains, classes.Classes, weapons.Weapons, items.Items, skills.Skills, characters.Characters, maps.Maps)
 	if len(v.errs) > 0 {
 		return nil, v.errs
@@ -232,29 +238,104 @@ func Load(fsys fs.FS) (*defs.Catalog, error) {
 	return cat, nil
 }
 
-// decode は 1 つのファイルを読んで TOML を v に読み込む（DES-DAT-03 規則 1）。
-func decode(fsys fs.FS, name string, v any) (Diagnostic, bool) {
+// decode は 1 つのファイルを読んで TOML を v に読み込む（DES-DAT-03 規則 1、13）。
+// 読めなければ ok が false で、d に誤りが入る。読めたときは、知らないキーの誤りを unknown に返す。
+func decode(fsys fs.FS, name string, v any) (d Diagnostic, ok bool, unknown []Diagnostic) {
 	b, err := fs.ReadFile(fsys, name)
 	if err != nil {
-		return Diagnostic{File: name, Reason: fmt.Sprintf("ファイルを読めません（%v）", err)}, false
+		return Diagnostic{File: name, Reason: fmt.Sprintf("ファイルを読めません（%v）", err)}, false, nil
 	}
-	if _, err := toml.Decode(string(b), v); err != nil {
+	md, err := toml.Decode(string(b), v)
+	if err != nil {
 		var pe toml.ParseError
 		if errors.As(err, &pe) {
 			msg := pe.Message
 			if msg == "" {
 				msg = pe.Error()
 			}
-			return Diagnostic{File: name, Line: pe.Position.Line, Reason: "TOML の文法の誤り（" + msg + "）"}, false
+			return Diagnostic{File: name, Line: pe.Position.Line, Reason: "TOML の文法の誤り（" + msg + "）"}, false, nil
 		}
 		// 値の型の誤り（文字列を数の欄に書いたなど）は ParseError にならず、行番号が文面にだけ入る。
 		if m := typeErrPattern.FindStringSubmatch(err.Error()); m != nil {
 			line, _ := strconv.Atoi(m[1])
-			return Diagnostic{File: name, Line: line, Reason: "値の型の誤り（" + m[2] + "）"}, false
+			return Diagnostic{File: name, Line: line, Reason: "値の型の誤り（" + m[2] + "）"}, false, nil
 		}
-		return Diagnostic{File: name, Reason: "TOML を読めません（" + err.Error() + "）"}, false
+		return Diagnostic{File: name, Reason: "TOML を読めません（" + err.Error() + "）"}, false, nil
 	}
-	return Diagnostic{}, true
+	if len(md.Undecoded()) > 0 {
+		unknown = unknownKeys(name, b, v, md.Undecoded())
+	}
+	return Diagnostic{}, true, unknown
+}
+
+// unknownKeys は定義にないキーを、配列の添字を含むキーの道筋で示す（DES-DAT-03 規則 13）。
+// MetaData.Undecoded のキーには配列の添字がないため、TOML を汎用の形で読み直し、型と見比べて道筋を作る。
+func unknownKeys(name string, b []byte, v any, undecoded []toml.Key) []Diagnostic {
+	var out []Diagnostic
+	var generic map[string]any
+	if _, err := toml.Decode(string(b), &generic); err == nil {
+		walkUnknown(generic, reflect.TypeOf(v), "", func(path string) {
+			out = append(out, Diagnostic{File: name, Path: path, Reason: "知らないキーです"})
+		})
+	}
+	if len(out) == 0 {
+		// 道筋を作れなかったときは、Undecoded のキーをそのまま示す。
+		for _, k := range undecoded {
+			out = append(out, Diagnostic{File: name, Path: k.String(), Reason: "知らないキーです"})
+		}
+	}
+	return out
+}
+
+// walkUnknown は値 x を型 t と見比べ、t にないキーの道筋を report に渡す。
+func walkUnknown(x any, t reflect.Type, path string, report func(string)) {
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	switch val := x.(type) {
+	case map[string]any:
+		if t.Kind() != reflect.Struct {
+			return
+		}
+		fields := map[string]reflect.Type{}
+		for i := 0; i < t.NumField(); i++ {
+			f := t.Field(i)
+			if tag := f.Tag.Get("toml"); tag != "" {
+				fields[tag] = f.Type
+			}
+		}
+		keys := make([]string, 0, len(val))
+		for k := range val {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			p := k
+			if path != "" {
+				p = path + "." + k
+			}
+			ft, ok := fields[k]
+			if !ok {
+				report(p)
+				continue
+			}
+			walkUnknown(val[k], ft, p, report)
+		}
+	case []map[string]any:
+		if t.Kind() != reflect.Slice {
+			return
+		}
+		for i, e := range val {
+			walkUnknown(e, t.Elem(), fmt.Sprintf("%s[%d]", path, i), report)
+		}
+	case []any:
+		if t.Kind() != reflect.Slice {
+			return
+		}
+		for i, e := range val {
+			walkUnknown(e, t.Elem(), fmt.Sprintf("%s[%d]", path, i), report)
+		}
+	}
 }
 
 // typeErrPattern は toml の値の型の誤りの文面から、行番号と理由を取り出す。
@@ -385,7 +466,7 @@ func (v *validator) build(game gameFile, rt []rawTerrain, rc []rawClass, rw []ra
 		bySymbol[r.Symbol] = t
 	}
 
-	// クラス（規則 2、4、6）。
+	// クラス（規則 2、4。能力の範囲はキャラ・敵でボーナスを足したあとに確かめる）。
 	classes := make([]defs.ClassDef, len(rc))
 	classByID := map[string]defs.ClassDef{}
 	cid := v.ids(FileClasses)
@@ -394,7 +475,6 @@ func (v *validator) build(game gameFile, rt []rawTerrain, rc []rawClass, rw []ra
 		cid.check(p, r.ID)
 		v.oneOf(FileClasses, p+".weapon_type", "武器の種類", r.WeaponType, weaponTypes...)
 		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponType: r.WeaponType, Base: toStats(r.Base)}
-		v.stats(FileClasses, p+".base", c.Base, defs.Stats{})
 		classes[i] = c
 		if _, ok := classByID[r.ID]; !ok {
 			classByID[r.ID] = c
