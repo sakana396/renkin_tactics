@@ -51,6 +51,7 @@
 | TC-FR-SYS-04-18 | FR-SYS-04 / DES-DAT-03 | 本体のデータ | 2 つのファイルに文法の誤りを入れる。3 つのファイルに意味の誤りを入れる | 誤りは 1 つで止まらず、すべてが `defload.Errors` で返る。目録は返らない | 異常 |
 | TC-FR-SYS-04-19 | FR-SYS-04 / DES-DAT-02、DES-DAT-03 | 本体のデータ | `skills.toml` を消す | 誤り `skills.toml: ファイルを読めません（…）` | 異常 |
 | TC-FR-SYS-04-20 | FR-SYS-04 / DES-DAT-03 規則 13 | 本体のデータ | 地形に `heal_precent`、キャラのボーナス（インラインの表）に `hpp`、自軍の配置に `z`、敵（入れ子の配列の表）に `aii`、`game.toml` のいちばん上に `start_mapp` を書く | 誤り `terrains.toml: terrains[1].heal_precent: 知らないキーです`、`characters.toml: characters[0].bonus.hpp: …`、`maps.toml: maps[0].allies[3].z: …`、`maps.toml: maps[0].enemies[0].aii: …`、`game.toml: start_mapp: …` | 異常 |
+| TC-FR-SYS-04-21 | FR-SYS-04 / DES-DAT-03 規則 13 | 本体のデータ | 地形 `plain` に `heal_percent` の代わりに `Heal_Percent`（大文字・小文字だけが違うキー）を書く。それに加えて、同じ `terrains.toml` の `forest` に `heal_precent` を書く。キャラのボーナスを `Bonus = { hpp = 2, … }` にする | `Heal_Percent` だけなら誤りがない。`heal_precent` を足すと、誤りは `terrains.toml: terrains[1].heal_precent: 知らないキーです` だけ（`Heal_Percent` は誤りにしない）。`Bonus` の中は対応させて読み、誤りは `characters.toml: characters[0].Bonus.hpp: 知らないキーです` だけ（REV-006 N-01） | 境界 |
 
 ### FR-BTL-01・FR-BTL-02・FR-BTL-03・FR-MAP-01・NFR-06・NFR-07（戦闘の土台。#6）
 
