@@ -8,8 +8,12 @@
 | 企画 | 要求抽出記録（ヒアリング） | [01_concept/elicitation-notes.md](01_concept/elicitation-notes.md) | 追記中 |
 | 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.3 承認済み |
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
+| 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
+| 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
 | 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.1 承認済み |
+| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.1 承認済み（反復 1 の範囲） |
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.1 承認済み |
+| 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.1 承認済み |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具の行だけ |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
