@@ -190,6 +190,9 @@ func TestReachableFallenUnit(t *testing.T) {
 		if got := b.Reachable(1); got != nil {
 			t.Errorf("Reachable(倒れた) = %v, want nil", got)
 		}
+		if got := b.AttackRange(1, pos(1, 0)); got != nil {
+			t.Errorf("AttackRange(倒れた) = %v, want nil", got)
+		}
 		for _, i := range []int{-1, 4} {
 			if got := b.Reachable(i); got != nil {
 				t.Errorf("Reachable(%d) = %v, want nil", i, got)

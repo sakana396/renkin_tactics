@@ -65,9 +65,9 @@ func (b *Battle) Reachable(unit int) map[Pos]int {
 
 // AttackRange は、ユニット unit が from から武器で攻撃できるマスを返す（DES-BTL-01）。
 // from からのマンハッタン距離が武器の射程（最小〜最大）に入るマップの中のマスを、y、x の小さい順に返す。
-// unit が存在しなければ nil を返す。
+// unit が存在しないか倒れていれば nil を返す（Reachable と同じ）。
 func (b *Battle) AttackRange(unit int, from Pos) []Pos {
-	if !b.validUnit(unit) {
+	if !b.validUnit(unit) || !b.units[unit].Alive {
 		return nil
 	}
 	w := b.units[unit].Weapon

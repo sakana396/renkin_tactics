@@ -138,8 +138,12 @@ func TestActErrors(t *testing.T) {
 // TestActNotImplemented は、Attack・UseItem が検証 0〜5 を通ったあとの扱いを確かめる。
 // 攻撃（#8）とアイテム（#9）の Issue で、それぞれの行動のテストに置き換える。
 func TestActNotImplemented(t *testing.T) {
-	for _, a := range []tactics.Action{tactics.Attack, tactics.UseItem} {
-		t.Run("TC-NFR-07-04 まだ作っていない行動は状態を変えずに誤りを返す", func(t *testing.T) {
+	for _, tc := range []struct {
+		label string
+		a     tactics.Action
+	}{{"Attack", tactics.Attack}, {"UseItem", tactics.UseItem}} {
+		a := tc.a
+		t.Run("TC-NFR-07-04 まだ作っていない行動（"+tc.label+"）は状態を変えずに誤りを返す", func(t *testing.T) {
 			b := errBattle(t, nil)
 			before := snapshot(b)
 			events, err := b.Act(tactics.Command{Unit: 0, To: pos(0, 0), Action: a, Target: 3})
