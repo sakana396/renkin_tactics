@@ -41,16 +41,17 @@ jobs:
         if: steps.changes.outputs.code == 'true'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev libxxf86vm-dev
+          sudo apt-get install -y libgl1-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev libxxf86vm-dev xvfb
       - name: gofmt
         if: steps.changes.outputs.code == 'true'
         run: test -z "$(gofmt -l .)"
       - name: go vet
         if: steps.changes.outputs.code == 'true'
         run: go vet ./...
+      # internal/ui と cmd/renkin のテストは Ebitengine を読み込み、読み込むときに X11 の画面が要るので、仮想の画面で動かす
       - name: go test
         if: steps.changes.outputs.code == 'true'
-        run: go test ./...
+        run: xvfb-run -a go test ./...
       # core の命令網羅率の合計が 80% 未満なら失敗にする（DES-NFR-03、NFR-09）
       - name: core の命令網羅率
         if: steps.changes.outputs.code == 'true'
