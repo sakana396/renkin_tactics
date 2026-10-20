@@ -6,7 +6,7 @@
 |---|---|---|---|
 | 計画 | プロジェクト計画書 | [00_plan/project-plan.md](00_plan/project-plan.md) | v0.1 案 |
 | 企画 | 要求抽出記録（ヒアリング） | [01_concept/elicitation-notes.md](01_concept/elicitation-notes.md) | 追記中 |
-| 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.1 案 |
+| 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.2 案 |
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 案 |
 | 要求 | 要求仕様書 (SRS) | `02_requirements/srs.md` | 未着手 |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
