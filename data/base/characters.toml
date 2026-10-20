@@ -1,0 +1,39 @@
+# 自軍のキャラ（DES-DAT-02、設計書 10.3 節）
+# 能力はクラスの base に bonus を足したもの
+
+[[characters]]
+id = "leon"
+name = "レオン"
+class = "lord"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 0, mov = 0 }
+weapon = "iron_sword"
+items = [{ item = "potion", count = 2 }]
+skill = "inspire"
+lord = true
+
+[[characters]]
+id = "gald"
+name = "ガルド"
+class = "armor"
+bonus = { hp = 2, str = 0, skl = 0, spd = 0, def = 1, mov = 0 }
+weapon = "iron_lance"
+items = [{ item = "potion", count = 1 }]
+skill = "pavise"
+
+[[characters]]
+id = "bran"
+name = "ブラン"
+class = "fighter"
+bonus = { hp = 2, str = 1, skl = 0, spd = 1, def = 0, mov = 0 }
+weapon = "iron_axe"
+items = [{ item = "potion", count = 1 }]
+skill = "wrath"
+
+[[characters]]
+id = "mira"
+name = "ミラ"
+class = "archer"
+bonus = { hp = 0, str = 0, skl = 2, spd = 1, def = 0, mov = 0 }
+weapon = "iron_bow"
+items = [{ item = "potion", count = 1 }]
+skill = "snipe"

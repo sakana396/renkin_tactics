@@ -28,11 +28,11 @@
 | FR-ITM-01 | #8 | DES-BTL-05、DES-ITM-01 | — | — | 未着手 |
 | FR-ITM-02 | #9 | DES-ITM-01 | — | — | 未着手 |
 | FR-ITM-03 | #9、#11 | DES-ITM-01、DES-DAT-01、DES-CORE-01（反復 1 は初めから持つだけ。一部） | — | — | 未着手 |
-| FR-SYS-03 | #5、#11 | DES-DAT-01、DES-DAT-02、DES-CORE-01 | — | — | 未着手 |
-| FR-SYS-04 | #5、#12 | DES-DAT-03、DES-CMD-01 | — | — | 未着手 |
+| FR-SYS-03 | #5、#11 | DES-DAT-01、DES-DAT-02、DES-CORE-01 | TC-FR-SYS-03-01〜02 | `internal/defs`、`internal/defload`、`data` | 一部実装（#5） |
+| FR-SYS-04 | #5、#12 | DES-DAT-03、DES-CMD-01 | TC-FR-SYS-04-01〜19 | `internal/defload` | 一部実装（#5） |
 | IF-01 | #12 | DES-UI-02 | — | — | 未着手 |
 | IF-02 | #12 | DES-UI-01 | — | — | 未着手 |
-| IF-03 | #5 | DES-DAT-02、ADR-0003 | — | — | 未着手 |
+| IF-03 | #5 | DES-DAT-02、ADR-0003 | TC-IF-03-01〜02 | `data`、`internal/defload` | 実装済み |
 | NFR-03 | #7 | DES-NFR-02 | — | — | 未着手 |
 | NFR-04 | #7 | DES-NFR-01 | — | — | 未着手 |
 | NFR-05 | #7 | DES-NFR-01 | — | — | 未着手 |

@@ -1,0 +1,115 @@
+# マップ（DES-DAT-02、設計書 10.4 節）
+# rows の 1 文字が 1 マス（地形の symbol）。座標は左上が (0, 0) で、x は右、y は下に増える
+# ai は charge（突っ込む）・hold（待ち構える）のどれか
+
+[[maps]]
+id = "ch01"
+name = "国境の砦"
+rows = [
+  "^^^^^^..FFF..^^^", # y 0
+  "^^^^...FF....T^^", # y 1
+  "^^.....F....###.", # y 2
+  ".....FF.....#...", # y 3
+  "..T..F......#...", # y 4
+  "....FF..^^......", # y 5
+  ".......^^^..FF..", # y 6
+  "..FF....^...FF..", # y 7
+  "..FF.........T..", # y 8
+  ".....^^.........", # y 9
+  "....^^^..FF.....", # y 10
+  ".........FF..^^.", # y 11
+  "..FF............", # y 12
+  "..FF...^^.......", # y 13
+  "........^.......", # y 14
+  "................", # y 15
+]
+allies = [
+  { character = "leon", x = 1, y = 14 },
+  { character = "gald", x = 2, y = 13 },
+  { character = "bran", x = 3, y = 14 },
+  { character = "mira", x = 1, y = 15 },
+]
+
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+ai = "charge"
+x = 6
+y = 10
+
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+ai = "hold"
+x = 7
+y = 4
+
+[[maps.enemies]]
+class = "myrmidon"
+weapon = "iron_sword"
+ai = "hold"
+x = 9
+y = 8
+
+[[maps.enemies]]
+class = "myrmidon"
+weapon = "iron_sword"
+ai = "hold"
+x = 11
+y = 3
+
+[[maps.enemies]]
+class = "fighter"
+weapon = "iron_axe"
+ai = "charge"
+x = 10
+y = 11
+
+# 砦の上
+[[maps.enemies]]
+class = "fighter"
+weapon = "iron_axe"
+ai = "hold"
+x = 13
+y = 8
+
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+ai = "hold"
+x = 12
+y = 7
+
+# ボス（砦の上）
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 8, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+boss = true
+x = 13
+y = 1
+
+[[maps.reinforcements]]
+turn = 3
+class = "fighter"
+weapon = "iron_axe"
+ai = "charge"
+x = 0
+y = 3
+
+[[maps.reinforcements]]
+turn = 3
+class = "soldier"
+weapon = "iron_lance"
+ai = "charge"
+x = 0
+y = 4
+
+[[maps.reinforcements]]
+turn = 5
+class = "myrmidon"
+weapon = "iron_sword"
+ai = "charge"
+x = 15
+y = 15
