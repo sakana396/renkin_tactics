@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # 文書（docs/ と .md）だけの変更なら、Go の検査を省く。main への push では常に行う
+      - name: 変更の種類を調べる
+        id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # 名前の変更は元の名前も出す（.go を .md に変えたときに検査を省かないため）
+          files=$(git diff --name-only --no-renames "origin/$BASE_REF...HEAD")
+          echo "$files"
+          # testdata の .md はテストの入力なので、コードとして扱う
+          if echo "$files" | grep -qvE '^docs/|\.md$' || echo "$files" | grep -q '/testdata/'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "文書だけの変更なので、gofmt・go vet・go test を省く"
+          fi
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Ebitengine のビルドに必要なパッケージ
+        if: steps.changes.outputs.code == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev libxxf86vm-dev
+      - name: gofmt
+        if: steps.changes.outputs.code == 'true'
+        run: test -z "$(gofmt -l .)"
+      - name: go vet
+        if: steps.changes.outputs.code == 'true'
+        run: go vet ./...
+      - name: go test
+        if: steps.changes.outputs.code == 'true'
+        run: go test ./...
+      # テスト仕様書とトレーサビリティを読むので、文書だけの変更でも行う
+      - name: テストケース ID の整合
+        run: go run ./tools/tccheck
