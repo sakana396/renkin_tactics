@@ -28,7 +28,3 @@ var (
 	// ErrInvalidSetup は、Setup が正しくないことを表す（New だけ）。
 	ErrInvalidSetup = errors.New("tactics: 戦闘の入力が正しくありません")
 )
-
-// errNotImplemented は、まだ作っていない行動（UseItem）を表す。
-// アイテム（#9）の Issue で取り除く。
-var errNotImplemented = errors.New("tactics: この行動はまだ作っていません")
