@@ -1,7 +1,7 @@
 # 設計書（反復 1: プロトタイプ）
 
 - 文書 ID: DES-IT01
-- 版: 0.1（開発者が承認、E-19）
+- 版: 0.2（開発者が承認。REV-006）
 - 作成日: 2026-10-20
 - 対象: [反復 1 計画書](../iterations/it01/plan.md) の範囲
 - 入力: [SRS-001](../02_requirements/srs.md) v0.1、[ユースケース](../02_requirements/use-cases.md)、[ADR-0001](../adr/0001-tech-stack.md)、[ADR-0002](../adr/0002-return-to-fushigi.md)、[ADR-0003](../adr/0003-definition-data-format.md)、E-13〜E-18
@@ -65,6 +65,7 @@ classDiagram
   class Catalog {
     +Game GameDef
     +Terrain(id) TerrainDef, bool
+    +Terrains() []TerrainDef
     +Class(id) ClassDef, bool
     +Weapon(id) WeaponDef, bool
     +Item(id) ItemDef, bool
@@ -265,6 +266,7 @@ y = 3
 | 10 | 自軍の配置に、`lord = true` のキャラがちょうど 1 人いる。同じキャラを 2 回置かない |
 | 11 | 敵の配置に、`boss = true` がちょうど 1 体いる（増援はボスになれない） |
 | 12 | 増援の `turn` は 2 以上 |
+| 13 | 定義にないキーを書かない（書き間違いを見つけるため） |
 
 - 意味の誤りの位置は、キーの道筋で示す（例: `characters.toml: characters[2].class: クラス "knight" がありません`）（ADR-0003）
 - `cmd/renkin` は、誤りがあれば全部を表示して終了する（UC-01 2a）
@@ -809,3 +811,4 @@ y 0  ^^^^^^..FFF..^^^
 | 版 | 日付 | 内容 |
 |---|---|---|
 | 0.1 | 2026-10-20 | 初版。E-13〜E-17 の決定を反映した。REV-004 の指摘と E-18 を反映した。開発者が承認した（E-19） |
+| 0.2 | 2026-10-20 | 2.1 節のクラス図に Catalog.Terrains() を、2.3 節に規則 13（知らないキー）を足した（REV-006、開発者の承認） |

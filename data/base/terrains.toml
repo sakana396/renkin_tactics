@@ -1,0 +1,47 @@
+# 地形（DES-DAT-02、設計書 10.2 節）
+# cost が 0 の地形は通れない。heal_percent は回復の割合（最大 HP の %）
+
+[[terrains]]
+id = "plain"
+name = "平地"
+symbol = "."
+cost = 1
+avoid = 0
+def = 0
+heal_percent = 0
+
+[[terrains]]
+id = "forest"
+name = "森"
+symbol = "F"
+cost = 2
+avoid = 20
+def = 1
+heal_percent = 0
+
+[[terrains]]
+id = "mountain"
+name = "山"
+symbol = "^"
+cost = 3
+avoid = 30
+def = 2
+heal_percent = 0
+
+[[terrains]]
+id = "fort"
+name = "砦"
+symbol = "T"
+cost = 1
+avoid = 20
+def = 2
+heal_percent = 20
+
+[[terrains]]
+id = "wall"
+name = "壁"
+symbol = "#"
+cost = 0
+avoid = 0
+def = 0
+heal_percent = 0

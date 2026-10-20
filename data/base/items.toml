@@ -1,0 +1,6 @@
+# アイテム（DES-DAT-02、設計書 10.2 節）
+
+[[items]]
+id = "potion"
+name = "回復薬"
+heal = 10

@@ -1,0 +1,29 @@
+# スキル（DES-DAT-02、設計書 3.7 節）
+# effect は inspire・pavise・wrath・snipe のどれか。働き方はコードで決め、数値をここに書く
+# 効果の種類ごとに使わない数値は書かない（0 になる）
+
+[[skills]]
+id = "inspire"
+name = "鼓舞"
+effect = "inspire"
+range = 2
+hit = 10
+avoid = 10
+
+[[skills]]
+id = "pavise"
+name = "大盾"
+effect = "pavise"
+chance = 30
+
+[[skills]]
+id = "wrath"
+name = "怒り"
+effect = "wrath"
+multiplier = 3
+
+[[skills]]
+id = "snipe"
+name = "狙撃"
+effect = "snipe"
+hit = 20

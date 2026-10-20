@@ -20,6 +20,35 @@
 
 ### FR-SYS-03・FR-SYS-04・IF-03（定義データ。#5。FR-SYS-03 は #11、FR-SYS-04 は #12 も）
 
+テストコードは `internal/defload` にある。FR-SYS-04 のケースは、本体のデータ（`data/base/`）を写して一部を書き換えたものを `defload.Load` に渡す。期待結果の「誤り」は、`defload.Errors` の 1 つの要素の文面（`ファイル名: 位置: 理由`）に含まれることを確かめる。キーの道筋の添字は 0 から数える。
+
+| ID | 対象 | 前提 | 入力・操作 | 期待結果 | 種別 |
+|---|---|---|---|---|---|
+| TC-FR-SYS-03-01 | FR-SYS-03 / DES-DAT-01、DES-DAT-02、設計書 10 章・3.7 節 | 本体のデータ | `defload.Load(data.Base())` | 誤りがない。始めるマップ、地形・クラス・武器・アイテム・スキル・キャラ・マップ（配置・増援）の値が 10 章と 3.7 節のとおり。キャラとボスの能力（クラス＋ボーナス）が 10.3・10.4 節の「能力」と一致する | 正常 |
+| TC-FR-SYS-03-02 | FR-SYS-03 / DES-DAT-01 | 本体のデータを読み込んだ目録 | 目録にない ID（空の ID を含む）で地形・クラス・武器・アイテム・スキル・キャラ・マップを引く | どれも「ない」（`false`）が返る。ある ID なら定義が返る | 異常 |
+| TC-IF-03-01 | IF-03 / DES-DAT-02、ADR-0003 | 本体のデータ | `data.Base()` のファイルの一覧と中身を見る | 2.2 節の 8 ファイル（`*.toml`）があり、どれも UTF-8 のテキスト | 正常 |
+| TC-IF-03-02 | IF-03 / DES-DAT-02、ADR-0003 | 本体のデータを読み込んだ目録 | マップ `ch01` の行を見る | 1 行が 1 つの文字列で、10.4 節の図と同じ。(13, 1)・(13, 8) の文字が砦 | 正常 |
+| TC-FR-SYS-04-01 | FR-SYS-04 / DES-DAT-03 規則 1 | 本体のデータ | `items.toml` の 6 行目を `heal = = 10`（文法の誤り）、または `heal = "ten"`（値の型の誤り）にする | 誤り `items.toml: 6 行目: …` | 異常 |
+| TC-FR-SYS-04-02 | FR-SYS-04 / DES-DAT-03 規則 2 | 本体のデータ | 武器の ID を重ねる。スキルの ID を空にする。ID のないアイテムを足す | 誤り `weapons.toml: weapons[1].id: ID "iron_sword" が重なっています（weapons[0] と同じ）`、`skills[3].id: ID が空です`、`items[1].id: ID が空です` | 異常 |
+| TC-FR-SYS-04-03 | FR-SYS-04 / DES-DAT-03 規則 3 | 本体のデータ | キャラのクラス、敵の武器、手持ちのアイテム、自軍の配置のキャラ、キャラのスキル、マップの地形の文字、始めるマップを、ない ID・文字にする。キャラのスキルを空にする | それぞれ誤り（例 `characters.toml: characters[2].class: クラス "knight" がありません`、`maps.toml: maps[0].rows[15]: 15 文字目の地形の文字 "X" がありません`、`game.toml: start_map: マップ "ch99" がありません`）。スキルが空なら誤りがない | 異常 |
+| TC-FR-SYS-04-04 | FR-SYS-04 / DES-DAT-03 規則 4 | 本体のデータ | 武器の種類を `spear`、クラスの武器の種類を `gun`、スキルの効果を `shield`、敵の動き方を `flee` にする | それぞれ誤り（例 `weapons.toml: weapons[2].type: 武器の種類 "spear" は使えません（sword・lance・axe・bow のどれか）`） | 異常 |
+| TC-FR-SYS-04-05 | FR-SYS-04 / DES-DAT-03 規則 5 | 本体のデータ | レオン（ロード、剣）に鉄の斧を持たせる。増援の剣士に鉄の弓を持たせる | 誤り `characters.toml: characters[0].weapon: 武器 "iron_axe" の種類 axe が、クラス "lord" の武器の種類 sword と違います`、`maps[0].reinforcements[2].weapon: …` | 異常 |
+| TC-FR-SYS-04-06 | FR-SYS-04 / DES-DAT-03 規則 6 | 本体のデータ | ボーナスを足した HP を 0、移動を -1 にする。クラスの HP を 0 にする（ボーナスのない敵の、足したあとの HP が 0 になる）。武器の威力・命中を -1、最小の射程を 0、最小 3・最大 2 にする。アイテムの回復・数を 0 にする。スキルの範囲・命中・回避を -1、確率を 101 と -1、怒りの倍率を 0、怒りでない倍率を -1 にする。地形の費用・回避・守備を -1、回復の割合を 101 と -1 にする | それぞれのキーの道筋で誤り（例 `characters.toml: characters[3].bonus.hp: 能力（クラス 17 ＋ ボーナス -17 ＝ 0）は 1 以上にしてください`、`skills.toml: skills[1].chance: 0 以上 100 以下にしてください（101）`、`maps.toml: maps[0].enemies[2].bonus.hp: 能力（クラス 0 ＋ ボーナス 0 ＝ 0）は 1 以上にしてください`）。クラスの `base` だけでは確かめない | 異常 |
+| TC-FR-SYS-04-07 | FR-SYS-04 / DES-DAT-03 規則 6 | 本体のデータ | 範囲の端の値にする: ボーナスを足した能力を HP 1・ほか 0、武器の威力・命中 0、回復 1、確率 100、スキルの範囲・命中・回避 0、怒りの倍率 1、回復の割合 100 | 誤りがない | 境界 |
+| TC-FR-SYS-04-08 | FR-SYS-04 / DES-DAT-03 規則 7 | 本体のデータ | 地形の文字を `FF`（2 文字）、空、ほかの地形と同じ文字にする | 誤り `terrains.toml: terrains[1].symbol: 地形の文字 "FF" は 1 文字にしてください（2 文字）`、`(0 文字)`、`地形の文字 "F" が重なっています（terrains[1] と同じ）` | 異常 |
+| TC-FR-SYS-04-09 | FR-SYS-04 / DES-DAT-03 規則 7 | 本体のデータ | 文字が `森`（複数バイトで 1 rune）の地形を足し、マップの行に使う | 誤りがない | 境界 |
+| TC-FR-SYS-04-10 | FR-SYS-04 / DES-DAT-03 規則 8 | 本体のデータ | `ch01` の最後の行を 15 文字にする | 誤り `maps.toml: maps[0].rows[15]: 行の長さ 15 が、rows[0] の長さ 16 と違います` | 異常 |
+| TC-FR-SYS-04-11 | FR-SYS-04 / DES-DAT-03 規則 8 | 本体のデータ | `ch01` の行を 17 行にする。行が 0 行、長さ 17 の行、長さ 0 の行のマップを足す | 誤り `maps[0].rows: 行の数 17 は 1 以上 16 以下にしてください`、`行の数 0 …`、`maps[1].rows[0]: 行の長さ 17 …`、`行の長さ 0 …` | 境界 |
+| TC-FR-SYS-04-12 | FR-SYS-04 / DES-DAT-03 規則 8 | 本体のデータ（`ch01` は 16 行 × 16 文字） | 1 行 2 マスのマップ、rune で 16 文字（複数バイトの文字を含む）の行のマップを足す | 誤りがない | 境界 |
+| TC-FR-SYS-04-13 | FR-SYS-04 / DES-DAT-03 規則 9 | 本体のデータ | 増援を (16, 15)、自軍を (1, -1) に置く。敵と増援を壁 (12, 3) に置く。敵を自軍と同じ (1, 14) に置く | 誤り `maps[0].reinforcements[2]: 座標 (16, 15) がマップの外です`、`maps[0].enemies[3]: 座標 (12, 3) の地形 "wall" は通れません`、`maps[0].reinforcements[2]: 座標 (12, 3) の地形 "wall" は通れません`、`maps[0].enemies[6]: 座標 (1, 14) が maps[0].allies[0] と重なっています` など | 異常 |
+| TC-FR-SYS-04-14 | FR-SYS-04 / DES-DAT-03 規則 9 | 本体のデータ | 増援を自軍の初めの配置と同じ (1, 15) に置く | 誤りがない（重なりを調べるのは初めの配置どうしだけ） | 境界 |
+| TC-FR-SYS-04-15 | FR-SYS-04 / DES-DAT-03 規則 10 | 本体のデータ | 自軍の配置からレオンを除く。ガルドも `lord = true` にする。ミラの代わりにガルドを 2 回置く | 誤り `maps[0].allies: lord = true のキャラを、ちょうど 1 人置いてください（0 人）`、`（2 人）`、`maps[0].allies[3].character: キャラ "gald" を 2 回置いています（maps[0].allies[1] と同じ）` | 異常 |
+| TC-FR-SYS-04-16 | FR-SYS-04 / DES-DAT-03 規則 11 | 本体のデータ | ボスをなくす。アーチャーもボスにする。増援をボスにする | 誤り `maps[0].enemies: boss = true の敵を、ちょうど 1 体置いてください（0 体）`、`（2 体）`、`maps[0].reinforcements[2].boss: 増援はボスになれません` | 異常 |
+| TC-FR-SYS-04-17 | FR-SYS-04 / DES-DAT-03 規則 12 | 本体のデータ | 増援の `turn` を 1、2 にする | 1 なら誤り `maps[0].reinforcements[2].turn: 2 以上にしてください（1）`。2 なら誤りがない | 境界 |
+| TC-FR-SYS-04-18 | FR-SYS-04 / DES-DAT-03 | 本体のデータ | 2 つのファイルに文法の誤りを入れる。3 つのファイルに意味の誤りを入れる | 誤りは 1 つで止まらず、すべてが `defload.Errors` で返る。目録は返らない | 異常 |
+| TC-FR-SYS-04-19 | FR-SYS-04 / DES-DAT-02、DES-DAT-03 | 本体のデータ | `skills.toml` を消す | 誤り `skills.toml: ファイルを読めません（…）` | 異常 |
+| TC-FR-SYS-04-20 | FR-SYS-04 / DES-DAT-03 規則 13 | 本体のデータ | 地形に `heal_precent`、キャラのボーナス（インラインの表）に `hpp`、自軍の配置に `z`、敵（入れ子の配列の表）に `aii`、`game.toml` のいちばん上に `start_mapp` を書く | 誤り `terrains.toml: terrains[1].heal_precent: 知らないキーです`、`characters.toml: characters[0].bonus.hpp: …`、`maps.toml: maps[0].allies[3].z: …`、`maps.toml: maps[0].enemies[0].aii: …`、`game.toml: start_mapp: …` | 異常 |
+
 ### FR-BTL-01・FR-BTL-02・FR-BTL-03・FR-MAP-01・NFR-06・NFR-07（戦闘の土台。#6）
 
 テストは `internal/core/tactics` の `*_test.go` にあり、小さな `Setup` を Go のコードで組み立てる（定義データに依存しない）。盤面の図の `.` は平地（費用 1）、`F` は森（費用 2）、`#` は壁（費用 0）。
