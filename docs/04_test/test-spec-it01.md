@@ -93,9 +93,9 @@
 
 ### NFR-03・NFR-04・NFR-05・NFR-09（非機能の検査。#7）
 
-NFR-04・NFR-05 のテストコードは `internal/core/deps_test.go` にある。実際のパッケージは `go list -json ./...`（`internal/core` 以下）で直接の import を、`go list std` で標準ライブラリの一覧を得て調べる。ほかのケースは、import の一覧を Go のコードで組み立てて、判定の関数に渡す。Ebitengine は `github.com/hajimehoshi/ebiten` で始まる import とする。
+NFR-04・NFR-05 のテストコードは `internal/core/deps_test.go` にある。実際のパッケージは `go list -json ./...`（`internal/core` 以下）で直接の import を、`go list std` で標準ライブラリの一覧を得て調べる。ほかのケースは、import の一覧を Go のコードで組み立てて、判定の関数に渡す。Ebitengine は `github.com/hajimehoshi/ebiten` で始まる import とする。`go test` のキャッシュは、テストの中から起動した `go list` が読んだソースを追わない（`internal/core` の下にパッケージを足しても、`(cached)` で前の結果が出る）ので、手もとでは `go test -count=1` で実行する（CI は毎回まっさらな環境なので影響しない）。
 
-NFR-03・NFR-09 は、CI（`.github/workflows/ci.yml`）の手順で確かめる（対象の列に「CI」と書いた）。テストコードはなく、tccheck では「テストコードにありません」の警告になる。結果は、プルリクエストと `main` への push ごとの CI の記録に残る。Windows 11 と Linux で起動して遊べること（NFR-03 の D）は、画面ができてから手で確かめる（#7 の範囲外）。
+NFR-03・NFR-09 は、CI（`.github/workflows/ci.yml`）の手順で確かめる（対象の列に「CI」と書いた）。ただし、網羅率が 80% 未満で失敗する側（TC-NFR-09-02）は、ふだんの CI では起きないので、CI の手順の判定式を手で動かして確かめる（対象の列に「手動。CI の判定式」と書いた）。どれもテストコードはなく、tccheck では「テストコードにありません」の警告になる。CI のケースの結果は、プルリクエストと `main` への push ごとの CI の記録に残る。手動のケースの結果は、その Issue のレビュー記録（`docs/reviews/`）に残す。Windows 11 と Linux で起動して遊べること（NFR-03 の D）は、画面ができてから手で確かめる（#7 の範囲外）。
 
 | ID | 対象 | 前提 | 入力・操作 | 期待結果 | 種別 |
 |---|---|---|---|---|---|
@@ -109,7 +109,7 @@ NFR-03・NFR-09 は、CI（`.github/workflows/ci.yml`）の手順で確かめる
 | TC-NFR-05-02 | NFR-05 / DES-NFR-01 | — | core が `example.com/time`、`runtime` を、`tactics` が `runtime` を import する | 違反はない（`time` と同じ名前のときだけ違反にする） | 境界 |
 | TC-NFR-05-03 | NFR-05 / DES-NFR-01 | — | core と `tactics` が `time` を import する | 2 つとも `time` の違反になる | 異常 |
 | TC-NFR-09-01 | NFR-09 / DES-NFR-03（CI） | TC-NFR-03-01 と同じ | CI の手順「core の命令網羅率」で `go test -coverprofile` を `./internal/core/...` に行い、`go tool cover -func` の `total` を読む | 合計が 80% 以上なら手順が成功になる | 正常 |
-| TC-NFR-09-02 | NFR-09 / DES-NFR-03（CI） | TC-NFR-03-01 と同じ | TC-NFR-09-01 の合計が 80% 未満、または読めない | 手順が失敗になり、CI が失敗する（80.0% は成功、79.9% は失敗） | 境界 |
+| TC-NFR-09-02 | NFR-09 / DES-NFR-03（手動。CI の判定式） | — | CI の手順「core の命令網羅率」の判定式（`awk -v t="$total" 'BEGIN { exit !(t != "" && t + 0 >= 80) }'`）に、`total` として 79.9・80.0・空を渡して終了コードを見る | 79.9 と空は失敗（終了コード 1）、80.0 は成功（終了コード 0）。失敗のとき、手順と CI が失敗になる | 境界 |
 
 ### FR-BTL-04・FR-BTL-05・FR-BTL-06・FR-BTL-08・FR-UNT-07・FR-ITM-01（攻撃。#8。FR-BTL-08 は #13 も）
 

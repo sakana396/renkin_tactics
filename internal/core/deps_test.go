@@ -63,6 +63,10 @@ func goList(t *testing.T, args ...string) []byte {
 }
 
 // corePackages は internal/core 以下の各パッケージと、その直接の import を go list で得る（DES-NFR-01）。
+//
+// go test のキャッシュは、テストの中から起動した go list が読んだソースを追わない。
+// internal/core の下にパッケージを足しても (cached) で前の結果が出るので、
+// 手もとでは go test -count=1 で実行する（CI は毎回まっさらな環境なので影響しない）。
 func corePackages(t *testing.T) []pkgImports {
 	t.Helper()
 	// テストの作業ディレクトリは internal/core なので、./... は internal/core 以下を指す。
