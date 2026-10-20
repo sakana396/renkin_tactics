@@ -90,6 +90,15 @@ func baseSetup() tactics.Setup {
 	}
 }
 
+// quietSetup は baseSetup の敵 (4, 0) を、移動 1 の待ち構える敵にする。
+// 敵が移動できる (3, 0)・(4, 1) の隣に自軍が来なければ、攻撃の候補がなく、敵軍の番に敵は動かない（DES-AI-01）。
+func quietSetup() tactics.Setup {
+	s := baseSetup()
+	s.Units[3].AI = tactics.Hold
+	s.Units[3].Stats.Mov = 1
+	return s
+}
+
 // mustNew は誤りのない戦闘を作る。
 func mustNew(t *testing.T, s tactics.Setup) *tactics.Battle {
 	t.Helper()
