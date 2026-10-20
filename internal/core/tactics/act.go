@@ -2,20 +2,26 @@ package tactics
 
 // Act は自軍のユニット 1 体を移動させ、行動させる（DES-BTL-04）。
 //
-// 共通の検証 0〜5 を順に確かめ、最初に当てはまった誤りを返す。失敗したら状態を変えない（DES-ERR-01）。
-// 行動のあと、生きている自軍が全員行動済みなら、敵軍の番と次の自軍の番の始めまでを進める（DES-BTL-02）。
+// 共通の検証 0〜5 と、行動ごとの検証 6 を順に確かめ、最初に当てはまった誤りを返す。
+// 失敗したら状態を変えない（DES-ERR-01）。
+// Attack は移動してから Target を攻撃する（DES-BTL-06）。
+// 行動のあと、戦闘が続いていて、生きている自軍が全員行動済みなら、敵軍の番と次の自軍の番の始めまでを進める（DES-BTL-02）。
 // 返す出来事は、その間に起きたことすべて（DES-EVT-01）。
 func (b *Battle) Act(cmd Command) ([]Event, error) {
 	if err := b.validateCommand(cmd); err != nil {
 		return nil, err
 	}
 	switch cmd.Action {
-	case Attack, UseItem:
-		// 攻撃（#8）とアイテム（#9）の Issue で作る。検証 6 もそこで足す。
+	case Attack:
+		if err := b.validateAttack(cmd); err != nil {
+			return nil, err
+		}
+	case UseItem:
+		// アイテム（#9）の Issue で作る。検証 6 もそこで足す。
 		return nil, errNotImplemented
 	}
 
-	// ここから状態を変える。Wait は移動するだけ。
+	// ここから状態を変える。まず移動する。
 	var events []Event
 	u := &b.units[cmd.Unit]
 	from := u.Pos
@@ -24,8 +30,16 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 		events = b.emit(events, Event{Kind: EventMove, Unit: cmd.Unit, From: from, To: cmd.To})
 	}
 	u.Acted = true
-	events = b.emit(events, Event{Kind: EventWait, Unit: cmd.Unit})
+	switch cmd.Action {
+	case Wait:
+		events = b.emit(events, Event{Kind: EventWait, Unit: cmd.Unit})
+	case Attack:
+		events = b.attack(events, cmd.Unit, cmd.Target, cmd.To == from)
+	}
 
+	if b.Result != Ongoing {
+		return events, nil
+	}
 	if b.allPlayersActed() {
 		events = b.runEnemyPhase(events)
 	}
