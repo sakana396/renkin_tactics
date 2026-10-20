@@ -34,7 +34,7 @@ func heals(events []tactics.Event) []heal {
 // TestUseItem は、移動してからアイテムを使う流れを確かめる（DES-BTL-04、DES-ITM-01）。
 func TestUseItem(t *testing.T) {
 	t.Run("TC-FR-BTL-03-07 移動してからアイテムを使い、全員が行動したら敵軍の番に進む", func(t *testing.T) {
-		b := mustNew(t, baseSetup())
+		b := mustNewStill(t, baseSetup())
 		b.SetHP(0, 5)
 		b.SetHP(1, 19)
 		noRolls(t, b)
@@ -161,7 +161,7 @@ func TestUseItem(t *testing.T) {
 	})
 
 	t.Run("TC-FR-ITM-03-02 初めから持つ回復薬を使い切ると、手持ちから消えて使えなくなる", func(t *testing.T) {
-		b := mustNew(t, baseSetup())
+		b := mustNewStill(t, baseSetup())
 		for turn := 1; turn <= 2; turn++ {
 			b.SetHP(0, 5)
 			mustAct(t, b, tactics.Command{Unit: 0, To: pos(0, 0), Action: tactics.UseItem, Item: 0})

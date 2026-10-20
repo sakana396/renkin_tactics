@@ -18,6 +18,15 @@ func mustEndPhase(t *testing.T, b *tactics.Battle) []tactics.Event {
 	return events
 }
 
+// mustNewStill は、敵軍の番に敵が何もしない戦闘を作る。
+// 敵軍の番の始めと終わりだけを確かめるテストで使い、敵の動き方（DES-AI-01）に左右されないようにする。
+func mustNewStill(t *testing.T, s tactics.Setup) *tactics.Battle {
+	t.Helper()
+	b := mustNew(t, s)
+	b.SetEnemyTarget(func(int) int { return -1 })
+	return b
+}
+
 // ev は出来事の比べる部分（種類、陣営、ターン、ユニット、マス、量、アイテム）。
 type ev struct {
 	Kind   tactics.EventKind
@@ -74,7 +83,7 @@ func fortSetup() tactics.Setup {
 // TestFort は砦の回復を確かめる（DES-MAP-02）。
 func TestFort(t *testing.T) {
 	t.Run("TC-FR-MAP-03-01 砦にいるユニットは自分の陣営の番の始めに回復する", func(t *testing.T) {
-		b := mustNew(t, fortSetup())
+		b := mustNewStill(t, fortSetup())
 		b.SetHP(0, 10)
 		b.SetHP(1, 10)
 		b.SetHP(3, 10)
@@ -114,7 +123,7 @@ func TestFort(t *testing.T) {
 				// 味方を砦 (0, 4) に置く。
 				s.Units[1].Pos = pos(0, 4)
 				s.Units[1].Stats.HP = tt.maxHP
-				b := mustNew(t, s)
+				b := mustNewStill(t, s)
 				b.SetHP(1, tt.hp)
 				if tt.kill {
 					b.KillUnit(1)
@@ -133,7 +142,7 @@ func TestReinforcements(t *testing.T) {
 	t.Run("TC-FR-MAP-03-03 増援はそのターンの敵軍の番の始めに現れる", func(t *testing.T) {
 		s := baseSetup()
 		s.Reinforcements = []tactics.ReinforcementSetup{{Turn: 2, Unit: foe("増援", 2, 2)}}
-		b := mustNew(t, s)
+		b := mustNewStill(t, s)
 
 		events := mustEndPhase(t, b)
 		assertEqual(t, "1 ターン目", evs(events), []ev{phaseStart(tactics.Enemy, 1), phaseStart(tactics.Player, 2)})
@@ -189,7 +198,7 @@ func TestReinforcements(t *testing.T) {
 			{Turn: 2, Unit: foe("増援 1", 2, 2)},
 			{Turn: 2, Unit: foe("増援 2", 2, 2)},
 		}
-		b := mustNew(t, s)
+		b := mustNewStill(t, s)
 		mustEndPhase(t, b)
 		events := mustEndPhase(t, b)
 		assertEqual(t, "2 ターン目", evs(events), []ev{
@@ -207,7 +216,7 @@ func TestReinforcements(t *testing.T) {
 	t.Run("TC-FR-MAP-03-06 倒れたユニットのいたマスには増援が現れる", func(t *testing.T) {
 		s := baseSetup()
 		s.Reinforcements = []tactics.ReinforcementSetup{{Turn: 2, Unit: foe("増援", 0, 4)}}
-		b := mustNew(t, s)
+		b := mustNewStill(t, s)
 		b.KillUnit(1)
 		mustEndPhase(t, b)
 		events := mustEndPhase(t, b)
@@ -223,7 +232,7 @@ func TestReinforcements(t *testing.T) {
 			{Turn: 2, Unit: foe("増援 A", 3, 3)},
 			{Turn: 2, Unit: foe("増援 B", 1, 1)},
 		}
-		b := mustNew(t, s)
+		b := mustNewStill(t, s)
 		mustEndPhase(t, b)
 		b.SetHP(2, 10)
 		b.SetHP(3, 10)

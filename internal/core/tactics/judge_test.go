@@ -178,6 +178,25 @@ func TestLose(t *testing.T) {
 		assertEqual(t, "ターン", b.Turn, 1)
 	})
 
+	t.Run("TC-FR-CMP-09-05 添字が最後の敵の攻撃で主人公が倒れても、ターンを進めずに止まる", func(t *testing.T) {
+		// 主人公を、添字が最後の敵 2（4、(2, 2)）の隣に置く。
+		b := mustNew(t, judgeSetup(2, 3))
+		b.SetHP(0, 1)
+		var acted []int
+		targetOf(b, 4, 0, &acted)
+		done := rolls(t, b, 0, 0)
+		events := mustEndPhase(t, b)
+		done()
+		assertEqual(t, "種類", kinds(events), []tactics.EventKind{
+			tactics.EventPhaseStart, tactics.EventStrike, tactics.EventFall, tactics.EventLost,
+		})
+		assertEqual(t, "動いた敵", acted, []int{2, 3, 4})
+		assertEqual(t, "結果", b.Result, tactics.Lost)
+		assertEqual(t, "番", b.Phase, tactics.Enemy)
+		assertEqual(t, "ターン", b.Turn, 1)
+		assertOver(t, b)
+	})
+
 	t.Run("TC-FR-CMP-09-03 負けが決まったあとの Act と EndPhase は ErrBattleOver", func(t *testing.T) {
 		b, _, _ := loseInEnemyPhase(t)
 		assertOver(t, b)

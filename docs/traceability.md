@@ -24,7 +24,7 @@
 | FR-MAP-01 | #6 | DES-BTL-03、DES-MAP-01 | TC-FR-MAP-01-01〜05 | `internal/core/tactics` | 実装済み |
 | FR-MAP-03 | #9 | DES-MAP-02、DES-MAP-03 | TC-FR-MAP-03-01〜07 | `internal/core/tactics` | 実装済み（反復 1 のギミックは砦と増援） |
 | FR-MAP-05 | #9 | DES-MAP-04（反復 1 はボスを倒す・主人公が倒れるだけ。一部） | TC-FR-MAP-05-01〜04 | `internal/core/tactics` | 実装済み（反復 1 の範囲） |
-| FR-CMP-09 | #9 | DES-MAP-04 | TC-FR-CMP-09-01〜04 | `internal/core/tactics` | 実装済み |
+| FR-CMP-09 | #9 | DES-MAP-04 | TC-FR-CMP-09-01〜05 | `internal/core/tactics` | 実装済み |
 | FR-ITM-01 | #8 | DES-BTL-05、DES-ITM-01 | TC-FR-ITM-01-01〜02 | `internal/core/tactics` | 実装済み |
 | FR-ITM-02 | #9 | DES-ITM-01 | TC-FR-ITM-02-01〜03 | `internal/core/tactics` | 実装済み |
 | FR-ITM-03 | #9、#11 | DES-ITM-01、DES-DAT-01、DES-CORE-01（反復 1 は初めから持つだけ。一部） | TC-FR-ITM-03-01〜02 | `internal/core`、`internal/core/tactics` | 実装済み（#9、#11） |
