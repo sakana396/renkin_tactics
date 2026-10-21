@@ -132,7 +132,7 @@ func (g *Game) leftClick(x, y int) {
 // Layout は固定の大きさの画面を使う（DES-UI-01）。
 func (g *Game) Layout(_, _ int) (int, int) { return ScreenWidth, ScreenHeight }
 
-// Draw は盤面、範囲、ユニット、出来事、行動の一覧、番の帯、情報欄の場所、案内欄を描く（DES-UI-01、DES-UI-03、DES-UI-04）。
+// Draw は盤面、範囲、ユニット、出来事、行動の一覧、番の帯、情報欄、案内欄を描く（DES-UI-01、DES-UI-03、DES-UI-04）。
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(bgColor)
 	g.drawTerrain(screen)
@@ -142,8 +142,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawEvent(screen)
 	g.drawMenu(screen)
 	g.drawOver(screen)
-	// 情報欄（ユニットの情報、地形、予測）は別の Issue で作る。場所だけを空けておく（DES-UI-01）。
-	vector.DrawFilledRect(screen, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
+	cx, cy := ebiten.CursorPosition()
+	g.drawInfo(screen, cx, cy)
 	g.drawGuide(screen)
 }
 
@@ -312,6 +312,48 @@ func (g *Game) drawOver(dst *ebiten.Image) {
 	}
 	g.bigLabel(dst, ResultText(g.ctrl.Battle().Result), MapSize/2-40, clr)
 	g.centerLabel(dst, "R: やり直す　Esc: 終了", MapSize/2+12, white)
+}
+
+// 情報欄の予測の表の列の位置（情報欄の左端からの px）。
+const (
+	infoMargin      = 8
+	forecastAttackX = 80
+	forecastDefendX = 200
+)
+
+// drawInfo は右の情報欄を描く（DES-UI-01、DES-BTL-07）。攻撃の相手を選んでいれば予測の表を上に、
+// その下にカーソルのあるユニットの情報と地形を出す。(cx, cy) はカーソルの画面の座標で、マスは CellAt で引く。
+func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
+	vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
+	p := g.ctrl.Panel(CellAt(cx, cy))
+	x := MapSize + infoMargin
+	y := infoMargin
+	if len(p.Forecast) > 0 {
+		g.label(dst, "攻撃の予測", x, y, gold)
+		y += lineHeight
+		for i, r := range p.Forecast {
+			clr := white
+			if i == 0 {
+				clr = gold
+			}
+			g.label(dst, r.Label, x, y, muted)
+			g.label(dst, r.Attacker, x+forecastAttackX, y, clr)
+			g.label(dst, r.Defender, x+forecastDefendX, y, clr)
+			y += lineHeight
+		}
+		y += lineHeight
+	}
+	for i, line := range p.Lines {
+		if y+lineHeight > ScreenHeight {
+			break
+		}
+		clr := white
+		if i == 0 {
+			clr = gold
+		}
+		g.label(dst, line, x, y, clr)
+		y += lineHeight
+	}
 }
 
 // drawGuide は案内欄を描く（DES-UI-01）。
