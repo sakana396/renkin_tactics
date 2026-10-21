@@ -78,6 +78,18 @@ var (
 	EnemyBow = Tile{Dungeon, 100}
 )
 
+// 武器の種類の絵（DES-UI-06）。情報欄の武器の行に添える。剣・槍・斧は Tiny Dungeon、弓は Tiny Town にしかない。
+var (
+	// WeaponSword は剣（銀の長剣）。
+	WeaponSword = Tile{Dungeon, 104}
+	// WeaponLance は槍。
+	WeaponLance = Tile{Dungeon, 131}
+	// WeaponAxe は斧（片刃）。
+	WeaponAxe = Tile{Dungeon, 119}
+	// WeaponBow は弓。
+	WeaponBow = Tile{Town, 118}
+)
+
 // Rect は、画像の中でのタイルの範囲を返す（DES-UI-05）。
 func (t Tile) Rect() image.Rectangle {
 	x, y := (t.N%Columns)*TileSize, (t.N/Columns)*TileSize

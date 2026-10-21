@@ -100,19 +100,38 @@ func target(t *testing.T, c *Controller, unit tactics.Pos, p tactics.Pos) {
 	}
 }
 
-// 情報欄（DES-UI-01、FR-UNT-09、UC-04）を確かめる。
+// rows は、情報欄に描く文を、同じ高さのものを空白でつないで 1 行にし、上から並べる（DES-UI-06）。
+func rows(v InfoView) []string {
+	var out []string
+	for i, tx := range v.Texts {
+		if i > 0 && tx.Y == v.Texts[i-1].Y {
+			out[len(out)-1] += " " + tx.Text
+			continue
+		}
+		out = append(out, tx.Text)
+	}
+	return out
+}
+
+// panelRows は、情報欄の中身の文の行を返す。
+func panelRows(p Panel) []string { return rows(p.View()) }
+
+// 情報欄（DES-UI-01、DES-UI-06、FR-UNT-09、UC-04）を確かめる。
 func TestInfoPanel(t *testing.T) {
 	leonLines := []string{
 		"レオン",
 		"クラス: ロード",
 		"HP 20/20",
-		"力 6　技 8　速さ 9　守備 4　移動 5",
+		"力 6",
+		"技 8",
+		"速さ 9",
+		"守備 4",
+		"移動 5",
 		"武器: 鉄の剣（剣）",
 		"威力 5　命中 90　射程 1",
 		"手持ち: 回復薬 ×2",
 		"スキル: 鼓舞",
 		"　距離 2 以内の味方の命中 +10・回避 +10",
-		"",
 		"地形: 平地",
 		"回避 0　守備 0　回復 0%",
 	}
@@ -120,8 +139,8 @@ func TestInfoPanel(t *testing.T) {
 	t.Run("TC-FR-UNT-09-01 カーソルのある自軍の名前・クラス・HP・能力・武器・手持ち・スキルと地形", func(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
 		p := c.Panel(tactics.Pos{X: 2, Y: 3}, true)
-		if !reflect.DeepEqual(p.Lines, leonLines) {
-			t.Errorf("行 = %q\nのはず %q", p.Lines, leonLines)
+		if got := panelRows(p); !reflect.DeepEqual(got, leonLines) {
+			t.Errorf("行 = %q\nのはず %q", got, leonLines)
 		}
 		if p.Forecast != nil {
 			t.Errorf("Idle で予測が出ている: %v", p.Forecast)
@@ -138,16 +157,19 @@ func TestInfoPanel(t *testing.T) {
 			"ソルジャー 3　★ボス",
 			"クラス: ソルジャー",
 			"HP 18/18",
-			"力 5　技 4　速さ 4　守備 4　移動 5",
+			"力 5",
+			"技 4",
+			"速さ 4",
+			"守備 4",
+			"移動 5",
 			"武器: 鉄の槍（槍）",
 			"威力 7　命中 80　射程 1",
 			"手持ち: なし",
 			"スキル: なし",
-			"",
 			"地形: 森",
 			"回避 20　守備 1　回復 0%",
 		}
-		if got := c.Panel(tactics.Pos{X: 3, Y: 3}, true).Lines; !reflect.DeepEqual(got, want) {
+		if got := panelRows(c.Panel(tactics.Pos{X: 3, Y: 3}, true)); !reflect.DeepEqual(got, want) {
 			t.Errorf("行 = %q\nのはず %q", got, want)
 		}
 	})
@@ -163,14 +185,19 @@ func TestInfoPanel(t *testing.T) {
 			"ミラ",
 			"クラス: アーチャー",
 			"HP 9/17",
-			"力 5　技 9　速さ 7　守備 3　移動 5",
+			"力 5",
+			"技 9",
+			"速さ 7",
+			"守備 3",
+			"移動 5",
 			"武器: 長弓（弓）",
 			"威力 6　命中 85　射程 2〜3",
 			"手持ち: 回復薬 ×1、特効薬 ×2",
 			"スキル: 狙撃",
 			"　移動せずに攻撃すると命中 +20",
 		}
-		if got := UnitLines(u); !reflect.DeepEqual(got, want) {
+		unitRows := func(u tactics.Unit) []string { return panelRows(Panel{Unit: &u}) }
+		if got := unitRows(u); !reflect.DeepEqual(got, want) {
 			t.Errorf("行 = %q\nのはず %q", got, want)
 		}
 		descs := map[string]tactics.Skill{
@@ -179,13 +206,13 @@ func TestInfoPanel(t *testing.T) {
 		}
 		for d, sk := range descs {
 			u.Skill = sk
-			if got := UnitLines(u); got[len(got)-1] != d || got[len(got)-2] != "スキル: "+sk.Name {
+			if got := unitRows(u); got[len(got)-1] != d || got[len(got)-2] != "スキル: "+sk.Name {
 				t.Errorf("%s の説明 = %q", sk.Name, got[len(got)-2:])
 			}
 		}
 		for typ, name := range map[tactics.WeaponType]string{tactics.Sword: "剣", tactics.Lance: "槍", tactics.Axe: "斧", tactics.Bow: "弓"} {
 			u.Weapon.Type = typ
-			if got := UnitLines(u)[4]; got != "武器: 長弓（"+name+"）" {
+			if got := unitRows(u)[8]; got != "武器: 長弓（"+name+"）" {
 				t.Errorf("武器の種類 %v = %q", typ, got)
 			}
 		}
@@ -197,14 +224,14 @@ func TestInfoPanel(t *testing.T) {
 
 	t.Run("TC-FR-UNT-09-04 カーソルがユニットにないときは地形だけ、盤面の外では何も出さない", func(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
-		if got := c.Panel(tactics.Pos{X: 0, Y: 0}, true).Lines; !reflect.DeepEqual(got, []string{"地形: 平地", "回避 0　守備 0　回復 0%"}) {
+		if got := panelRows(c.Panel(tactics.Pos{X: 0, Y: 0}, true)); !reflect.DeepEqual(got, []string{"地形: 平地", "回避 0　守備 0　回復 0%"}) {
 			t.Errorf("空きマス = %q", got)
 		}
 		for _, tc := range []struct {
 			p  tactics.Pos
 			ok bool
 		}{{tactics.Pos{X: 2, Y: 3}, false}, {tactics.Pos{X: 7, Y: 0}, true}, {tactics.Pos{X: 0, Y: 7}, true}, {tactics.Pos{X: 0, Y: -1}, true}} {
-			if got := c.Panel(tc.p, tc.ok); got.Lines != nil || got.Forecast != nil {
+			if got := c.Panel(tc.p, tc.ok); got.Unit != nil || got.Terrain != nil || got.Forecast != nil || len(got.View().Texts) != 0 {
 				t.Errorf("盤面の外 %v %v = %+v", tc.p, tc.ok, got)
 			}
 		}
@@ -215,10 +242,10 @@ func TestInfoPanel(t *testing.T) {
 		// 主人公を (0, 1) に動かした Moved。もとのマスには誰もいない。
 		c.Click(tactics.Pos{X: 0, Y: 0})
 		c.Click(tactics.Pos{X: 0, Y: 1})
-		if got := c.Panel(tactics.Pos{X: 0, Y: 1}, true).Lines; len(got) == 0 || got[0] != "レオン" {
+		if got := panelRows(c.Panel(tactics.Pos{X: 0, Y: 1}, true)); len(got) == 0 || got[0] != "レオン" {
 			t.Errorf("移動先 = %q", got)
 		}
-		if got := c.Panel(tactics.Pos{X: 0, Y: 0}, true).Lines; got[0] != "地形: 平地" {
+		if got := panelRows(c.Panel(tactics.Pos{X: 0, Y: 0}, true)); got[0] != "地形: 平地" {
 			t.Errorf("もとのマス = %q", got)
 		}
 		c.Cancel()
@@ -232,14 +259,14 @@ func TestInfoPanel(t *testing.T) {
 		if c.Battle().Units()[0].HP != 18 {
 			t.Fatalf("戦闘の主人公の HP = %d", c.Battle().Units()[0].HP)
 		}
-		if got := c.Panel(tactics.Pos{X: 0, Y: 0}, true).Lines; got[2] != "HP 20/20" {
+		if got := panelRows(c.Panel(tactics.Pos{X: 0, Y: 0}, true)); got[2] != "HP 20/20" {
 			t.Errorf("再生中の主人公 = %q", got)
 		}
-		if got := c.Panel(tactics.Pos{X: 1, Y: 0}, true).Lines; got[2] != "HP 29/30" {
+		if got := panelRows(c.Panel(tactics.Pos{X: 1, Y: 0}, true)); got[2] != "HP 29/30" {
 			t.Errorf("再生中のファイター = %q", got)
 		}
 		playOut(c)
-		if got := c.Panel(tactics.Pos{X: 0, Y: 0}, true).Lines; got[2] != "HP 18/20" {
+		if got := panelRows(c.Panel(tactics.Pos{X: 0, Y: 0}, true)); got[2] != "HP 18/20" {
 			t.Errorf("再生のあとの主人公 = %q", got)
 		}
 
@@ -256,12 +283,12 @@ func TestInfoPanel(t *testing.T) {
 		if u := k.Battle().Units()[3]; u.Alive || u.Pos != (tactics.Pos{X: 1, Y: 0}) || k.State() != Idle {
 			t.Fatalf("前提: ファイター %+v、状態 %v", u, k.State())
 		}
-		if got := k.Panel(tactics.Pos{X: 1, Y: 0}, true).Lines; !reflect.DeepEqual(got, []string{"地形: 平地", "回避 0　守備 0　回復 0%"}) {
+		if got := panelRows(k.Panel(tactics.Pos{X: 1, Y: 0}, true)); !reflect.DeepEqual(got, []string{"地形: 平地", "回避 0　守備 0　回復 0%"}) {
 			t.Errorf("倒れた敵のマス = %q", got)
 		}
 		k.Click(tactics.Pos{X: 0, Y: 2})
 		k.Click(tactics.Pos{X: 1, Y: 0})
-		if got := k.Panel(tactics.Pos{X: 1, Y: 0}, true).Lines; k.State() != Moved || len(got) == 0 || got[0] != "ガルド" {
+		if got := panelRows(k.Panel(tactics.Pos{X: 1, Y: 0}, true)); k.State() != Moved || len(got) == 0 || got[0] != "ガルド" {
 			t.Errorf("倒れた敵のマスに入った味方 = %q（状態 %v）", got, k.State())
 		}
 	})
@@ -286,8 +313,8 @@ func TestForecastPanel(t *testing.T) {
 			t.Errorf("予測 = %q\nのはず %q", p.Forecast, want)
 		}
 		// 予測の下には、カーソルのあるユニット（相手）の情報も出す。
-		if len(p.Lines) == 0 || p.Lines[0] != "ソルジャー 3　★ボス" {
-			t.Errorf("行 = %q", p.Lines)
+		if got := panelRows(p); len(got) == 0 || got[0] != "ソルジャー 3　★ボス" {
+			t.Errorf("行 = %q", got)
 		}
 	})
 
