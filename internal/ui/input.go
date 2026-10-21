@@ -48,8 +48,12 @@ type Controller struct {
 	unit   int
 	dest   tactics.Pos
 	target int
-	// watched は Idle で範囲を出している敵（いなければ -1）。
+	// watched は Idle でクリックして範囲を出し続けている敵（いなければ -1）。
 	watched int
+	// cursorX と cursorY は、カーソルの画面の座標（DES-UI-08）。まだ知らなければ盤面の外の (-1, -1)。
+	cursorX, cursorY int
+	// danger は、Q キーで敵の危険範囲を出していること（DES-UI-08）。もう一度押すまで、番をまたいでも残す。
+	danger bool
 	// confirmEnd は、行動していない自軍がいるときに E を 1 回押したこと。
 	confirmEnd bool
 
@@ -70,7 +74,7 @@ type Controller struct {
 
 // NewController は、newBattle で戦闘を作り、初めの出来事の再生から始める（DES-UI-02、DES-UI-04）。
 func NewController(newBattle Factory) (*Controller, error) {
-	c := &Controller{newBattle: newBattle, target: -1, watched: -1}
+	c := &Controller{newBattle: newBattle, target: -1, watched: -1, cursorX: -1, cursorY: -1}
 	b, events, err := newBattle()
 	if err != nil {
 		return nil, err
@@ -318,18 +322,18 @@ func (c *Controller) Targets() []int {
 	return out
 }
 
-// Overlay は、青く重ねるマス（移動できる）と赤く重ねるマス（攻撃できる）を返す（DES-UI-03）。
-// Selected では選んだ自軍、Idle では範囲を出している敵の範囲を返す。
+// Overlay は、青く重ねるマス（移動できる）と赤く重ねるマス（攻撃できる）を返す（DES-UI-03、DES-UI-08）。
+// 敵の範囲を出しているとき（shownEnemy）は、選んでいる自軍の範囲の代わりに、その敵の範囲を返す。
+// そうでなければ、Selected では選んだ自軍の範囲を返す。
 // 赤は、移動できるマスから武器が届くマスのうち、移動できないマス。
 // Moved・Targeting では、移動先から武器が届くマスを赤で返す。
 func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
+	if e := c.shownEnemy(); e >= 0 {
+		return c.ranges(e)
+	}
 	switch c.state {
 	case Selected:
 		return c.ranges(c.unit)
-	case Idle:
-		if c.watched >= 0 {
-			return c.ranges(c.watched)
-		}
 	case Moved, Targeting:
 		red = map[tactics.Pos]bool{}
 		for _, p := range c.battle.AttackRange(c.unit, c.dest) {
@@ -338,6 +342,75 @@ func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
 		return nil, red
 	}
 	return nil, nil
+}
+
+// SetCursor は、カーソルの画面の座標を毎フレーム伝える（DES-UI-08）。敵に合わせると、その敵の範囲を出す。
+func (c *Controller) SetCursor(x, y int) {
+	c.cursorX, c.cursorY = x, y
+}
+
+// shownEnemy は、範囲を出す敵の添字を返す（DES-UI-08）。出さなければ -1。
+// Idle・Selected・Moved のときだけ出す。カーソルを合わせた敵を、クリックして出し続けている敵より優先する。
+func (c *Controller) shownEnemy() int {
+	switch c.state {
+	case Idle, Selected, Moved:
+	default:
+		return -1
+	}
+	if i := c.hoveredEnemy(); i >= 0 {
+		return i
+	}
+	// watched は Idle でだけ決まり、Selected に移るときに消える。
+	return c.watched
+}
+
+// hoveredEnemy は、カーソルのあるマスにいる生きている敵の添字を返す（DES-UI-08）。
+// いないとき、カーソルが盤面の外か行動の一覧の上にあるときは -1。
+func (c *Controller) hoveredEnemy() int {
+	p, ok := CellAt(c.cursorX, c.cursorY)
+	if !ok {
+		return -1
+	}
+	if n := len(c.MenuLabels()); n > 0 && HitMenu(MenuRects(c.dest, n), c.cursorX, c.cursorY) >= 0 {
+		return -1
+	}
+	i, ok := c.unitAt(p)
+	if !ok || c.battle.Units()[i].Side != tactics.Enemy {
+		return -1
+	}
+	return i
+}
+
+// ToggleDanger は Q キーの処理（DES-UI-08）。Playing・Over 以外のとき、敵の危険範囲を出す・消す。
+func (c *Controller) ToggleDanger() {
+	if c.state == Playing || c.state == Over {
+		return
+	}
+	c.danger = !c.danger
+}
+
+// Danger は、橙の枠で描く敵の危険範囲を返す（DES-UI-08）。出していないとき、再生中と勝ち負けの画面では nil。
+//
+// 危険範囲は、生きている敵それぞれについて、Reachable の各マスから AttackRange で攻撃できるマスを合わせたもの。
+// 今の盤面（Battle の位置）で求めるので、Moved で画面の上だけ動かした自軍の仮の位置は数えない。
+// 自軍のいるマスは、Reachable では通れないが、AttackRange では攻撃できる。待ち構える敵も含める。
+// まだ現れていない増援は Battle のユニットにいないので、含まれない。
+func (c *Controller) Danger() map[tactics.Pos]bool {
+	if !c.danger || c.state == Playing || c.state == Over {
+		return nil
+	}
+	out := map[tactics.Pos]bool{}
+	for i, u := range c.battle.Units() {
+		if !u.Alive || u.Side != tactics.Enemy {
+			continue
+		}
+		for p := range c.battle.Reachable(i) {
+			for _, q := range c.battle.AttackRange(i, p) {
+				out[q] = true
+			}
+		}
+	}
+	return out
 }
 
 // ranges はユニット i の移動できるマスと攻撃できるマスを返す（DES-UI-03）。
