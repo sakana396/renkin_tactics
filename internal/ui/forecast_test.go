@@ -60,6 +60,32 @@ func archerSetup() tactics.Setup {
 	}
 }
 
+// example3Setup は設計書 3.5 節の計算例 3 の盤面（計算例 2 で、ブランの HP が最大 26 の半分の 13）。7 × 7 の平地。
+// Setup では今の HP を決められないので、敵軍の番に弓兵がブランに 13 ダメージを与えて HP を 13 にする。
+//
+//	0: レオン (0, 6)。ブランから遠く、鼓舞は効かず、弓兵の射程にも入らない
+//	1: ブラン (2, 2)。ファイター（HP 26、力 8、技 4、速さ 5、守備 3、移動 5）、鉄の斧、怒り
+//	2: 剣士 (5, 2)。10 章の剣士、鉄の剣、待ち構える、移動 0（ブランに届かない）
+//	3: 弓兵 (2, 4)。力 16、威力 0・命中 300 の弓（射程 2）、待ち構える、移動 0。ブランに 16 − 3 = 13 ダメージ。
+//	   ブランの斧は距離 2 に届かないので反撃しない
+//	4: ボス (6, 6)。移動 0
+//
+// 2 ターン目にブラン（HP 13）が (4, 2) に動いて剣士を攻撃すると、ブランは 13 ダメージ・1 回・必殺あり（当たれば 39）、
+// 剣士は 7 ダメージ・2 回（剣士の追撃）。
+func example3Setup() tactics.Setup {
+	bow := tactics.Weapon{Name: "弓", Type: tactics.Bow, Hit: 300, MinRange: 2, MaxRange: 2}
+	return tactics.Setup{
+		Terrain: field(7, 7),
+		Units: []tactics.UnitSetup{
+			{Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: leonStats, Pos: tactics.Pos{X: 0, Y: 6}, Weapon: ironSword, Skill: inspire, Lord: true},
+			{Name: "ブラン", ClassName: "ファイター", Side: tactics.Player, Stats: tactics.Stats{HP: 26, Str: 8, Skl: 4, Spd: 5, Def: 3, Mov: 5}, Pos: tactics.Pos{X: 2, Y: 2}, Weapon: ironAxe, Skill: wrath},
+			{Name: "剣士", ClassName: "剣士", Side: tactics.Enemy, Stats: tactics.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2}, Pos: tactics.Pos{X: 5, Y: 2}, Weapon: ironSword, AI: tactics.Hold},
+			{Name: "弓兵", Side: tactics.Enemy, Stats: tactics.Stats{HP: 20, Str: 16}, Pos: tactics.Pos{X: 2, Y: 4}, Weapon: bow, AI: tactics.Hold},
+			{Name: "ボス", Side: tactics.Enemy, Stats: tactics.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4}, Pos: tactics.Pos{X: 6, Y: 6}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
+		},
+	}
+}
+
 // 予測の列の左端（画面の座標）と、武器の絵の行の y（DES-UI-07）。
 const (
 	attackColX = MapSize + infoMargin + forecastAttackX
@@ -162,6 +188,7 @@ func TestForecastVisual(t *testing.T) {
 			{"守る側の追撃で攻撃する側が倒れる", side(14, 1, 1), side(20, 7, 2), 0, 19, [2]string{"14 → 0", "20 → 19"}},
 			{"反撃で倒れれば追撃しない（追撃は反撃のあと）", side(9, 5, 2), side(18, 9, 1), 0, 13, [2]string{"9 → 0", "18 → 13"}},
 			{"ダメージ 0 なら減らない", side(20, 0, 1), side(20, 0, 1), 20, 20, [2]string{"20 → 20", "20 → 20"}},
+			{"必殺（Crit）があっても 3 倍にしない", tactics.ForecastSide{HP: 20, Damage: 4, HitRate: 50, Count: 1, Crit: true}, tactics.ForecastSide{HP: 10, Damage: 3, HitRate: 50, Count: 1, Crit: true}, 17, 6, [2]string{"20 → 17", "10 → 6"}},
 		} {
 			f := tactics.Forecast{Attacker: tc.a, Defender: tc.d}
 			a, d := ForecastAfter(f)
@@ -298,6 +325,44 @@ func TestForecastVisual(t *testing.T) {
 		c.Cancel()
 		if _, _, ok := c.TargetLabel(); ok || c.State() != Moved {
 			t.Errorf("取り消したあと（%v）に出した", c.State())
+		}
+	})
+
+	t.Run("TC-FR-BTL-08-17 計算例 3: 必殺（怒り）は「後」に数えない。ブラン 13 → 0「危険」、剣士 17 → 4", func(t *testing.T) {
+		c := newIdleWith(t, example3Setup)
+		// 敵軍の番に弓兵がブランを撃ち、HP を 26 から 13（最大の半分）にする。行動していない自軍がいるので E は 2 回押す。
+		c.EndPhase()
+		c.EndPhase()
+		playOut(c)
+		if u := c.Battle().Units()[1]; u.HP != 13 || c.State() != Idle || c.Battle().Units()[2].HP != 17 {
+			t.Fatalf("前提: ブランの HP %d、剣士の HP %d、状態 %v", u.HP, c.Battle().Units()[2].HP, c.State())
+		}
+		// ブランを (4, 2) に動かし、剣士を相手に選ぶ。
+		c.Click(tactics.Pos{X: 2, Y: 2})
+		c.Click(tactics.Pos{X: 4, Y: 2})
+		c.ChooseAction(tactics.Attack)
+		c.Click(tactics.Pos{X: 5, Y: 2})
+		_, dest, tg := c.Selection()
+		if c.State() != Targeting || tg != 2 {
+			t.Fatalf("前提: 状態 %v、相手 %d", c.State(), tg)
+		}
+		f, err := c.Battle().Forecast(tactics.Command{Unit: 1, To: dest, Action: tactics.Attack, Target: tg})
+		// 3.5 節: ブランは攻撃力 8 ＋ 8 − 1 = 15、ダメージ 15 − 2 = 13・1 回、必殺の条件を満たす（当たれば 39）。
+		// 剣士は攻撃力 4 ＋ 5 ＋ 1 = 10、ダメージ 10 − 3 = 7、速さの差 4 で 2 回。
+		if err != nil || !f.Attacker.Crit || f.Attacker.Damage != 13 || f.Attacker.Count != 1 || f.Defender.Damage != 7 || f.Defender.Count != 2 {
+			t.Fatalf("前提: 予測 %+v, %v", f, err)
+		}
+		// 剣士 17 − 13 = 4、ブラン 13 − 7 = 6、剣士の追撃で 6 − 7 → 0。必殺を数えると剣士 17 → 0「撃破」、ブラン 13 → 13 になる。
+		p := c.Panel(tactics.Pos{X: 5, Y: 2}, true)
+		if p.Forecast[1] != (ForecastRow{"HP", "13 → 0", "17 → 4"}) || p.Forecast[5] != (ForecastRow{"必殺", "あり", "―"}) {
+			t.Errorf("HP・必殺の行 = %q、%q", p.Forecast[1], p.Forecast[5])
+		}
+		v := p.View()
+		if _, badge := sideMarks(t, v, attackColX); badge.Text != "危険" {
+			t.Errorf("ブランの列 = %+v、「危険」のはず", badge)
+		}
+		if _, badge := sideMarks(t, v, defendColX); badge.Text != "" {
+			t.Errorf("剣士の列 = %+v、何も出さないはず", badge)
 		}
 	})
 
