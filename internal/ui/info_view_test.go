@@ -83,7 +83,7 @@ func TestInfoView(t *testing.T) {
 	})
 
 	t.Run("TC-FR-UNT-09-08 HP の棒は 120 px の枠に今の HP ÷ 最大 HP の割合で塗り、数字（今/最大）も出す", func(t *testing.T) {
-		for _, tc := range []struct{ hp, max, want int }{{13, 26, 60}, {26, 26, 120}, {0, 26, 0}, {1, 3, 40}, {20, 20, 120}, {5, 0, 0}} {
+		for _, tc := range []struct{ hp, max, want int }{{13, 26, 60}, {26, 26, 120}, {0, 26, 0}, {1, 3, 40}, {20, 20, 120}, {30, 20, 120}, {5, 0, 0}} {
 			if got := HPBarLen(tc.hp, tc.max); got != tc.want {
 				t.Errorf("HPBarLen(%d, %d) = %d、%d のはず", tc.hp, tc.max, got, tc.want)
 			}

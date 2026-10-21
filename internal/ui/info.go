@@ -9,7 +9,7 @@ import (
 )
 
 // 情報欄に出す文と行を作り、描くものの位置を決める（DES-UI-01、DES-UI-06、DES-BTL-07）。
-// 描画（info_draw.go）から分け、Ebitengine なしで確かめられるようにする。
+// 描画（game.go の drawInfo）から分け、Ebitengine なしで確かめられるようにする。
 
 // Panel は情報欄に出す中身（DES-UI-01）。
 type Panel struct {

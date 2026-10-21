@@ -142,6 +142,12 @@ func TestInfoPanel(t *testing.T) {
 		if got := panelRows(p); !reflect.DeepEqual(got, leonLines) {
 			t.Errorf("行 = %q\nのはず %q", got, leonLines)
 		}
+		// ユニットと地形の間は 1 行あける（地形の行は、スキルの効果の行の 2 行下から）。
+		v := p.View()
+		desc, terrain := textOf(t, v, leonLines[12]), textOf(t, v, "地形: 平地")
+		if terrain.Y < desc.Y+2*lineHeight {
+			t.Errorf("地形の行の y = %d、スキルの効果の行 %d + %d 以上のはず", terrain.Y, desc.Y, 2*lineHeight)
+		}
 		if p.Forecast != nil {
 			t.Errorf("Idle で予測が出ている: %v", p.Forecast)
 		}
