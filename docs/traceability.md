@@ -24,16 +24,16 @@
 | FR-MAP-01 | #6 | DES-BTL-03、DES-MAP-01 | TC-FR-MAP-01-01〜05 | `internal/core/tactics` | 実装済み |
 | FR-MAP-03 | #9 | DES-MAP-02、DES-MAP-03 | TC-FR-MAP-03-01〜07 | `internal/core/tactics` | 実装済み（反復 1 のギミックは砦と増援） |
 | FR-MAP-05 | #9 | DES-MAP-04（反復 1 はボスを倒す・主人公が倒れるだけ。一部） | TC-FR-MAP-05-01〜04 | `internal/core/tactics` | 実装済み（反復 1 の範囲） |
-| FR-CMP-09 | #9 | DES-MAP-04 | TC-FR-CMP-09-01〜05 | `internal/core/tactics` | 実装済み |
+| FR-CMP-09 | #9、#12 | DES-MAP-04 | TC-FR-CMP-09-01〜06 | `internal/core/tactics`（06 は `internal/core` の結合のテスト） | 実装済み |
 | FR-ITM-01 | #8 | DES-BTL-05、DES-ITM-01 | TC-FR-ITM-01-01〜02 | `internal/core/tactics` | 実装済み |
 | FR-ITM-02 | #9 | DES-ITM-01 | TC-FR-ITM-02-01〜03 | `internal/core/tactics` | 実装済み |
 | FR-ITM-03 | #9、#11 | DES-ITM-01、DES-DAT-01、DES-CORE-01（反復 1 は初めから持つだけ。一部） | TC-FR-ITM-03-01〜02 | `internal/core`、`internal/core/tactics` | 実装済み（#9、#11） |
 | FR-SYS-03 | #5、#11 | DES-DAT-01、DES-DAT-02、DES-CORE-01 | TC-FR-SYS-03-01〜05 | `internal/defs`、`internal/defload`、`data`、`internal/core` | 実装済み |
-| FR-SYS-04 | #5、#12 | DES-DAT-03、DES-CMD-01 | TC-FR-SYS-04-01〜21 | `internal/defload` | 一部実装（#5） |
-| IF-01 | #12 | DES-UI-02 | — | — | 未着手 |
-| IF-02 | #12 | DES-UI-01 | — | — | 未着手 |
+| FR-SYS-04 | #5、#12 | DES-DAT-03、DES-CMD-01 | TC-FR-SYS-04-01〜23 | `internal/defload`、`cmd/renkin` | 実装済み（#5、#12） |
+| IF-01 | #12 | DES-UI-02（DES-UI-01、03〜05、DES-CMD-01 を含む） | TC-IF-01-01〜17、TC-IF-01-21〜30（手動） | `internal/ui`、`internal/ui/assets`、`cmd/renkin` | 実装済み（手動のケースは開発者が確かめる） |
+| IF-02 | #12、#13 | DES-UI-01 | TC-IF-02-01〜02、TC-IF-02-03（手動） | `internal/ui` | 実装済み（#12。情報欄は #13） |
 | IF-03 | #5 | DES-DAT-02、ADR-0003 | TC-IF-03-01〜02 | `data`、`internal/defload` | 実装済み |
-| NFR-03 | #7 | DES-NFR-02 | TC-NFR-03-01〜02 | `.github/workflows/ci.yml` | 一部実装（#7。Windows と Linux での手の確認は画面ができてから） |
+| NFR-03 | #7、#12 | DES-NFR-02 | TC-NFR-03-01〜02、TC-NFR-03-03〜04（手動） | `.github/workflows/ci.yml`、`cmd/renkin` | 一部実装（#7、#12。Windows 11 と Linux での手の確認 TC-NFR-03-03〜04 が残る） |
 | NFR-04 | #7 | DES-NFR-01 | TC-NFR-04-01〜04 | `internal/core`（`deps_test.go`） | 実装済み |
 | NFR-05 | #7 | DES-NFR-01 | TC-NFR-05-01〜03 | `internal/core`（`deps_test.go`） | 実装済み |
 | NFR-06 | #6 | DES-RNG-01 | TC-NFR-06-01〜03 | `internal/core/tactics` | 実装済み |
