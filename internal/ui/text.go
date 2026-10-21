@@ -109,25 +109,32 @@ func ResultText(r tactics.Result) string {
 	return ""
 }
 
-// Guide は案内欄に出す行を返す（DES-UI-01）。今の番とターン、できる操作、知らせの順に並べる。
+// 案内欄の敵の範囲の操作の文（DES-UI-08）。
+const (
+	guideEnemyRange = "敵にカーソル: その敵の範囲　Q: 敵の危険範囲"
+	guideDanger     = "Q: 敵の危険範囲"
+)
+
+// Guide は案内欄に出す行を返す（DES-UI-01、DES-UI-08）。今の番とターン、できる操作、敵の範囲の操作、知らせの順に並べる。
 func (c *Controller) Guide() []string {
 	b := c.battle
 	lines := []string{fmt.Sprintf("ターン %d　%sの番", c.shownTurn, sideName(c.shownSide))}
 	switch c.state {
 	case Idle:
-		lines = append(lines, "左クリック: 自軍を選ぶ（敵なら範囲を出す・消す）　E: 番を終える")
+		lines = append(lines, "左クリック: 自軍を選ぶ・敵の範囲を出し続ける（もう一度で消す）　E: 番を終える", guideEnemyRange)
 	case Selected:
-		lines = append(lines, "左クリック: 青いマスに移動する　右クリック・Esc: 取り消す")
+		lines = append(lines, "左クリック: 青いマスに移動する　右クリック・Esc: 取り消す", guideEnemyRange)
 	case Moved:
-		lines = append(lines, "左クリック: 行動を選ぶ　右クリック・Esc: 移動を取り消す")
+		lines = append(lines, "左クリック: 行動を選ぶ　右クリック・Esc: 移動を取り消す", guideEnemyRange)
 	case Targeting:
 		if c.target >= 0 {
 			lines = append(lines, fmt.Sprintf("%s を攻撃する。もう一度クリックで決定　右クリック・Esc: 戻る", b.Units()[c.target].Name))
 		} else {
 			lines = append(lines, "左クリック: 攻撃する敵を選ぶ　右クリック・Esc: 戻る")
 		}
+		lines = append(lines, guideDanger)
 	case ItemMenu:
-		lines = append(lines, "左クリック: 使うアイテムを選ぶ　右クリック・Esc: 戻る")
+		lines = append(lines, "左クリック: 使うアイテムを選ぶ　右クリック・Esc: 戻る", guideDanger)
 	case Playing:
 		// PhaseStart は 1 行目と同じ文になるので出さない。
 		if e, _, ok := c.Event(); ok && e.Kind != tactics.EventPhaseStart {

@@ -33,6 +33,7 @@ var (
 	hpFront     = color.NRGBA{90, 220, 110, 255}
 	cursorColor = color.NRGBA{255, 230, 80, 255}
 	targetColor = color.NRGBA{240, 80, 80, 255}
+	dangerColor = color.NRGBA{255, 150, 30, 255}
 	bandColor   = color.NRGBA{0, 0, 0, 170}
 	menuColor   = color.NRGBA{30, 36, 48, 235}
 	menuBorder  = color.NRGBA{200, 210, 220, 255}
@@ -87,9 +88,11 @@ func Run(newBattle Factory) error {
 // Update はマウスとキーを Controller の操作に読み替え、1 フレームを進める（DES-UI-02、DES-UI-04）。
 //
 // 左クリック: 選ぶ・決める。右クリック・Esc: 取り消す（勝ち負けの画面の Esc は終了）。E: 番を終える。
-// Space・Enter: 押している間だけ早送り。R: やり直す。
+// Space・Enter: 押している間だけ早送り。R: やり直す。Q: 敵の危険範囲を出す・消す。
+// カーソルの座標は毎フレーム Controller に渡す（敵の範囲。DES-UI-08）。
 func (g *Game) Update() error {
 	c := g.ctrl
+	c.SetCursor(ebiten.CursorPosition())
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		x, y := ebiten.CursorPosition()
 		g.leftClick(x, y)
@@ -102,6 +105,9 @@ func (g *Game) Update() error {
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyE) {
 		c.EndPhase()
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+		c.ToggleDanger()
 	}
 	c.SetFastForward(ebiten.IsKeyPressed(ebiten.KeySpace) || ebiten.IsKeyPressed(ebiten.KeyEnter))
 	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
@@ -132,12 +138,13 @@ func (g *Game) leftClick(x, y int) {
 // Layout は固定の大きさの画面を使う（DES-UI-01）。
 func (g *Game) Layout(_, _ int) (int, int) { return ScreenWidth, ScreenHeight }
 
-// Draw は盤面、範囲、ユニット、出来事、行動の一覧、番の帯、情報欄、案内欄を描く（DES-UI-01、DES-UI-03、DES-UI-04）。
+// Draw は盤面、範囲、ユニット、危険範囲、出来事、行動の一覧、番の帯、情報欄、案内欄を描く（DES-UI-01、DES-UI-03、DES-UI-04、DES-UI-08）。
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(bgColor)
 	g.drawTerrain(screen)
 	g.drawOverlay(screen)
 	g.drawUnits(screen)
+	g.drawDanger(screen)
 	g.drawSelection(screen)
 	g.drawEvent(screen)
 	g.drawMenu(screen)
@@ -177,7 +184,7 @@ func (g *Game) drawTerrain(dst *ebiten.Image) {
 	}
 }
 
-// drawOverlay は、移動できるマスを青、攻撃できるマスを赤で重ねる（DES-UI-03）。
+// drawOverlay は、移動できるマスを青、攻撃できるマスを赤で重ねる（DES-UI-03）。敵の範囲もこれで描く（DES-UI-08）。
 func (g *Game) drawOverlay(dst *ebiten.Image) {
 	blue, red := g.ctrl.Overlay()
 	for p := range blue {
@@ -185,6 +192,14 @@ func (g *Game) drawOverlay(dst *ebiten.Image) {
 	}
 	for p := range red {
 		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, redOverlay, false)
+	}
+}
+
+// drawDanger は、敵の危険範囲を橙の枠でマスごとに描く（DES-UI-08）。移動と攻撃を分けない。
+// 自軍のいるマスも見えるように、ユニットの上に描く。選択や攻撃の相手の枠（drawSelection）は、この上に描く。
+func (g *Game) drawDanger(dst *ebiten.Image) {
+	for p := range g.ctrl.Danger() {
+		vector.StrokeRect(dst, float32(p.X*CellSize)+3, float32(p.Y*CellSize)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
 	}
 }
 

@@ -59,33 +59,48 @@ func TestTexts(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-IF-02-02 案内欄: 今の番とターン、状態ごとの操作、知らせを日本語で出す", func(t *testing.T) {
+	t.Run("TC-IF-02-02 案内欄: 今の番とターン、状態ごとの操作、敵の範囲の操作、知らせを日本語で出す", func(t *testing.T) {
+		// 案内欄の行は、盤面の幅から左右の余白 8 px を除いた幅に収まる（DES-UI-01）。
+		fits := func(lines []string) {
+			t.Helper()
+			for _, l := range lines {
+				if w := textWidth(l); w > MapSize-16 {
+					t.Errorf("%q の幅 %d px が案内欄に収まらない", l, w)
+				}
+			}
+			if len(lines) > GuideHeight/lineHeight {
+				t.Errorf("行の数 %d が案内欄に収まらない: %q", len(lines), lines)
+			}
+		}
+		const enemyRange = "敵にカーソル: その敵の範囲　Q: 敵の危険範囲"
 		c := newIdle(t)
-		want := []string{"ターン 1　自軍の番", "左クリック: 自軍を選ぶ（敵なら範囲を出す・消す）　E: 番を終える"}
+		want := []string{"ターン 1　自軍の番", "左クリック: 自軍を選ぶ・敵の範囲を出し続ける（もう一度で消す）　E: 番を終える", enemyRange}
 		if got := c.Guide(); !reflect.DeepEqual(got, want) {
 			t.Errorf("Idle = %q", got)
 		}
 		c.EndPhase()
-		if got := c.Guide(); len(got) != 3 || got[2] != "まだ行動していない自軍がいます。もう一度 E を押すと番を終えます" {
+		if got := c.Guide(); len(got) != 4 || got[2] != enemyRange || got[3] != "まだ行動していない自軍がいます。もう一度 E を押すと番を終えます" {
 			t.Errorf("確認 = %q", got)
 		}
+		fits(c.Guide())
 		c.Cancel()
 		c.Click(tactics.Pos{X: 0, Y: 0})
-		if got := c.Guide()[1]; got != "左クリック: 青いマスに移動する　右クリック・Esc: 取り消す" {
+		if got := c.Guide(); !reflect.DeepEqual(got[1:], []string{"左クリック: 青いマスに移動する　右クリック・Esc: 取り消す", enemyRange}) {
 			t.Errorf("Selected = %q", got)
 		}
 		c.Click(tactics.Pos{X: 0, Y: 0})
-		if got := c.Guide()[1]; got != "左クリック: 行動を選ぶ　右クリック・Esc: 移動を取り消す" {
+		if got := c.Guide(); !reflect.DeepEqual(got[1:], []string{"左クリック: 行動を選ぶ　右クリック・Esc: 移動を取り消す", enemyRange}) {
 			t.Errorf("Moved = %q", got)
 		}
 		c.ChooseAction(tactics.Attack)
-		if got := c.Guide()[1]; got != "左クリック: 攻撃する敵を選ぶ　右クリック・Esc: 戻る" {
+		if got := c.Guide(); !reflect.DeepEqual(got[1:], []string{"左クリック: 攻撃する敵を選ぶ　右クリック・Esc: 戻る", "Q: 敵の危険範囲"}) {
 			t.Errorf("Targeting = %q", got)
 		}
 		c.Click(tactics.Pos{X: 1, Y: 0})
-		if got := c.Guide()[1]; got != "ファイター を攻撃する。もう一度クリックで決定　右クリック・Esc: 戻る" {
+		if got := c.Guide(); !reflect.DeepEqual(got[1:], []string{"ファイター を攻撃する。もう一度クリックで決定　右クリック・Esc: 戻る", "Q: 敵の危険範囲"}) {
 			t.Errorf("Targeting（相手を選んだ） = %q", got)
 		}
+		fits(c.Guide())
 		c.Click(tactics.Pos{X: 1, Y: 0})
 		if got := c.Guide(); len(got) != 3 || got[0] != "ターン 1　自軍の番" || got[2] != "Space・Enter（押している間）: 早送り" {
 			t.Errorf("Playing = %q", got)
@@ -94,7 +109,7 @@ func TestTexts(t *testing.T) {
 		d.Click(tactics.Pos{X: 0, Y: 0})
 		d.Click(tactics.Pos{X: 0, Y: 1})
 		d.ChooseAction(tactics.UseItem)
-		if got := d.Guide()[1]; got != "左クリック: 使うアイテムを選ぶ　右クリック・Esc: 戻る" {
+		if got := d.Guide(); !reflect.DeepEqual(got[1:], []string{"左クリック: 使うアイテムを選ぶ　右クリック・Esc: 戻る", "Q: 敵の危険範囲"}) {
 			t.Errorf("ItemMenu = %q", got)
 		}
 		if got := d.MenuLabels(); !reflect.DeepEqual(got, []string{"回復薬 ×1（回復 10）"}) {

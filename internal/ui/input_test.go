@@ -174,7 +174,7 @@ func TestControllerTransitions(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-IF-01-03 Idle で空きマス・行動済みの自軍をクリックしても Idle のまま。敵をクリックすると、その敵の範囲を出す・消す", func(t *testing.T) {
+	t.Run("TC-IF-01-03 Idle で空きマス・行動済みの自軍をクリックしても Idle のまま。敵をクリックすると、カーソルを離してもその敵の範囲を出し続け、もう一度で消す", func(t *testing.T) {
 		c := newIdle(t)
 		c.Click(tactics.Pos{X: 3, Y: 3})
 		if c.State() != Idle {
@@ -184,6 +184,8 @@ func TestControllerTransitions(t *testing.T) {
 			t.Errorf("空きマス: 範囲 = %v, %v", blue, red)
 		}
 		c.Click(tactics.Pos{X: 1, Y: 0})
+		// クリックのあと、カーソルを空きマスに離しても出し続ける（DES-UI-08）。
+		c.SetCursor(cellCenter(tactics.Pos{X: 3, Y: 3}))
 		blue, red := c.Overlay()
 		if c.State() != Idle || !reflect.DeepEqual(blue, posSet(tactics.Pos{X: 1, Y: 0})) {
 			t.Errorf("敵: 状態 %v、青 %v（移動 0 なので今いるマスだけ）", c.State(), blue)
