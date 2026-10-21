@@ -46,6 +46,7 @@
 | `internal/defload` | 定義データの読み込みと検証 | `defs`、`github.com/BurntSushi/toml` |
 | `internal/core` | ゲームの規則と状態 | `defs`、`core/tactics` |
 | `internal/core/tactics` | 戦闘の規則と状態。World と `defs` を知らない（ADR-0002） | Go の標準ライブラリのみ |
+| `internal/savefile` | セーブファイルの置き換え（一時ファイルに書いてから名前を変える）と置き場所 | Go の標準ライブラリのみ |
 | `internal/ui` | 描画と入力 | `core`、`core/tactics`、`defs`、Ebitengine、`github.com/hajimehoshi/bitmapfont/v3` |
 | `data` | 本体の定義データ（`go:embed`） | なし |
 
