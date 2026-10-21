@@ -203,14 +203,14 @@ func TestInfoPanel(t *testing.T) {
 		for _, tc := range []struct {
 			p  tactics.Pos
 			ok bool
-		}{{tactics.Pos{X: 2, Y: 3}, false}, {tactics.Pos{X: 7, Y: 0}, true}, {tactics.Pos{X: 0, Y: -1}, true}} {
+		}{{tactics.Pos{X: 2, Y: 3}, false}, {tactics.Pos{X: 7, Y: 0}, true}, {tactics.Pos{X: 0, Y: 7}, true}, {tactics.Pos{X: 0, Y: -1}, true}} {
 			if got := c.Panel(tc.p, tc.ok); got.Lines != nil || got.Forecast != nil {
 				t.Errorf("盤面の外 %v %v = %+v", tc.p, tc.ok, got)
 			}
 		}
 	})
 
-	t.Run("TC-FR-UNT-09-05 移動先を選んだあとは移動先のユニット、再生中は出来事の写しのユニットで出す", func(t *testing.T) {
+	t.Run("TC-FR-UNT-09-05 移動先を選んだあとは移動先のユニット、再生中は出来事の写しのユニットで出し、倒れたユニットは出さない", func(t *testing.T) {
 		c := newIdle(t)
 		// 主人公を (0, 1) に動かした Moved。もとのマスには誰もいない。
 		c.Click(tactics.Pos{X: 0, Y: 0})
@@ -241,6 +241,28 @@ func TestInfoPanel(t *testing.T) {
 		playOut(c)
 		if got := c.Panel(tactics.Pos{X: 0, Y: 0}, true).Lines; got[2] != "HP 18/20" {
 			t.Errorf("再生のあとの主人公 = %q", got)
+		}
+
+		// ファイターの HP を 1 にした盤面で、主人公がファイターを倒す。倒れた敵のマスは地形だけになり、
+		// あとから味方がそのマスに入れば（Moved）、味方の情報が出る。
+		k := newIdleWith(t, func() tactics.Setup {
+			s := basicSetup()
+			s.Units[3].Stats.HP = 1
+			return s
+		})
+		target(t, k, tactics.Pos{X: 0, Y: 0}, tactics.Pos{X: 1, Y: 0})
+		k.Click(tactics.Pos{X: 1, Y: 0})
+		playOut(k)
+		if u := k.Battle().Units()[3]; u.Alive || u.Pos != (tactics.Pos{X: 1, Y: 0}) || k.State() != Idle {
+			t.Fatalf("前提: ファイター %+v、状態 %v", u, k.State())
+		}
+		if got := k.Panel(tactics.Pos{X: 1, Y: 0}, true).Lines; !reflect.DeepEqual(got, []string{"地形: 平地", "回避 0　守備 0　回復 0%"}) {
+			t.Errorf("倒れた敵のマス = %q", got)
+		}
+		k.Click(tactics.Pos{X: 0, Y: 2})
+		k.Click(tactics.Pos{X: 1, Y: 0})
+		if got := k.Panel(tactics.Pos{X: 1, Y: 0}, true).Lines; k.State() != Moved || len(got) == 0 || got[0] != "ガルド" {
+			t.Errorf("倒れた敵のマスに入った味方 = %q（状態 %v）", got, k.State())
 		}
 	})
 }
@@ -287,7 +309,7 @@ func TestForecastPanel(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-BTL-08-06 相手を選ぶ前・取り消したあと・ほかの状態では予測を出さない", func(t *testing.T) {
+	t.Run("TC-FR-BTL-08-06 相手を選ぶ前と、取り消して Moved に戻ったあとは予測を出さない", func(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
 		c.Click(tactics.Pos{X: 2, Y: 3})
 		c.Click(tactics.Pos{X: 2, Y: 3})
