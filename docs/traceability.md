@@ -33,7 +33,7 @@
 | IF-01 | #12 | DES-UI-02（DES-UI-01、03〜05、DES-CMD-01 を含む） | TC-IF-01-01〜17、TC-IF-01-21〜30（手動） | `internal/ui`、`internal/ui/assets`、`cmd/renkin` | 実装済み（手動のケースは開発者が確かめる） |
 | IF-02 | #12、#13 | DES-UI-01 | TC-IF-02-01〜02、TC-IF-02-03（手動） | `internal/ui` | 実装済み（#12。情報欄は #13） |
 | IF-03 | #5 | DES-DAT-02、ADR-0003 | TC-IF-03-01〜02 | `data`、`internal/defload` | 実装済み |
-| NFR-03 | #7、#12 | DES-NFR-02 | TC-NFR-03-01〜02、TC-NFR-03-03〜04（手動） | `.github/workflows/ci.yml`、`cmd/renkin` | 一部実装（#7、#12。Windows 11 と Linux での手の確認 TC-NFR-03-03〜04 が残る） |
+| NFR-03 | #7、#12 | DES-NFR-02 | TC-NFR-03-01〜02、TC-NFR-03-03〜04（手動） | `.github/workflows/ci.yml`、`cmd/renkin` | 一部実装（#7、#12。Windows 11 の手の確認 TC-NFR-03-03 は済み（REV-015）。Linux の手の確認 TC-NFR-03-04 は反復 1 では行わず、CI で代える（E-23）） |
 | NFR-04 | #7 | DES-NFR-01 | TC-NFR-04-01〜04 | `internal/core`（`deps_test.go`） | 実装済み |
 | NFR-05 | #7 | DES-NFR-01 | TC-NFR-05-01〜03 | `internal/core`（`deps_test.go`） | 実装済み |
 | NFR-06 | #6 | DES-RNG-01 | TC-NFR-06-01〜03 | `internal/core/tactics` | 実装済み |
