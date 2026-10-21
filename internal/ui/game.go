@@ -336,8 +336,8 @@ const (
 	forecastDefendX = 200
 )
 
-// drawInfo は右の情報欄を描く（DES-UI-01、DES-BTL-07）。攻撃の相手を選んでいれば予測の表を上に、
-// その下にカーソルのあるユニットの情報と地形を出す。(cx, cy) はカーソルの画面の座標で、マスは CellAt で引く。
+// drawInfo は右の情報欄を描く（DES-UI-01、DES-UI-06、DES-BTL-07）。攻撃の相手を選んでいれば予測の表を上に、
+// その下にカーソルのあるユニットの情報（絵・能力の棒・武器の絵・スキル）と地形を出す。(cx, cy) はカーソルの画面の座標で、マスは CellAt で引く。
 func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 	vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
 	p := g.ctrl.Panel(CellAt(cx, cy))
@@ -358,17 +358,56 @@ func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 		}
 		y += lineHeight
 	}
-	for i, line := range p.Lines {
-		if y+lineHeight > ScreenHeight {
-			break
-		}
-		clr := white
-		if i == 0 {
-			clr = gold
-		}
-		g.label(dst, line, x, y, clr)
-		y += lineHeight
+	// ユニットと地形は、位置を決めた InfoView のとおりに描く（DES-UI-06）。
+	v := p.View()
+	for _, ic := range v.Icons {
+		g.drawTileSize(dst, ic.Tile, ic.X, ic.Y, ic.Size)
 	}
+	for _, b := range v.Bars {
+		if b.Frame > 0 {
+			vector.DrawFilledRect(dst, float32(b.X), float32(b.Y), float32(b.Frame), barHeight, hpBack, false)
+		}
+		clr := statBarColor
+		if b.Frame > 0 {
+			clr = hpFront
+		}
+		vector.DrawFilledRect(dst, float32(b.X), float32(b.Y), float32(b.Fill), barHeight, clr, false)
+	}
+	for _, t := range v.Texts {
+		g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
+	}
+}
+
+// 情報欄の能力の棒とスキルの名前の色（DES-UI-06）。
+var (
+	statBarColor = color.NRGBA{110, 170, 255, 255}
+	skillColor   = color.NRGBA{255, 240, 60, 255}
+)
+
+// infoStyleColor は情報欄の文の色の種類を色に読み替える（DES-UI-06）。
+func infoStyleColor(s InfoStyle) color.Color {
+	switch s {
+	case StyleTitle:
+		return gold
+	case StyleLabel:
+		return muted
+	case StyleSkill:
+		return skillColor
+	}
+	return white
+}
+
+// drawTileSize はタイル t を、画面の (x, y) に size × size の大きさで描く（DES-UI-06）。
+func (g *Game) drawTileSize(dst *ebiten.Image, t assets.Tile, x, y, size int) {
+	sheet := g.sheets[t.Sheet]
+	if sheet == nil {
+		return
+	}
+	img := sheet.SubImage(t.Rect()).(*ebiten.Image)
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(size)/assets.TileSize, float64(size)/assets.TileSize)
+	op.GeoM.Translate(float64(x), float64(y))
+	dst.DrawImage(img, op)
 }
 
 // drawGuide は案内欄を描く（DES-UI-01）。

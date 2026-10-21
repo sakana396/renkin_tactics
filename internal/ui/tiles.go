@@ -60,3 +60,18 @@ func unitTile(u tactics.Unit) assets.Tile {
 	}
 	return assets.EnemySword
 }
+
+// weaponTile は武器の種類の絵を返す（DES-UI-06）。知らない種類なら ok が偽（絵を描かない）。
+func weaponTile(t tactics.WeaponType) (assets.Tile, bool) {
+	switch t {
+	case tactics.Sword:
+		return assets.WeaponSword, true
+	case tactics.Lance:
+		return assets.WeaponLance, true
+	case tactics.Axe:
+		return assets.WeaponAxe, true
+	case tactics.Bow:
+		return assets.WeaponBow, true
+	}
+	return assets.Tile{}, false
+}
