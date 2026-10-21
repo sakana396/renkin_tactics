@@ -28,6 +28,7 @@ func TestTexts(t *testing.T) {
 			{e: ev(tactics.Event{Kind: tactics.EventStrike, Unit: 0, Target: 1, Hit: false}), text: "レオン の攻撃 → ソルジャー 3：外れ", pop: "外れ"},
 			{e: ev(tactics.Event{Kind: tactics.EventStrike, Unit: 0, Target: 1, Hit: true, Amount: 39, Crit: true}), text: "レオン の攻撃 → ソルジャー 3：必殺！ 39 ダメージ", pop: "必殺！ 39 ダメージ"},
 			{e: ev(tactics.Event{Kind: tactics.EventStrike, Unit: 1, Target: 0, Hit: true, Amount: 4, Pavise: true}), text: "ソルジャー 3 の攻撃 → レオン：大盾！ 4 ダメージ", pop: "大盾！ 4 ダメージ"},
+			{e: ev(tactics.Event{Kind: tactics.EventStrike, Unit: 0, Target: 1, Hit: true, Amount: 19, Crit: true, Pavise: true}), text: "レオン の攻撃 → ソルジャー 3：大盾！ 必殺！ 19 ダメージ", pop: "大盾！ 必殺！ 19 ダメージ"},
 			{e: ev(tactics.Event{Kind: tactics.EventStrike, Unit: 1, Target: 0, Hit: true, Amount: 0}), text: "ソルジャー 3 の攻撃 → レオン：0 ダメージ", pop: "0 ダメージ"},
 			{e: ev(tactics.Event{Kind: tactics.EventHeal, Unit: 1, Amount: 5}), text: "ソルジャー 3 は砦で HP が 5 回復した"},
 			{e: ev(tactics.Event{Kind: tactics.EventHeal, Unit: 0, Amount: 10, Item: "回復薬"}), text: "レオン は回復薬で HP が 10 回復した"},
@@ -86,7 +87,7 @@ func TestTexts(t *testing.T) {
 			t.Errorf("Targeting（相手を選んだ） = %q", got)
 		}
 		c.Click(tactics.Pos{X: 1, Y: 0})
-		if got := c.Guide(); len(got) != 3 || got[0] != "ターン 1　自軍の番" || got[2] != "Space・Enter: 早送り" {
+		if got := c.Guide(); len(got) != 3 || got[0] != "ターン 1　自軍の番" || got[2] != "Space・Enter（押している間）: 早送り" {
 			t.Errorf("Playing = %q", got)
 		}
 		d := damaged(t)

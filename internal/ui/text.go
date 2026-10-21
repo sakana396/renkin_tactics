@@ -133,7 +133,7 @@ func (c *Controller) Guide() []string {
 		if e, _, ok := c.Event(); ok && e.Kind != tactics.EventPhaseStart {
 			lines = append(lines, EventText(e))
 		}
-		lines = append(lines, "Space・Enter: 早送り")
+		lines = append(lines, "Space・Enter（押している間）: 早送り")
 		return lines
 	case Over:
 		lines = append(lines, fmt.Sprintf("%s　R: やり直す　Esc: 終了", ResultText(b.Result)))

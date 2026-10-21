@@ -33,12 +33,12 @@ func field(w, h int) [][]tactics.Terrain {
 
 // basicSetup は 6 × 6 の平地の戦闘を作る。
 //
-//	0: 主人公 (0, 0)。移動 3、HP 20、守備 0。攻撃は 0 ダメージ。回復薬 × 1
+//	0: 主人公 (0, 0)。移動 3、HP 20、力 0、守備 0。剣（威力 0）なので、相性でファイターには 1、ボスには 0 ダメージ。回復薬 × 1
 //	1: 味方 (0, 2)。移動 3、守備 5。手持ちなし
 //	2: ボス (5, 5)。移動 0、待ち構える
-//	3: 敵 (1, 0)。移動 0、待ち構える。命中は必ず当たり、主人公に 2 ダメージ
+//	3: 敵 (1, 0)。移動 0、待ち構える。HP 30。命中は必ず当たり、主人公に 2 ダメージ
 //
-// 敵軍の番には、敵 3 が主人公を攻撃して HP を 18 にする（主人公の反撃は 0 ダメージ）。乱数の結果によらない。
+// 敵軍の番には、敵 3 が主人公を攻撃して HP を 18 にする（主人公の反撃は 1 ダメージで、敵 3 は倒れない）。乱数の結果によらない。
 func basicSetup() tactics.Setup {
 	return tactics.Setup{
 		Terrain: field(6, 6),
@@ -65,12 +65,18 @@ func factoryOf(t *testing.T, setup func() tactics.Setup) (Factory, *int) {
 // newIdle は basicSetup の戦闘で Controller を作り、初めの出来事の再生を終えた Idle にする。
 func newIdle(t *testing.T) *Controller {
 	t.Helper()
-	f, _ := factoryOf(t, basicSetup)
+	return newIdleWith(t, basicSetup)
+}
+
+// newIdleWith は setup の戦闘で Controller を作り、初めの出来事の再生を終えた Idle にする。
+func newIdleWith(t *testing.T, setup func() tactics.Setup) *Controller {
+	t.Helper()
+	f, _ := factoryOf(t, setup)
 	c, err := NewController(f)
 	if err != nil {
 		t.Fatalf("NewController: %v", err)
 	}
-	c.FastForward()
+	playOut(c)
 	if c.State() != Idle {
 		t.Fatalf("状態 = %v、Idle になるはず", c.State())
 	}
@@ -198,6 +204,9 @@ func TestControllerTransitions(t *testing.T) {
 		if c.State() != Idle {
 			t.Errorf("行動済みの自軍: 状態 = %v", c.State())
 		}
+		if blue, red := c.Overlay(); blue != nil || red != nil {
+			t.Errorf("行動済みの自軍: 範囲 = %v, %v", blue, red)
+		}
 	})
 
 	t.Run("TC-IF-01-04 Selected で移動できるマスをクリックすると Moved になる。Act はまだ呼ばず、画面の上だけで移動先に描く", func(t *testing.T) {
@@ -268,6 +277,48 @@ func TestControllerTransitions(t *testing.T) {
 		d.Click(tactics.Pos{X: 0, Y: 1})
 		if got := d.MenuLabels(); !reflect.DeepEqual(got, []string{"アイテム", "待機"}) {
 			t.Errorf("主人公（離れたマス） = %v", got)
+		}
+
+		// 射程の中に倒れた敵しかいなければ「攻撃」を出さない。敵 3 の HP を 1 にして、主人公が倒す。
+		weak := func() tactics.Setup {
+			s := basicSetup()
+			s.Units[3].Stats.HP = 1
+			return s
+		}
+		w := newIdleWith(t, weak)
+		w.Click(tactics.Pos{X: 0, Y: 0})
+		w.Click(tactics.Pos{X: 0, Y: 0})
+		w.ChooseAction(tactics.Attack)
+		w.Click(tactics.Pos{X: 1, Y: 0})
+		w.Click(tactics.Pos{X: 1, Y: 0})
+		playOut(w)
+		if w.State() != Idle || w.Battle().Units()[3].Alive {
+			t.Fatalf("敵 3 を倒せていない: 状態 %v", w.State())
+		}
+		w.Click(tactics.Pos{X: 0, Y: 2})
+		w.Click(tactics.Pos{X: 1, Y: 1}) // 倒れた敵のいたマス (1, 0) の隣。
+		if got := w.Actions(); !reflect.DeepEqual(got, []tactics.Action{tactics.Wait}) || len(w.Targets()) != 0 {
+			t.Errorf("倒れた敵の隣 = %v、相手 %v", got, w.Targets())
+		}
+
+		// HP が減っていて手持ちがない味方は「待機」だけ。味方 (3, 3) が敵 (4, 3) に 4 ダメージを受ける。
+		hurt := func() tactics.Setup {
+			s := basicSetup()
+			s.Units[1].Pos, s.Units[1].Stats.Def = tactics.Pos{X: 3, Y: 3}, 0
+			s.Units[3].Pos = tactics.Pos{X: 4, Y: 3}
+			return s
+		}
+		h := newIdleWith(t, hurt)
+		h.EndPhase()
+		h.EndPhase()
+		playOut(h)
+		if u := h.Battle().Units()[1]; h.State() != Idle || u.HP >= u.Stats.HP || len(u.Items) != 0 {
+			t.Fatalf("味方の HP が減っていない: 状態 %v、%+v", h.State(), u)
+		}
+		h.Click(tactics.Pos{X: 3, Y: 3})
+		h.Click(tactics.Pos{X: 3, Y: 1})
+		if got := h.MenuLabels(); !reflect.DeepEqual(got, []string{"待機"}) {
+			t.Errorf("HP が減って手持ちのない味方 = %v", got)
 		}
 	})
 
@@ -352,6 +403,29 @@ func TestControllerTransitions(t *testing.T) {
 		if e, _, _ := c.Event(); e.Kind != tactics.EventStrike || e.Unit != 0 || e.Target != 3 {
 			t.Errorf("初めの出来事 = %+v（移動しないので Strike から）", e)
 		}
+
+		// 相手が 2 体いるとき、別の相手をクリックすると選び直すだけで Act を呼ばない。
+		two := func() tactics.Setup {
+			s := basicSetup()
+			s.Units = append(s.Units, tactics.UnitSetup{Name: "ソルジャー", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 0, Y: 1}, Weapon: testLance, AI: tactics.Hold})
+			return s
+		}
+		d := newIdleWith(t, two)
+		d.Click(tactics.Pos{X: 0, Y: 0})
+		d.Click(tactics.Pos{X: 0, Y: 0})
+		d.ChooseAction(tactics.Attack)
+		if !reflect.DeepEqual(d.Targets(), []int{3, 4}) {
+			t.Fatalf("相手 = %v", d.Targets())
+		}
+		d.Click(tactics.Pos{X: 1, Y: 0})
+		d.Click(tactics.Pos{X: 0, Y: 1})
+		if _, _, target := d.Selection(); d.State() != Targeting || target != 4 || d.Battle().Units()[0].Acted {
+			t.Errorf("選び直し: 状態 %v、相手 %d、行動済み %v", d.State(), target, d.Battle().Units()[0].Acted)
+		}
+		d.Click(tactics.Pos{X: 0, Y: 1})
+		if e, _, _ := d.Event(); d.State() != Playing || e.Kind != tactics.EventStrike || e.Target != 4 {
+			t.Errorf("選び直した相手で決定: 状態 %v、出来事 %+v", d.State(), e)
+		}
 	})
 
 	t.Run("TC-IF-01-10 アイテム: 一覧から選ぶと UseItem で Act を呼び、回復を再生する", func(t *testing.T) {
@@ -413,7 +487,7 @@ func TestControllerTransitions(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-IF-01-12 再生中は入力を受け付けず、出来事を 20 フレームずつ進める。早送りで残りを飛ばす", func(t *testing.T) {
+	t.Run("TC-IF-01-12 再生中は入力を受け付けず、出来事を 20 フレームずつ進める。早送りは押している間だけ 4 フレームずつ進め、出来事を飛ばさない", func(t *testing.T) {
 		c := newIdle(t)
 		c.EndPhase()
 		c.EndPhase()
@@ -441,13 +515,70 @@ func TestControllerTransitions(t *testing.T) {
 		if c.index != 1 {
 			t.Errorf("20 フレーム目: 出来事 %d", c.index)
 		}
-		c.FastForward()
-		if c.State() != Idle {
-			t.Errorf("早送りのあと: 状態 %v", c.State())
+		// 押している間は 4 フレームで次の出来事に進む。
+		c.SetFastForward(true)
+		for i := 0; i < FastFramesPerEvent-1; i++ {
+			c.Tick()
 		}
-		c.FastForward() // 再生中でなければ何もしない。
+		if c.index != 1 {
+			t.Errorf("早送りの 3 フレーム目: 出来事 %d", c.index)
+		}
+		c.Tick()
+		if c.index != 2 {
+			t.Errorf("早送りの 4 フレーム目: 出来事 %d", c.index)
+		}
+		// 押したまま最後まで進める。出来事を 1 つずつ、すべて表示する。
+		seen := []int{c.index}
+		ticks := 0
+		for c.State() == Playing && ticks < 1000 {
+			c.Tick()
+			ticks++
+			if c.State() == Playing && c.index != seen[len(seen)-1] {
+				seen = append(seen, c.index)
+				// 早送りの間も、表示した PhaseStart に番の表示を合わせる。
+				if e, _, _ := c.Event(); e.Kind == tactics.EventPhaseStart {
+					if turn, side := c.Phase(); turn != e.Turn || side != e.Side {
+						t.Errorf("早送り中の PhaseStart（%d, %v）で表示が %d, %v", e.Turn, e.Side, turn, side)
+					}
+				}
+			}
+		}
+		for i, idx := range seen {
+			if idx != 2+i {
+				t.Errorf("早送りで飛ばした出来事がある: %v（出来事は %d 個）", seen, n)
+				break
+			}
+		}
+		if len(seen) != n-2 || ticks != FastFramesPerEvent*(n-2) {
+			t.Errorf("早送りで表示した出来事 %v、フレーム数 %d（出来事は %d 個）", seen, ticks, n)
+		}
+		if turn, side := c.Phase(); c.State() != Idle || turn != 2 || side != tactics.Player {
+			t.Errorf("早送りのあと: 状態 %v、ターン %d、番 %v", c.State(), turn, side)
+		}
+		// 再生中でなければ、押していても何もしない。
+		c.Tick()
 		if c.State() != Idle {
 			t.Errorf("Idle で早送り: 状態 %v", c.State())
+		}
+
+		// 離すと 20 フレームに戻る。
+		d := newIdle(t)
+		d.EndPhase()
+		d.EndPhase()
+		d.SetFastForward(true)
+		for i := 0; i < FastFramesPerEvent; i++ {
+			d.Tick()
+		}
+		d.SetFastForward(false)
+		for i := 0; i < FramesPerEvent-1; i++ {
+			d.Tick()
+		}
+		if d.index != 1 {
+			t.Errorf("離したあとの 19 フレーム目: 出来事 %d", d.index)
+		}
+		d.Tick()
+		if d.index != 2 {
+			t.Errorf("離したあとの 20 フレーム目: 出来事 %d", d.index)
 		}
 	})
 
@@ -467,7 +598,7 @@ func TestControllerTransitions(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		c.FastForward()
+		playOut(c)
 		c.Restart() // Over でなければ何もしない。
 		if *calls != 1 {
 			t.Fatalf("Idle で R を受け付けた")
@@ -495,7 +626,7 @@ func TestControllerTransitions(t *testing.T) {
 		if *calls != 2 || c.Battle() == old || c.State() != Playing || c.Battle().Result != tactics.Ongoing {
 			t.Fatalf("やり直し: 呼んだ回数 %d、状態 %v", *calls, c.State())
 		}
-		c.FastForward()
+		playOut(c)
 		if c.State() != Idle {
 			t.Errorf("やり直しのあと: 状態 %v", c.State())
 		}
@@ -511,7 +642,7 @@ func TestControllerTransitions(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		d.FastForward()
+		playOut(d)
 		d.EndPhase()
 		d.EndPhase()
 		playOut(d)
@@ -542,7 +673,7 @@ func TestControllerTransitions(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		c.FastForward()
+		playOut(c)
 		c.EndPhase()
 		c.EndPhase()
 		playOut(c)

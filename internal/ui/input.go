@@ -29,6 +29,9 @@ const (
 // FramesPerEvent は、出来事 1 つを表示するフレームの数（DES-UI-04）。
 const FramesPerEvent = 20
 
+// FastFramesPerEvent は、早送り（Space か Enter を押している間）に出来事 1 つを表示するフレームの数（DES-UI-04）。
+const FastFramesPerEvent = 4
+
 // Factory は新しい戦闘を作る（DES-CMD-01）。やり直すたびに呼ぶ。
 type Factory func() (*tactics.Battle, []tactics.Event, error)
 
@@ -54,6 +57,8 @@ type Controller struct {
 	events []tactics.Event
 	index  int
 	frame  int
+	// fast は早送り（Space か Enter を押している間）であること。
+	fast bool
 
 	// shownTurn と shownSide は、画面に出しているターンと番。再生中は、表示した PhaseStart に合わせて進める。
 	shownTurn int
@@ -204,11 +209,10 @@ func (c *Controller) EndPhase() {
 	c.play(events)
 }
 
-// FastForward は Space か Enter の処理（DES-UI-04）。再生中なら、残りの出来事を飛ばして再生を終える。
-func (c *Controller) FastForward() {
-	if c.state == Playing {
-		c.finish()
-	}
+// SetFastForward は、Space か Enter を押しているかを毎フレーム伝える（DES-UI-04）。
+// 押している間は、出来事 1 つを FastFramesPerEvent フレームで進める。出来事は飛ばさず、すべて順に表示する。
+func (c *Controller) SetFastForward(on bool) {
+	c.fast = on
 }
 
 // Restart は R キーの処理（DES-UI-02、DES-CMD-01）。勝ち負けの画面で、新しい戦闘を作ってやり直す。
@@ -226,12 +230,17 @@ func (c *Controller) Restart() {
 }
 
 // Tick は 1 フレームを進める（DES-UI-04）。再生中なら、出来事を 20 フレームごとに 1 つ進める。
+// 早送りの間は FastFramesPerEvent フレームごとに進める。
 func (c *Controller) Tick() {
 	if c.state != Playing {
 		return
 	}
 	c.frame++
-	if c.frame < FramesPerEvent {
+	limit := FramesPerEvent
+	if c.fast {
+		limit = FastFramesPerEvent
+	}
+	if c.frame < limit {
 		return
 	}
 	c.index++
@@ -373,8 +382,8 @@ func (c *Controller) play(events []tactics.Event) {
 
 // finish は再生を終え、勝ち負けが決まっていれば Over、そうでなければ Idle にする（DES-UI-02）。
 func (c *Controller) finish() {
+	// 画面に出すターンと番は、表示した PhaseStart で合わせてある（showPhase）。
 	c.events, c.index, c.frame = nil, 0, 0
-	c.shownTurn, c.shownSide = c.battle.Turn, c.battle.Phase
 	if c.battle.Result != tactics.Ongoing {
 		c.state = Over
 		return

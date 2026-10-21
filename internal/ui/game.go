@@ -87,7 +87,7 @@ func Run(newBattle Factory) error {
 // Update はマウスとキーを Controller の操作に読み替え、1 フレームを進める（DES-UI-02、DES-UI-04）。
 //
 // 左クリック: 選ぶ・決める。右クリック・Esc: 取り消す（勝ち負けの画面の Esc は終了）。E: 番を終える。
-// Space・Enter: 早送り。R: やり直す。
+// Space・Enter: 押している間だけ早送り。R: やり直す。
 func (g *Game) Update() error {
 	c := g.ctrl
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
@@ -103,9 +103,7 @@ func (g *Game) Update() error {
 	if inpututil.IsKeyJustPressed(ebiten.KeyE) {
 		c.EndPhase()
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-		c.FastForward()
-	}
+	c.SetFastForward(ebiten.IsKeyPressed(ebiten.KeySpace) || ebiten.IsKeyPressed(ebiten.KeyEnter))
 	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 		c.Restart()
 	}

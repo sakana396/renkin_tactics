@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"errors"
 	"io/fs"
+	"reflect"
 	"strings"
 	"testing"
 	"testing/fstest"
 	"time"
 
 	"github.com/sakana396/renkin_tactics/data"
+	"github.com/sakana396/renkin_tactics/internal/core"
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
+	"github.com/sakana396/renkin_tactics/internal/defload"
 	"github.com/sakana396/renkin_tactics/internal/ui"
 )
 
@@ -36,6 +39,21 @@ func copyBase(t *testing.T) fstest.MapFS {
 }
 
 func fixedNow() time.Time { return time.Unix(0, 12345) }
+
+// endPhaseUntilOver は、自軍が番を終えるだけを 30 ターンまで（戦闘が終わるまで）続け、出来事をすべて返す。
+// 敵の攻撃で乱数を引くので、種が違えば出来事も違う。
+func endPhaseUntilOver(t *testing.T, b *tactics.Battle) []tactics.Event {
+	t.Helper()
+	var all []tactics.Event
+	for i := 0; i < 30 && b.Result == tactics.Ongoing; i++ {
+		ev, err := b.EndPhase()
+		if err != nil {
+			t.Fatal(err)
+		}
+		all = append(all, ev...)
+	}
+	return all
+}
 
 // 起動の流れ（DES-CMD-01）を、画面を開かずに確かめる。
 func TestRun(t *testing.T) {
@@ -96,15 +114,35 @@ func TestSeed(t *testing.T) {
 		if a, b := byTime(), byTime(); a != 101 || b != 102 {
 			t.Errorf("時刻からの種 = %d, %d", a, b)
 		}
-		// 同じ種なら、やり直しても同じ戦闘になる（NFR-06）。
+		// run が -seed を使う: 毎回値の変わる now を渡しても、-seed 7 で作った戦闘はどれも種 7 の戦闘と同じ（NFR-06）。
+		calls := 0
+		ticking := func() time.Time { calls++; return time.Unix(0, int64(1000+calls)) }
 		var factory ui.Factory
-		run([]string{"-seed", "7"}, &bytes.Buffer{}, data.Base(), fixedNow, func(f ui.Factory) error { factory = f; return nil })
-		b1, _, _ := factory()
-		b2, _, _ := factory()
-		e1, err1 := b1.EndPhase()
-		e2, err2 := b2.EndPhase()
-		if err1 != nil || err2 != nil || len(e1) != len(e2) {
-			t.Errorf("同じ種のやり直しで結果が違う: %d, %d", len(e1), len(e2))
+		run([]string{"-seed", "7"}, &bytes.Buffer{}, data.Base(), ticking, func(f ui.Factory) error { factory = f; return nil })
+		cat, err := defload.Load(data.Base())
+		if err != nil {
+			t.Fatal(err)
+		}
+		want, _, _ := core.NewBattle(cat, "ch01", 7)
+		wantEvents := endPhaseUntilOver(t, want)
+		for i := 0; i < 2; i++ {
+			b, _, err := factory()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := endPhaseUntilOver(t, b); !reflect.DeepEqual(got, wantEvents) {
+				t.Errorf("-seed 7 の %d 回目の戦闘が、種 7 の戦闘と違う", i+1)
+			}
+		}
+		if calls != 0 {
+			t.Errorf("-seed を指定したのに now を %d 回呼んだ", calls)
+		}
+		// -seed なしなら、作るたびに now を呼ぶ。
+		run(nil, &bytes.Buffer{}, data.Base(), ticking, func(f ui.Factory) error { factory = f; return nil })
+		for i := 1; i <= 2; i++ {
+			if _, _, err := factory(); err != nil || calls != i {
+				t.Errorf("-seed なしで %d 回作ったのに now を %d 回呼んだ（誤り %v）", i, calls, err)
+			}
 		}
 		var stderr bytes.Buffer
 		started := false
