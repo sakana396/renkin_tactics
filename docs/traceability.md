@@ -15,12 +15,12 @@
 | FR-BTL-05 | #8 | DES-BTL-05 | TC-FR-BTL-05-01〜04 | `internal/core/tactics` | 実装済み |
 | FR-BTL-06 | #8 | DES-BTL-06 | TC-FR-BTL-06-01〜06 | `internal/core/tactics` | 実装済み |
 | FR-BTL-07 | #10 | DES-AI-01（反復 1 は突っ込む・待ち構えるの 2 種類。一部） | TC-FR-BTL-07-01〜18 | `internal/core/tactics` | 一部実装（反復 1 の 2 種類を実装済み） |
-| FR-BTL-08 | #8、#13 | DES-BTL-07、DES-UI-01 | TC-FR-BTL-08-01〜03 | `internal/core/tactics` | 一部実装（#8） |
+| FR-BTL-08 | #8、#13 | DES-BTL-07、DES-UI-01 | TC-FR-BTL-08-01〜07、TC-FR-BTL-08-08（手動） | `internal/core/tactics`、`internal/ui` | 実装済み（#8、#13。手動のケースは開発者が確かめる） |
 | FR-UNT-01 | #11 | DES-DAT-01、DES-CORE-01 | TC-FR-UNT-01-01〜06 | `internal/core` | 実装済み |
 | FR-UNT-02 | #11 | DES-DAT-01、DES-CORE-01 | TC-FR-UNT-02-01 | `internal/core` | 実装済み |
 | FR-UNT-03 | — | （H-01 で確かめる。振り返り。検証は D） | — | — | 振り返りで確かめる |
 | FR-UNT-07 | #8 | DES-SKL-01（反復 1 はキャラのスキルだけ。一部） | TC-FR-UNT-07-01〜07 | `internal/core/tactics` | 実装済み |
-| FR-UNT-09 | #13 | DES-UI-01 | — | — | 未着手 |
+| FR-UNT-09 | #13 | DES-UI-01 | TC-FR-UNT-09-01〜05、TC-FR-UNT-09-06（手動） | `internal/ui` | 実装済み（手動のケースは開発者が確かめる） |
 | FR-MAP-01 | #6 | DES-BTL-03、DES-MAP-01 | TC-FR-MAP-01-01〜05 | `internal/core/tactics` | 実装済み |
 | FR-MAP-03 | #9 | DES-MAP-02、DES-MAP-03 | TC-FR-MAP-03-01〜07 | `internal/core/tactics` | 実装済み（反復 1 のギミックは砦と増援） |
 | FR-MAP-05 | #9 | DES-MAP-04（反復 1 はボスを倒す・主人公が倒れるだけ。一部） | TC-FR-MAP-05-01〜04 | `internal/core/tactics` | 実装済み（反復 1 の範囲） |
