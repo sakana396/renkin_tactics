@@ -25,6 +25,23 @@ func barOf(t *testing.T, v InfoView, label string) InfoBar {
 	return InfoBar{}
 }
 
+// portraitOf は、ユニットの絵（大きさ PortraitSize の絵）を返す。
+func portraitOf(t *testing.T, v InfoView) InfoIcon {
+	t.Helper()
+	for _, ic := range v.Icons {
+		if ic.Size == PortraitSize {
+			return ic
+		}
+	}
+	t.Fatalf("ユニットの絵がない: %+v", v.Icons)
+	return InfoIcon{}
+}
+
+// forecastBottom は、表が n 行の予測（見出し 1 行・武器の絵・表）の一番下の y を返す（DES-UI-07）。
+func forecastBottom(n int) int {
+	return infoMargin + lineHeight + WeaponIconSize + n*lineHeight
+}
+
 // textOf は、文が s の InfoText を返す。
 func textOf(t *testing.T, v InfoView, s string) InfoText {
 	t.Helper()
@@ -222,9 +239,10 @@ func TestInfoView(t *testing.T) {
 		if v.Bottom > ScreenHeight {
 			t.Errorf("一番下 = %d、%d を超える", v.Bottom, ScreenHeight)
 		}
-		// 予測の表（見出し・8 行・空き 1 行）の下から並べる。
-		if v.Icons[0].Y != infoMargin+10*lineHeight {
-			t.Errorf("ユニットの絵の y = %d、予測の表の下 %d のはず", v.Icons[0].Y, infoMargin+10*lineHeight)
+		// 予測（見出し・武器の絵 32 px・表 8 行・空き 1 行）の下 y = 8 + 16 + 32 + 128 + 16 = 200 から並べる。
+		pic := portraitOf(t, v)
+		if pic.Y != 200 || forecastBottom(8)+lineHeight != 200 {
+			t.Errorf("ユニットの絵の y = %d、予測の表の下 200 のはず", pic.Y)
 		}
 		for _, tx := range v.Texts {
 			if tx.X < MapSize || tx.X+textWidth(tx.Text) > ScreenWidth || tx.Y+lineHeight > ScreenHeight {

@@ -138,7 +138,8 @@ func (g *Game) leftClick(x, y int) {
 // Layout は固定の大きさの画面を使う（DES-UI-01）。
 func (g *Game) Layout(_, _ int) (int, int) { return ScreenWidth, ScreenHeight }
 
-// Draw は盤面、範囲、ユニット、危険範囲、出来事、行動の一覧、番の帯、情報欄、案内欄を描く（DES-UI-01、DES-UI-03、DES-UI-04、DES-UI-08）。
+// Draw は盤面、範囲、ユニット、危険範囲、選んだ相手の上の予測、出来事、行動の一覧、番の帯、情報欄、案内欄を描く
+// （DES-UI-01、DES-UI-03、DES-UI-04、DES-UI-07、DES-UI-08）。
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(bgColor)
 	g.drawTerrain(screen)
@@ -146,6 +147,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawUnits(screen)
 	g.drawDanger(screen)
 	g.drawSelection(screen)
+	g.drawTargetLabel(screen)
 	g.drawEvent(screen)
 	g.drawMenu(screen)
 	g.drawOver(screen)
@@ -262,6 +264,14 @@ func strokeCell(dst *ebiten.Image, p tactics.Pos, clr color.Color) {
 	vector.StrokeRect(dst, float32(p.X*CellSize)+1, float32(p.Y*CellSize)+1, CellSize-2, CellSize-2, 2, clr, false)
 }
 
+// drawTargetLabel は、選んだ相手のマスの上に「ダメージ×回数 命中率%」を、出来事の文字と同じ形（popup）で出す（DES-UI-07）。
+// 相手を選ぶ前は出さない。
+func (g *Game) drawTargetLabel(dst *ebiten.Image) {
+	if s, p, ok := g.ctrl.TargetLabel(); ok {
+		g.popup(dst, s, p, white)
+	}
+}
+
 // drawEvent は再生中の出来事を描く（DES-UI-03、DES-UI-04）。
 // PhaseStart は番の帯、Strike は当たり・外れ・ダメージ・必殺・大盾、Heal は回復量を文字で出す。
 func (g *Game) drawEvent(dst *ebiten.Image) {
@@ -329,36 +339,16 @@ func (g *Game) drawOver(dst *ebiten.Image) {
 	g.centerLabel(dst, "R: やり直す　Esc: 終了", MapSize/2+12, white)
 }
 
-// 情報欄の予測の表の列の位置（情報欄の左端からの px）。
-const (
-	infoMargin      = 8
-	forecastAttackX = 80
-	forecastDefendX = 200
-)
+// infoMargin は情報欄の余白（px）。
+const infoMargin = 8
 
-// drawInfo は右の情報欄を描く（DES-UI-01、DES-UI-06、DES-BTL-07）。攻撃の相手を選んでいれば予測の表を上に、
-// その下にカーソルのあるユニットの情報（絵・能力の棒・武器の絵・スキル）と地形を出す。(cx, cy) はカーソルの画面の座標で、マスは CellAt で引く。
+// drawInfo は右の情報欄を描く（DES-UI-01、DES-UI-06、DES-UI-07、DES-BTL-07）。攻撃の相手を選んでいれば予測（武器の絵・相性の印・
+// 「撃破」「危険」・表）を上に、その下にカーソルのあるユニットの情報（絵・能力の棒・武器の絵・スキル）と地形を出す。
+// (cx, cy) はカーソルの画面の座標で、マスは CellAt で引く。
 func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 	vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
 	p := g.ctrl.Panel(CellAt(cx, cy))
-	x := MapSize + infoMargin
-	y := infoMargin
-	if len(p.Forecast) > 0 {
-		g.label(dst, "攻撃の予測", x, y, gold)
-		y += lineHeight
-		for i, r := range p.Forecast {
-			clr := white
-			if i == 0 {
-				clr = gold
-			}
-			g.label(dst, r.Label, x, y, muted)
-			g.label(dst, r.Attacker, x+forecastAttackX, y, clr)
-			g.label(dst, r.Defender, x+forecastDefendX, y, clr)
-			y += lineHeight
-		}
-		y += lineHeight
-	}
-	// ユニットと地形は、位置を決めた InfoView のとおりに描く（DES-UI-06）。
+	// 予測・ユニット・地形は、位置を決めた InfoView のとおりに描く（DES-UI-06、DES-UI-07）。
 	v := p.View()
 	for _, ic := range v.Icons {
 		g.drawTileSize(dst, ic.Tile, ic.X, ic.Y, ic.Size)
@@ -374,19 +364,31 @@ func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 		vector.DrawFilledRect(dst, float32(b.X), float32(b.Y), float32(b.Fill), barHeight, clr, false)
 	}
 	for _, t := range v.Texts {
+		if t.Big {
+			g.scaledLabel(dst, t.Text, t.X, t.Y, 2, infoStyleColor(t.Style))
+			continue
+		}
 		g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
 	}
 }
 
-// 情報欄の能力の棒とスキルの名前の色（DES-UI-06）。
+// 情報欄の能力の棒とスキルの名前の色（DES-UI-06）と、相性の印の色（DES-UI-07）。
 var (
 	statBarColor = color.NRGBA{110, 170, 255, 255}
 	skillColor   = color.NRGBA{255, 240, 60, 255}
+	goodColor    = color.NRGBA{90, 230, 110, 255}
+	badColor     = color.NRGBA{255, 80, 80, 255}
 )
 
-// infoStyleColor は情報欄の文の色の種類を色に読み替える（DES-UI-06）。
+// infoStyleColor は情報欄の文の色の種類を色に読み替える（DES-UI-06、DES-UI-07）。
 func infoStyleColor(s InfoStyle) color.Color {
 	switch s {
+	case StyleGood:
+		return goodColor
+	case StyleBad:
+		return badColor
+	case StyleAlert:
+		return dangerColor
 	case StyleTitle:
 		return gold
 	case StyleLabel:
@@ -432,6 +434,20 @@ func (g *Game) label(dst *ebiten.Image, s string, x, y int, clr color.Color) {
 	op.ColorScale.ScaleWithColor(textShadow)
 	text.Draw(dst, s, face, op)
 	op = &text.DrawOptions{}
+	op.GeoM.Translate(float64(x), float64(y))
+	op.ColorScale.ScaleWithColor(clr)
+	text.Draw(dst, s, face, op)
+}
+
+// scaledLabel は文字を (x, y) を左上にして、scale 倍の大きさで影をつけて描く（相性の印。DES-UI-07）。
+func (g *Game) scaledLabel(dst *ebiten.Image, s string, x, y int, scale float64, clr color.Color) {
+	op := &text.DrawOptions{}
+	op.GeoM.Scale(scale, scale)
+	op.GeoM.Translate(float64(x)+scale, float64(y)+scale)
+	op.ColorScale.ScaleWithColor(textShadow)
+	text.Draw(dst, s, face, op)
+	op = &text.DrawOptions{}
+	op.GeoM.Scale(scale, scale)
 	op.GeoM.Translate(float64(x), float64(y))
 	op.ColorScale.ScaleWithColor(clr)
 	text.Draw(dst, s, face, op)
