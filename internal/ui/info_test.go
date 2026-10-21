@@ -307,7 +307,7 @@ func TestForecastPanel(t *testing.T) {
 		target(t, c, tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3})
 		want := []ForecastRow{
 			{"", "レオン", "ソルジャー 3★"},
-			{"HP", "20", "18"},
+			{"HP", "20 → 11", "18 → 8"},
 			{"ダメージ", "5", "9"},
 			{"命中率", "63%", "85%"},
 			{"回数", "×2", "×1"},
@@ -319,8 +319,9 @@ func TestForecastPanel(t *testing.T) {
 			t.Errorf("予測 = %q\nのはず %q", p.Forecast, want)
 		}
 		// 予測の下には、カーソルのあるユニット（相手）の情報も出す。
-		if got := panelRows(p); len(got) == 0 || got[0] != "ソルジャー 3　★ボス" {
-			t.Errorf("行 = %q", got)
+		v := p.View()
+		if name := textOf(t, v, "ソルジャー 3　★ボス"); name.Style != StyleTitle || name.Y < forecastBottom(len(want)) {
+			t.Errorf("相手の名前 = %+v、予測の表の下 %d より下のはず", name, forecastBottom(len(want)))
 		}
 	})
 
@@ -329,7 +330,7 @@ func TestForecastPanel(t *testing.T) {
 		target(t, c, tactics.Pos{X: 2, Y: 2}, tactics.Pos{X: 3, Y: 2})
 		want := []ForecastRow{
 			{"", "ガルド", "ファイター"},
-			{"HP", "24", "24"},
+			{"HP", "24 → 18", "24 → 15"},
 			{"ダメージ", "9", "6"},
 			{"命中率", "73%", "79%"},
 			{"回数", "×1", "×1"},
@@ -378,9 +379,9 @@ func TestForecastPanel(t *testing.T) {
 		}
 		want := []ForecastRow{
 			{"", "弓兵", "ブラン"},
-			{"HP", "20", "10"},
-			{"ダメージ", "1", "0"},
-			{"命中率", "100%", "100%"},
+			{"HP", "20 → 20", "10 → 9"},
+			{"ダメージ", "1", "―"},
+			{"命中率", "100%", "―"},
 			{"回数", "×1", "反撃なし"},
 			{"必殺", "―", "―"},
 			{"スキル", "狙撃", "―"},
@@ -395,7 +396,7 @@ func TestForecastPanel(t *testing.T) {
 		target(t, c, tactics.Pos{X: 4, Y: 2}, tactics.Pos{X: 3, Y: 2})
 		want = []ForecastRow{
 			{"", "剣士", "ブラン"},
-			{"HP", "20", "10"},
+			{"HP", "20 → 20", "10 → 8"},
 			{"ダメージ", "2", "0"},
 			{"命中率", "100%", "100%"},
 			{"回数", "×1", "×1"},

@@ -15,6 +15,12 @@ import (
 type Panel struct {
 	// Forecast は攻撃の予測の表（FR-BTL-08、UC-03）。攻撃の相手を選んでいるときだけ入る。
 	Forecast []ForecastRow
+	// ForecastWeapons は、予測の両側（攻撃する側、守る側）の武器の種類（DES-UI-07）。武器の絵と相性の印に使う。
+	// Forecast があるときだけ意味がある。
+	ForecastWeapons [2]tactics.WeaponType
+	// ForecastAfter は、すべての 1 撃が当たったときの後の HP（攻撃する側、守る側。DES-UI-07）。
+	// 「撃破」「危険」に使う。Forecast があるときだけ意味がある。
+	ForecastAfter [2]int
 	// Unit は、カーソルのあるマスにいる生きているユニット（FR-UNT-09、UC-04）。いなければ nil。
 	Unit *tactics.Unit
 	// Terrain は、カーソルのあるマスの地形（FR-UNT-09、FR-MAP-01）。カーソルが盤面の外なら nil。
@@ -39,6 +45,9 @@ func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 		// 相手は Targets から選んでいるので、ふつうは誤りにならない。誤りなら予測を出さない。
 		if err == nil {
 			p.Forecast = ForecastRows(f, units[c.unit].Boss, units[c.target].Boss)
+			p.ForecastWeapons = [2]tactics.WeaponType{units[c.unit].Weapon.Type, units[c.target].Weapon.Type}
+			a, d := ForecastAfter(f)
+			p.ForecastAfter = [2]int{a, d}
 		}
 	}
 	if !onMap || cursor.X < 0 || cursor.Y < 0 || cursor.X >= c.battle.Width() || cursor.Y >= c.battle.Height() {
@@ -77,6 +86,11 @@ const (
 	barHeight = 8
 	// blockGap は、絵・能力・武器のまとまりの間の空き。
 	blockGap = 4
+	// forecastAttackX と forecastDefendX は、予測の表の攻撃する側と守る側の列の位置（DES-BTL-07、DES-UI-07）。
+	forecastAttackX = 80
+	forecastDefendX = 200
+	// forecastBadgeX は、予測の列の左端から「撃破」「危険」までの位置（武器の絵と 2 倍の印の右）。
+	forecastBadgeX = weaponTextX + 16
 )
 
 // InfoStyle は情報欄の文の色の種類（DES-UI-06）。描画の側で色に読み替える。
@@ -91,13 +105,21 @@ const (
 	StyleLabel
 	// StyleSkill はスキルの名前（黄）。
 	StyleSkill
+	// StyleGood は有利の印 ▲（緑。DES-UI-07）。
+	StyleGood
+	// StyleBad は不利の印 ▼（赤。DES-UI-07）。
+	StyleBad
+	// StyleAlert は「撃破」「危険」（橙。DES-UI-07）。
+	StyleAlert
 )
 
 // InfoText は情報欄に描く文（DES-UI-06）。(X, Y) は文の左上の画面の座標。
+// Big が真なら 2 倍の大きさで描く（相性の印。DES-UI-07）。
 type InfoText struct {
 	X, Y  int
 	Text  string
 	Style InfoStyle
+	Big   bool
 }
 
 // InfoBar は能力の棒（DES-UI-06）。(X, Y) は左上の画面の座標で、Fill の長さを塗る。
@@ -112,7 +134,7 @@ type InfoIcon struct {
 	Tile       assets.Tile
 }
 
-// InfoView は、情報欄のユニットと地形の部分に描くもの（DES-UI-06）。予測の表は今の描き方のまま別に描く。
+// InfoView は、情報欄に描くもの（DES-UI-06、DES-UI-07）。予測の表、ユニット、地形の順に上から並べる。
 type InfoView struct {
 	Texts []InfoText
 	Bars  []InfoBar
@@ -121,15 +143,15 @@ type InfoView struct {
 	Bottom int
 }
 
-// View は、情報欄のユニットと地形の部分に描くものと位置を返す（DES-UI-01、DES-UI-06）。
-// 予測の表があれば、その下（見出し・表・空き 1 行のあと）から並べる。
+// View は、情報欄に描くものと位置を返す（DES-UI-01、DES-UI-06、DES-UI-07）。
+// 予測の表があれば上に置き、ユニットと地形はその下（見出し・武器の絵・表・空き 1 行のあと）から並べる。
 func (p Panel) View() InfoView {
 	x := MapSize + infoMargin
 	y := infoMargin
-	if len(p.Forecast) > 0 {
-		y += (len(p.Forecast) + 2) * lineHeight
-	}
 	var v InfoView
+	if len(p.Forecast) > 0 {
+		y = v.addForecast(p, x, y) + lineHeight
+	}
 	if p.Unit != nil {
 		y = v.addUnit(*p.Unit, x, y) + lineHeight
 	}
@@ -141,6 +163,60 @@ func (p Panel) View() InfoView {
 	}
 	v.Bottom = y
 	return v
+}
+
+// addForecast は、予測の見出し・両側の武器の絵と相性の印と「撃破」「危険」・表を (x, y) から並べ、
+// 使った一番下の y を返す（DES-BTL-07、DES-UI-07）。高さは (len(p.Forecast) + 1) × lineHeight ＋ WeaponIconSize。
+func (v *InfoView) addForecast(p Panel, x, y int) int {
+	v.text(x, y, "攻撃の予測", StyleTitle)
+	y += lineHeight
+
+	// 両側の列の頭に武器の種類の絵を置き、絵の右に相性の印（2 倍。絵と同じ高さ）、その右に「危険」「撃破」を出す。
+	t := Triangle(p.ForecastWeapons[0], p.ForecastWeapons[1])
+	marks := [2]int{t, -t}
+	badges := [2]string{}
+	if p.ForecastAfter[0] == 0 {
+		badges[0] = "危険"
+	}
+	if p.ForecastAfter[1] == 0 {
+		badges[1] = "撃破"
+	}
+	for i, cx := range [2]int{x + forecastAttackX, x + forecastDefendX} {
+		if tl, ok := weaponTile(p.ForecastWeapons[i]); ok {
+			v.Icons = append(v.Icons, InfoIcon{X: cx, Y: y, Size: WeaponIconSize, Tile: tl})
+		}
+		switch marks[i] {
+		case 1:
+			v.Texts = append(v.Texts, InfoText{X: cx + weaponTextX, Y: y, Text: "▲", Style: StyleGood, Big: true})
+		case -1:
+			v.Texts = append(v.Texts, InfoText{X: cx + weaponTextX, Y: y, Text: "▼", Style: StyleBad, Big: true})
+		}
+	}
+	for i, cx := range [2]int{x + forecastAttackX, x + forecastDefendX} {
+		if badges[i] != "" {
+			v.text(cx+forecastBadgeX, y+(WeaponIconSize-lineHeight)/2, badges[i], StyleAlert)
+		}
+	}
+	y += WeaponIconSize
+
+	// 表は、項目の名前を左に、攻撃する側と守る側の値を列に並べる。名前の行は金にする。
+	for i, r := range p.Forecast {
+		st := StylePlain
+		if i == 0 {
+			st = StyleTitle
+		}
+		if r.Label != "" {
+			v.text(x, y, r.Label, StyleLabel)
+		}
+		if r.Attacker != "" {
+			v.text(x+forecastAttackX, y, r.Attacker, st)
+		}
+		if r.Defender != "" {
+			v.text(x+forecastDefendX, y, r.Defender, st)
+		}
+		y += lineHeight
+	}
+	return y
 }
 
 func (v *InfoView) text(x, y int, s string, st InfoStyle) {
@@ -227,19 +303,20 @@ func TerrainLines(t tactics.Terrain) []string {
 	}
 }
 
-// ForecastRows は、予測を表の行にする（DES-BTL-07、FR-BTL-08、UC-03）。
-// 名前（ボスなら ★）、今の HP、ダメージ（1 撃あたり）、命中率、攻撃の回数、必殺、効くスキルの順に並べる。
-// 回数は、反撃できなければ「反撃なし」、追撃すれば「×2」。
+// ForecastRows は、予測を表の行にする（DES-BTL-07、DES-UI-07、FR-BTL-08、UC-03）。
+// 名前（ボスなら ★）、HP（今 → すべて当たったときの後。ForecastAfter）、ダメージ（1 撃あたり）、命中率、攻撃の回数、必殺、
+// 効くスキルの順に並べる。回数は、反撃できなければ「反撃なし」、追撃すれば「×2」。
 //
-// 攻撃の回数が 0 の側では、必殺と怒りを出さない。Forecast の Crit と怒りは回数によらず条件だけで真になるが、
-// 攻撃しない側の必殺は起きないため（REV-011 F-04。表示だけで決め、tactics は変えない）。
+// 攻撃の回数が 0 の側では、ダメージ・命中率・必殺を「―」にし、怒りを出さない。Forecast の Crit と怒りは回数によらず
+// 条件だけで真になるが、攻撃しない側の必殺は起きないため（REV-011 F-04、REV-015 I-01、DES-UI-07。表示だけで決め、tactics は変えない）。
 func ForecastRows(f tactics.Forecast, attackerBoss, defenderBoss bool) []ForecastRow {
 	a, d := f.Attacker, f.Defender
+	aAfter, dAfter := ForecastAfter(f)
 	rows := []ForecastRow{
 		{"", forecastName(a, attackerBoss), forecastName(d, defenderBoss)},
-		{"HP", fmt.Sprint(a.HP), fmt.Sprint(d.HP)},
-		{"ダメージ", fmt.Sprint(a.Damage), fmt.Sprint(d.Damage)},
-		{"命中率", fmt.Sprintf("%d%%", a.HitRate), fmt.Sprintf("%d%%", d.HitRate)},
+		{"HP", hpText(a.HP, aAfter), hpText(d.HP, dAfter)},
+		{"ダメージ", damageText(a), damageText(d)},
+		{"命中率", hitRateText(a), hitRateText(d)},
 		{"回数", countText(a.Count), countText(d.Count)},
 		{"必殺", critText(a), critText(d)},
 	}
@@ -263,11 +340,93 @@ func ForecastRows(f tactics.Forecast, attackerBoss, defenderBoss bool) []Forecas
 	return rows
 }
 
+// ForecastAfter は、すべての 1 撃が当たったものとしたときの、攻撃する側と守る側の後の HP を返す（DES-UI-07）。
+// Forecast の回数とダメージから、1. 攻撃する側の 1 撃、2. 守る側の回数が 1 以上なら反撃、
+// 3. 攻撃する側の回数が 2 なら追撃、そうでなく守る側の回数が 2 なら守る側の追撃、の順に引く（DES-BTL-06）。
+// HP は 0 で止め、どちらかが 0 になったらそこで止める。必殺と大盾は数えない。
+func ForecastAfter(f tactics.Forecast) (attacker, defender int) {
+	attacker, defender = f.Attacker.HP, f.Defender.HP
+	// strike は hp から dmg を引き（0 で止める）、倒れたら真を返す。
+	strike := func(hp *int, dmg int) bool {
+		*hp = max(*hp-max(dmg, 0), 0)
+		return *hp == 0
+	}
+	if strike(&defender, f.Attacker.Damage) {
+		return
+	}
+	if f.Defender.Count >= 1 && strike(&attacker, f.Defender.Damage) {
+		return
+	}
+	switch {
+	case f.Attacker.Count == 2:
+		strike(&defender, f.Attacker.Damage)
+	case f.Defender.Count == 2:
+		strike(&attacker, f.Defender.Damage)
+	}
+	return
+}
+
+// Triangle は、武器の種類 a で種類 d を攻撃するときの、攻撃する側の相性 t を返す（DES-BTL-05 の表、DES-UI-07）。
+// 剣は斧に、斧は槍に、槍は剣に有利で +1、その逆は −1、それ以外（弓を含む）は 0。
+// tactics の相性の関数は公開されていないので、画面の側で同じ表から求める（REV-016 F-06）。
+func Triangle(a, d tactics.WeaponType) int {
+	beats := func(x, y tactics.WeaponType) bool {
+		return (x == tactics.Sword && y == tactics.Axe) || (x == tactics.Axe && y == tactics.Lance) || (x == tactics.Lance && y == tactics.Sword)
+	}
+	switch {
+	case beats(a, d):
+		return 1
+	case beats(d, a):
+		return -1
+	}
+	return 0
+}
+
+// TargetLabel は、選んだ相手のマスの上に出す文「ダメージ×回数 命中率%」と、相手のマスを返す（DES-UI-07）。
+// 回数が 1 なら「×1」を省く。攻撃の相手を選んでいなければ ok が偽。
+func (c *Controller) TargetLabel() (s string, p tactics.Pos, ok bool) {
+	if c.state != Targeting || c.target < 0 {
+		return "", tactics.Pos{}, false
+	}
+	f, err := c.battle.Forecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Attack, Target: c.target})
+	if err != nil {
+		return "", tactics.Pos{}, false
+	}
+	a := f.Attacker
+	s = fmt.Sprint(a.Damage)
+	if a.Count != 1 {
+		s += fmt.Sprintf("×%d", a.Count)
+	}
+	s += fmt.Sprintf(" %d%%", a.HitRate)
+	return s, c.Units()[c.target].Pos, true
+}
+
 func forecastName(s tactics.ForecastSide, boss bool) string {
 	if boss {
 		return s.Name + "★"
 	}
 	return s.Name
+}
+
+// hpText は HP の「今 → 後」の文を返す（DES-UI-07）。
+func hpText(now, after int) string {
+	return fmt.Sprintf("%d → %d", now, after)
+}
+
+// damageText は 1 撃あたりのダメージの文を返す。攻撃の回数が 0 なら「―」（DES-UI-07）。
+func damageText(s tactics.ForecastSide) string {
+	if s.Count == 0 {
+		return "―"
+	}
+	return fmt.Sprint(s.Damage)
+}
+
+// hitRateText は命中率の文を返す。攻撃の回数が 0 なら「―」（DES-UI-07）。
+func hitRateText(s tactics.ForecastSide) string {
+	if s.Count == 0 {
+		return "―"
+	}
+	return fmt.Sprintf("%d%%", s.HitRate)
 }
 
 // countText は攻撃の回数の文を返す（DES-BTL-07）。
