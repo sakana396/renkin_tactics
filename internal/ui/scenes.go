@@ -131,6 +131,9 @@ func (s *SceneController) saveChapter() {
 
 // Choose は場面のボタンを選ぶ（DES-UI-10、11、15）。
 func (s *SceneController) Choose(i int) {
+	if (s.scene == Battle || s.scene == GameOver) && s.battle != nil && s.battle.rewind.open {
+		return
+	}
 	switch s.scene {
 	case Title:
 		if s.confirmOverwrite {
@@ -185,6 +188,10 @@ func (s *SceneController) Choose(i int) {
 		s.choosePrepare(i)
 	case GameOver:
 		switch i {
+		case 2:
+			if s.battle != nil {
+				s.battle.OpenRewind()
+			}
 		case 0:
 			c, err := core.LoadCampaign(s.cfg.Catalog, bytes.NewReader(s.chapterStart))
 			if err != nil {
@@ -256,7 +263,7 @@ func (s *SceneController) Advance() {
 	case Prepare:
 		s.StartBattle(s.SelectedMembers())
 	case Battle:
-		if s.battle == nil || s.battle.State() != Over {
+		if s.battle == nil || (s.battle.State() != Over || s.battle.rewind.open) {
 			return
 		}
 		switch s.sortie.Battle.Result {
@@ -284,6 +291,10 @@ func (s *SceneController) Advance() {
 
 // Cancel はルール選択の取消しと、物語の残りの省略（DES-UI-11、12）。
 func (s *SceneController) Cancel() {
+	if (s.scene == Battle || s.scene == GameOver) && s.battle != nil && s.battle.rewind.open {
+		s.battle.Cancel()
+		return
+	}
 	switch s.scene {
 	case RuleSelect:
 		s.enterTitle("")

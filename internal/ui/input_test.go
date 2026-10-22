@@ -503,6 +503,11 @@ func TestControllerTransitions(t *testing.T) {
 		c.Escape()
 		c.EndPhase()
 		c.ChooseAction(tactics.Wait)
+		c.rewindKey("T")
+		c.RewindClick(310, 520)
+		if c.rewind.open {
+			t.Fatal("再生中に巻き戻しを開いた")
+		}
 		if c.State() != Playing || !reflect.DeepEqual(c.Battle().Units(), before) {
 			t.Fatalf("再生中に入力を受け付けた: 状態 %v", c.State())
 		}
@@ -624,6 +629,15 @@ func TestControllerTransitions(t *testing.T) {
 		c.Cancel()
 		if !reflect.DeepEqual(before, c.Battle().Units()) || c.Battle().Result != tactics.Won || *calls != 1 || c.Battle() != old || c.State() != Over {
 			t.Fatalf("Over で Escape・Cancel が戦闘を変えた")
+		}
+
+		c.rewindKey("T")
+		if !c.rewind.open {
+			t.Fatal("勝利の帯から開けない")
+		}
+		c.Cancel()
+		if c.state != Over || c.battle.RewindsLeft() != 10 {
+			t.Fatal("一覧の取消しで勝利の帯が変わった")
 		}
 
 		// 負け: 主人公（HP 1）が敵の隣にいて、番を終える。敵の番の途中で決まる。
