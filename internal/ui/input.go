@@ -46,8 +46,12 @@ type Factory func() (*tactics.Battle, []tactics.Event, error)
 // 描画と Ebitengine から分けてあり、マウスとキーの入力は Game が Controller のメソッドに読み替える。
 // 時間はフレーム数（Tick）で数え、core には渡さない。
 type Controller struct {
-	battle *tactics.Battle
-	state  State
+	// 巻き戻しの表示と通し出来事の境界を保持する（DES-UI-19）。
+	resumeEnemy bool
+	rewind      rewindMenu
+	record      []tactics.Event
+	battle      *tactics.Battle
+	state       State
 
 	// unit は選んだ自軍、dest は移動先、target は攻撃・回復の相手（いなければ -1）。
 	unit   int
@@ -108,6 +112,9 @@ func (c *Controller) Message() string { return c.message }
 
 // Click は盤面のマス p を左クリックしたときの処理（DES-UI-02）。
 func (c *Controller) Click(p tactics.Pos) {
+	if c.rewind.open || c.battle.NeedsResume() {
+		return
+	}
 	switch c.state {
 	case Idle:
 		c.confirmEnd = false
@@ -152,6 +159,9 @@ func (c *Controller) Click(p tactics.Pos) {
 
 // ChooseAction は、行動の一覧から a を選んだときの処理（DES-UI-02）。Moved で、一覧にある行動だけを受け付ける。
 func (c *Controller) ChooseAction(a tactics.Action) {
+	if c.rewind.open || c.battle.NeedsResume() {
+		return
+	}
 	if c.state != Moved || !containsAction(c.Actions(), a) {
 		return
 	}
@@ -169,6 +179,9 @@ func (c *Controller) ChooseAction(a tactics.Action) {
 
 // ChooseItem は、アイテムの一覧から手持ちの k 番目を選んだときの処理（DES-UI-02）。
 func (c *Controller) ChooseItem(k int) {
+	if c.rewind.open || c.battle.NeedsResume() {
+		return
+	}
 	if c.state != ItemMenu || k < 0 || k >= len(c.battle.Units()[c.unit].Items) {
 		return
 	}
@@ -177,6 +190,14 @@ func (c *Controller) ChooseItem(k int) {
 
 // Cancel は、右クリックか Esc で取り消すときの処理（DES-UI-02）。
 func (c *Controller) Cancel() {
+	if c.rewind.open {
+		if c.rewind.confirm {
+			c.rewind.confirm = false
+		} else {
+			c.rewind = rewindMenu{}
+		}
+		return
+	}
 	switch c.state {
 	case Idle:
 		c.watched, c.confirmEnd, c.message = -1, false, ""
@@ -197,6 +218,9 @@ func (c *Controller) Escape() { c.Cancel() }
 // EndPhase は E キーの処理（DES-UI-02、UC-05）。Idle のときだけ受け付ける。
 // 行動していない自軍がいれば、1 回目は確認を求め、もう一度押すと番を終える。
 func (c *Controller) EndPhase() {
+	if c.rewind.open || c.battle.NeedsResume() {
+		return
+	}
 	if c.state != Idle {
 		return
 	}
@@ -380,7 +404,7 @@ func (c *Controller) hoveredEnemy() int {
 
 // ToggleDanger は Q キーの処理（DES-UI-08）。Playing・Over 以外のとき、敵の危険範囲を出す・消す。
 func (c *Controller) ToggleDanger() {
-	if c.state == Playing || c.state == Over {
+	if c.rewind.open || c.state == Playing || c.state == Over {
 		return
 	}
 	c.danger = !c.danger
@@ -441,6 +465,7 @@ func (c *Controller) act(cmd tactics.Command) {
 
 // play は出来事の再生を始める（DES-UI-04）。
 func (c *Controller) play(events []tactics.Event) {
+	c.record = append(c.record, events...)
 	c.state, c.events, c.index, c.frame = Playing, events, 0, 0
 	c.target, c.watched, c.confirmEnd, c.message = -1, -1, false, ""
 	if len(events) == 0 {
