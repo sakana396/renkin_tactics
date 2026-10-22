@@ -4,28 +4,29 @@ import "image/color"
 
 // 色（DES-UI-03）。半透明の色があるので、アルファを掛けていない NRGBA で書く。
 var (
-	bgColor     = color.NRGBA{22, 28, 37, 255}
-	panelColor  = color.NRGBA{37, 46, 58, 255}
-	white       = color.NRGBA{232, 237, 238, 255}
-	muted       = color.NRGBA{177, 193, 201, 255}
-	gold        = color.NRGBA{255, 214, 92, 255}
-	blueOverlay = color.NRGBA{30, 90, 255, 130}
-	redOverlay  = color.NRGBA{255, 30, 30, 140}
-	playerBase  = color.NRGBA{50, 110, 230, 210}
-	enemyBase   = color.NRGBA{220, 50, 50, 210}
-	hpBack      = color.NRGBA{20, 20, 20, 220}
-	hpFront     = color.NRGBA{90, 220, 110, 255}
-	cursorColor = color.NRGBA{255, 230, 80, 255}
-	targetColor = color.NRGBA{240, 80, 80, 255}
-	dangerColor = color.NRGBA{255, 150, 30, 255}
-	bandColor   = color.NRGBA{0, 0, 0, 170}
-	menuColor   = color.NRGBA{30, 36, 48, 235}
-	menuBorder  = color.NRGBA{200, 210, 220, 255}
-	strikeHit   = color.NRGBA{255, 240, 120, 255}
-	strikeMiss  = color.NRGBA{200, 200, 200, 255}
-	healTextClr = color.NRGBA{120, 255, 150, 255}
-	overShade   = color.NRGBA{0, 0, 0, 150}
-	textShadow  = color.NRGBA{0, 0, 0, 255}
+	bgColor      = color.NRGBA{22, 28, 37, 255}
+	panelColor   = color.NRGBA{37, 46, 58, 255}
+	white        = color.NRGBA{232, 237, 238, 255}
+	muted        = color.NRGBA{177, 193, 201, 255}
+	gold         = color.NRGBA{255, 214, 92, 255}
+	blueOverlay  = color.NRGBA{30, 90, 255, 130}
+	greenOverlay = color.NRGBA{30, 220, 80, 130}
+	redOverlay   = color.NRGBA{255, 30, 30, 140}
+	playerBase   = color.NRGBA{50, 110, 230, 210}
+	enemyBase    = color.NRGBA{220, 50, 50, 210}
+	hpBack       = color.NRGBA{20, 20, 20, 220}
+	hpFront      = color.NRGBA{90, 220, 110, 255}
+	cursorColor  = color.NRGBA{255, 230, 80, 255}
+	targetColor  = color.NRGBA{240, 80, 80, 255}
+	dangerColor  = color.NRGBA{255, 150, 30, 255}
+	bandColor    = color.NRGBA{0, 0, 0, 170}
+	menuColor    = color.NRGBA{30, 36, 48, 235}
+	menuBorder   = color.NRGBA{200, 210, 220, 255}
+	strikeHit    = color.NRGBA{255, 240, 120, 255}
+	strikeMiss   = color.NRGBA{200, 200, 200, 255}
+	healTextClr  = color.NRGBA{120, 255, 150, 255}
+	overShade    = color.NRGBA{0, 0, 0, 150}
+	textShadow   = color.NRGBA{0, 0, 0, 255}
 )
 
 const (
@@ -64,4 +65,15 @@ func infoStyleColor(s InfoStyle) color.Color {
 		return skillColor
 	}
 	return white
+}
+
+// targetFrameColor は攻撃・回復の候補枠の色を返し、選んだ相手をカーソル色で示す（DES-UI-02、DES-UI-18）。
+func (c *Controller) targetFrameColor(target int) color.Color {
+	if target == c.target {
+		return cursorColor
+	}
+	if c.TargetStyle() == StyleGood {
+		return goodColor
+	}
+	return targetColor
 }

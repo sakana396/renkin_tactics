@@ -42,6 +42,8 @@ func unitTile(u tactics.Unit) assets.Tile {
 			return assets.PlayerLance
 		case tactics.Axe:
 			return assets.PlayerAxe
+		case tactics.Staff:
+			return assets.PlayerStaff
 		case tactics.Bow:
 			return assets.PlayerBow
 		}
@@ -70,6 +72,8 @@ func weaponTile(t tactics.WeaponType) (assets.Tile, bool) {
 		return assets.WeaponLance, true
 	case tactics.Axe:
 		return assets.WeaponAxe, true
+	case tactics.Staff:
+		return assets.WeaponStaff, true
 	case tactics.Bow:
 		return assets.WeaponBow, true
 	}

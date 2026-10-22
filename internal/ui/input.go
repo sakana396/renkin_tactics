@@ -26,6 +26,9 @@ const (
 	Over
 )
 
+// HealTargeting は回復する味方を選ぶ状態（DES-UI-18）。
+const HealTargeting State = Over + 1
+
 // FramesPerEvent は、出来事 1 つを表示するフレームの数（DES-UI-04）。
 const FramesPerEvent = 20
 
@@ -46,7 +49,7 @@ type Controller struct {
 	battle *tactics.Battle
 	state  State
 
-	// unit は選んだ自軍、dest は移動先、target は攻撃の相手（いなければ -1）。
+	// unit は選んだ自軍、dest は移動先、target は攻撃・回復の相手（いなければ -1）。
 	unit   int
 	dest   tactics.Pos
 	target int
@@ -95,7 +98,7 @@ func (c *Controller) Phase() (turn int, side tactics.Side) { return c.shownTurn,
 func (c *Controller) Battle() *tactics.Battle { return c.battle }
 
 // Selection は、選んだ自軍、移動先、攻撃の相手（いなければ -1）を返す。
-// Selected・Moved・Targeting・ItemMenu のときだけ意味を持つ。
+// Selected・Moved・Targeting・HealTargeting・ItemMenu のときだけ意味を持つ。
 func (c *Controller) Selection() (unit int, dest tactics.Pos, target int) {
 	return c.unit, c.dest, c.target
 }
@@ -127,14 +130,18 @@ func (c *Controller) Click(p tactics.Pos) {
 		if _, ok := c.battle.Reachable(c.unit)[p]; ok {
 			c.state, c.dest = Moved, p
 		}
-	case Targeting:
-		for _, t := range c.Targets() {
+	case Targeting, HealTargeting:
+		targets, action := c.Targets(), tactics.Attack
+		if c.state == HealTargeting {
+			targets, action = c.HealTargets(), tactics.Heal
+		}
+		for _, t := range targets {
 			if c.battle.Units()[t].Pos != p {
 				continue
 			}
 			if c.target == t {
 				// 同じ相手をもう一度クリックすると決定する。
-				c.act(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Attack, Target: t})
+				c.act(tactics.Command{Unit: c.unit, To: c.dest, Action: action, Target: t})
 			} else {
 				c.target = t
 			}
@@ -153,6 +160,8 @@ func (c *Controller) ChooseAction(a tactics.Action) {
 		c.act(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Wait})
 	case tactics.Attack:
 		c.state, c.target = Targeting, -1
+	case tactics.Heal:
+		c.state, c.target = HealTargeting, -1
 	case tactics.UseItem:
 		c.state = ItemMenu
 	}
@@ -175,7 +184,7 @@ func (c *Controller) Cancel() {
 		c.state = Idle
 	case Moved:
 		c.state = Selected
-	case Targeting:
+	case Targeting, HealTargeting:
 		c.state, c.target = Moved, -1
 	case ItemMenu:
 		c.state = Moved
@@ -260,13 +269,13 @@ func (c *Controller) Units() []tactics.Unit {
 	}
 	units := c.battle.Units()
 	switch c.state {
-	case Moved, Targeting, ItemMenu:
+	case Moved, Targeting, HealTargeting, ItemMenu:
 		units[c.unit].Pos = c.dest
 	}
 	return units
 }
 
-// Actions は、Moved で出す行動の一覧を返す（DES-UI-02）。できる行動だけを、攻撃・アイテム・待機の順に並べる。
+// Actions は、Moved でできる行動を攻撃（杖なら回復）・アイテム・待機の順に返す（DES-UI-02、DES-UI-18）。
 // 攻撃は射程に相手がいるとき、アイテムは手持ちがあって HP が最大でないときだけ出す。
 func (c *Controller) Actions() []tactics.Action {
 	if c.state != Moved {
@@ -277,6 +286,9 @@ func (c *Controller) Actions() []tactics.Action {
 		out = append(out, tactics.Attack)
 	}
 	u := c.battle.Units()[c.unit]
+	if len(c.HealTargets()) > 0 {
+		out = append(out, tactics.Heal)
+	}
 	if len(u.Items) > 0 && u.HP < u.Stats.HP {
 		out = append(out, tactics.UseItem)
 	}
@@ -291,6 +303,9 @@ func (c *Controller) Targets() []int {
 	}
 	units := c.battle.Units()
 	w := units[c.unit].Weapon
+	if w.Type == tactics.Staff {
+		return nil
+	}
 	var out []int
 	for i, u := range units {
 		if !u.Alive || u.Side == units[c.unit].Side {
@@ -303,11 +318,12 @@ func (c *Controller) Targets() []int {
 	return out
 }
 
-// Overlay は、青く重ねるマス（移動できる）と赤く重ねるマス（攻撃できる）を返す（DES-UI-03、DES-UI-08）。
+// Overlay は移動範囲と武器の射程を返す（DES-UI-03、DES-UI-08、DES-UI-18）。
+// 第二戻り値の色は RangeStyle に従い、杖なら緑、攻撃なら赤になる。
 // 敵の範囲を出しているとき（shownEnemy）は、選んでいる自軍の範囲の代わりに、その敵の範囲を返す。
 // そうでなければ、Selected では選んだ自軍の範囲を返す。
 // 赤は、移動できるマスから武器が届くマスのうち、移動できないマス。
-// Moved・Targeting では、移動先から武器が届くマスを赤で返す。
+// Moved・Targeting・HealTargeting では、移動先から武器が届くマスを第二戻り値で返す。
 func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
 	if e := c.shownEnemy(); e >= 0 {
 		return c.ranges(e)
@@ -315,7 +331,7 @@ func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
 	switch c.state {
 	case Selected:
 		return c.ranges(c.unit)
-	case Moved, Targeting:
+	case Moved, Targeting, HealTargeting:
 		red = map[tactics.Pos]bool{}
 		for _, p := range c.battle.AttackRange(c.unit, c.dest) {
 			red[p] = true
@@ -484,4 +500,34 @@ func abs(n int) int {
 		return -n
 	}
 	return n
+}
+
+// HealTargets は移動先から回復できる味方を core の検証で選ぶ（DES-UI-18）。
+func (c *Controller) HealTargets() []int {
+	if c.state != Moved && c.state != HealTargeting {
+		return nil
+	}
+	var out []int
+	for i := range c.battle.Units() {
+		if _, err := c.battle.HealForecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Heal, Target: i}); err == nil {
+			out = append(out, i)
+		}
+	}
+	return out
+}
+
+// RangeStyle は表示中の射程の色を返す。敵の射程は赤のままにする（DES-UI-18、DES-UI-08）。
+func (c *Controller) RangeStyle() InfoStyle {
+	if c.shownEnemy() < 0 && (c.state == Selected || c.state == Moved || c.state == HealTargeting) && c.battle.Units()[c.unit].Weapon.Type == tactics.Staff {
+		return StyleGood
+	}
+	return StyleBad
+}
+
+// TargetStyle は回復候補の枠を緑、攻撃候補の枠を赤にする（DES-UI-18）。
+func (c *Controller) TargetStyle() InfoStyle {
+	if c.state == HealTargeting {
+		return StyleGood
+	}
+	return StyleBad
 }
