@@ -49,6 +49,8 @@ func (b *Battle) snapshot() battleSnapshot {
 }
 
 // restore は別の PCG の復元成功後に戦闘を置き換える。失敗時は何も変えない（DES-RWD-03、DES-ERR-01）。
+// テスト専用の SetRoll の関数差し替えは保存せず、復元後は実 PCG を使う。
+// 巻き戻しのテストは固定列を使わず実 PCG で行う。
 // 履歴の破棄・回数の消費・ID の検証は、この内部処理を使う公開操作の責務とする。
 func (b *Battle) restore(s battleSnapshot) error {
 	pcg := new(rand.PCG)

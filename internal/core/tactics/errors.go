@@ -4,6 +4,11 @@ import "errors"
 
 // 誤りの値（DES-BTL-08、DES-ERR-01）。errors.Is で見分ける。
 var (
+	// 巻き戻しと再開の誤り（DES-RWD-02・04）。
+	ErrNoRewinds       = errors.New("tactics: 巻き戻しの残り回数がありません")
+	ErrInvalidRewind   = errors.New("tactics: 巻き戻し先が正しくありません")
+	ErrResumeRequired  = errors.New("tactics: 番の処理の再開が必要です")
+	ErrNoPendingResume = errors.New("tactics: 再開する処理がありません")
 	// ErrBattleOver は、戦闘がもう終わっていることを表す。
 	ErrBattleOver = errors.New("tactics: 戦闘はもう終わっています")
 	// ErrNotPlayerPhase は、自軍の番ではないことを表す。

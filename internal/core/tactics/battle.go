@@ -7,7 +7,7 @@ import (
 
 // Battle は戦闘の状態（DES-BTL-01）。
 //
-// Turn、Phase、Result は読むためのもの。状態は Act と EndPhase で変える。
+// Turn、Phase、Result は読むためのもの。状態は Act・EndPhase・Rewind・Resume で変える。
 type Battle struct {
 	Turn   int
 	Phase  Side
@@ -26,6 +26,7 @@ type Battle struct {
 	history       []historyRecord
 	nextHistoryID uint64
 	eventCount    int
+	rewindsLeft   int
 	// roll は 0〜99 の乱数を 1 つ引く。テストでは export_test.go から差し替える（DES-RNG-01）。
 	roll func() int
 	// actEnemyOverride は、敵 1 体を動かす処理の差し替え。nil なら actEnemy を使う。
@@ -45,6 +46,7 @@ func New(setup Setup, seed uint64) (*Battle, []Event, error) {
 		Result:        Ongoing,
 		pcg:           rand.NewPCG(seed, 0),
 		nextHistoryID: 1,
+		rewindsLeft:   10,
 	}
 	b.rng = rand.New(b.pcg)
 	b.roll = func() int { return b.rng.IntN(100) }

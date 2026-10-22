@@ -1,22 +1,32 @@
 package tactics
 
-// historyKind は戻り先となる処理の単位（DES-RWD-01）。
-type historyKind int
+// HistoryKind は戻り先となる処理の単位（DES-RWD-01・02）。
+type HistoryKind int
 
 const (
-	historyAction historyKind = iota
-	historyEndPhase
-	historyPlayerStart
+	// HistoryAction は自軍・敵軍の 1 体の移動と行動。
+	HistoryAction HistoryKind = iota
+	// HistoryEndPhase は敵軍の番を始める前。Automatic で自動移行を区別する。
+	HistoryEndPhase
+	// HistoryPlayerStart は次の自軍の番を始める前。
+	HistoryPlayerStart
 )
 
-// historyEntry は一覧に使う値。写しやスライスを外へ渡さない（DES-RWD-01）。
+// 内部名は既存の記録処理でも使う。
+const (
+	historyAction      = HistoryAction
+	historyEndPhase    = HistoryEndPhase
+	historyPlayerStart = HistoryPlayerStart
+)
+
+// HistoryEntry は一覧に使う値。写しやスライスを外へ渡さない（DES-RWD-01）。
 // EventStart・EventEnd は New の出来事も含めた通し添字の半開区間。
-// Unit・Target は行動者・相手がない場合 -1。Action・To は historyAction だけで使う。
-type historyEntry struct {
+// Unit・Target は行動者・相手がない場合 -1。Action・To は HistoryAction だけで使う。
+type HistoryEntry struct {
 	ID         uint64
 	Turn       int
 	Side       Side
-	Kind       historyKind
+	Kind       HistoryKind
 	Action     Action
 	Unit       int
 	Target     int
@@ -28,14 +38,16 @@ type historyEntry struct {
 	EventEnd   int
 }
 
+type historyEntry = HistoryEntry
+
 // historyRecord は一覧用の値と行動前の完全な写しを結ぶ（DES-RWD-01）。
 type historyRecord struct {
-	entry  historyEntry
-	before battleSnapshot
+	entry     historyEntry
+	before    battleSnapshot
+	completed bool
 }
 
 // historyEntries は一覧用の値の独立した配列を返す（DES-RWD-01）。
-// 公開 API は巻き戻し・再開を組み込む Issue で追加する。
 func (b *Battle) historyEntries() []historyEntry {
 	out := make([]historyEntry, len(b.history))
 	for i, h := range b.history {
@@ -67,4 +79,7 @@ func (b *Battle) beginHistory(e historyEntry) int {
 }
 
 // finishHistory は処理の終了時点の出来事の境界を確定する（DES-RWD-01）。
-func (b *Battle) finishHistory(i int) { b.history[i].entry.EventEnd = b.eventCount }
+func (b *Battle) finishHistory(i int) {
+	b.history[i].entry.EventEnd = b.eventCount
+	b.history[i].completed = true
+}

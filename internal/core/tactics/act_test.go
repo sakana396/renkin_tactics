@@ -145,6 +145,7 @@ func TestErrorValues(t *testing.T) {
 			tactics.ErrOutOfRange, tactics.ErrNoItem, tactics.ErrFullHP,
 			tactics.ErrInvalidAction, tactics.ErrInvalidSetup,
 			tactics.ErrCannotAttack, tactics.ErrCannotHeal, tactics.ErrNoUses,
+			tactics.ErrNoRewinds, tactics.ErrInvalidRewind, tactics.ErrResumeRequired, tactics.ErrNoPendingResume,
 		}
 		for i, a := range all {
 			if a == nil || a.Error() == "" {
