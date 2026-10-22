@@ -61,6 +61,9 @@ func newUnit(us UnitSetup) Unit {
 		ClassName: us.ClassName,
 		Side:      us.Side,
 		Stats:     us.Stats,
+		Level:     us.Level,
+		Exp:       us.Exp,
+		Growth:    us.Growth,
 		HP:        us.Stats.HP,
 		Pos:       us.Pos,
 		Weapon:    us.Weapon,
@@ -74,7 +77,7 @@ func newUnit(us UnitSetup) Unit {
 	return u.clone()
 }
 
-// validateSetup は Setup の規則 1〜6 を確かめる（DES-BTL-01）。最初に見つかった誤りを返す。
+// validateSetup は Setup の規則 1〜7 を確かめる（DES-BTL-01）。最初に見つかった誤りを返す。
 func validateSetup(s Setup) error {
 	bad := func(format string, args ...any) error {
 		return fmt.Errorf("%w: %s", ErrInvalidSetup, fmt.Sprintf(format, args...))
@@ -160,7 +163,7 @@ func validateSetup(s Setup) error {
 	return nil
 }
 
-// validateUnit はユニット 1 体の規則 4 と 6 を確かめる（DES-BTL-01）。
+// validateUnit はユニット 1 体の規則 4・6・7 を確かめる（DES-BTL-01、DES-GRW-03）。
 func validateUnit(u UnitSetup) error {
 	// 規則 4: 能力。
 	st := u.Stats
@@ -203,6 +206,29 @@ func validateUnit(u UnitSetup) error {
 	}
 	if sk.Multiplier < 0 || (sk.Effect == Wrath && sk.Multiplier < 1) {
 		return fmt.Errorf("スキルの倍率 %d が正しくありません（0 以上、怒りでは 1 以上）", sk.Multiplier)
+	}
+	return validateGrowth(u)
+}
+
+// validateGrowth はユニット 1 体の規則 7（レベル・経験・成長率）を確かめる（DES-GRW-03）。
+func validateGrowth(u UnitSetup) error {
+	if u.Level < 0 || u.Level > maxLevel {
+		return fmt.Errorf("レベル %d は 0〜%d でなければなりません", u.Level, maxLevel)
+	}
+	if u.Side == Enemy && u.Level != 0 {
+		return fmt.Errorf("敵のレベル %d は 0 でなければなりません", u.Level)
+	}
+	if u.Exp < 0 || u.Exp >= expPerLevel {
+		return fmt.Errorf("経験 %d は 0〜%d でなければなりません", u.Exp, expPerLevel-1)
+	}
+	if (u.Level == 0 || u.Level == maxLevel) && u.Exp != 0 {
+		return fmt.Errorf("レベル %d の経験 %d は 0 でなければなりません", u.Level, u.Exp)
+	}
+	g := u.Growth
+	for _, r := range []int{g.HP, g.Str, g.Skl, g.Spd, g.Def} {
+		if r < 0 || r > 100 {
+			return fmt.Errorf("成長率 %+v は 0〜100 でなければなりません", g)
+		}
 	}
 	return nil
 }
