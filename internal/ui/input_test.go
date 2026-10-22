@@ -584,7 +584,7 @@ func TestControllerTransitions(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-IF-01-13 勝ち負けが決まると Over になる。R で新しい戦闘を作ってやり直し、Esc で終了する", func(t *testing.T) {
+	t.Run("TC-IF-01-13 勝ち負けが決まると Over になる。R・Esc では戦闘を作り直さず終了しない", func(t *testing.T) {
 		// 勝ち: 主人公がボス（HP 1）の隣にいる。
 		won := func() tactics.Setup {
 			return tactics.Setup{
@@ -625,12 +625,9 @@ func TestControllerTransitions(t *testing.T) {
 		}
 		old := c.Battle()
 		c.Restart()
-		if *calls != 2 || c.Battle() == old || c.State() != Playing || c.Battle().Result != tactics.Ongoing {
-			t.Fatalf("やり直し: 呼んだ回数 %d、状態 %v", *calls, c.State())
-		}
-		playOut(c)
-		if c.State() != Idle {
-			t.Errorf("やり直しのあと: 状態 %v", c.State())
+		c.Escape()
+		if *calls != 1 || c.Battle() != old || c.State() != Over || c.Quit() {
+			t.Fatalf("Over で R・Esc が戦闘を変えた")
 		}
 
 		// 負け: 主人公（HP 1）が敵の隣にいて、番を終える。敵の番の途中で決まる。
@@ -651,16 +648,16 @@ func TestControllerTransitions(t *testing.T) {
 		if d.State() != Over || d.Battle().Result != tactics.Lost {
 			t.Fatalf("負け: 状態 %v、結果 %v", d.State(), d.Battle().Result)
 		}
-		if got := d.Guide(); len(got) != 2 || got[1] != "負け……　R: やり直す　Esc: 終了" {
+		if got := d.Guide(); len(got) != 2 || got[1] != "敗北　左クリック: 次へ" {
 			t.Errorf("負けの案内 = %q", got)
 		}
 		d.Escape()
-		if !d.Quit() {
-			t.Errorf("Over で Esc を押しても終了しない")
+		if d.Quit() {
+			t.Errorf("Over で Esc を押すと終了した")
 		}
 	})
 
-	t.Run("TC-IF-01-14 やり直しで戦闘を作れなければ、知らせを出して Over のまま", func(t *testing.T) {
+	t.Run("TC-IF-01-14 R で戦闘を作る関数を再実行しない。初期作成の誤りは返す", func(t *testing.T) {
 		n := 0
 		f := func() (*tactics.Battle, []tactics.Event, error) {
 			n++
@@ -680,7 +677,7 @@ func TestControllerTransitions(t *testing.T) {
 		c.EndPhase()
 		playOut(c)
 		c.Restart()
-		if c.State() != Over || !strings.Contains(c.Message(), "作れない") {
+		if c.State() != Over || n != 1 || c.Message() != "" {
 			t.Errorf("状態 %v、知らせ %q", c.State(), c.Message())
 		}
 		if _, err := NewController(func() (*tactics.Battle, []tactics.Event, error) { return nil, nil, errors.New("x") }); err == nil {

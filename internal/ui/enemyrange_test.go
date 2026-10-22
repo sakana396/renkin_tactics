@@ -271,7 +271,7 @@ func TestEnemyRange(t *testing.T) {
 		d.ToggleDanger()
 		dangerIs(d, "ItemMenu で Q", basicDanger)
 
-		// Over: 出さず、Q も受け付けない。やり直したあとも、Q を押すまで出したまま。
+		// Over: 出さず、Q・R を受け付けない。
 		lost := func() tactics.Setup {
 			s := basicSetup()
 			s.Units[0].Stats.HP = 1
@@ -289,10 +289,10 @@ func TestEnemyRange(t *testing.T) {
 		o.ToggleDanger()
 		o.Restart()
 		playOut(o)
-		if o.State() != Idle {
-			t.Fatalf("やり直しのあと: 状態 %v", o.State())
+		if o.State() != Over {
+			t.Fatalf("Over の R を受け付けた: %v", o.State())
 		}
-		dangerIs(o, "やり直しのあと（Over の Q は受け付けない）", basicDanger)
+		dangerIs(o, "Over の Q・R は受け付けない", nil)
 	})
 
 	t.Run("TC-IF-01-31 危険範囲は今の盤面の生きている敵の Reachable の各マスから AttackRange で求める。自軍のマスは通れないが攻撃でき、待ち構える敵を含め、まだ現れていない増援と Moved の仮の位置は数えない", func(t *testing.T) {

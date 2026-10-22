@@ -32,7 +32,7 @@ const FramesPerEvent = 20
 // FastFramesPerEvent は、早送り（Space か Enter を押している間）に出来事 1 つを表示するフレームの数（DES-UI-04）。
 const FastFramesPerEvent = 4
 
-// Factory は新しい戦闘を作る（DES-CMD-01）。やり直すたびに呼ぶ。
+// Factory は Controller の初期化に渡す戦闘を作る（DES-UI-09）。
 type Factory func() (*tactics.Battle, []tactics.Event, error)
 
 // Controller は入力の状態の遷移を持つ（DES-UI-02、DES-UI-04）。
@@ -40,9 +40,8 @@ type Factory func() (*tactics.Battle, []tactics.Event, error)
 // 描画と Ebitengine から分けてあり、マウスとキーの入力は Game が Controller のメソッドに読み替える。
 // 時間はフレーム数（Tick）で数え、core には渡さない。
 type Controller struct {
-	battle    *tactics.Battle
-	newBattle Factory
-	state     State
+	battle *tactics.Battle
+	state  State
 
 	// unit は選んだ自軍、dest は移動先、target は攻撃の相手（いなければ -1）。
 	unit   int
@@ -69,12 +68,11 @@ type Controller struct {
 	shownSide tactics.Side
 
 	message string
-	quit    bool
 }
 
 // NewController は、newBattle で戦闘を作り、初めの出来事の再生から始める（DES-UI-02、DES-UI-04）。
 func NewController(newBattle Factory) (*Controller, error) {
-	c := &Controller{newBattle: newBattle, target: -1, watched: -1, cursorX: -1, cursorY: -1}
+	c := &Controller{target: -1, watched: -1, cursorX: -1, cursorY: -1}
 	b, events, err := newBattle()
 	if err != nil {
 		return nil, err
@@ -102,8 +100,8 @@ func (c *Controller) Selection() (unit int, dest tactics.Pos, target int) {
 // Message は、直前の操作についての知らせ（確認や誤り）を返す。
 func (c *Controller) Message() string { return c.message }
 
-// Quit は、勝ち負けの画面で終了が選ばれたかを返す。
-func (c *Controller) Quit() bool { return c.quit }
+// Quit は戦闘では終了しない（DES-UI-17）。終了は場面側で扱う。
+func (c *Controller) Quit() bool { return false }
 
 // Click は盤面のマス p を左クリックしたときの処理（DES-UI-02）。
 func (c *Controller) Click(p tactics.Pos) {
@@ -184,14 +182,8 @@ func (c *Controller) Cancel() {
 	}
 }
 
-// Escape は Esc キーの処理。勝ち負けの画面では終了し、それ以外では取り消す（DES-UI-02）。
-func (c *Controller) Escape() {
-	if c.state == Over {
-		c.quit = true
-		return
-	}
-	c.Cancel()
-}
+// Escape は戦闘中の選択を取り消す。Over では何もしない（DES-UI-17）。
+func (c *Controller) Escape() { c.Cancel() }
 
 // EndPhase は E キーの処理（DES-UI-02、UC-05）。Idle のときだけ受け付ける。
 // 行動していない自軍がいれば、1 回目は確認を求め、もう一度押すと番を終える。
@@ -219,19 +211,8 @@ func (c *Controller) SetFastForward(on bool) {
 	c.fast = on
 }
 
-// Restart は R キーの処理（DES-UI-02、DES-CMD-01）。勝ち負けの画面で、新しい戦闘を作ってやり直す。
-func (c *Controller) Restart() {
-	if c.state != Over {
-		return
-	}
-	b, events, err := c.newBattle()
-	if err != nil {
-		c.message = fmt.Sprintf("やり直せません: %v", err)
-		return
-	}
-	c.battle = b
-	c.play(events)
-}
+// Restart は旧操作との互換用。戦闘内ではやり直さない（DES-UI-17）。
+func (c *Controller) Restart() {}
 
 // Tick は 1 フレームを進める（DES-UI-04）。再生中なら、出来事を 20 フレームごとに 1 つ進める。
 // 早送りの間は FastFramesPerEvent フレームごとに進める。

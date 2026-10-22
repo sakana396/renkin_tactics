@@ -18,61 +18,24 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/ui/assets"
 )
 
-// 色（DES-UI-03）。半透明の色があるので、アルファを掛けていない NRGBA で書く。
-var (
-	bgColor     = color.NRGBA{22, 28, 37, 255}
-	panelColor  = color.NRGBA{37, 46, 58, 255}
-	white       = color.NRGBA{232, 237, 238, 255}
-	muted       = color.NRGBA{177, 193, 201, 255}
-	gold        = color.NRGBA{255, 214, 92, 255}
-	blueOverlay = color.NRGBA{30, 90, 255, 130}
-	redOverlay  = color.NRGBA{255, 30, 30, 140}
-	playerBase  = color.NRGBA{50, 110, 230, 210}
-	enemyBase   = color.NRGBA{220, 50, 50, 210}
-	hpBack      = color.NRGBA{20, 20, 20, 220}
-	hpFront     = color.NRGBA{90, 220, 110, 255}
-	cursorColor = color.NRGBA{255, 230, 80, 255}
-	targetColor = color.NRGBA{240, 80, 80, 255}
-	dangerColor = color.NRGBA{255, 150, 30, 255}
-	bandColor   = color.NRGBA{0, 0, 0, 170}
-	menuColor   = color.NRGBA{30, 36, 48, 235}
-	menuBorder  = color.NRGBA{200, 210, 220, 255}
-	strikeHit   = color.NRGBA{255, 240, 120, 255}
-	strikeMiss  = color.NRGBA{200, 200, 200, 255}
-	healTextClr = color.NRGBA{120, 255, 150, 255}
-	overShade   = color.NRGBA{0, 0, 0, 150}
-	textShadow  = color.NRGBA{0, 0, 0, 255}
-)
-
-const (
-	windowTitle = "レンキン・タクティクス"
-	// lineHeight は案内欄の 1 行の高さ（px）。
-	lineHeight = 16
-	// actedScale は行動済みの自軍を暗く描くときの明るさ。
-	actedScale = 0.45
-)
-
 // face は文字を描く書体。bitmapfont の日本語のグリフを使う（IF-02、DES-UI-01）。
 var face = text.NewGoXFace(bitmapfont.Face)
 
 // Game は ebiten.Game を実装する（DES-PKG-06）。
 type Game struct {
 	ctrl   *Controller
+	scenes *SceneController
 	sheets map[assets.Sheet]*ebiten.Image
 }
 
-// Run は窓を開き、newBattle で作った戦闘を遊べるようにする（DES-UI-01、DES-CMD-01）。
-// やり直すたびに newBattle を呼ぶ。勝ち負けの画面で Esc を押すと、誤りなしで戻る。
-func Run(newBattle Factory) error {
-	ctrl, err := NewController(newBattle)
-	if err != nil {
-		return err
-	}
+// Run はタイトルからキャンペーンを始める（DES-UI-09、DES-CMD-02）。
+func Run(cfg Config) error {
+	scenes := NewSceneController(cfg)
 	imgs, err := assets.Load()
 	if err != nil {
 		return err
 	}
-	g := &Game{ctrl: ctrl, sheets: map[assets.Sheet]*ebiten.Image{}}
+	g := &Game{scenes: scenes, sheets: map[assets.Sheet]*ebiten.Image{}}
 	for s, img := range imgs {
 		g.sheets[s] = ebiten.NewImageFromImage(img)
 	}
@@ -85,38 +48,47 @@ func Run(newBattle Factory) error {
 	return nil
 }
 
-// Update はマウスとキーを Controller の操作に読み替え、1 フレームを進める（DES-UI-02、DES-UI-04）。
-//
-// 左クリック: 選ぶ・決める。右クリック・Esc: 取り消す（勝ち負けの画面の Esc は終了）。E: 番を終える。
-// Space・Enter: 押している間だけ早送り。R: やり直す。Q: 敵の危険範囲を出す・消す。
-// カーソルの座標は毎フレーム Controller に渡す（敵の範囲。DES-UI-08）。
+// Update は場面ごとの入力を読み替える。戦闘中のキー操作と早送りは Controller へ渡す（DES-UI-09、17）。
 func (g *Game) Update() error {
-	c := g.ctrl
-	c.SetCursor(ebiten.CursorPosition())
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		x, y := ebiten.CursorPosition()
-		g.leftClick(x, y)
+	s := g.scenes
+	left := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+	cancel := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) || inpututil.IsKeyJustPressed(ebiten.KeyEscape)
+	if s.Scene() != Battle {
+		if cancel {
+			s.Cancel()
+		} else if left {
+			s.Click(ebiten.CursorPosition())
+		} else if s.Scene() == Story && (inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeySpace)) {
+			s.Advance()
+		}
+	} else {
+		c := s.BattleController()
+		g.ctrl = c
+		c.SetCursor(ebiten.CursorPosition())
+		if c.State() == Over {
+			if left {
+				s.Click(ebiten.CursorPosition())
+			}
+		} else {
+			if left {
+				g.leftClick(ebiten.CursorPosition())
+			}
+			if cancel {
+				c.Cancel()
+			}
+			if inpututil.IsKeyJustPressed(ebiten.KeyE) {
+				c.EndPhase()
+			}
+			if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+				c.ToggleDanger()
+			}
+			c.SetFastForward(ebiten.IsKeyPressed(ebiten.KeySpace) || ebiten.IsKeyPressed(ebiten.KeyEnter))
+			c.Tick()
+		}
 	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-		c.Cancel()
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-		c.Escape()
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyE) {
-		c.EndPhase()
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
-		c.ToggleDanger()
-	}
-	c.SetFastForward(ebiten.IsKeyPressed(ebiten.KeySpace) || ebiten.IsKeyPressed(ebiten.KeyEnter))
-	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
-		c.Restart()
-	}
-	if c.Quit() {
+	if s.Quit() {
 		return ebiten.Termination
 	}
-	c.Tick()
 	return nil
 }
 
@@ -142,6 +114,13 @@ func (g *Game) Layout(_, _ int) (int, int) { return ScreenWidth, ScreenHeight }
 // （DES-UI-01、DES-UI-03、DES-UI-04、DES-UI-07、DES-UI-08）。
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(bgColor)
+	if g.scenes != nil {
+		if g.scenes.Scene() != Battle {
+			g.drawScene(screen)
+			return
+		}
+		g.ctrl = g.scenes.BattleController()
+	}
 	g.drawTerrain(screen)
 	g.drawOverlay(screen)
 	g.drawUnits(screen)
@@ -328,23 +307,21 @@ func (g *Game) drawMenu(dst *ebiten.Image) {
 	}
 }
 
-// drawOver は勝ち負けの画面を描く（DES-UI-02、UC-07）。
+// drawOver は戦闘終了の帯と次への操作を描く（DES-UI-17）。
 func (g *Game) drawOver(dst *ebiten.Image) {
 	if g.ctrl.State() != Over {
 		return
 	}
 	vector.DrawFilledRect(dst, 0, 0, MapSize, MapSize, overShade, false)
-	vector.DrawFilledRect(dst, 0, MapSize/2-56, MapSize, 96, bandColor, false)
+	r := BattleEndRect()
+	vector.DrawFilledRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), bandColor, false)
 	var clr color.Color = gold
 	if g.ctrl.Battle().Result == tactics.Lost {
 		clr = muted
 	}
 	g.bigLabel(dst, ResultText(g.ctrl.Battle().Result), MapSize/2-40, clr)
-	g.centerLabel(dst, "R: やり直す　Esc: 終了", MapSize/2+12, white)
+	g.centerLabel(dst, "左クリック: 次へ", MapSize/2+12, white)
 }
-
-// infoMargin は情報欄の余白（px）。
-const infoMargin = 8
 
 // drawInfo は右の情報欄を描く（DES-UI-01、DES-UI-06、DES-UI-07、DES-BTL-07）。攻撃の相手を選んでいれば予測（武器の絵・相性の印・
 // 「撃破」「危険」・表）を上に、その下にカーソルのあるユニットの情報（絵・能力の棒・武器の絵・スキル）と地形を出す。
@@ -377,33 +354,6 @@ func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 		}
 		g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
 	}
-}
-
-// 情報欄の能力の棒とスキルの名前の色（DES-UI-06）と、相性の印の色（DES-UI-07）。
-var (
-	statBarColor = color.NRGBA{110, 170, 255, 255}
-	skillColor   = color.NRGBA{255, 240, 60, 255}
-	goodColor    = color.NRGBA{90, 230, 110, 255}
-	badColor     = color.NRGBA{255, 80, 80, 255}
-)
-
-// infoStyleColor は情報欄の文の色の種類を色に読み替える（DES-UI-06、DES-UI-07）。
-func infoStyleColor(s InfoStyle) color.Color {
-	switch s {
-	case StyleGood:
-		return goodColor
-	case StyleBad:
-		return badColor
-	case StyleBlack:
-		return color.Black
-	case StyleTitle:
-		return gold
-	case StyleLabel:
-		return muted
-	case StyleSkill:
-		return skillColor
-	}
-	return white
 }
 
 // drawTileSize はタイル t を、画面の (x, y) に size × size の大きさで描く（DES-UI-06）。
@@ -475,8 +425,31 @@ func (g *Game) centerLabel(dst *ebiten.Image, s string, y int, clr color.Color) 
 	g.label(dst, s, MapSize/2-textWidth(s)/2, y, clr)
 }
 
-// textWidth は bitmapfont で描いたときの文字の幅（px）を返す。
-func textWidth(s string) int {
-	w, _ := text.Measure(s, face, 0)
-	return int(w)
+// drawScene は表示用の値を描く（DES-UI-09〜12、15）。
+func (g *Game) drawScene(dst *ebiten.Image) {
+	v := g.scenes.View()
+	for _, t := range v.Texts {
+		if t.Big {
+			g.scaledLabel(dst, t.Text, t.X, t.Y, 2, infoStyleColor(t.Style))
+		} else {
+			g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
+		}
+	}
+	for _, ic := range v.Icons {
+		g.drawTile(dst, ic.Tile, ic.X, ic.Y, 1)
+	}
+	for _, b := range v.Buttons {
+		r := b.Rect
+		fill, border := menuColor, menuBorder
+		if !b.Enabled {
+			fill, border = bgColor, muted
+		}
+		vector.DrawFilledRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), fill, false)
+		vector.StrokeRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), 1, border, false)
+		clr := white
+		if !b.Enabled {
+			clr = muted
+		}
+		g.label(dst, b.Label, r.Min.X+12, r.Min.Y+10, clr)
+	}
 }
