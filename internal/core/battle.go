@@ -1,6 +1,6 @@
 // Package core はゲームの状態を持つ（DES-PKG-04）。
 //
-// 反復 1 では、定義データ（defs）から戦闘の入力（tactics.Setup）を組み立てるだけ。
+// 定義データからの戦闘の組み立てと、章をまたぐキャンペーンの状態を扱う。
 // defs と core/tactics だけに依存する（Ebitengine と time を使わない）。
 package core
 
@@ -34,22 +34,24 @@ func newSetup(cat *defs.Catalog, mapID string) (tactics.Setup, error) {
 	if !ok {
 		return tactics.Setup{}, fmt.Errorf("core: マップ %q がありません", mapID)
 	}
-	var setup tactics.Setup
-
-	terrain, err := convertTerrain(cat, m)
-	if err != nil {
-		return tactics.Setup{}, err
-	}
-	setup.Terrain = terrain
-
+	var allies []tactics.UnitSetup
 	for i, id := range partyOrder(cat, len(m.Slots)) {
 		u, err := allyUnit(cat, id, m.Slots[i])
 		if err != nil {
 			return tactics.Setup{}, fmt.Errorf("core: マップ %q の slots[%d]: %w", m.ID, i, err)
 		}
-		setup.Units = append(setup.Units, u)
+		allies = append(allies, u)
 	}
+	return setupWithAllies(cat, m, allies)
+}
 
+// setupWithAllies は自軍の配置に敵・増援・地形を足す共通の組み立て（DES-CORE-01、DES-CMP-05）。
+func setupWithAllies(cat *defs.Catalog, m defs.MapDef, allies []tactics.UnitSetup) (tactics.Setup, error) {
+	terrain, err := convertTerrain(cat, m)
+	if err != nil {
+		return tactics.Setup{}, err
+	}
+	setup := tactics.Setup{Terrain: terrain, Units: allies}
 	names, err := enemyNames(cat, m)
 	if err != nil {
 		return tactics.Setup{}, err
@@ -121,7 +123,7 @@ func partyOrder(cat *defs.Catalog, n int) []string {
 	return order
 }
 
-// allyUnit は名簿のキャラ id から、出撃の枠 slot に置くユニット 1 体の入力を作る（DES-CORE-01。反復 2 で変更）。
+// allyUnit は名簿のキャラ id から、出撃の枠 slot に置くユニット 1 体の入力を作る（DES-CORE-01、DES-CMP-05）。
 func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, error) {
 	ch, ok := cat.Character(id)
 	if !ok {
@@ -148,6 +150,8 @@ func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, 
 		ClassName: cls.Name,
 		Side:      tactics.Player,
 		Stats:     addStats(cls.Base, ch.Bonus),
+		Level:     ch.Level,
+		Growth:    tactics.Growth{HP: ch.Growth.HP, Str: ch.Growth.Str, Skl: ch.Growth.Skl, Spd: ch.Growth.Spd, Def: ch.Growth.Def},
 		Pos:       tactics.Pos{X: slot.X, Y: slot.Y},
 		Weapon:    weapon,
 		Items:     items,
@@ -190,7 +194,7 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 
 // enemyNames は、敵（enemies の順）と増援（reinforcements の順）を通した名前の列を返す（DES-CORE-01）。
 //
-// 名前はクラスの名前。同じクラスが 2 体以上いれば「ソルジャー 1」のように、出てくる順に番号を付ける。
+// 名前が指定された敵はその名前を使い、数えない。名前のない同じクラスが 2 体以上いれば「ソルジャー 1」のように、出てくる順に番号を付ける。
 func enemyNames(cat *defs.Catalog, m defs.MapDef) ([]string, error) {
 	placements := append([]defs.EnemyPlacement(nil), m.Enemies...)
 	for _, r := range m.Reinforcements {
@@ -198,7 +202,9 @@ func enemyNames(cat *defs.Catalog, m defs.MapDef) ([]string, error) {
 	}
 	total := map[string]int{}
 	for _, p := range placements {
-		total[p.Class]++
+		if p.Name == "" {
+			total[p.Class]++
+		}
 	}
 	seen := map[string]int{}
 	names := make([]string, len(placements))
@@ -210,6 +216,10 @@ func enemyNames(cat *defs.Catalog, m defs.MapDef) ([]string, error) {
 				where = fmt.Sprintf("reinforcements[%d]", i-len(m.Enemies))
 			}
 			return nil, fmt.Errorf("core: マップ %q の %s: クラス %q がありません", m.ID, where, p.Class)
+		}
+		if p.Name != "" {
+			names[i] = p.Name
+			continue
 		}
 		names[i] = cls.Name
 		if total[p.Class] >= 2 {
@@ -275,7 +285,7 @@ func convertItems(cat *defs.Catalog, items []defs.ItemCount) ([]tactics.ItemStac
 		if !ok {
 			return nil, fmt.Errorf("アイテム %q がありません", ic.Item)
 		}
-		out = append(out, tactics.ItemStack{Item: tactics.Item{Name: it.Name, Heal: it.Heal}, Count: ic.Count})
+		out = append(out, tactics.ItemStack{Item: tactics.Item{ID: it.ID, Name: it.Name, Heal: it.Heal}, Count: ic.Count})
 	}
 	return out, nil
 }
