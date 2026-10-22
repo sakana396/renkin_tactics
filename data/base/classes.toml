@@ -1,5 +1,5 @@
 # クラス（DES-DAT-02、設計書 10.1 節）
-# weapon_type は sword・lance・axe・bow のどれか
+# weapon_type は sword・lance・axe・bow・staff のどれか
 
 [[classes]]
 id = "lord"
@@ -36,3 +36,10 @@ id = "myrmidon"
 name = "剣士"
 weapon_type = "sword"
 base = { hp = 17, str = 4, skl = 8, spd = 9, def = 2, mov = 5 }
+
+# 反復 2 で足した（設計書（反復 2）10.1 節）。自軍（エルザ）と敵が使う
+[[classes]]
+id = "cavalier"
+name = "騎兵"
+weapon_type = "lance"
+base = { hp = 20, str = 6, skl = 5, spd = 6, def = 5, mov = 7 }

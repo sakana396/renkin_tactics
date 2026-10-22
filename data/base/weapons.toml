@@ -1,5 +1,6 @@
 # 武器（DES-DAT-02、設計書 10.2 節）
-# type は sword・lance・axe・bow のどれか
+# type は sword・lance・axe・bow・staff のどれか
+# 杖（staff）は heal（回復量）と uses（使用回数）を 1 以上で書き、might・hit は書かない（0）。杖でない武器は heal・uses を書かない
 
 [[weapons]]
 id = "iron_sword"

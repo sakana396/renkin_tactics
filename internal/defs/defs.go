@@ -7,6 +7,8 @@ const (
 	WeaponLance = "lance"
 	WeaponAxe   = "axe"
 	WeaponBow   = "bow"
+	// WeaponStaff は杖。攻撃せず、回復に使う（DES-DAT-01 の反復 2 の変更、v0.3）。
+	WeaponStaff = "staff"
 )
 
 // スキルの効果の種類（DES-DAT-01、DES-SKL-01）。
@@ -23,9 +25,11 @@ const (
 	AIHold   = "hold"
 )
 
-// GameDef はゲーム全体の定義（DES-DAT-01）。
+// GameDef はゲーム全体の定義（DES-DAT-01。反復 2 で変更）。
+// Party は初めの名簿（キャラの ID の並び）、Stock は初めの共有の在庫（空でもよい）。
 type GameDef struct {
-	StartMap string
+	Party []string
+	Stock []ItemCount
 }
 
 // TerrainDef は地形の定義（DES-DAT-01）。Cost が 0 の地形は通れない。
@@ -57,7 +61,9 @@ type ClassDef struct {
 	Base       Stats
 }
 
-// WeaponDef は武器の定義（DES-DAT-01）。
+// WeaponDef は武器の定義（DES-DAT-01。反復 2 で変更）。
+// Heal（回復量）と Uses（使用回数）は杖（Type が WeaponStaff）だけが持ち、杖でない武器では 0。
+// 杖は Might・Hit を使わない（0）。
 type WeaponDef struct {
 	ID       string
 	Name     string
@@ -66,6 +72,8 @@ type WeaponDef struct {
 	Hit      int
 	MinRange int
 	MaxRange int
+	Heal     int
+	Uses     int
 }
 
 // ItemDef はアイテムの定義（DES-DAT-01）。
@@ -93,27 +101,39 @@ type ItemCount struct {
 	Count int
 }
 
-// CharacterDef は自軍のキャラの定義（DES-DAT-01）。Skill は空でもよい。
+// Growth は成長率（%）（DES-DAT-01 の反復 2 の変更）。移動は成長しない。
+type Growth struct {
+	HP  int
+	Str int
+	Skl int
+	Spd int
+	Def int
+}
+
+// CharacterDef は自軍のキャラの定義（DES-DAT-01。反復 2 で変更）。Skill は空でもよい。
+// Level は加わるときのレベル（定義データで省略すると 1）、Growth は成長率。
 type CharacterDef struct {
 	ID     string
 	Name   string
 	Class  string
 	Bonus  Stats
+	Level  int
+	Growth Growth
 	Weapon string
 	Items  []ItemCount
 	Skill  string
 	Lord   bool
 }
 
-// AllyPlacement は自軍のキャラの初めの配置（DES-DAT-01）。
-type AllyPlacement struct {
-	Character string
-	X         int
-	Y         int
+// Slot は出撃の枠 1 つの座標（DES-DAT-01 の反復 2 の変更）。
+type Slot struct {
+	X int
+	Y int
 }
 
-// EnemyPlacement は敵の配置（DES-DAT-01）。
+// EnemyPlacement は敵の配置（DES-DAT-01。反復 2 で変更）。Name は空なら、クラスの名前から付ける。
 type EnemyPlacement struct {
+	Name   string
 	Class  string
 	Weapon string
 	Bonus  Stats
@@ -130,14 +150,34 @@ type Reinforcement struct {
 	EnemyPlacement
 }
 
-// MapDef はマップの定義（DES-DAT-01）。Rows の 1 文字が 1 マスで、地形の Symbol に対応する。
+// MapDef はマップの定義（DES-DAT-01。反復 2 で変更）。Rows の 1 文字が 1 マスで、地形の Symbol に対応する。
+// Slots は出撃の枠の並びで、1 番目は主人公の枠。
 type MapDef struct {
 	ID             string
 	Name           string
 	Rows           []string
-	Allies         []AllyPlacement
+	Slots          []Slot
 	Enemies        []EnemyPlacement
 	Reinforcements []Reinforcement
+}
+
+// ChapterDef は章 1 つの定義（DES-DAT-01 の反復 2 の変更）。
+// Before・After は物語の ID で、空なら物語を出さない。Joins はその章の始めに名簿に加わるキャラの ID の並び。
+// Reward はその章に勝ったときに共有の在庫に入るアイテム。
+type ChapterDef struct {
+	ID     string
+	Name   string
+	Map    string
+	Before string
+	After  string
+	Joins  []string
+	Reward []ItemCount
+}
+
+// StoryDef は物語 1 本の定義（DES-DAT-01 の反復 2 の変更）。Paragraphs は段落の並び。
+type StoryDef struct {
+	ID         string
+	Paragraphs []string
 }
 
 // Catalog は定義データの目録で、ID で定義を引ける（DES-DAT-01、DES-PKG-02）。
@@ -152,11 +192,13 @@ type Catalog struct {
 	skills     map[string]SkillDef
 	characters map[string]CharacterDef
 	maps       map[string]MapDef
+	chapters   []ChapterDef
+	stories    map[string]StoryDef
 }
 
-// NewCatalog は定義の一覧から目録を作る（DES-DAT-01）。
-// ID の重なりなどの検証は defload が行う。ID が重なったときは後のものが残る。
-func NewCatalog(game GameDef, terrains []TerrainDef, classes []ClassDef, weapons []WeaponDef, items []ItemDef, skills []SkillDef, characters []CharacterDef, maps []MapDef) *Catalog {
+// NewCatalog は定義の一覧から目録を作る（DES-DAT-01。反復 2 で章と物語を足した）。
+// ID の重なりなどの検証は defload が行う。ID が重なったときは後のものが残る（章は並びのまま持つ）。
+func NewCatalog(game GameDef, terrains []TerrainDef, classes []ClassDef, weapons []WeaponDef, items []ItemDef, skills []SkillDef, characters []CharacterDef, maps []MapDef, chapters []ChapterDef, stories []StoryDef) *Catalog {
 	c := &Catalog{
 		Game:       game,
 		terrainIDs: map[string]int{},
@@ -166,6 +208,8 @@ func NewCatalog(game GameDef, terrains []TerrainDef, classes []ClassDef, weapons
 		skills:     map[string]SkillDef{},
 		characters: map[string]CharacterDef{},
 		maps:       map[string]MapDef{},
+		chapters:   append([]ChapterDef(nil), chapters...),
+		stories:    map[string]StoryDef{},
 	}
 	for _, t := range terrains {
 		if i, ok := c.terrainIDs[t.ID]; ok {
@@ -192,6 +236,9 @@ func NewCatalog(game GameDef, terrains []TerrainDef, classes []ClassDef, weapons
 	}
 	for _, v := range maps {
 		c.maps[v.ID] = v
+	}
+	for _, v := range stories {
+		c.stories[v.ID] = v
 	}
 	return c
 }
@@ -244,5 +291,23 @@ func (c *Catalog) Character(id string) (CharacterDef, bool) {
 // Map は ID でマップを引く（DES-DAT-01）。
 func (c *Catalog) Map(id string) (MapDef, bool) {
 	v, ok := c.maps[id]
+	return v, ok
+}
+
+// Chapters は章を、定義の順（章の順）にすべて返す（DES-DAT-01 の反復 2 の変更）。
+// 返す並びは写しなので、書き換えても目録は変わらない。
+func (c *Catalog) Chapters() []ChapterDef {
+	out := make([]ChapterDef, len(c.chapters))
+	for i, ch := range c.chapters {
+		ch.Joins = append([]string(nil), ch.Joins...)
+		ch.Reward = append([]ItemCount(nil), ch.Reward...)
+		out[i] = ch
+	}
+	return out
+}
+
+// Story は ID で物語を引く（DES-DAT-01 の反復 2 の変更）。
+func (c *Catalog) Story(id string) (StoryDef, bool) {
+	v, ok := c.stories[id]
 	return v, ok
 }

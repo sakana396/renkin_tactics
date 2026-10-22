@@ -1,6 +1,7 @@
-# マップ（DES-DAT-02、設計書 10.4 節）
+# マップ（DES-DAT-02、設計書（反復 1）10.4 節、設計書（反復 2）10.4〜10.6 節）
 # rows の 1 文字が 1 マス（地形の symbol）。座標は左上が (0, 0) で、x は右、y は下に増える
-# ai は charge（突っ込む）・hold（待ち構える）のどれか
+# slots は出撃の枠の並び。1 番目は主人公の枠
+# ai は charge（突っ込む）・hold（待ち構える）のどれか。name は敵の名前（省略すると、クラスの名前から付ける）
 
 [[maps]]
 id = "ch01"
@@ -23,11 +24,13 @@ rows = [
   "........^.......", # y 14
   "................", # y 15
 ]
-allies = [
-  { character = "leon", x = 1, y = 14 },
-  { character = "gald", x = 2, y = 13 },
-  { character = "bran", x = 3, y = 14 },
-  { character = "mira", x = 1, y = 15 },
+# 出撃の枠（反復 1 の自軍の配置と同じ座標を同じ順に並べ、5 番目に (2, 15) を足した。設計書（反復 2）10.4 節）
+slots = [
+  { x = 1, y = 14 },
+  { x = 2, y = 13 },
+  { x = 3, y = 14 },
+  { x = 1, y = 15 },
+  { x = 2, y = 15 },
 ]
 
 [[maps.enemies]]
@@ -82,6 +85,7 @@ y = 7
 
 # ボス（砦の上）
 [[maps.enemies]]
+name = "ハーゲン"
 class = "soldier"
 weapon = "iron_lance"
 bonus = { hp = 8, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
@@ -113,3 +117,278 @@ weapon = "iron_sword"
 ai = "charge"
 x = 15
 y = 15
+
+# 2 章（設計書（反復 2）10.5 節）。敵のボーナスは、ボスを除き 2/1/1/1/1（増援も同じ）
+[[maps]]
+id = "ch02"
+name = "灰の街道"
+rows = [
+  "^^^^^FF^^^^^^^^^", # y 0
+  "^^^....F...^^^^^", # y 1
+  "^^..FF......^^^^", # y 2
+  "^...FF..^^....^^", # y 3
+  "......^^^^..FF.^", # y 4
+  "..FF..........F.", # y 5
+  ".....FF...^^....", # y 6
+  "................", # y 7
+  "...........FF.T.", # y 8
+  "..^^..FF........", # y 9
+  "..^^.....^^^..FF", # y 10
+  ".......FF^^.....", # y 11
+  "^^...........^^^", # y 12
+  "^^^^..FF..^^^^^^", # y 13
+  "^^^^^.....^^^^^^", # y 14
+  "^^^^^^^^^^^^^^^^", # y 15
+]
+# 出撃の枠（6 つ。設計書（反復 2）10.5 節）
+slots = [
+  { x = 1, y = 7 },
+  { x = 1, y = 6 },
+  { x = 1, y = 8 },
+  { x = 0, y = 6 },
+  { x = 0, y = 8 },
+  { x = 2, y = 7 },
+]
+
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 8
+y = 5
+
+[[maps.enemies]]
+class = "fighter"
+weapon = "iron_axe"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 7
+y = 9
+
+# 山の上
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 9
+y = 3
+
+[[maps.enemies]]
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 10
+y = 7
+
+[[maps.enemies]]
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 12
+y = 11
+
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 12
+y = 6
+
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 13
+y = 9
+
+# ボス（砦の上）
+[[maps.enemies]]
+name = "ヴォルグ"
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 8, str = 2, skl = 3, spd = 2, def = 1, mov = 0 }
+ai = "hold"
+boss = true
+x = 14
+y = 8
+
+[[maps.reinforcements]]
+turn = 2
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 0
+y = 4
+
+[[maps.reinforcements]]
+turn = 3
+class = "fighter"
+weapon = "iron_axe"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 0
+y = 10
+
+[[maps.reinforcements]]
+turn = 4
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 0
+y = 7
+
+# 3 章（設計書（反復 2）10.6 節）。敵のボーナスは、ボスを除き 3/2/1/1/1（増援も同じ）
+[[maps]]
+id = "ch03"
+name = "王都の奪還"
+rows = [
+  "^^^############^", # y 0
+  "^^^#....T.....#^", # y 1
+  "^^^#..........#^", # y 2
+  "^^^###.####.###^", # y 3
+  "^^..F........F^^", # y 4
+  "^...F..T..T..F.^", # y 5
+  "................", # y 6
+  "####.######.####", # y 7
+  "..F............F", # y 8
+  "..FF...^^...FF..", # y 9
+  "......^^^^......", # y 10
+  "....F......F....", # y 11
+  "FF............FF", # y 12
+  "FF..^^....^^..FF", # y 13
+  "................", # y 14
+  "................", # y 15
+]
+# 出撃の枠（5 つ。設計書（反復 2）10.6 節）
+slots = [
+  { x = 7, y = 14 },
+  { x = 6, y = 15 },
+  { x = 8, y = 15 },
+  { x = 7, y = 15 },
+  { x = 8, y = 14 },
+]
+
+# 外の城壁の切れ目の前
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 4
+y = 8
+
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 11
+y = 9
+
+[[maps.enemies]]
+class = "fighter"
+weapon = "iron_axe"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 12
+y = 8
+
+# 外の城壁の切れ目の内
+[[maps.enemies]]
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 4
+y = 6
+
+# 外の城壁の切れ目の内
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 11
+y = 6
+
+# 砦の上
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 7
+y = 5
+
+# 砦の上
+[[maps.enemies]]
+class = "fighter"
+weapon = "iron_axe"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 10
+y = 5
+
+# 内の城壁の門
+[[maps.enemies]]
+class = "armor"
+weapon = "iron_lance"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 6
+y = 3
+
+# 内の城壁の門
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 11
+y = 3
+
+# ボス（砦の上）
+[[maps.enemies]]
+name = "グラウス"
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 10, str = 4, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+boss = true
+x = 8
+y = 1
+
+[[maps.reinforcements]]
+turn = 3
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 0
+y = 14
+
+[[maps.reinforcements]]
+turn = 3
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 15
+y = 14
+
+[[maps.reinforcements]]
+turn = 5
+class = "fighter"
+weapon = "iron_axe"
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 4
+y = 2
