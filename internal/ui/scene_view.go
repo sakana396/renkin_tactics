@@ -37,6 +37,7 @@ type SceneView struct {
 	Icons   []SceneIcon
 	Rows    []PrepareRow
 	Info    *InfoView
+	Deploy  *DeployView
 }
 
 // wrapSceneText は 48 px の左右余白を残し、文字の単位で折り返す（DES-UI-12）。
@@ -130,6 +131,8 @@ func (s *SceneController) View() SceneView {
 		lines("左クリック: 章の準備へ", 528, StyleLabel)
 	case Prepare:
 		v = s.prepareView()
+	case Deploy:
+		v = s.deployView()
 	case Result:
 		add(fmt.Sprintf("第 %d 章　%s　勝利", s.storyChapter+1, s.cfg.Catalog.Chapters()[s.storyChapter].Name), 48, 32, true, StyleTitle)
 		for i, m := range s.result.Members {
@@ -181,7 +184,11 @@ func (s *SceneController) View() SceneView {
 		lines("左クリック: タイトルへ", 528, StyleLabel)
 	}
 	if s.message != "" {
-		lines(s.message, 424, StyleBad)
+		y := 424
+		if s.scene == Deploy {
+			y = 552
+		}
+		lines(s.message, y, StyleBad)
 	}
 	if s.saveWarning != "" {
 		y := 88
@@ -196,6 +203,18 @@ func (s *SceneController) View() SceneView {
 // Click は描画と同じ範囲で場面のボタンを判定する（DES-UI-09）。
 func (s *SceneController) Click(x, y int) {
 	if s.scene == Battle && !image.Pt(x, y).In(BattleEndRect()) {
+		return
+	}
+	if s.scene == Deploy {
+		for i, b := range s.View().Buttons {
+			if image.Pt(x, y).In(b.Rect) && b.Enabled {
+				s.Choose(i)
+				return
+			}
+		}
+		if p, ok := CellAt(x, y); ok {
+			s.clickDeploy(p)
+		}
 		return
 	}
 	v := s.View()

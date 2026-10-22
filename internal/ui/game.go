@@ -201,7 +201,12 @@ func (g *Game) drawDanger(dst *ebiten.Image) {
 
 // drawUnits はユニットを描く（DES-UI-03）。陣営で色の違う下地、HP の棒、ボスの印を描き、行動済みの自軍は暗くする。
 func (g *Game) drawUnits(dst *ebiten.Image) {
-	for _, u := range g.ctrl.Units() {
+	g.drawUnitList(dst, g.ctrl.Units())
+}
+
+// drawUnitList は戦闘と配置で同じユニットの絵を描く（DES-UI-03、DES-UI-20）。
+func (g *Game) drawUnitList(dst *ebiten.Image, units []tactics.Unit) {
+	for _, u := range units {
 		if !u.Alive {
 			continue
 		}
@@ -461,6 +466,9 @@ func (g *Game) centerLabel(dst *ebiten.Image, s string, y int, clr color.Color) 
 // drawScene は表示用の値を描く（DES-UI-09〜12、15）。
 func (g *Game) drawScene(dst *ebiten.Image) {
 	v := g.scenes.View()
+	if v.Deploy != nil {
+		g.drawDeploy(dst, *v.Deploy)
+	}
 	if v.Info != nil {
 		vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
 		g.drawInfoView(dst, *v.Info)
@@ -493,5 +501,27 @@ func (g *Game) drawScene(dst *ebiten.Image) {
 			clr = muted
 		}
 		g.label(dst, b.Label, r.Min.X+12, r.Min.Y+10, clr)
+	}
+}
+
+// drawDeploy は地形・枠の色・初期敵と味方・枠線を重ねる（DES-UI-20）。
+func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
+	for y, row := range d.Terrain {
+		for x, t := range row {
+			g.drawTile(dst, assets.Grass, x*CellSize, y*CellSize, 1)
+			if tile, ok := terrainTile(t); ok {
+				g.drawTile(dst, tile, x*CellSize, y*CellSize, 1)
+			}
+		}
+	}
+	for _, p := range d.Slots {
+		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, blueOverlay, false)
+	}
+	g.drawUnitList(dst, d.Units)
+	for _, p := range d.Slots {
+		strokeCell(dst, p, menuBorder)
+	}
+	if d.Selected >= 0 {
+		strokeCell(dst, d.Units[d.Selected].Pos, cursorColor)
 	}
 }
