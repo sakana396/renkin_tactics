@@ -165,6 +165,7 @@ func (s *SceneController) View() SceneView {
 		lines("主人公が倒れた", 112, StylePlain)
 		button("この章をやり直す", 208, true)
 		button("タイトルへ", 288, true)
+		button("巻き戻す", 368, s.battle != nil)
 	case Clear:
 		add("クリア", 48, 48, true, StyleTitle)
 		var dead []string
@@ -202,6 +203,10 @@ func (s *SceneController) View() SceneView {
 
 // Click は描画と同じ範囲で場面のボタンを判定する（DES-UI-09）。
 func (s *SceneController) Click(x, y int) {
+	if (s.scene == Battle || s.scene == GameOver) && s.battle != nil && s.battle.RewindClick(x, y) {
+		s.syncRewind()
+		return
+	}
 	if s.scene == Battle && !image.Pt(x, y).In(BattleEndRect()) {
 		return
 	}

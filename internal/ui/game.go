@@ -64,6 +64,46 @@ func (g *Game) Update() error {
 	s := g.scenes
 	left := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 	cancel := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) || inpututil.IsKeyJustPressed(ebiten.KeyEscape)
+	if inpututil.IsKeyJustPressed(ebiten.KeyT) {
+		s.rewindKey("T")
+	}
+	if s.Scene() == Battle || s.Scene() == GameOver {
+		c := s.BattleController()
+		if c.rewind.open {
+			_, wheel := ebiten.Wheel()
+			if wheel != 0 {
+				step := 1
+				if wheel > 0 {
+					step = -1
+				}
+				c.RewindDetail(step)
+			}
+			if cancel {
+				c.Cancel()
+			} else if left {
+				c.RewindClick(ebiten.CursorPosition())
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+				c.rewindKey("Enter")
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
+				c.rewindKey("Up")
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
+				c.rewindKey("Down")
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyPageUp) {
+				c.rewindKey("PageUp")
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyPageDown) {
+				c.rewindKey("PageDown")
+			}
+			s.syncRewind()
+			return nil
+		}
+		if left && c.RewindClick(ebiten.CursorPosition()) {
+			return nil
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) && c.Battle().NeedsResume() {
+			c.rewindKey("Enter")
+			return nil
+		}
+	}
 	if s.Scene() != Battle {
 		if cancel {
 			s.Cancel()
@@ -128,6 +168,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if g.scenes != nil {
 		if g.scenes.Scene() != Battle {
 			g.drawScene(screen)
+			if g.scenes.Scene() == GameOver {
+				g.ctrl = g.scenes.BattleController()
+				g.drawRewind(screen)
+			}
 			return
 		}
 		g.ctrl = g.scenes.BattleController()
@@ -144,6 +188,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	cx, cy := ebiten.CursorPosition()
 	g.drawInfo(screen, cx, cy)
 	g.drawGuide(screen)
+	g.drawRewind(screen)
 }
 
 // drawTile はタイル t を、画面の (x, y) に 2 倍で描く（DES-UI-01、DES-UI-05）。scale が 1 未満なら暗く描く。
@@ -465,7 +510,11 @@ func (g *Game) centerLabel(dst *ebiten.Image, s string, y int, clr color.Color) 
 
 // drawScene は表示用の値を描く（DES-UI-09〜12、15）。
 func (g *Game) drawScene(dst *ebiten.Image) {
-	v := g.scenes.View()
+	g.drawSceneView(dst, g.scenes.View())
+}
+
+// drawSceneView は配置・文・ボタンを描く（DES-UI-20、DES-UI-19、DES-UI-09）。
+func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
 	if v.Deploy != nil {
 		g.drawDeploy(dst, *v.Deploy)
 	}
@@ -500,7 +549,7 @@ func (g *Game) drawScene(dst *ebiten.Image) {
 		if !b.Enabled {
 			clr = muted
 		}
-		g.label(dst, b.Label, r.Min.X+12, r.Min.Y+10, clr)
+		g.label(dst, b.Label, r.Min.X+12, r.Min.Y+(r.Dy()-lineHeight)/2, clr)
 	}
 }
 
@@ -524,4 +573,12 @@ func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 	if d.Selected >= 0 {
 		strokeCell(dst, d.Units[d.Selected].Pos, cursorColor)
 	}
+}
+
+// drawRewind は入力を保持した盤面の上に一覧を描く（DES-UI-19）。
+func (g *Game) drawRewind(dst *ebiten.Image) {
+	if g.ctrl.rewind.open {
+		vector.DrawFilledRect(dst, 24, 16, 784, 552, panelColor, false)
+	}
+	g.drawSceneView(dst, g.ctrl.RewindView())
 }
