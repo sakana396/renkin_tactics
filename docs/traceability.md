@@ -54,3 +54,5 @@
 | FR-CMP-10 | #37、#41 | DES-CMP-06、DES-UI-14 | TC-FR-CMP-10-01〜02 | `internal/core`、`internal/ui` | 実装済み（章の結果の生成と表示） |
 | FR-SYS-01 | #39、#40 | DES-SAV-01、DES-SAV-03、DES-SAV-02、DES-CMP-07 | TC-FR-SYS-01-01〜06、TC-FR-SYS-01-07 | `internal/core/save.go`、`internal/ui` | 実装済み（#40 で自動保存とメモリ保持） |
 | FR-SYS-02 | #40 | DES-UI-09、DES-UI-10 | TC-FR-SYS-02-01〜04 | `internal/ui`、`cmd/renkin` | 実装済み |
+| FR-BTL-10 | #60 | DES-RWD-01〜04、DES-UI-19 | 未定義（`test-spec-it03.md` の枠を作成。各実装 Issue で追加） | 未実装 | 要求・ユースケース反映済み（E-37、#60）。実装とテストは後続 Issue |
+| FR-CMP-11 | #60 | DES-DEP-01、DES-UI-20 | 未定義（`test-spec-it03.md` の枠を作成。各実装 Issue で追加） | 未実装 | 要求・ユースケース反映済み（E-37、#60）。実装とテストは後続 Issue |
