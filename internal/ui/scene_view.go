@@ -144,7 +144,7 @@ func (s *SceneController) View() SceneView {
 				style = StyleBad
 			}
 			lines(fmt.Sprintf("%s　Lv %d → %d　経験 %d → %d%s", ch.Name, m.LevelBefore, m.LevelAfter, m.ExpBefore, m.ExpAfter, fallen), 144+i*48, style)
-			if gains := resultGains(m.Gains); gains != "" {
+			if gains := growthText(m.Gains); gains != "" {
 				lines(gains, 164+i*48, StyleLabel)
 			}
 		}
@@ -222,18 +222,4 @@ func (s *SceneController) Click(x, y int) {
 		return
 	}
 	s.Advance()
-}
-
-// resultGains は増えた能力だけを表示する（DES-UI-14）。
-func resultGains(g tactics.Stats) string {
-	var parts []string
-	for _, v := range []struct {
-		name string
-		n    int
-	}{{"HP", g.HP}, {"力", g.Str}, {"技", g.Skl}, {"速さ", g.Spd}, {"守備", g.Def}} {
-		if v.n > 0 {
-			parts = append(parts, fmt.Sprintf("%s+%d", v.name, v.n))
-		}
-	}
-	return strings.Join(parts, " ")
 }

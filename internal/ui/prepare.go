@@ -14,6 +14,7 @@ import (
 // enterPrepare は生存者を名簿順に選び、主人公を情報の初期選択にする（DES-UI-13）。
 func (s *SceneController) enterPrepare() {
 	s.scene = Prepare
+	s.saveWarning = ""
 	s.message = ""
 	s.deployment = map[int]bool{}
 	for i, m := range s.campaign.Roster {
@@ -173,13 +174,7 @@ func (s *SceneController) prepareUnit(i int) tactics.Unit {
 // prepareInfo は戦闘の情報欄と同じ部品で能力・装備を表示する（DES-UI-13）。
 func (s *SceneController) prepareInfo() InfoView {
 	u := s.prepareUnit(s.prepareMember)
-	v := (Panel{Unit: &u}).View()
-	exp := fmt.Sprint(u.Exp)
-	if u.Level == 20 {
-		exp = "―"
-	}
-	v.text(MapSize+infoMargin+portraitTextX, infoMargin+(PortraitSize-2*lineHeight)/2+2*lineHeight, fmt.Sprintf("Lv %d　経験 %s", u.Level, exp), StylePlain)
-	return v
+	return (Panel{Unit: &u}).View()
 }
 
 func itemCount(items []defs.ItemCount) int {

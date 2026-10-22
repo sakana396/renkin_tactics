@@ -30,7 +30,7 @@ func GrowthEventView(e tactics.Event) GrowthView {
 	return GrowthView{Text: EventText(e), Band: true, Visible: true}
 }
 
-// growthText は伸びた能力だけをHP・力・技・速さ・守備の順に並べる（DES-UI-16）。
+// growthText は伸びた能力だけをHP・力・技・速さ・守備の順に並べ、伸びがなければ空にする（DES-UI-14、DES-UI-16）。
 func growthText(g tactics.Stats) string {
 	var parts []string
 	for _, s := range []struct {
@@ -42,9 +42,6 @@ func growthText(g tactics.Stats) string {
 		if s.value > 0 {
 			parts = append(parts, fmt.Sprintf("%s+%d", s.name, s.value))
 		}
-	}
-	if len(parts) == 0 {
-		return "上がった能力なし"
 	}
 	return strings.Join(parts, " ")
 }

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -32,6 +33,23 @@ func clickSceneButton(t *testing.T, s *SceneController, label string) {
 }
 func TestPrepare(t *testing.T) {
 	t.Run("TC-FR-CMP-03-07 初期選択と生存者の表示", func(t *testing.T) {
+		for _, skip := range []bool{false, true} {
+			s := newScenes(t, &memoryStore{writeErr: errors.New("保存失敗")})
+			startScenes(s)
+			if s.Scene() != Story || !strings.Contains(viewStrings(s.View()), "セーブできませんでした") {
+				t.Fatal("物語に保存失敗が出ない", s.View())
+			}
+			if skip {
+				s.Cancel()
+			} else {
+				for s.Scene() == Story {
+					s.Advance()
+				}
+			}
+			if s.Scene() != Prepare || s.saveWarning != "" || strings.Contains(viewStrings(s.View()), "セーブできませんでした") {
+				t.Fatal("準備に保存警告が残る", s.View())
+			}
+		}
 		s := prepareScenes(t)
 		// 主人公が名簿の途中でも、主人公を選び先頭に出撃させる。
 		s.campaign.Roster[0], s.campaign.Roster[2] = s.campaign.Roster[2], s.campaign.Roster[0]
@@ -144,6 +162,15 @@ func TestPrepare(t *testing.T) {
 		for _, tx := range v.Info.Texts {
 			texts = append(texts, tx.Text)
 		}
+		var levelLines []string
+		for _, tx := range texts {
+			if strings.HasPrefix(tx, "Lv ") {
+				levelLines = append(levelLines, tx)
+			}
+		}
+		if !reflect.DeepEqual(levelLines, []string{"Lv 20　経験 ―"}) {
+			t.Fatalf("レベルと経験は共通の情報欄に1行だけ表示する: %q", levelLines)
+		}
 		info := strings.Join(texts, "\n")
 		for _, want := range []string{"ガルド", "アーマー", "Lv 20　経験 ―", "HP 24/24", "鉄の槍", "大盾"} {
 			if !strings.Contains(info, want) {
@@ -179,8 +206,13 @@ func TestChapterResultView(t *testing.T) {
 					t.Fatal(want, text)
 				}
 			}
-			if strings.Contains(text, "力+0") || strings.Contains(text, "速さ+0") {
+			if strings.Contains(text, "力+0") || strings.Contains(text, "速さ+0") || strings.Contains(text, "上がった能力なし") {
 				t.Fatal(text)
+			}
+			for _, tx := range v.Texts {
+				if tx.Y == 212 {
+					t.Fatal("能力が上がらなかった仲間に成長の行がある", tx)
+				}
 			}
 			fallen := "離脱（次の章で戻る）"
 			if dead {
