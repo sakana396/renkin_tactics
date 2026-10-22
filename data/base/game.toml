@@ -1,4 +1,4 @@
 # ゲーム全体の定義（DES-DAT-02。反復 2 で変更。設計書（反復 2）10.4 節）
 # party は初めの名簿（キャラの ID の並び）。lord = true のキャラがちょうど 1 人いること
 # stock は初めの共有の在庫（省略すると空）
-party = ["leon", "gald", "bran", "mira"]
+party = ["leon", "gald", "bran", "mira", "rina"]

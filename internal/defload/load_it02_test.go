@@ -10,7 +10,7 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/defs"
 )
 
-// 杖・僧侶の定義（設計書（反復 2）3.2 節の例）。本体のデータには #44 で入るので、テストで足す。
+// 本体の杖の定義（設計書（反復 2）3.2 節の例）。検証用にこのブロックを置き換える。
 const (
 	staffWeapon = `[[weapons]]
 id = "heal_staff"
@@ -20,17 +20,6 @@ heal = 10
 uses = 15
 min_range = 1
 max_range = 1`
-	clericClass = `[[classes]]
-id = "cleric"
-name = "僧侶"
-weapon_type = "staff"
-base = { hp = 16, str = 0, skl = 2, spd = 6, def = 2, mov = 5 }`
-	clericChar = `[[characters]]
-id = "rina"
-name = "リナ"
-class = "cleric"
-weapon = "heal_staff"
-items = [{ item = "potion", count = 1 }]`
 )
 
 // 反復 2 で変えた・足した意味の検証の規則（DES-DAT-03 規則 3、4、6、9、10、13〜22）を確かめる。
@@ -67,13 +56,13 @@ func TestLoadIt02(t *testing.T) {
 			nil},
 		// 規則 4・6・21
 		{"TC-FR-SYS-04-26 杖の回復量・使用回数が 0",
-			[]edit{appendTo("weapons.toml", strings.Replace(strings.Replace(staffWeapon, "heal = 10", "heal = 0", 1), "uses = 15", "uses = 0", 1))},
+			[]edit{replace("weapons.toml", staffWeapon, strings.Replace(strings.Replace(staffWeapon, "heal = 10", "heal = 0", 1), "uses = 15", "uses = 0", 1))},
 			[]string{"weapons.toml: weapons[4].heal: 杖は heal を 1 以上にしてください（0）", "weapons.toml: weapons[4].uses: 杖は uses を 1 以上にしてください（0）"}},
 		{"TC-FR-SYS-04-26 杖の回復量が負で、使用回数を書いていない",
-			[]edit{appendTo("weapons.toml", strings.Replace(strings.Replace(staffWeapon, "heal = 10", "heal = -1", 1), "uses = 15\n", "", 1))},
+			[]edit{replace("weapons.toml", staffWeapon, strings.Replace(strings.Replace(staffWeapon, "heal = 10", "heal = -1", 1), "uses = 15\n", "", 1))},
 			[]string{"weapons.toml: weapons[4].heal: 杖は heal を 1 以上にしてください（-1）", "weapons.toml: weapons[4].uses: 杖は uses を 1 以上にしてください（書かれていません）"}},
 		{"TC-FR-SYS-04-26 杖が威力・命中を持つ",
-			[]edit{appendTo("weapons.toml", staffWeapon+"\nmight = 3\nhit = 80")},
+			[]edit{replace("weapons.toml", staffWeapon, staffWeapon+"\nmight = 3\nhit = 80")},
 			[]string{"weapons.toml: weapons[4].might: 杖は might を 0 にしてください（3）", "weapons.toml: weapons[4].hit: 杖は hit を 0 にしてください（80）"}},
 		{"TC-FR-SYS-04-26 杖でない武器が回復量・使用回数を書く（値が 0 でも誤り）",
 			[]edit{
@@ -83,16 +72,13 @@ func TestLoadIt02(t *testing.T) {
 			[]string{"weapons.toml: weapons[0].uses: 杖でない武器は uses を持てません", "weapons.toml: weapons[2].heal: 杖でない武器は heal を持てません"}},
 		{"TC-FR-SYS-04-27 回復量・使用回数が 1 の杖、杖のクラスとキャラは通る",
 			[]edit{
-				appendTo("weapons.toml", strings.Replace(strings.Replace(staffWeapon, "heal = 10", "heal = 1", 1), "uses = 15", "uses = 1", 1)),
-				appendTo("classes.toml", clericClass),
-				appendTo("characters.toml", clericChar),
+				replace("weapons.toml", staffWeapon, strings.Replace(strings.Replace(staffWeapon, "heal = 10", "heal = 1", 1), "uses = 15", "uses = 1", 1)),
+				replace("characters.toml", "level = 1\ngrowth = { hp = 55, str = 0, skl = 40, spd = 60, def = 30 }\n", ""),
 			},
 			nil},
 		// 規則 22
 		{"TC-FR-SYS-04-28 敵と増援が杖を持つ",
 			[]edit{
-				appendTo("weapons.toml", staffWeapon),
-				appendTo("classes.toml", clericClass),
 				replace("maps.toml", "class = \"soldier\"\nweapon = \"iron_lance\"\nai = \"charge\"\nx = 6", "class = \"cleric\"\nweapon = \"heal_staff\"\nai = \"charge\"\nx = 6"),
 				replace("maps.toml", "turn = 5\nclass = \"myrmidon\"\nweapon = \"iron_sword\"", "turn = 5\nclass = \"myrmidon\"\nweapon = \"heal_staff\""),
 			},
@@ -119,7 +105,7 @@ func TestLoadIt02(t *testing.T) {
 			[]string{`chapters.toml: chapters[1].map: マップ "ch02" に出撃の枠（slots）がありません`}},
 		// 規則 15
 		{"TC-FR-SYS-04-31 加入のキャラが名簿にもいる",
-			[]edit{replace("game.toml", `"mira"]`, `"mira", "elsa"]`)},
+			[]edit{replace("game.toml", `"rina"]`, `"rina", "elsa"]`)},
 			[]string{`chapters.toml: chapters[1].joins[0]: キャラ "elsa" は party にもいます`}},
 		{"TC-FR-SYS-04-31 同じキャラがほかの章でも加わる",
 			[]edit{replace("chapters.toml", "after = \"ch03_after\"", "after = \"ch03_after\"\njoins = [\"elsa\"]")},
@@ -262,9 +248,7 @@ func TestLoadIt02(t *testing.T) {
 func TestLoadStaff(t *testing.T) {
 	t.Run("TC-FR-SYS-04-27 杖は種類 staff・回復量・使用回数を持ち、杖でない武器の回復量・使用回数は 0", func(t *testing.T) {
 		m := baseFS(t)
-		for _, e := range []edit{appendTo("weapons.toml", staffWeapon), appendTo("classes.toml", clericClass), appendTo("characters.toml", clericChar)} {
-			e(t, m)
-		}
+		replace("characters.toml", "level = 1\ngrowth = { hp = 55, str = 0, skl = 40, spd = 60, def = 30 }\n", "")(t, m)
 		cat, err := defload.Load(m)
 		if err != nil {
 			t.Fatalf("誤りがある:\n%v", err)

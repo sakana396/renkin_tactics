@@ -53,3 +53,13 @@ level = 2
 growth = { hp = 65, str = 45, skl = 40, spd = 40, def = 35 }
 weapon = "iron_lance"
 items = [{ item = "potion", count = 1 }]
+
+# 工房の見習い。1 章の初めから名簿にいる（設計書（反復 2）10.3 節）
+[[characters]]
+id = "rina"
+name = "リナ"
+class = "cleric"
+level = 1
+growth = { hp = 55, str = 0, skl = 40, spd = 60, def = 30 }
+weapon = "heal_staff"
+items = [{ item = "potion", count = 1 }]

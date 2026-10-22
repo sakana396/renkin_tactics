@@ -229,7 +229,7 @@ func TestBaseDataIt02(t *testing.T) {
 	})
 
 	t.Run("TC-FR-CMP-07-01 各章の前後に物語があり、段落は 10.8 節の下書きのとおりで 200 文字以下", func(t *testing.T) {
-		counts := map[string]int{"ch01_before": 5, "ch01_after": 5, "ch02_before": 5, "ch02_after": 4, "ch03_before": 4, "ch03_after": 4}
+		counts := map[string]int{"ch01_before": 6, "ch01_after": 5, "ch02_before": 5, "ch02_after": 4, "ch03_before": 4, "ch03_after": 4}
 		for _, c := range cat.Chapters() {
 			for _, id := range []string{c.Before, c.After} {
 				if id != c.ID+"_before" && id != c.ID+"_after" {
@@ -257,7 +257,8 @@ func TestBaseDataIt02(t *testing.T) {
 			want string
 		}{
 			{"ch01_before", 0, "小国アルケアは、錬金術の工房で知られる国だった。山と森に守られ、長く戦を知らなかった。"},
-			{"ch01_before", 4, "レオン「行こう。守将ハーゲンを討てば、先遣隊は崩れる」"},
+			{"ch01_before", 3, "隊には、砦へ薬を届けに来ていた工房の見習い、リナもいた。癒やしの杖を握る手は震えていたが、引き返すとは言わなかった。"},
+			{"ch01_before", 5, "レオン「行こう。守将ハーゲンを討てば、先遣隊は崩れる」"},
 			{"ch02_before", 2, "エルザ「村を焼けという命令に、従えなかった。この戦は、錬金術の技を奪うための略奪だ。剣を向ける相手を、選び直したい」"},
 			{"ch03_after", 3, "帝国との戦がこれで終わるのかは、まだ誰にも分からない。それでも、工房の煙突から、久しぶりに煙が上がった。"},
 		}

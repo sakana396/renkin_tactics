@@ -43,3 +43,10 @@ id = "cavalier"
 name = "騎兵"
 weapon_type = "lance"
 base = { hp = 20, str = 6, skl = 5, spd = 6, def = 5, mov = 7 }
+
+# 僧侶（設計書（反復 2）10.1 節）。自軍の回復役
+[[classes]]
+id = "cleric"
+name = "僧侶"
+weapon_type = "staff"
+base = { hp = 16, str = 0, skl = 2, spd = 6, def = 2, mov = 5 }
