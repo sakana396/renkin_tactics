@@ -21,10 +21,10 @@
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
-| 計画 | 反復 1 の振り返り | [iterations/it01/retrospective.md](iterations/it01/retrospective.md) | v0.1 案。確認待ち |
-| 計画 | 反復 2 の振り返り | [iterations/it02/retrospective.md](iterations/it02/retrospective.md) | v0.1 案。確認待ち |
-| 計画 | 反復 3 計画書 | [iterations/it03/plan.md](iterations/it03/plan.md) | v0.1 案。確認待ち |
-| 設計 | 設計書（反復 3） | [03_design/design-it03.md](03_design/design-it03.md) | v0.1 案。確認待ち |
+| 計画 | 反復 1 の振り返り | [iterations/it01/retrospective.md](iterations/it01/retrospective.md) | v0.2 承認（E-37） |
+| 計画 | 反復 2 の振り返り | [iterations/it02/retrospective.md](iterations/it02/retrospective.md) | v0.2 承認（E-37） |
+| 計画 | 反復 3 計画書 | [iterations/it03/plan.md](iterations/it03/plan.md) | v0.2 承認（E-37） |
+| 設計 | 設計書（反復 3） | [03_design/design-it03.md](03_design/design-it03.md) | v0.2 承認（E-37） |
 
 ## エージェント向けのルール
 
