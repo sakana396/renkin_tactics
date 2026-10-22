@@ -100,17 +100,24 @@ func (b *Battle) strikeOrder(a, d int) []int {
 // attack は、a が d を攻撃する流れを進め、出来事を足す（DES-BTL-06）。
 // a は呼ぶ前に移動を終えておく。still は a が移動せずに攻撃したか（狙撃。DES-SKL-01）。
 // どちらかが倒れたら、そこで攻撃を終える。
+// 流れの終わりに、加わった自軍のユニットに経験を足し（DES-GRW-01、DES-GRW-02）、そのあとで勝ち負けを確かめる。
 func (b *Battle) attack(events []Event, a, d int, still bool) []Event {
+	playerHit := false
 	for _, s := range b.strikeOrder(a, d) {
 		r := d
 		if s == d {
 			r = a
 		}
-		events = b.strike(events, s, r, s == a && still)
+		var hit bool
+		events, hit = b.strike(events, s, r, s == a && still)
+		if hit && b.units[s].Side == Player {
+			playerHit = true
+		}
 		if !b.units[r].Alive {
 			break
 		}
 	}
+	events = b.attackExp(events, a, d, playerHit)
 	return b.judge(events)
 }
 
@@ -119,8 +126,8 @@ func (b *Battle) attack(events []Event, a, d int, still bool) []Event {
 // 乱数を引く順番（DES-RNG-01）: 乱数を 2 つ引き、和が 命中率 × 2 より小さければ当たる。
 // 当たって、r が大盾を持っていれば、乱数を 1 つ引き、Chance より小さければ大盾が出る。
 // 必殺（怒り）は Multiplier 倍、大盾は半分（切り捨て）。両方なら倍にしてから半分にする（DES-BTL-05）。
-// HP は 0 で止め、0 になったら倒れる。
-func (b *Battle) strike(events []Event, s, r int, still bool) []Event {
+// HP は 0 で止め、0 になったら倒れる。当たったかを合わせて返す。
+func (b *Battle) strike(events []Event, s, r int, still bool) ([]Event, bool) {
 	damage, rate := b.strikeValues(s, r, still)
 	r1 := b.roll()
 	r2 := b.roll()
@@ -142,7 +149,7 @@ func (b *Battle) strike(events []Event, s, r int, still bool) []Event {
 	if b.units[r].HP == 0 {
 		events = b.fall(events, r)
 	}
-	return events
+	return events, e.Hit
 }
 
 // fall はユニット i を倒れた状態にし、マップから外す（DES-BTL-06、E-15）。

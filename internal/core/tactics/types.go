@@ -113,7 +113,9 @@ type Terrain struct {
 }
 
 // Item は消耗品（DES-BTL-01、DES-ITM-01）。
+// ID は tactics の外（core）がアイテムを見分けるための値で、tactics は使わない（DES-GRW-03）。
 type Item struct {
+	ID   string
 	Name string
 	Heal int
 }
@@ -135,12 +137,25 @@ type Skill struct {
 	Multiplier int
 }
 
+// Growth は成長率（%）。レベルが上がったとき、能力ごとにこの値より小さい乱数を引けば 1 上がる（DES-GRW-02、DES-GRW-03）。
+type Growth struct {
+	HP  int
+	Str int
+	Skl int
+	Spd int
+	Def int
+}
+
 // UnitSetup は、戦闘を始めるときのユニット 1 体の入力（DES-BTL-01）。HP は Stats.HP から始まる。
+// Level・Exp・Growth はレベル・経験・成長率（DES-GRW-03）。Level が 0 のユニットは経験を得ない。
 type UnitSetup struct {
 	Name      string
 	ClassName string
 	Side      Side
 	Stats     Stats
+	Level     int
+	Exp       int
+	Growth    Growth
 	Pos       Pos
 	Weapon    Weapon
 	Items     []ItemStack
@@ -164,11 +179,15 @@ type Setup struct {
 }
 
 // Unit は戦闘の中のユニット（DES-BTL-01）。倒れたユニットは Alive が偽になり、マップから外れる。
+// Level・Exp・Growth はレベル・経験・成長率（DES-GRW-03）。
 type Unit struct {
 	Name      string
 	ClassName string
 	Side      Side
 	Stats     Stats
+	Level     int
+	Exp       int
+	Growth    Growth
 	HP        int
 	Pos       Pos
 	Weapon    Weapon
