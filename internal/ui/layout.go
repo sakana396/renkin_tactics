@@ -91,3 +91,8 @@ func (c *Controller) MenuLabels() []string {
 	}
 	return out
 }
+
+// BattleEndRect は勝利・敗北の帯の描画とクリックに使う範囲（DES-UI-17）。
+func BattleEndRect() image.Rectangle {
+	return image.Rect(0, MapSize/2-56, MapSize, MapSize/2+40)
+}

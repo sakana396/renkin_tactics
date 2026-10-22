@@ -50,7 +50,7 @@ func TestTexts(t *testing.T) {
 				t.Errorf("BandText(%v) = %q、%q のはず", tc.e.Kind, got, tc.band)
 			}
 		}
-		if ResultText(tactics.Won) != "勝ち！" || ResultText(tactics.Lost) != "負け……" || ResultText(tactics.Ongoing) != "" {
+		if ResultText(tactics.Won) != "勝利" || ResultText(tactics.Lost) != "敗北" || ResultText(tactics.Ongoing) != "" {
 			t.Errorf("ResultText が違う")
 		}
 		// 写しにないユニットを指していても止まらない。

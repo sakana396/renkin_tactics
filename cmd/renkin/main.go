@@ -1,8 +1,6 @@
-// Command renkin は、レンキン・タクティクスを起動する（DES-PKG-01、DES-CMD-01）。
+// Command renkin は、レンキン・タクティクスを起動する（DES-PKG-01、DES-CMD-02）。
 //
-// 定義データを読み込んで検証し、乱数の種を決め、始めるマップの戦闘を作って画面を動かす。
-// 始めるマップは、chapters.toml の最初の章のマップ（反復 2 の Issue 2 の仮の形。DES-CMD-02 で置き換える。設計書（反復 2）9 章）。
-// 起動と誤りの表示は、ふしぎ錬金（sakana396/fushigi_renkin の cmd/fushigi）と同じ形にした。
+// 定義データと保存先を読み、タイトルから始める。
 package main
 
 import (
@@ -11,12 +9,12 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/sakana396/renkin_tactics/data"
-	"github.com/sakana396/renkin_tactics/internal/core"
-	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 	"github.com/sakana396/renkin_tactics/internal/defload"
+	"github.com/sakana396/renkin_tactics/internal/savefile"
 	"github.com/sakana396/renkin_tactics/internal/ui"
 )
 
@@ -24,15 +22,16 @@ func main() {
 	os.Exit(run(os.Args[1:], os.Stderr, data.Base(), time.Now, ui.Run))
 }
 
-// run は起動の流れを行い、終了コードを返す（DES-CMD-01）。
-//
-//  1. fsys の定義データを defload.Load で読む。誤りがあれば、すべてを stderr に書き、
-//     Windows ではメッセージボックスでも出して、1 を返す（UC-01 2a、FR-SYS-04）
-//  2. 乱数の種を決める（-seed、なければ時刻。DES-RNG-01）
-//  3. 始めるマップ（最初の章のマップ）の戦闘を作る関数を start に渡して、画面を動かす。やり直すたびに、その関数で種を決め直す
-func run(args []string, stderr io.Writer, fsys fs.FS, now func() time.Time, start func(ui.Factory) error) int {
+// run は定義データ・種・保存先を画面へ渡し、終了コードを返す（DES-CMD-02）。
+func run(args []string, stderr io.Writer, fsys fs.FS, now func() time.Time, start func(ui.Config) error) int {
+	return runWithDirEnv(args, stderr, fsys, now, start, savefile.DirEnv{OS: runtime.GOOS, XDGDataHome: os.Getenv("XDG_DATA_HOME"), UserConfigDir: os.UserConfigDir, UserHomeDir: os.UserHomeDir})
+}
+
+// runWithDirEnv は保存先の解決失敗も OS に依存せず検査する口（DES-CMD-02）。
+func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.Time, start func(ui.Config) error, env savefile.DirEnv) int {
 	flags := flag.NewFlagSet("renkin", flag.ContinueOnError)
 	flags.SetOutput(stderr)
+	savedir := flags.String("savedir", "", "セーブのディレクトリ（指定しなければ OS の標準の場所）")
 	seed := flags.Uint64("seed", 0, "乱数の種。指定すると、やり直しても同じ種を使う（指定しなければ時刻から決める）")
 	if err := flags.Parse(args); err != nil {
 		return 2
@@ -53,12 +52,12 @@ func run(args []string, stderr io.Writer, fsys fs.FS, now func() time.Time, star
 	}
 
 	nextSeed := seeder(seedSet, *seed, now)
-	// 章は defload が 1 つ以上あることを確かめている（DES-DAT-03 規則 14）。
-	startMap := cat.Chapters()[0].Map
-	factory := func() (*tactics.Battle, []tactics.Event, error) {
-		return core.NewBattle(cat, startMap, nextSeed())
+	dir, err := savefile.ResolveDir(*savedir, env)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
 	}
-	if err := start(factory); err != nil {
+	if err := start(ui.Config{Catalog: cat, Store: savefile.Store{Dir: dir}, NextSeed: nextSeed}); err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}

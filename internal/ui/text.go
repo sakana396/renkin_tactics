@@ -102,9 +102,9 @@ func EventText(e tactics.Event) string {
 func ResultText(r tactics.Result) string {
 	switch r {
 	case tactics.Won:
-		return "勝ち！"
+		return "勝利"
 	case tactics.Lost:
-		return "負け……"
+		return "敗北"
 	}
 	return ""
 }
@@ -143,7 +143,7 @@ func (c *Controller) Guide() []string {
 		lines = append(lines, "Space・Enter（押している間）: 早送り")
 		return lines
 	case Over:
-		lines = append(lines, fmt.Sprintf("%s　R: やり直す　Esc: 終了", ResultText(b.Result)))
+		lines = append(lines, fmt.Sprintf("%s　左クリック: 次へ", ResultText(b.Result)))
 	}
 	if c.message != "" {
 		lines = append(lines, c.message)
