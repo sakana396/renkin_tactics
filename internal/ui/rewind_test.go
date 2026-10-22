@@ -131,6 +131,7 @@ func TestRewindUI(t *testing.T) {
 		if !c.battle.NeedsResume() || len(c.RewindView().Buttons) != 2 {
 			t.Fatal("再開なし")
 		}
+		checkResumeLayout(t, c)
 		h := c.battle.History()
 		c.Click(tactics.Pos{})
 		c.EndPhase()
@@ -140,7 +141,7 @@ func TestRewindUI(t *testing.T) {
 		}
 		c.OpenRewind()
 		c.Cancel()
-		c.RewindClick(200, 450)
+		c.RewindClick(200, 560)
 		if c.state != Playing {
 			t.Fatal("再生なし")
 		}
@@ -265,6 +266,10 @@ func TestRewindBoundaries(t *testing.T) {
 			if kind == tactics.HistoryEndPhase && !h[i].Automatic {
 				t.Fatal("自動移行でない")
 			}
+			if kind == tactics.HistoryEndPhase && !strings.Contains(c.rewindLabel(h[i]), "番の移行（自動）") {
+				t.Fatal("自動移行の行動名がない", c.rewindLabel(h[i]))
+			}
+			checkResumeLayout(t, c)
 			before := c.battle.Units()
 			h = c.battle.History()
 			c.Click(tactics.Pos{})
@@ -391,4 +396,31 @@ func TestRewindMouse(t *testing.T) {
 			t.Fatal("マウスで復帰または消費が不正")
 		}
 	})
+}
+
+// 再開待ちの全ボタンが盤面・案内文・互いを隠さないことを確かめる（DES-UI-19、UC-14）。
+func checkResumeLayout(t *testing.T, c *Controller) {
+	t.Helper()
+	v := c.RewindView()
+	for i, b := range v.Buttons {
+		if !b.Rect.In(image.Rect(0, MapSize, MapSize, ScreenHeight)) {
+			t.Fatal("再開待ちのボタンが盤面に重なるか案内欄の外にある", b)
+		}
+		for j, line := range c.Guide() {
+			y := MapSize + 2 + j*lineHeight
+			if b.Rect.Overlaps(image.Rect(8, y, 8+textWidth(line), y+lineHeight)) {
+				t.Fatal("再開待ちのボタンが案内文を隠す", b, line)
+			}
+		}
+		for _, tx := range v.Texts {
+			if b.Rect.Overlaps(image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+lineHeight)) {
+				t.Fatal("再開待ちのボタンが操作案内を隠す", b, tx)
+			}
+		}
+		for _, other := range v.Buttons[i+1:] {
+			if b.Rect.Overlaps(other.Rect) {
+				t.Fatal("再開待ちのボタン同士が重なる", b, other)
+			}
+		}
+	}
 }

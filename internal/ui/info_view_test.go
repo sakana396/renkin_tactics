@@ -247,6 +247,20 @@ func TestInfoView(t *testing.T) {
 			}
 			v := p.View()
 			for _, b := range c.RewindView().Buttons {
+				if !b.Rect.In(image.Rect(0, MapSize, MapSize, ScreenHeight)) {
+					t.Fatal("巻き戻しボタンが案内欄の外にある", b)
+				}
+				for i, line := range c.Guide() {
+					y := MapSize + 2 + i*lineHeight
+					if b.Rect.Overlaps(image.Rect(8, y, 8+textWidth(line), y+lineHeight)) {
+						t.Fatal("巻き戻しボタンが案内文を隠す", line)
+					}
+				}
+				for _, tx := range c.RewindView().Texts {
+					if b.Rect.Overlaps(image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+lineHeight)) {
+						t.Fatal("巻き戻しボタンが操作案内を隠す", tx)
+					}
+				}
 				for _, tx := range v.Texts {
 					if b.Rect.Overlaps(image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+lineHeight)) {
 						t.Fatal("巻き戻しボタンが情報を隠す", tx)

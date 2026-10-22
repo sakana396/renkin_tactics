@@ -89,7 +89,7 @@ func (c *Controller) rewindLabel(e tactics.HistoryEntry) string {
 	case tactics.HistoryEndPhase:
 		action = "番を終える"
 		if e.Automatic {
-			action = "番の処理を再開"
+			action = "番の移行（自動）"
 		}
 	case tactics.HistoryPlayerStart:
 		action = "自軍の番を始める"
@@ -129,14 +129,14 @@ func (c *Controller) RewindView() SceneView {
 		if c.state == Playing {
 			return v
 		}
-		button(fmt.Sprintf("巻き戻し 残り %d/10", c.battle.RewindsLeft()), image.Rect(304, 512, 504, 532), true)
+		button(fmt.Sprintf("巻き戻し 残り %d/10", c.battle.RewindsLeft()), image.Rect(304, 512, 504, 530), true)
 		add("T: 巻き戻し", 216, 514)
 		if c.battle.NeedsResume() {
 			label := "番の処理を再開"
 			if c.resumeEnemy {
 				label = "敵軍の行動を再開"
 			}
-			button(label, image.Rect(144, 440, 464, 480), true)
+			button(label, image.Rect(144, 550, 464, 574), true)
 		}
 		return v
 	}
