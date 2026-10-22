@@ -35,6 +35,8 @@ type SceneView struct {
 	Texts   []SceneText
 	Buttons []SceneButton
 	Icons   []SceneIcon
+	Rows    []PrepareRow
+	Info    *InfoView
 }
 
 // wrapSceneText は 48 px の左右余白を残し、文字の単位で折り返す（DES-UI-12）。
@@ -127,17 +129,9 @@ func (s *SceneController) View() SceneView {
 		}
 		lines("左クリック: 章の準備へ", 528, StyleLabel)
 	case Prepare:
-		heading(s.campaign.Chapter)
-		lines("出撃する仲間", 112, StylePlain)
-		for n, i := range s.DefaultMembers() {
-			m := s.campaign.Roster[i]
-			ch, _ := s.cfg.Catalog.Character(m.Character)
-			lines(fmt.Sprintf("%s　Lv %d", ch.Name, m.Level), 152+n*32, StylePlain)
-		}
-		lines("左クリック: 出撃", 528, StyleLabel)
+		v = s.prepareView()
 	case Result:
-		heading(s.storyChapter)
-		add("勝利", 48, 88, true, StyleTitle)
+		add(fmt.Sprintf("第 %d 章　%s　勝利", s.storyChapter+1, s.cfg.Catalog.Chapters()[s.storyChapter].Name), 48, 32, true, StyleTitle)
 		for i, m := range s.result.Members {
 			ch, _ := s.cfg.Catalog.Character(s.campaign.Roster[m.Member].Character)
 			fallen := ""
@@ -150,7 +144,9 @@ func (s *SceneController) View() SceneView {
 				style = StyleBad
 			}
 			lines(fmt.Sprintf("%s　Lv %d → %d　経験 %d → %d%s", ch.Name, m.LevelBefore, m.LevelAfter, m.ExpBefore, m.ExpAfter, fallen), 144+i*48, style)
-			lines(fmt.Sprintf("HP+%d 力+%d 技+%d 速さ+%d 守備+%d", m.Gains.HP, m.Gains.Str, m.Gains.Skl, m.Gains.Spd, m.Gains.Def), 164+i*48, StyleLabel)
+			if gains := resultGains(m.Gains); gains != "" {
+				lines(gains, 164+i*48, StyleLabel)
+			}
 		}
 		var rewards []string
 		for _, r := range s.result.Reward {
@@ -203,6 +199,19 @@ func (s *SceneController) Click(x, y int) {
 		return
 	}
 	v := s.View()
+	if s.scene == Prepare {
+		for _, r := range v.Rows {
+			if image.Pt(x, y).In(r.Mark) {
+				s.toggleDeployment(r.Member)
+				return
+			}
+			if image.Pt(x, y).In(r.Rect) {
+				s.prepareMember = r.Member
+				s.message = ""
+				return
+			}
+		}
+	}
 	if len(v.Buttons) > 0 {
 		for i, b := range v.Buttons {
 			if image.Pt(x, y).In(b.Rect) && b.Enabled {
@@ -213,4 +222,18 @@ func (s *SceneController) Click(x, y int) {
 		return
 	}
 	s.Advance()
+}
+
+// resultGains は増えた能力だけを表示する（DES-UI-14）。
+func resultGains(g tactics.Stats) string {
+	var parts []string
+	for _, v := range []struct {
+		name string
+		n    int
+	}{{"HP", g.HP}, {"力", g.Str}, {"技", g.Skl}, {"速さ", g.Spd}, {"守備", g.Def}} {
+		if v.n > 0 {
+			parts = append(parts, fmt.Sprintf("%s+%d", v.name, v.n))
+		}
+	}
+	return strings.Join(parts, " ")
 }
