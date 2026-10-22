@@ -99,7 +99,7 @@
 | TC-NFR-07-02 | NFR-07 / DES-BTL-04 / DES-BTL-08 | 1 ターン目の自軍の番 | `Action` が範囲外（4、-1）、勝ち・負けのあと、敵軍の番、`Unit` が -1・数を超える・敵・倒れた味方、行動済み、`To` が壁・マップの外・移動を超える・味方のいるマス・敵のいるマス | それぞれ `ErrInvalidAction`、`ErrBattleOver`、`ErrNotPlayerPhase`、`ErrInvalidUnit`、`ErrAlreadyActed`、`ErrUnreachable` を返す | 異常 |
 | TC-NFR-07-03 | NFR-07 / DES-ERR-01 | TC-NFR-07-01・02 のそれぞれ | 失敗する `Act` | 出来事は nil で、ターン・番・結果・ユニット（位置、HP、行動済み、手持ちなど）が変わらない | 異常 |
 | TC-NFR-07-04 | NFR-07 / DES-ERR-01 / DES-BTL-04 | TC-FR-ITM-02-03 と同じ | 検証 0〜5 を通り、検証 6（`UseItem`）で失敗する `Act`（#9。#6 では、まだ作っていない `UseItem` の扱いを確かめていた） | 出来事は nil で、状態は変わらない（`To` が移動できるマスでも移動しない） | 異常 |
-| TC-NFR-07-05 | NFR-07 / DES-BTL-08 | — | 公開の誤り 14 個（反復 2 で `ErrCannotAttack`・`ErrCannotHeal`・`ErrNoUses` を足した）どうしを `errors.Is` で比べる | 自分とだけ一致し、ほかとは一致しない | 正常 |
+| TC-NFR-07-05 | NFR-07 / DES-BTL-08 | — | 公開の誤り 18 個（反復 2 で `ErrCannotAttack`・`ErrCannotHeal`・`ErrNoUses`、反復 3 の #62 で `ErrNoRewinds`・`ErrInvalidRewind`・`ErrResumeRequired`・`ErrNoPendingResume` を足した）どうしを `errors.Is` で比べる | 自分とだけ一致し、ほかとは一致しない | 正常 |
 
 ### NFR-03・NFR-04・NFR-05・NFR-09（非機能の検査。#7）
 

@@ -77,6 +77,9 @@ func (b *Battle) validateCommand(cmd Command) error {
 	if b.Phase != Player {
 		return ErrNotPlayerPhase
 	}
+	if b.NeedsResume() {
+		return ErrResumeRequired
+	}
 	// 3. Unit が存在し、生きている自軍のユニットである。
 	if !b.validUnit(cmd.Unit) || !b.units[cmd.Unit].Alive || b.units[cmd.Unit].Side != Player {
 		return ErrInvalidUnit
@@ -100,6 +103,9 @@ func (b *Battle) EndPhase() ([]Event, error) {
 	}
 	if b.Phase != Player {
 		return nil, ErrNotPlayerPhase
+	}
+	if b.NeedsResume() {
+		return nil, ErrResumeRequired
 	}
 	return b.runEnemyPhase(nil, false), nil
 }
@@ -130,54 +136,66 @@ func (b *Battle) startPlayerPhase(events []Event) []Event {
 // runEnemyPhase は敵軍の番と次の自軍の番の始めまで進め、処理ごとの行動前を記録する（DES-BTL-02、DES-RWD-01）。
 func (b *Battle) runEnemyPhase(events []Event, automatic bool) []Event {
 	b.progress = phaseProgress{stage: enemyStart, automatic: automatic}
-	record := b.beginHistory(historyEntry{Kind: historyEndPhase, Unit: -1, Target: -1, Automatic: automatic})
-	// 敵軍の番の始め: PhaseStart → 増援 → 砦の回復。
-	b.Phase = Enemy
-	events = b.emit(events, Event{Kind: EventPhaseStart, Side: Enemy, Turn: b.Turn})
-	// この番に現れた増援は動かないので、増援を置く前の数だけ回す。
-	n := len(b.units)
-	events = b.placeReinforcements(events)
-	events = b.healOnForts(events, Enemy)
+	return b.continuePhase(events)
+}
 
-	b.progress = phaseProgress{stage: enemyAction, enemyCount: n}
-	b.finishHistory(record)
-	// 敵軍の番: 生きている敵を添字の順に 1 体ずつ動かす。
-	for i := 0; i < n; i++ {
+// continuePhase は通常進行と巻き戻し後の再開で同じ番処理を使う（DES-RWD-02、DES-BTL-02）。
+func (b *Battle) continuePhase(events []Event) []Event {
+	if b.progress.stage == enemyStart {
+		automatic := b.progress.automatic
+		record := b.beginHistory(historyEntry{Kind: historyEndPhase, Unit: -1, Target: -1, Automatic: automatic})
+		// 敵軍の番の始め: PhaseStart → 増援 → 砦の回復。
+		b.Phase = Enemy
+		events = b.emit(events, Event{Kind: EventPhaseStart, Side: Enemy, Turn: b.Turn})
+		// この番に現れた増援は動かないので、増援を置く前の数だけ回す。
+		n := len(b.units)
+		events = b.placeReinforcements(events)
+		events = b.healOnForts(events, Enemy)
+
+		b.progress = phaseProgress{stage: enemyAction, enemyCount: n}
+		b.finishHistory(record)
+	}
+	if b.progress.stage == enemyAction {
+		// 敵軍の番: 生きている敵を添字の順に 1 体ずつ動かす。
+		for i := b.progress.nextEnemy; i < b.progress.enemyCount; i++ {
+			if b.Result != Ongoing {
+				b.progress = phaseProgress{}
+				return events
+			}
+			if u := b.units[i]; u.Alive && u.Side == Enemy {
+				b.progress.nextEnemy = i
+				record := b.beginHistory(historyEntry{Kind: historyAction, Unit: i, Target: -1, To: u.Pos})
+				eventStart := len(events)
+				if b.actEnemyOverride != nil {
+					events = b.actEnemyOverride(events, i)
+				} else {
+					events = b.actEnemy(events, i)
+				}
+				// 敵の選択は従来どおり一度だけ実行し、出来事から一覧の要約を得る。
+				for _, e := range events[eventStart:] {
+					if e.Kind == EventMove {
+						b.history[record].entry.To = e.To
+					}
+					if e.Kind == EventStrike && e.Unit == i {
+						b.history[record].entry.Action = Attack
+						b.history[record].entry.Target = e.Target
+						b.history[record].entry.TargetName = b.units[e.Target].Name
+						break
+					}
+				}
+				b.progress.nextEnemy = i + 1
+				b.finishHistory(record)
+			}
+		}
 		if b.Result != Ongoing {
+			b.progress = phaseProgress{}
 			return events
 		}
-		if u := b.units[i]; u.Alive && u.Side == Enemy {
-			b.progress.nextEnemy = i
-			record = b.beginHistory(historyEntry{Kind: historyAction, Unit: i, Target: -1, To: u.Pos})
-			eventStart := len(events)
-			if b.actEnemyOverride != nil {
-				events = b.actEnemyOverride(events, i)
-			} else {
-				events = b.actEnemy(events, i)
-			}
-			// 敵の選択は従来どおり一度だけ実行し、出来事から一覧の要約を得る。
-			for _, e := range events[eventStart:] {
-				if e.Kind == EventMove {
-					b.history[record].entry.To = e.To
-				}
-				if e.Kind == EventStrike && e.Unit == i {
-					b.history[record].entry.Action = Attack
-					b.history[record].entry.Target = e.Target
-					b.history[record].entry.TargetName = b.units[e.Target].Name
-					break
-				}
-			}
-			b.progress.nextEnemy = i + 1
-			b.finishHistory(record)
-		}
-	}
-	if b.Result != Ongoing {
-		return events
+		b.progress = phaseProgress{stage: playerStart}
 	}
 
 	// 敵軍の番の終わり: ターンを進め、自軍の番を始める。
-	b.progress = phaseProgress{stage: playerStart}
-	record = b.beginHistory(historyEntry{Kind: historyPlayerStart, Unit: -1, Target: -1})
+	record := b.beginHistory(historyEntry{Kind: historyPlayerStart, Unit: -1, Target: -1})
 	b.Turn++
 	events = b.startPlayerPhase(events)
 	b.progress = phaseProgress{}
