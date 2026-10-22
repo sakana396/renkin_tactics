@@ -55,6 +55,7 @@ type Event struct {
 
 // emit は、今の状態の写しを付けて出来事を events に足す（DES-EVT-01）。
 func (b *Battle) emit(events []Event, e Event) []Event {
+	b.eventCount++
 	e.Units = b.Units()
 	return append(events, e)
 }

@@ -2,6 +2,7 @@ package tactics_test
 
 import (
 	"errors"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
@@ -163,9 +164,11 @@ func TestDeterminism(t *testing.T) {
 	t.Run("TC-NFR-06-01 同じ種なら同じ乱数の列になり、値は 0〜99", func(t *testing.T) {
 		a := mustNewSeed(t, 42)
 		b := mustNewSeed(t, 42)
+		// 巻き戻しを使わない列は従来の PCG と一致する（DES-RWD-03）。
+		original := rand.New(rand.NewPCG(42, 0))
 		for i := 0; i < 1000; i++ {
 			x, y := a.Roll(), b.Roll()
-			if x != y {
+			if x != y || x != original.IntN(100) {
 				t.Fatalf("%d 番目: %d と %d", i, x, y)
 			}
 			if x < 0 || x > 99 {
