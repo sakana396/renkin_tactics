@@ -269,7 +269,20 @@ func TestRewindRandomAndCount(t *testing.T) {
 	})
 	t.Run("TC-FR-BTL-10-07 一手も複数手も一回消費し十回で使い切る", func(t *testing.T) {
 		b := snapshotBattle(t)
-		for i := 0; i < 10; i++ {
+		// 残り 10 回の間に A・B を記録し、古い A の写しでも回数が戻らないことを確かめる（DES-RWD-04）。
+		rewindAct(t, b, Command{Unit: 0, To: Pos{0, 0}, Action: Wait})
+		aID := b.History()[0].ID
+		rewindAct(t, b, Command{Unit: 1, To: Pos{0, 1}, Action: Wait})
+		bID := b.History()[1].ID
+		rewindTo(t, b, bID)
+		if b.RewindsLeft() != 9 {
+			t.Fatalf("B の前へ戻した残り = %d, 期待 9", b.RewindsLeft())
+		}
+		rewindTo(t, b, aID)
+		if b.RewindsLeft() != 8 {
+			t.Fatalf("古い A の前へ戻した残り = %d, 期待 8", b.RewindsLeft())
+		}
+		for i := 2; i < 10; i++ {
 			rewindAct(t, b, Command{Unit: 0, To: Pos{0, 0}, Action: Wait})
 			id := b.History()[0].ID
 			if i%2 == 0 {

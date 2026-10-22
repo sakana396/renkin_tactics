@@ -54,5 +54,5 @@
 | FR-CMP-10 | #37、#41 | DES-CMP-06、DES-UI-14 | TC-FR-CMP-10-01〜02 | `internal/core`、`internal/ui` | 実装済み（章の結果の生成と表示） |
 | FR-SYS-01 | #39、#40 | DES-SAV-01、DES-SAV-03、DES-SAV-02、DES-CMP-07 | TC-FR-SYS-01-01〜06、TC-FR-SYS-01-07 | `internal/core/save.go`、`internal/ui` | 実装済み（#40 で自動保存とメモリ保持） |
 | FR-SYS-02 | #40 | DES-UI-09、DES-UI-10 | TC-FR-SYS-02-01〜04 | `internal/ui`、`cmd/renkin` | 実装済み |
-| FR-BTL-10 | #60、#61、#62 | DES-RWD-01〜04、DES-UI-19 | TC-FR-BTL-10-01〜10、TC-FR-BTL-10-15〜20 | `internal/core/tactics/snapshot.go`、`history.go`、`rewind.go`、`battle.go`、`act.go`、`event.go`、`internal/core/campaign.go` | 一部実装（#61: 内部の深い写し・PCG 復元・履歴。#62: 公開の巻き戻し・再開・回数、未来の破棄、勝敗からの復帰と結果反映の境界。UI と手動確認は #64） |
+| FR-BTL-10 | #60、#61、#62 | DES-RWD-01〜04、DES-UI-19 | TC-FR-BTL-10-01〜10、TC-FR-BTL-10-15〜20 | `internal/core/tactics/snapshot.go`、`history.go`、`rewind.go`、`battle.go`、`act.go`、`event.go`、`internal/core`（`rewind_test.go`。結果反映の境界の確認） | 一部実装（#61: 内部の深い写し・PCG 復元・履歴。#62: 公開の巻き戻し・再開・回数、未来の破棄、勝敗からの復帰と結果反映の境界。UI と手動確認は #64） |
 | FR-CMP-11 | #60 | DES-DEP-01、DES-UI-20 | 未定義（`test-spec-it03.md` の枠を作成。各実装 Issue で追加） | 未実装 | 要求・ユースケース反映済み（E-37、#60）。実装とテストは後続 Issue |

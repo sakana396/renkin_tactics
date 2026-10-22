@@ -48,7 +48,6 @@ type historyRecord struct {
 }
 
 // historyEntries は一覧用の値の独立した配列を返す（DES-RWD-01）。
-
 func (b *Battle) historyEntries() []historyEntry {
 	out := make([]historyEntry, len(b.history))
 	for i, h := range b.history {
