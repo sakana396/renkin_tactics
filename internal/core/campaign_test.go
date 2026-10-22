@@ -103,7 +103,19 @@ func TestCampaignDeployment(t *testing.T) {
 		if !reflect.DeepEqual(s.Members, []int{0, 2, 1}) || u[1].Name != "控え" || u[1].Level != 3 || u[1].Exp != 42 || u[1].HP != 25 || u[1].Pos != (tactics.Pos{X: 1, Y: 0}) || u[0].Growth != (tactics.Growth{HP: 100, Str: 100, Skl: 100, Spd: 100, Def: 100}) || u[0].Items[0].Item.ID != "z" || u[3].Level != 0 {
 			t.Fatalf("出撃 = %+v", u)
 		}
-		_ = sortie(t, c, 0)
+		for i, pos := range []tactics.Pos{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}} {
+			if u[i].Pos != pos {
+				t.Fatalf("旧 API の配置 %d = %v", i, u[i].Pos)
+			}
+		}
+		single := sortie(t, c, 0)
+		if single.Battle.Units()[0].Pos != (tactics.Pos{}) {
+			t.Fatal("主人公のみの旧 API の配置が違う")
+		}
+		explicit, events, err := c.StartBattleAt([]int{0, 2, 1}, []int{0, 1, 2}, 1)
+		if err != nil || !reflect.DeepEqual(explicit.Battle.Units(), u) || len(events) == 0 {
+			t.Fatalf("連番枠との互換性: %v", err)
+		}
 		if !reflect.DeepEqual(*c, before) {
 			t.Fatal("出撃で状態が変わった")
 		}
@@ -152,8 +164,9 @@ func TestCampaignDeployment(t *testing.T) {
 				c := newCampaign(t, core.Withdraw)
 				c.Roster[3].Alive = !tc.dead
 				before := campaignSnapshot(c)
+				idsBefore := slices.Clone(tc.ids)
 				s, ev, err := c.StartBattle(tc.ids, 1)
-				if !errors.Is(err, core.ErrInvalidDeployment) || s != nil || ev != nil || !reflect.DeepEqual(*c, before) {
+				if !errors.Is(err, core.ErrInvalidDeployment) || s != nil || ev != nil || !reflect.DeepEqual(*c, before) || !reflect.DeepEqual(tc.ids, idsBefore) {
 					t.Fatalf("%v: %v", tc.ids, err)
 				}
 			})
@@ -253,6 +266,9 @@ func TestCampaignFinish(t *testing.T) {
 		r, err := c.FinishChapter(s)
 		if err != nil {
 			t.Fatal(err)
+		}
+		if r.Members[0].Member != 0 || c.Roster[r.Members[0].Member].Character != "hero" {
+			t.Fatal("旧 API の結果が主人公の名簿に対応しない")
 		}
 		want := core.MemberResult{Member: 0, LevelBefore: 1, LevelAfter: 2, ExpBefore: 80, ExpAfter: 10, Gains: tactics.Stats{HP: 1, Str: 1, Skl: 1, Spd: 1, Def: 1}}
 		if r.Chapter != "c1" || r.Cleared || !reflect.DeepEqual(r.Members, []core.MemberResult{want}) || !reflect.DeepEqual(r.Reward, []defs.ItemCount{{Item: "a", Count: 2}}) || c.Chapter != 1 || c.Cleared || c.Roster[0].Level != 2 || c.Roster[0].Exp != 10 || c.Roster[0].Stats.HP != 21 || c.Roster[0].Items[0].Item != "z" || c.Roster[0].Items[0].Count != 1 || c.Stock[0].Count != 3 || len(c.Roster) != 5 || c.Roster[4].Character != "join2" || c.Roster[2].Level != 3 {

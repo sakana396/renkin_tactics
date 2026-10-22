@@ -224,8 +224,19 @@ func (c *Campaign) sortStock() {
 	sort.Slice(c.Stock, func(i, j int) bool { return c.Stock[i].Item < c.Stock[j].Item })
 }
 
-// StartBattle は名簿を変えず、選択順に出撃の枠へ配置する（DES-CMP-05）。
+// StartBattle は名簿を変えず、選択順に出撃の枠へ配置する（DES-CMP-05、DES-DEP-01）。
 func (c *Campaign) StartBattle(members []int, seed uint64) (*Sortie, []tactics.Event, error) {
+	slots := make([]int, len(members))
+	for i := range slots {
+		slots[i] = i
+	}
+	return c.StartBattleAt(members, slots, seed)
+}
+
+// StartBattleAt は出撃順を保ち、各仲間を指定した枠に配置する（DES-DEP-01）。
+// members[0] は主人公とし、slots[i] は members[i] を置くマップの枠の添字。
+// 主人公も空き枠へ移せる。検証・組み立てに失敗しても Campaign と入力は変えない。
+func (c *Campaign) StartBattleAt(members []int, slots []int, seed uint64) (*Sortie, []tactics.Event, error) {
 	if c.Cleared {
 		return nil, nil, ErrCleared
 	}
@@ -235,24 +246,39 @@ func (c *Campaign) StartBattle(members []int, seed uint64) (*Sortie, []tactics.E
 		return nil, nil, fmt.Errorf("core: マップ %q がありません", chapter.Map)
 	}
 	if len(members) < 1 || len(members) > len(m.Slots) {
-		return nil, nil, ErrInvalidDeployment
+		return nil, nil, fmt.Errorf("%w: 人数は 1 人以上 %d 人以下です", ErrInvalidDeployment, len(m.Slots))
 	}
 	seen := map[int]bool{}
 	for _, i := range members {
 		if i < 0 || i >= len(c.Roster) || !c.Roster[i].Alive || seen[i] {
-			return nil, nil, ErrInvalidDeployment
+			return nil, nil, fmt.Errorf("%w: 名簿の添字 %d は範囲外・戦死・重複のいずれかです", ErrInvalidDeployment, i)
 		}
 		seen[i] = true
 	}
 	lord, ok := c.cat.Character(c.Roster[members[0]].Character)
 	if !ok || !lord.Lord {
-		return nil, nil, ErrInvalidDeployment
+		return nil, nil, fmt.Errorf("%w: 先頭は主人公でなければなりません", ErrInvalidDeployment)
+	}
+	if len(slots) != len(members) {
+		return nil, nil, fmt.Errorf("%w: 枠と出撃者の長さが違います", ErrInvalidDeployment)
+	}
+	for i, slot := range slots {
+		if slot < 0 || slot >= len(m.Slots) {
+			return nil, nil, fmt.Errorf("%w: slots[%d] の枠 %d は範囲外です", ErrInvalidDeployment, i, slot)
+		}
+	}
+	used := make(map[int]bool, len(slots))
+	for _, slot := range slots {
+		if used[slot] {
+			return nil, nil, fmt.Errorf("%w: 枠 %d が重複しています", ErrInvalidDeployment, slot)
+		}
+		used[slot] = true
 	}
 	var allies []tactics.UnitSetup
 	var before []Member
 	for i, index := range members {
 		member := c.Roster[index]
-		u, err := allyUnit(c.cat, member.Character, m.Slots[i])
+		u, err := allyUnit(c.cat, member.Character, m.Slots[slots[i]])
 		if err != nil {
 			return nil, nil, err
 		}

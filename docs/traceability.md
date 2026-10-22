@@ -47,7 +47,7 @@
 | IF-04 | #38、#40 | DES-PKG-08、DES-SAV-02、DES-CMD-02 | TC-IF-04-01〜06、TC-IF-04-07 | `internal/savefile`、`internal/ui`、`cmd/renkin` | 実装済み（#40 で保存先と起動を接続） |
 | NFR-08 | #38 | DES-PKG-08、DES-SAV-02 | TC-NFR-08-01〜06 | `internal/savefile` | 実装済み |
 | FR-CMP-02 | #37、#40 | DES-CMP-06、DES-UI-15、DES-UI-17 | TC-FR-CMP-02-01、TC-FR-CMP-02-02〜03 | `internal/core`、`internal/ui` | 実装済み（#40 で戦闘終了・クリア画面） |
-| FR-CMP-03 | #37、#41 | DES-CMP-04、DES-CMP-05、DES-CMP-08、DES-UI-13 | TC-FR-CMP-03-01〜11 | `internal/core`、`internal/ui` | 一部実装（出撃選択・在庫の入れ替えと画面。装備選択は反復 2 の対象外） |
+| FR-CMP-03 | #37、#41、#63 | DES-CMP-04、DES-CMP-05、DES-CMP-08、DES-UI-13、DES-DEP-01 | TC-FR-CMP-03-01〜11、TC-FR-CMP-11-01〜04 | `internal/core`、`internal/ui` | 一部実装（出撃選択・在庫の入れ替えと画面。装備選択は反復 2 の対象外。#63 で旧 API の互換と枠の指定） |
 | FR-CMP-04 | #37、#40 | DES-CMP-01、DES-CMP-03、DES-CMP-08、DES-UI-11 | TC-FR-CMP-04-01〜02、TC-FR-CMP-04-03 | `internal/core`、`internal/ui` | 実装済み（#40 でルール選択） |
 | FR-CMP-05 | #37 | DES-CMP-05、DES-CMP-06 | TC-FR-CMP-05-01 | `internal/core` | 実装済み（離脱と次章での復帰） |
 | FR-CMP-06 | #37 | DES-CMP-05、DES-CMP-06 | TC-FR-CMP-06-01 | `internal/core` | 実装済み（戦死者を名簿に残し、出撃不可・手持ち消失） |
@@ -55,4 +55,4 @@
 | FR-SYS-01 | #39、#40 | DES-SAV-01、DES-SAV-03、DES-SAV-02、DES-CMP-07 | TC-FR-SYS-01-01〜06、TC-FR-SYS-01-07 | `internal/core/save.go`、`internal/ui` | 実装済み（#40 で自動保存とメモリ保持） |
 | FR-SYS-02 | #40 | DES-UI-09、DES-UI-10 | TC-FR-SYS-02-01〜04 | `internal/ui`、`cmd/renkin` | 実装済み |
 | FR-BTL-10 | #60、#61、#62 | DES-RWD-01〜04、DES-UI-19 | TC-FR-BTL-10-01〜10、TC-FR-BTL-10-15〜20 | `internal/core/tactics/snapshot.go`、`history.go`、`rewind.go`、`battle.go`、`act.go`、`event.go`、`internal/core`（`rewind_test.go`。結果反映の境界の確認） | 一部実装（#61: 内部の深い写し・PCG 復元・履歴。#62: 公開の巻き戻し・再開・回数、未来の破棄、勝敗からの復帰と結果反映の境界。UI と手動確認は #64） |
-| FR-CMP-11 | #60 | DES-DEP-01、DES-UI-20 | 未定義（`test-spec-it03.md` の枠を作成。各実装 Issue で追加） | 未実装 | 要求・ユースケース反映済み（E-37、#60）。実装とテストは後続 Issue |
+| FR-CMP-11 | #60、#63 | DES-DEP-01、DES-UI-20 | TC-FR-CMP-11-01〜04 | `internal/core` | 一部実装（#63: core の枠指定・検証・旧 API 互換・結果の名簿対応。配置の画面は #65） |
