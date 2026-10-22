@@ -13,9 +13,9 @@
 | 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.2 承認（E-37） |
 | 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.5 承認（E-38） |
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.2 承認済み |
-| 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.3 承認済み |
+| 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.4 承認済み（E-40） |
 | 計画 | 反復 2 計画書 | [iterations/it02/plan.md](iterations/it02/plan.md) | v0.3 承認済み（E-32、E-33） |
-| 設計 | 設計書（反復 2） | [03_design/design-it02.md](03_design/design-it02.md) | v0.3 承認済み（E-32、E-33） |
+| 設計 | 設計書（反復 2） | [03_design/design-it02.md](03_design/design-it02.md) | v0.4 承認済み（E-32、E-33、E-40） |
 | 試験 | テスト仕様書（反復 1） | [04_test/test-spec-it01.md](04_test/test-spec-it01.md) | 実装とともに書き足す |
 | 試験 | テスト仕様書（反復 2） | [04_test/test-spec-it02.md](04_test/test-spec-it02.md) | 骨組み。実装とともに書き足す |
 | 試験 | テスト仕様書（反復 3） | [04_test/test-spec-it03.md](04_test/test-spec-it03.md) | 骨組み。実装とともに書き足す |
@@ -25,7 +25,7 @@
 | 計画 | 反復 1 の振り返り | [iterations/it01/retrospective.md](iterations/it01/retrospective.md) | v0.2 承認（E-37） |
 | 計画 | 反復 2 の振り返り | [iterations/it02/retrospective.md](iterations/it02/retrospective.md) | v0.2 承認（E-37） |
 | 計画 | 反復 3 計画書 | [iterations/it03/plan.md](iterations/it03/plan.md) | v0.2 承認（E-37） |
-| 設計 | 設計書（反復 3） | [03_design/design-it03.md](03_design/design-it03.md) | v0.2 承認（E-37） |
+| 設計 | 設計書（反復 3） | [03_design/design-it03.md](03_design/design-it03.md) | v0.3 承認（E-37、E-40） |
 | 計画 | 反復 3 の振り返り | [iterations/it03/retrospective.md](iterations/it03/retrospective.md) | v0.1 案（人の承認待ち） |
 
 ## エージェント向けのルール
