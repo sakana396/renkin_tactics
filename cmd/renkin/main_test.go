@@ -90,7 +90,7 @@ func TestRun(t *testing.T) {
 			t.Fatalf("終了コード %d、標準エラー %q", code, stderr.String())
 		}
 		b, events, err := factory()
-		if err != nil || b.Turn != 1 || b.Phase != tactics.Player || len(b.Units()) != 12 || len(events) != 1 {
+		if err != nil || b.Turn != 1 || b.Phase != tactics.Player || len(b.Units()) != 13 || len(events) != 1 {
 			t.Errorf("作った戦闘: 誤り %v、ターン %d、ユニット %d、出来事 %d", err, b.Turn, len(b.Units()), len(events))
 		}
 		// 画面が誤りを返せば、標準エラーに書いて終了コード 1。

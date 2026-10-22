@@ -38,3 +38,13 @@ might = 6
 hit = 85
 min_range = 2
 max_range = 2
+
+# 癒やしの杖（設計書（反復 2）10.1・10.2 節、DES-HEL-01）。章ごとに満タンで始まる
+[[weapons]]
+id = "heal_staff"
+name = "癒やしの杖"
+type = "staff"
+heal = 10
+uses = 15
+min_range = 1
+max_range = 1

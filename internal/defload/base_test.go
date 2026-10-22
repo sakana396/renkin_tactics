@@ -20,7 +20,7 @@ func TestBaseData(t *testing.T) {
 	}
 
 	t.Run("TC-FR-SYS-03-01 本体のデータが誤りなく読み込め、10 章の値になっている", func(t *testing.T) {
-		if want := []string{"leon", "gald", "bran", "mira"}; !reflect.DeepEqual(cat.Game.Party, want) {
+		if want := []string{"leon", "gald", "bran", "mira", "rina"}; !reflect.DeepEqual(cat.Game.Party, want) {
 			t.Errorf("名簿 = %q", cat.Game.Party)
 		}
 		terrains := []defs.TerrainDef{
@@ -41,6 +41,7 @@ func TestBaseData(t *testing.T) {
 			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5}},
 			{ID: "myrmidon", Name: "剣士", WeaponType: "sword", Base: defs.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5}},
 			{ID: "cavalier", Name: "騎兵", WeaponType: "lance", Base: defs.Stats{HP: 20, Str: 6, Skl: 5, Spd: 6, Def: 5, Mov: 7}},
+			{ID: "cleric", Name: "僧侶", WeaponType: "staff", Base: defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5}},
 		}
 		for _, want := range classes {
 			if got, ok := cat.Class(want.ID); !ok || got != want {
@@ -52,6 +53,7 @@ func TestBaseData(t *testing.T) {
 			{ID: "iron_lance", Name: "鉄の槍", Type: "lance", Might: 7, Hit: 80, MinRange: 1, MaxRange: 1},
 			{ID: "iron_axe", Name: "鉄の斧", Type: "axe", Might: 8, Hit: 70, MinRange: 1, MaxRange: 1},
 			{ID: "iron_bow", Name: "鉄の弓", Type: "bow", Might: 6, Hit: 85, MinRange: 2, MaxRange: 2},
+			{ID: "heal_staff", Name: "癒やしの杖", Type: "staff", Heal: 10, Uses: 15, MinRange: 1, MaxRange: 1},
 		}
 		for _, want := range weapons {
 			if got, ok := cat.Weapon(want.ID); !ok || got != want {
@@ -82,6 +84,7 @@ func TestBaseData(t *testing.T) {
 			{defs.CharacterDef{ID: "bran", Name: "ブラン", Class: "fighter", Bonus: defs.Stats{HP: -2, Str: 4, Skl: 1, Spd: 1, Def: -1}, Level: 1, Growth: defs.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15}, Weapon: "iron_axe", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "wrath"}, defs.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5}},
 			{defs.CharacterDef{ID: "mira", Name: "ミラ", Class: "archer", Bonus: defs.Stats{Skl: 2, Spd: 1}, Level: 1, Growth: defs.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20}, Weapon: "iron_bow", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "snipe"}, defs.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5}},
 			{defs.CharacterDef{ID: "elsa", Name: "エルザ", Class: "cavalier", Bonus: defs.Stats{HP: 1, Str: 1, Skl: 1, Spd: 1}, Level: 2, Growth: defs.Growth{HP: 65, Str: 45, Skl: 40, Spd: 40, Def: 35}, Weapon: "iron_lance", Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 21, Str: 7, Skl: 6, Spd: 7, Def: 5, Mov: 7}},
+			{defs.CharacterDef{ID: "rina", Name: "リナ", Class: "cleric", Level: 1, Growth: defs.Growth{HP: 55, Str: 0, Skl: 40, Spd: 60, Def: 30}, Weapon: "heal_staff", Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5}},
 		}
 		for _, want := range chars {
 			got, ok := cat.Character(want.def.ID)

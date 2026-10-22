@@ -110,7 +110,7 @@ func TestLoad(t *testing.T) {
 			[]edit{replace("characters.toml", `items = [{ item = "potion", count = 2 }]`, `items = [{ item = "elixir", count = 2 }]`)},
 			[]string{`characters.toml: characters[0].items[0].item: アイテム "elixir" がありません`}},
 		{"TC-FR-SYS-04-03 名簿のキャラの参照がない",
-			[]edit{replace("game.toml", `"mira"]`, `"nobody"]`)},
+			[]edit{replace("game.toml", `"mira", "rina"]`, `"nobody", "rina"]`)},
 			[]string{`game.toml: party[3]: キャラ "nobody" がありません`}},
 		{"TC-FR-SYS-04-03 スキルの参照がない",
 			[]edit{replace("characters.toml", `skill = "wrath"`, `skill = "rage"`)},
@@ -266,7 +266,7 @@ func TestLoad(t *testing.T) {
 			[]edit{replace("characters.toml", `skill = "pavise"`, "skill = \"pavise\"\nlord = true")},
 			[]string{"game.toml: party: lord = true のキャラを、ちょうど 1 人入れてください（2 人）"}},
 		{"TC-FR-SYS-04-15 名簿に同じキャラを 2 回入れる",
-			[]edit{replace("game.toml", `"mira"]`, `"gald"]`)},
+			[]edit{replace("game.toml", `"mira", "rina"]`, `"gald", "rina"]`)},
 			[]string{`game.toml: party[3]: キャラ "gald" を 2 回入れています（party[1] と同じ）`}},
 		// 規則 11
 		{"TC-FR-SYS-04-16 ボスがいない",
