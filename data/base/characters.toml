@@ -1,11 +1,13 @@
-# 自軍のキャラ（DES-DAT-02、設計書 10.3 節）
-# 能力はクラスの base に bonus を足したもの
+# 自軍のキャラ（DES-DAT-02、設計書（反復 2）10.3 節）
+# 能力はクラスの base に bonus を足したもの。bonus は負の値も書ける（足したあとの値を検証する）
+# level は加わるときのレベル（省略すると 1）。growth は成長率（%。省略した能力は 0）
 
 [[characters]]
 id = "leon"
 name = "レオン"
 class = "lord"
-bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 0, mov = 0 }
+bonus = { hp = 1, str = 2, skl = 4, spd = 4, def = 0, mov = 0 }
+growth = { hp = 55, str = 45, skl = 65, spd = 70, def = 20 }
 weapon = "iron_sword"
 items = [{ item = "potion", count = 2 }]
 skill = "inspire"
@@ -15,7 +17,8 @@ lord = true
 id = "gald"
 name = "ガルド"
 class = "armor"
-bonus = { hp = 2, str = 0, skl = 0, spd = 0, def = 1, mov = 0 }
+bonus = { hp = 2, str = 0, skl = -2, spd = 0, def = 2, mov = 0 }
+growth = { hp = 85, str = 40, skl = 20, spd = 10, def = 70 }
 weapon = "iron_lance"
 items = [{ item = "potion", count = 1 }]
 skill = "pavise"
@@ -24,7 +27,8 @@ skill = "pavise"
 id = "bran"
 name = "ブラン"
 class = "fighter"
-bonus = { hp = 2, str = 1, skl = 0, spd = 1, def = 0, mov = 0 }
+bonus = { hp = -2, str = 4, skl = 1, spd = 1, def = -1, mov = 0 }
+growth = { hp = 70, str = 75, skl = 35, spd = 30, def = 15 }
 weapon = "iron_axe"
 items = [{ item = "potion", count = 1 }]
 skill = "wrath"
@@ -34,6 +38,18 @@ id = "mira"
 name = "ミラ"
 class = "archer"
 bonus = { hp = 0, str = 0, skl = 2, spd = 1, def = 0, mov = 0 }
+growth = { hp = 55, str = 40, skl = 60, spd = 45, def = 20 }
 weapon = "iron_bow"
 items = [{ item = "potion", count = 1 }]
 skill = "snipe"
+
+# 2 章の始めに加わる（chapters.toml の joins）
+[[characters]]
+id = "elsa"
+name = "エルザ"
+class = "cavalier"
+bonus = { hp = 1, str = 1, skl = 1, spd = 1, def = 0, mov = 0 }
+level = 2
+growth = { hp = 65, str = 45, skl = 40, spd = 40, def = 35 }
+weapon = "iron_lance"
+items = [{ item = "potion", count = 1 }]

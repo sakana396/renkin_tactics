@@ -59,7 +59,8 @@ func endPhaseUntilOver(t *testing.T, b *tactics.Battle) []tactics.Event {
 func TestRun(t *testing.T) {
 	t.Run("TC-FR-SYS-04-22 定義データに誤りがあれば、すべてを標準エラーに書き、終了コード 1 で終える", func(t *testing.T) {
 		fsys := copyBase(t)
-		fsys["game.toml"] = &fstest.MapFile{Data: []byte("start_map = \"ch99\"\n")}
+		// 始めるマップ（最初の章のマップ）を、ないマップにする。
+		fsys["chapters.toml"] = &fstest.MapFile{Data: []byte(strings.Replace(string(fsys["chapters.toml"].Data), `map = "ch01"`, `map = "ch99"`, 1))}
 		fsys["items.toml"] = &fstest.MapFile{Data: []byte("[[items]]\nid = \"potion\"\nname = \"回復薬\"\nheal = 0\n")}
 		var stderr bytes.Buffer
 		started := false
@@ -71,14 +72,14 @@ func TestRun(t *testing.T) {
 			t.Fatalf("終了コード %d、画面を動かした %v", code, started)
 		}
 		out := stderr.String()
-		for _, want := range []string{"定義データに誤りがあります", "game.toml", "ch99", "items.toml: items[0].heal"} {
+		for _, want := range []string{"定義データに誤りがあります", "chapters.toml: chapters[0].map", "ch99", "items.toml: items[0].heal"} {
 			if !strings.Contains(out, want) {
 				t.Errorf("標準エラーに %q がない:\n%s", want, out)
 			}
 		}
 	})
 
-	t.Run("TC-FR-SYS-04-23 定義データに誤りがなければ、始めるマップの戦闘を作る関数を渡して画面を動かす", func(t *testing.T) {
+	t.Run("TC-FR-SYS-04-23 定義データに誤りがなければ、始めるマップ（最初の章のマップ）の戦闘を作る関数を渡して画面を動かす", func(t *testing.T) {
 		var stderr bytes.Buffer
 		var factory ui.Factory
 		code := run([]string{"-seed", "7"}, &stderr, data.Base(), fixedNow, func(f ui.Factory) error {
@@ -123,7 +124,7 @@ func TestSeed(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		want, _, _ := core.NewBattle(cat, "ch01", 7)
+		want, _, _ := core.NewBattle(cat, cat.Chapters()[0].Map, 7)
 		wantEvents := endPhaseUntilOver(t, want)
 		for i := 0; i < 2; i++ {
 			b, _, err := factory()

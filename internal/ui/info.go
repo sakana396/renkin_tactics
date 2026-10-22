@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"image"
 	"strings"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
@@ -15,6 +16,8 @@ import (
 type Panel struct {
 	// Forecast は攻撃の予測の表（FR-BTL-08、UC-03）。攻撃の相手を選んでいるときだけ入る。
 	Forecast []ForecastRow
+	// Emphasis は攻撃の予測の強調（DES-UI-07）。
+	Emphasis ForecastEmphasis
 	// ForecastWeapons は、予測の両側（攻撃する側、守る側）の武器の種類（DES-UI-07）。武器の絵と相性の印に使う。
 	// Forecast があるときだけ意味がある。
 	ForecastWeapons [2]tactics.WeaponType
@@ -40,15 +43,13 @@ type ForecastRow struct {
 func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 	var p Panel
 	units := c.Units()
-	if c.state == Targeting && c.target >= 0 {
-		f, err := c.battle.Forecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Attack, Target: c.target})
+	if f, ok := c.attackForecast(); ok {
 		// 相手は Targets から選んでいるので、ふつうは誤りにならない。誤りなら予測を出さない。
-		if err == nil {
-			p.Forecast = ForecastRows(f, units[c.unit].Boss, units[c.target].Boss)
-			p.ForecastWeapons = [2]tactics.WeaponType{units[c.unit].Weapon.Type, units[c.target].Weapon.Type}
-			a, d := ForecastAfter(f)
-			p.ForecastAfter = [2]int{a, d}
-		}
+		p.Forecast = ForecastRows(f, units[c.unit].Boss, units[c.target].Boss)
+		p.ForecastWeapons = [2]tactics.WeaponType{units[c.unit].Weapon.Type, units[c.target].Weapon.Type}
+		a, d := ForecastAfter(f)
+		p.ForecastAfter = [2]int{a, d}
+		p.Emphasis = forecastEmphasis(f)
 	}
 	if !onMap || cursor.X < 0 || cursor.Y < 0 || cursor.X >= c.battle.Width() || cursor.Y >= c.battle.Height() {
 		return p
@@ -89,8 +90,6 @@ const (
 	// forecastAttackX と forecastDefendX は、予測の表の攻撃する側と守る側の列の位置（DES-BTL-07、DES-UI-07）。
 	forecastAttackX = 80
 	forecastDefendX = 200
-	// forecastBadgeX は、予測の列の左端から「撃破」「危険」までの位置（武器の絵と 2 倍の印の右）。
-	forecastBadgeX = weaponTextX + 16
 )
 
 // InfoStyle は情報欄の文の色の種類（DES-UI-06）。描画の側で色に読み替える。
@@ -109,12 +108,12 @@ const (
 	StyleGood
 	// StyleBad は不利の印 ▼（赤。DES-UI-07）。
 	StyleBad
-	// StyleAlert は「撃破」「危険」（橙。DES-UI-07）。
-	StyleAlert
+	// StyleBlack は撃破の帯の文（黒。DES-UI-07）。
+	StyleBlack
 )
 
 // InfoText は情報欄に描く文（DES-UI-06）。(X, Y) は文の左上の画面の座標。
-// Big が真なら 2 倍の大きさで描く（相性の印。DES-UI-07）。
+// Big が真なら 2 倍の大きさで描く（相性の印・帯の見出し。DES-UI-07）。
 type InfoText struct {
 	X, Y  int
 	Text  string
@@ -136,9 +135,11 @@ type InfoIcon struct {
 
 // InfoView は、情報欄に描くもの（DES-UI-06、DES-UI-07）。予測の表、ユニット、地形の順に上から並べる。
 type InfoView struct {
-	Texts []InfoText
-	Bars  []InfoBar
-	Icons []InfoIcon
+	// Banner は撃破・危険の帯。通常は nil（DES-UI-07）。
+	Banner *InfoBanner
+	Texts  []InfoText
+	Bars   []InfoBar
+	Icons  []InfoIcon
 	// Bottom は描くものの一番下の y（画面の座標）。
 	Bottom int
 }
@@ -165,22 +166,26 @@ func (p Panel) View() InfoView {
 	return v
 }
 
-// addForecast は、予測の見出し・両側の武器の絵と相性の印と「撃破」「危険」・表を (x, y) から並べ、
-// 使った一番下の y を返す（DES-BTL-07、DES-UI-07）。高さは (len(p.Forecast) + 1) × lineHeight ＋ WeaponIconSize。
+// addForecast は帯・見出し・武器の絵・相性の印・表を並べる（DES-BTL-07、DES-UI-07）。
 func (v *InfoView) addForecast(p Panel, x, y int) int {
+	if p.Emphasis != ForecastNormal {
+		st, fg := StyleTitle, StyleBlack
+		title, desc := "撃破", "この攻撃で倒せる"
+		if p.Emphasis == ForecastDanger {
+			st, fg = StyleBad, StylePlain
+			title, desc = "危険", "反撃で倒される"
+		}
+		v.Banner = &InfoBanner{Rect: image.Rect(x, y, x+InfoWidth-2*infoMargin, y+40), Style: st}
+		v.Texts = append(v.Texts, InfoText{X: x + 8, Y: y + 4, Text: title, Style: fg, Big: true})
+		v.text(x+80, y+12, desc, fg)
+		y += 44
+	}
 	v.text(x, y, "攻撃の予測", StyleTitle)
 	y += lineHeight
 
-	// 両側の列の頭に武器の種類の絵を置き、絵の右に相性の印（2 倍。絵と同じ高さ）、その右に「危険」「撃破」を出す。
+	// 両側の列の頭に武器の種類の絵を置き、絵の右に相性の印（2 倍。絵と同じ高さ）を置く。
 	t := Triangle(p.ForecastWeapons[0], p.ForecastWeapons[1])
 	marks := [2]int{t, -t}
-	badges := [2]string{}
-	if p.ForecastAfter[0] == 0 {
-		badges[0] = "危険"
-	}
-	if p.ForecastAfter[1] == 0 {
-		badges[1] = "撃破"
-	}
 	for i, cx := range [2]int{x + forecastAttackX, x + forecastDefendX} {
 		if tl, ok := weaponTile(p.ForecastWeapons[i]); ok {
 			v.Icons = append(v.Icons, InfoIcon{X: cx, Y: y, Size: WeaponIconSize, Tile: tl})
@@ -190,11 +195,6 @@ func (v *InfoView) addForecast(p Panel, x, y int) int {
 			v.Texts = append(v.Texts, InfoText{X: cx + weaponTextX, Y: y, Text: "▲", Style: StyleGood, Big: true})
 		case -1:
 			v.Texts = append(v.Texts, InfoText{X: cx + weaponTextX, Y: y, Text: "▼", Style: StyleBad, Big: true})
-		}
-	}
-	for i, cx := range [2]int{x + forecastAttackX, x + forecastDefendX} {
-		if badges[i] != "" {
-			v.text(cx+forecastBadgeX, y+(WeaponIconSize-lineHeight)/2, badges[i], StyleAlert)
 		}
 	}
 	y += WeaponIconSize
@@ -382,23 +382,86 @@ func Triangle(a, d tactics.WeaponType) int {
 	return 0
 }
 
-// TargetLabel は、選んだ相手のマスの上に出す文「ダメージ×回数 命中率%」と、相手のマスを返す（DES-UI-07）。
+// TargetLabel は、撃破・危険を頭に付けた予測の文と、相手のマスを返す（DES-UI-07）。
 // 回数が 1 なら「×1」を省く。攻撃の相手を選んでいなければ ok が偽。
 func (c *Controller) TargetLabel() (s string, p tactics.Pos, ok bool) {
+	v := c.TargetView()
+	return v.Text, v.Pos, v.Visible
+}
+
+// ForecastEmphasis は攻撃の予測の強調状態（DES-UI-07）。
+type ForecastEmphasis int
+
+const (
+	// ForecastNormal は通常の予測。
+	ForecastNormal ForecastEmphasis = iota
+	// ForecastDefeat は相手を倒せる予測。
+	ForecastDefeat
+	// ForecastDanger は反撃で倒される予測。
+	ForecastDanger
+)
+
+// InfoBanner は情報欄の帯の範囲と下地の色（DES-UI-07）。
+type InfoBanner struct {
+	Rect  image.Rectangle
+	Style InfoStyle
+}
+
+// TargetView は盤面の予測の文字と危険枠（DES-UI-07）。
+type TargetView struct {
+	Text      string
+	Pos       tactics.Pos
+	Style     InfoStyle
+	Visible   bool
+	Danger    bool
+	DangerPos tactics.Pos
+}
+
+// attackForecast は攻撃の相手を選んでいるときだけ予測を作る（DES-UI-07）。
+// 回復など別の状態には攻撃の予測を返さない。
+func (c *Controller) attackForecast() (tactics.Forecast, bool) {
 	if c.state != Targeting || c.target < 0 {
-		return "", tactics.Pos{}, false
+		return tactics.Forecast{}, false
 	}
 	f, err := c.battle.Forecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Attack, Target: c.target})
-	if err != nil {
-		return "", tactics.Pos{}, false
+	return f, err == nil
+}
+
+// forecastEmphasis は通常の命中を順に引いた HP から強調を決める（DES-UI-07）。
+func forecastEmphasis(f tactics.Forecast) ForecastEmphasis {
+	a, d := ForecastAfter(f)
+	if a == 0 {
+		return ForecastDanger
+	}
+	if d == 0 {
+		return ForecastDefeat
+	}
+	return ForecastNormal
+}
+
+// TargetView は攻撃の相手の文字・色と、自分の移動先の危険枠を返す（DES-UI-07）。
+func (c *Controller) TargetView() TargetView {
+	f, ok := c.attackForecast()
+	if !ok {
+		return TargetView{}
 	}
 	a := f.Attacker
-	s = fmt.Sprint(a.Damage)
+	s := fmt.Sprint(a.Damage)
 	if a.Count != 1 {
 		s += fmt.Sprintf("×%d", a.Count)
 	}
 	s += fmt.Sprintf(" %d%%", a.HitRate)
-	return s, c.Units()[c.target].Pos, true
+	v := TargetView{Text: s, Pos: c.Units()[c.target].Pos, Visible: true, DangerPos: c.dest}
+	switch forecastEmphasis(f) {
+	case ForecastDefeat:
+		v.Text = "撃破 " + s
+		v.Style = StyleTitle
+	case ForecastDanger:
+		v.Text = "危険 " + s
+		v.Style = StyleBad
+		v.Danger = true
+	}
+	return v
 }
 
 func forecastName(s tactics.ForecastSide, boss bool) string {

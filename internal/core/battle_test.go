@@ -53,7 +53,7 @@ var (
 	archerBase   = tactics.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5}
 )
 
-// 本体のデータから ch01 の戦闘を作り、10.3 節・10.4 節の値と一致することを確かめる。
+// 本体のデータから ch01 の戦闘を作り、10.3 節・10.4 節の値（自軍の能力と出撃の枠は設計書（反復 2）10.3・10.4 節の値）と一致することを確かめる。
 func TestNewBattleCh01(t *testing.T) {
 	t.Run("TC-FR-UNT-01-01 自軍の能力・配置が 10.3 節・10.4 節のとおり", func(t *testing.T) {
 		b, events := newCh01(t)
@@ -68,9 +68,9 @@ func TestNewBattleCh01(t *testing.T) {
 			t.Fatalf("ユニットの数 = %d（自軍 4、敵 8）", len(units))
 		}
 		want := []tactics.Unit{
-			{Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Str: 6, Skl: 8, Spd: 9, Def: 4, Mov: 5}, HP: 20, Pos: tactics.Pos{X: 1, Y: 14}, Weapon: sword, Items: []tactics.ItemStack{{Item: potion, Count: 2}}, Skill: inspire, Lord: true, Alive: true},
-			{Name: "ガルド", ClassName: "アーマー", Side: tactics.Player, Stats: tactics.Stats{HP: 24, Str: 6, Skl: 3, Spd: 2, Def: 10, Mov: 4}, HP: 24, Pos: tactics.Pos{X: 2, Y: 13}, Weapon: lance, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: pavise, Alive: true},
-			{Name: "ブラン", ClassName: "ファイター", Side: tactics.Player, Stats: tactics.Stats{HP: 26, Str: 8, Skl: 4, Spd: 5, Def: 3, Mov: 5}, HP: 26, Pos: tactics.Pos{X: 3, Y: 14}, Weapon: axe, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: wrath, Alive: true},
+			{Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: tactics.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5}, HP: 19, Pos: tactics.Pos{X: 1, Y: 14}, Weapon: sword, Items: []tactics.ItemStack{{Item: potion, Count: 2}}, Skill: inspire, Lord: true, Alive: true},
+			{Name: "ガルド", ClassName: "アーマー", Side: tactics.Player, Stats: tactics.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4}, HP: 24, Pos: tactics.Pos{X: 2, Y: 13}, Weapon: lance, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: pavise, Alive: true},
+			{Name: "ブラン", ClassName: "ファイター", Side: tactics.Player, Stats: tactics.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5}, HP: 22, Pos: tactics.Pos{X: 3, Y: 14}, Weapon: axe, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: wrath, Alive: true},
 			{Name: "ミラ", ClassName: "アーチャー", Side: tactics.Player, Stats: tactics.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5}, HP: 17, Pos: tactics.Pos{X: 1, Y: 15}, Weapon: bow, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: snipe, Alive: true},
 		}
 		for i, w := range want {
@@ -299,13 +299,18 @@ func TestNewBattleCh01(t *testing.T) {
 // smallCatalog は、手で組み立てた小さな目録を返す。edit で、マップ "m" とキャラの列を書き換えられる。
 //
 // マップ "m" は 3 × 2（行 0 は平地、行 1 は「平地・森・平地」。森の文字は複数バイトの「森」）。
-// 自軍はレオン（主人公）が (0, 0)、敵はボスのソルジャーが (2, 0)。
+// 名簿はレオン（主人公）だけで、出撃の枠は (0, 0) の 1 つ。敵はボスのソルジャーが (2, 0)。
 func smallCatalog(edit func(m *defs.MapDef, chars *[]defs.CharacterDef)) *defs.Catalog {
+	return smallCatalogParty([]string{"leon"}, edit)
+}
+
+// smallCatalogParty は、名簿を party にした smallCatalog を返す。
+func smallCatalogParty(party []string, edit func(m *defs.MapDef, chars *[]defs.CharacterDef)) *defs.Catalog {
 	m := defs.MapDef{
 		ID:      "m",
 		Name:    "小さなマップ",
 		Rows:    []string{"...", ".森."},
-		Allies:  []defs.AllyPlacement{{Character: "leon", X: 0, Y: 0}},
+		Slots:   []defs.Slot{{X: 0, Y: 0}},
 		Enemies: []defs.EnemyPlacement{{Class: "soldier", Weapon: "iron_lance", AI: "hold", Boss: true, X: 2, Y: 0}},
 	}
 	chars := []defs.CharacterDef{
@@ -315,7 +320,7 @@ func smallCatalog(edit func(m *defs.MapDef, chars *[]defs.CharacterDef)) *defs.C
 		edit(&m, &chars)
 	}
 	return defs.NewCatalog(
-		defs.GameDef{StartMap: "m"},
+		defs.GameDef{Party: party},
 		[]defs.TerrainDef{
 			{ID: "plain", Name: "平地", Symbol: ".", Cost: 1},
 			{ID: "forest", Name: "森", Symbol: "森", Cost: 2, Avoid: 20, Def: 1},
@@ -338,6 +343,8 @@ func smallCatalog(edit func(m *defs.MapDef, chars *[]defs.CharacterDef)) *defs.C
 		},
 		chars,
 		[]defs.MapDef{m},
+		[]defs.ChapterDef{{ID: "c1", Name: "章", Map: "m"}},
+		nil,
 	)
 }
 
@@ -359,7 +366,7 @@ func TestNewBattleErrors(t *testing.T) {
 		edit editFn
 		want string
 	}{
-		{"自軍のキャラがない", func(m *defs.MapDef, _ *[]defs.CharacterDef) { m.Allies[0].Character = "nobody" }, `allies[0]: キャラ "nobody" がありません`},
+		{"名簿のキャラがない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].ID = "nobody" }, `slots[0]: party のキャラ "leon" がありません`},
 		{"キャラのクラスがない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].Class = "knight" }, `キャラ "leon" のクラス "knight" がありません`},
 		{"キャラの武器がない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].Weapon = "iron_rapier" }, `武器 "iron_rapier" がありません`},
 		{"キャラのアイテムがない", func(_ *defs.MapDef, c *[]defs.CharacterDef) {

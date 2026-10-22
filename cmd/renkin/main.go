@@ -1,6 +1,7 @@
 // Command renkin は、レンキン・タクティクスを起動する（DES-PKG-01、DES-CMD-01）。
 //
 // 定義データを読み込んで検証し、乱数の種を決め、始めるマップの戦闘を作って画面を動かす。
+// 始めるマップは、chapters.toml の最初の章のマップ（反復 2 の Issue 2 の仮の形。DES-CMD-02 で置き換える。設計書（反復 2）9 章）。
 // 起動と誤りの表示は、ふしぎ錬金（sakana396/fushigi_renkin の cmd/fushigi）と同じ形にした。
 package main
 
@@ -28,7 +29,7 @@ func main() {
 //  1. fsys の定義データを defload.Load で読む。誤りがあれば、すべてを stderr に書き、
 //     Windows ではメッセージボックスでも出して、1 を返す（UC-01 2a、FR-SYS-04）
 //  2. 乱数の種を決める（-seed、なければ時刻。DES-RNG-01）
-//  3. 始めるマップの戦闘を作る関数を start に渡して、画面を動かす。やり直すたびに、その関数で種を決め直す
+//  3. 始めるマップ（最初の章のマップ）の戦闘を作る関数を start に渡して、画面を動かす。やり直すたびに、その関数で種を決め直す
 func run(args []string, stderr io.Writer, fsys fs.FS, now func() time.Time, start func(ui.Factory) error) int {
 	flags := flag.NewFlagSet("renkin", flag.ContinueOnError)
 	flags.SetOutput(stderr)
@@ -52,8 +53,10 @@ func run(args []string, stderr io.Writer, fsys fs.FS, now func() time.Time, star
 	}
 
 	nextSeed := seeder(seedSet, *seed, now)
+	// 章は defload が 1 つ以上あることを確かめている（DES-DAT-03 規則 14）。
+	startMap := cat.Chapters()[0].Map
 	factory := func() (*tactics.Battle, []tactics.Event, error) {
-		return core.NewBattle(cat, cat.Game.StartMap, nextSeed())
+		return core.NewBattle(cat, startMap, nextSeed())
 	}
 	if err := start(factory); err != nil {
 		fmt.Fprintln(stderr, err)

@@ -1,0 +1,27 @@
+# 章（DES-DAT-02 の反復 2 の変更、設計書（反復 2）10.4 節）
+# 書いた順が章の順。before・after は story.toml の物語の ID（空なら物語を出さない）
+# joins はその章の始めに名簿に加わるキャラ、reward はその章に勝ったときに在庫に入るアイテム
+
+[[chapters]]
+id = "ch01"
+name = "国境の砦"
+map = "ch01"
+before = "ch01_before"
+after = "ch01_after"
+reward = [{ item = "potion", count = 2 }]
+
+[[chapters]]
+id = "ch02"
+name = "灰の街道"
+map = "ch02"
+before = "ch02_before"
+after = "ch02_after"
+joins = ["elsa"]
+reward = [{ item = "potion", count = 2 }]
+
+[[chapters]]
+id = "ch03"
+name = "王都の奪還"
+map = "ch03"
+before = "ch03_before"
+after = "ch03_after"
