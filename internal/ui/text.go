@@ -90,6 +90,10 @@ func EventText(e tactics.Event) string {
 		return fmt.Sprintf("%s は倒れた", name(e.Unit))
 	case tactics.EventWait:
 		return fmt.Sprintf("%s は待機した", name(e.Unit))
+	case tactics.EventExp:
+		return fmt.Sprintf("%s は経験を %d 得た", name(e.Unit), e.Amount)
+	case tactics.EventLevelUp:
+		return fmt.Sprintf("%s　レベル %d　%s", name(e.Unit), e.Level, growthText(e.Gains))
 	case tactics.EventWon:
 		return "ボスを倒した。勝ち！"
 	case tactics.EventLost:
