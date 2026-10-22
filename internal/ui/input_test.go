@@ -503,7 +503,6 @@ func TestControllerTransitions(t *testing.T) {
 		c.Escape()
 		c.EndPhase()
 		c.ChooseAction(tactics.Wait)
-		c.Restart()
 		if c.State() != Playing || !reflect.DeepEqual(c.Battle().Units(), before) {
 			t.Fatalf("再生中に入力を受け付けた: 状態 %v", c.State())
 		}
@@ -584,7 +583,7 @@ func TestControllerTransitions(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-IF-01-13 勝ち負けが決まると Over になる。R・Esc では戦闘を作り直さず終了しない", func(t *testing.T) {
+	t.Run("TC-IF-01-13 勝ち負けが決まると Over になる。Escape・Cancel で状態と戦闘を変えない", func(t *testing.T) {
 		// 勝ち: 主人公がボス（HP 1）の隣にいる。
 		won := func() tactics.Setup {
 			return tactics.Setup{
@@ -601,10 +600,6 @@ func TestControllerTransitions(t *testing.T) {
 			t.Fatal(err)
 		}
 		playOut(c)
-		c.Restart() // Over でなければ何もしない。
-		if *calls != 1 {
-			t.Fatalf("Idle で R を受け付けた")
-		}
 		c.Click(tactics.Pos{X: 0, Y: 0})
 		c.Click(tactics.Pos{X: 0, Y: 0})
 		c.ChooseAction(tactics.Attack)
@@ -620,14 +615,15 @@ func TestControllerTransitions(t *testing.T) {
 		c.Cancel()
 		c.EndPhase()
 		c.Click(tactics.Pos{X: 0, Y: 0})
-		if c.State() != Over || c.Quit() {
+		if c.State() != Over {
 			t.Fatalf("Over でほかの入力を受け付けた: %v", c.State())
 		}
 		old := c.Battle()
-		c.Restart()
+		before := c.Battle().Units()
 		c.Escape()
-		if *calls != 1 || c.Battle() != old || c.State() != Over || c.Quit() {
-			t.Fatalf("Over で R・Esc が戦闘を変えた")
+		c.Cancel()
+		if !reflect.DeepEqual(before, c.Battle().Units()) || c.Battle().Result != tactics.Won || *calls != 1 || c.Battle() != old || c.State() != Over {
+			t.Fatalf("Over で Escape・Cancel が戦闘を変えた")
 		}
 
 		// 負け: 主人公（HP 1）が敵の隣にいて、番を終える。敵の番の途中で決まる。
@@ -651,35 +647,16 @@ func TestControllerTransitions(t *testing.T) {
 		if got := d.Guide(); len(got) != 2 || got[1] != "敗北　左クリック: 次へ" {
 			t.Errorf("負けの案内 = %q", got)
 		}
+		old = d.Battle()
+		before = old.Units()
 		d.Escape()
-		if d.Quit() {
-			t.Errorf("Over で Esc を押すと終了した")
+		d.Cancel()
+		if d.State() != Over || d.Battle() != old || d.Battle().Result != tactics.Lost || !reflect.DeepEqual(before, old.Units()) {
+			t.Fatal("敗北後の Escape・Cancel が状態と戦闘を変えた")
 		}
 	})
 
-	t.Run("TC-IF-01-14 R で戦闘を作る関数を再実行しない。初期作成の誤りは返す", func(t *testing.T) {
-		n := 0
-		f := func() (*tactics.Battle, []tactics.Event, error) {
-			n++
-			if n > 1 {
-				return nil, nil, errors.New("作れない")
-			}
-			s := basicSetup()
-			s.Units[0].Stats.HP = 1
-			return tactics.New(s, 1)
-		}
-		c, err := NewController(f)
-		if err != nil {
-			t.Fatal(err)
-		}
-		playOut(c)
-		c.EndPhase()
-		c.EndPhase()
-		playOut(c)
-		c.Restart()
-		if c.State() != Over || n != 1 || c.Message() != "" {
-			t.Errorf("状態 %v、知らせ %q", c.State(), c.Message())
-		}
+	t.Run("TC-IF-01-14 初期作成の誤りを返す", func(t *testing.T) {
 		if _, err := NewController(func() (*tactics.Battle, []tactics.Event, error) { return nil, nil, errors.New("x") }); err == nil {
 			t.Errorf("初めの戦闘を作れないのに誤りを返さない")
 		}

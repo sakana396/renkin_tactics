@@ -271,6 +271,7 @@ func (s *SceneController) Advance() {
 			s.scene = GameOver
 		}
 	case Result:
+		s.saveWarning = ""
 		s.showStory(s.storyChapter, true)
 	case Clear:
 		s.enterTitle("")
@@ -346,4 +347,13 @@ func (s *SceneController) saveSummary() string {
 		rule = "ロスト"
 	}
 	return fmt.Sprintf("第 %d 章　%s（%s）", s.loaded.Chapter+1, s.cfg.Catalog.Chapters()[s.loaded.Chapter].Name, rule)
+}
+
+// BattleGuide は戦闘の案内欄に章の結果反映の誤りも出す（DES-UI-17）。
+func (s *SceneController) BattleGuide() []string {
+	lines := s.battle.Guide()
+	if s.message != "" {
+		lines = append(lines, s.message)
+	}
+	return lines
 }

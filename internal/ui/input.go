@@ -100,9 +100,6 @@ func (c *Controller) Selection() (unit int, dest tactics.Pos, target int) {
 // Message は、直前の操作についての知らせ（確認や誤り）を返す。
 func (c *Controller) Message() string { return c.message }
 
-// Quit は戦闘では終了しない（DES-UI-17）。終了は場面側で扱う。
-func (c *Controller) Quit() bool { return false }
-
 // Click は盤面のマス p を左クリックしたときの処理（DES-UI-02）。
 func (c *Controller) Click(p tactics.Pos) {
 	switch c.state {
@@ -210,9 +207,6 @@ func (c *Controller) EndPhase() {
 func (c *Controller) SetFastForward(on bool) {
 	c.fast = on
 }
-
-// Restart は旧操作との互換用。戦闘内ではやり直さない（DES-UI-17）。
-func (c *Controller) Restart() {}
 
 // Tick は 1 フレームを進める（DES-UI-04）。再生中なら、出来事を 20 フレームごとに 1 つ進める。
 // 早送りの間は FastFramesPerEvent フレームごとに進める。

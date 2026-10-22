@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -272,6 +273,31 @@ func TestStoryScenes(t *testing.T) {
 }
 
 func TestBattleScenes(t *testing.T) {
+	t.Run("TC-IF-01-13 Battle の Over で Cancel を受けても場面と戦闘が変わらない", func(t *testing.T) {
+		s := fixtureScenes(&memoryStore{}, false, false)
+		startScenes(s)
+		winScene(t, s)
+		playOut(s.battle)
+		old := s.battle.Battle()
+		before := old.Units()
+		s.Cancel()
+		if s.Scene() != Battle || s.battle.State() != Over || s.battle.Battle() != old || !reflect.DeepEqual(before, old.Units()) || old.Result != tactics.Won {
+			t.Fatal("Cancel が場面と戦闘を変えた")
+		}
+	})
+	t.Run("TC-FR-CMP-02-02 章の結果反映の失敗を戦闘の案内欄に出す", func(t *testing.T) {
+		m := &memoryStore{}
+		s := fixtureScenes(m, false, false)
+		startScenes(s)
+		winScene(t, s)
+		playOut(s.battle)
+		s.campaign.Chapter++ // 出撃と章を不一致にして FinishChapter を失敗させる。
+		s.Advance()
+		if s.Scene() != Battle || s.message != core.ErrInvalidSortie.Error() || !strings.Contains(strings.Join(s.BattleGuide(), "\n"), core.ErrInvalidSortie.Error()) || len(s.BattleGuide()) > GuideHeight/lineHeight || m.writes != 1 {
+			t.Fatal("結果反映の誤りが戦闘の案内欄に出ない", s.BattleGuide())
+		}
+	})
+
 	t.Run("TC-FR-CMP-02-02 勝利の帯のクリックでだけ章を進めて保存し最後の物語からクリアへ", func(t *testing.T) {
 		m := &memoryStore{}
 		s := fixtureScenes(m, true, true)
@@ -291,10 +317,9 @@ func TestBattleScenes(t *testing.T) {
 				t.Fatal("再生中に章を進めた")
 			}
 			playOut(s.battle)
-			s.battle.Restart()
 			s.battle.Escape()
-			if s.battle.State() != Over || s.battle.Quit() {
-				t.Fatal("R・Esc を受け付けた")
+			if s.battle.State() != Over {
+				t.Fatal("Esc を受け付けた")
 			}
 			if m.writes != chapter+1 || s.campaign.Chapter != chapter {
 				t.Fatal("帯をクリックする前に保存")
@@ -401,8 +426,9 @@ func TestBattleScenes(t *testing.T) {
 	})
 	t.Run("TC-FR-SYS-01-07 勝利後の保存失敗も結果へ進み次章のメモリを保持", func(t *testing.T) {
 		m := &memoryStore{}
-		s := fixtureScenes(m, false, false)
+		s := fixtureScenes(m, true, true)
 		startScenes(s)
+		s.Cancel()
 		old := append([]byte(nil), m.data...)
 		m.writeErr = errors.New("書込失敗")
 		winScene(t, s)
@@ -414,6 +440,12 @@ func TestBattleScenes(t *testing.T) {
 		c, err := core.LoadCampaign(s.cfg.Catalog, bytes.NewReader(s.chapterStart))
 		if err != nil || c.Chapter != 1 || len(c.Roster) != 4 {
 			t.Fatal(c, err)
+		}
+		for _, want := range []Scene{Story, Story, Story, Joined, Joined, Prepare} {
+			s.Advance()
+			if s.Scene() != want || s.saveWarning != "" || strings.Contains(viewStrings(s.View()), "セーブできませんでした") {
+				t.Fatalf("結果のあとに保存警告が残った: 場面 %v、表示 %s", s.Scene(), viewStrings(s.View()))
+			}
 		}
 	})
 	t.Run("TC-IF-01-35 ボタンの内外と無効な選択", func(t *testing.T) {

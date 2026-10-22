@@ -8,6 +8,7 @@ import (
 	"errors"
 	"image/color"
 	"strconv"
+	"strings"
 
 	"github.com/hajimehoshi/bitmapfont/v3"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -20,6 +21,16 @@ import (
 
 // face は文字を描く書体。bitmapfont の日本語のグリフを使う（IF-02、DES-UI-01）。
 var face = text.NewGoXFace(bitmapfont.Face)
+
+// textWidth は描画と同じ書体で最長の行を測る（DES-UI-01、12）。
+func textWidth(s string) int {
+	width := 0
+	for _, line := range strings.Split(s, "\n") {
+		w, _ := text.Measure(line, face, 0)
+		width = max(width, int(w))
+	}
+	return width
+}
 
 // Game は ebiten.Game を実装する（DES-PKG-06）。
 type Game struct {
@@ -372,7 +383,11 @@ func (g *Game) drawTileSize(dst *ebiten.Image, t assets.Tile, x, y, size int) {
 // drawGuide は案内欄を描く（DES-UI-01）。
 func (g *Game) drawGuide(dst *ebiten.Image) {
 	vector.DrawFilledRect(dst, 0, MapSize, MapSize, GuideHeight, panelColor, false)
-	for i, line := range g.ctrl.Guide() {
+	lines := g.ctrl.Guide()
+	if g.scenes != nil {
+		lines = g.scenes.BattleGuide()
+	}
+	for i, line := range lines {
 		if i >= GuideHeight/lineHeight {
 			break
 		}
