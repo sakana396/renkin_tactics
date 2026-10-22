@@ -41,5 +41,5 @@
 | NFR-06 | #6、#35 | DES-RNG-01（反復 2 で追記） | TC-NFR-06-01〜03、TC-NFR-06-04〜05 | `internal/core/tactics` | 実装済み（#6。成長の乱数は #35） |
 | NFR-07 | #6、#9 | DES-ERR-01、DES-BTL-08 | TC-NFR-07-01〜05 | `internal/core/tactics` | 実装済み（TC-NFR-07-04 は #9 で `UseItem` の検証 6 に書き換えた） |
 | NFR-09 | #7 | DES-NFR-03 | TC-NFR-09-01〜02 | `.github/workflows/ci.yml` | 実装済み |
-| IF-04 | #38 | DES-PKG-08、DES-SAV-02 | TC-IF-04-01〜06 | `internal/savefile` | 実装済み（保存先解決とファイル操作。起動への接続は DES-CMD-02 の後続 Issue） |
+| IF-04 | #38 | DES-PKG-08、DES-SAV-02 | TC-IF-04-01〜06 | `internal/savefile` | 一部実装（#38。保存先の決め方とファイルの操作。起動からの呼び出しと `-savedir` は #40（DES-CMD-02）） |
 | NFR-08 | #38 | DES-PKG-08、DES-SAV-02 | TC-NFR-08-01〜06 | `internal/savefile` | 実装済み |
