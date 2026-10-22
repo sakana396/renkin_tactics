@@ -22,6 +22,7 @@
 | 自軍の剣（主人公以外。反復 1 の本体のデータにはいない） | Tiny Dungeon | 85 | 男 |
 | 自軍の槍（アーマー） | Tiny Dungeon | 96 | 鎧の騎士 |
 | 自軍の斧（ファイター） | Tiny Dungeon | 87 | 角の兜の戦士 |
+| 自軍の杖（僧侶。DES-UI-18、#45） | Tiny Dungeon | 108 | 紫の服と白髪の術者 |
 | 自軍の弓（アーチャー） | Tiny Dungeon | 112 | 緑の鉢巻きの狩人 |
 | 敵のボス | Tiny Dungeon | 97 | 面頬の騎士 |
 | 敵の剣（剣士） | Tiny Dungeon | 111 | 頭巾の男 |
@@ -42,3 +43,5 @@
 | 槍 | Tiny Dungeon | 131 | 柄の長い槍 |
 | 斧 | Tiny Dungeon | 119 | 片刃の斧 |
 | 弓 | Tiny Town | 118 | 弓 |
+
+| 杖（DES-UI-18、#45） | Tiny Dungeon | 125 | 紫の宝玉の杖 |

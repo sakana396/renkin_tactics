@@ -14,6 +14,8 @@ import (
 
 // Panel は情報欄に出す中身（DES-UI-01）。
 type Panel struct {
+	// Heal は回復対象を選んだときだけ入る予測（DES-UI-18）。
+	Heal *tactics.HealForecast
 	// Forecast は攻撃の予測の表（FR-BTL-08、UC-03）。攻撃の相手を選んでいるときだけ入る。
 	Forecast []ForecastRow
 	// Emphasis は攻撃の予測の強調（DES-UI-07）。
@@ -43,6 +45,9 @@ type ForecastRow struct {
 func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 	var p Panel
 	units := c.Units()
+	if f, ok := c.healForecast(); ok {
+		p.Heal = &f
+	}
 	if f, ok := c.attackForecast(); ok {
 		// 相手は Targets から選んでいるので、ふつうは誤りにならない。誤りなら予測を出さない。
 		p.Forecast = ForecastRows(f, units[c.unit].Boss, units[c.target].Boss)
@@ -150,6 +155,18 @@ func (p Panel) View() InfoView {
 	x := MapSize + infoMargin
 	y := infoMargin
 	var v InfoView
+	if p.Heal != nil {
+		f := p.Heal
+		for i, s := range []string{"回復", f.Healer + " → " + f.Target, "HP " + hpText(f.HP, f.After), fmt.Sprintf("回復 +%d", f.Amount), fmt.Sprintf("杖 残り %d → %d/%d", f.Uses, f.Uses-1, f.MaxUses)} {
+			st := StylePlain
+			if i == 0 {
+				st = StyleGood
+			}
+			v.text(x, y, s, st)
+			y += lineHeight
+		}
+		y += lineHeight
+	}
 	if len(p.Forecast) > 0 {
 		y = v.addForecast(p, x, y) + lineHeight
 	}
@@ -255,7 +272,11 @@ func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
 		v.Icons = append(v.Icons, InfoIcon{X: x, Y: y, Size: WeaponIconSize, Tile: t})
 	}
 	v.text(x+weaponTextX, y, fmt.Sprintf("武器: %s（%s）", w.Name, weaponTypeName(w.Type)), StylePlain)
-	v.text(x+weaponTextX, y+lineHeight, fmt.Sprintf("威力 %d　命中 %d　射程 %s", w.Might, w.Hit, rangeText(w)), StylePlain)
+	if w.Type == tactics.Staff {
+		v.text(x+weaponTextX, y+lineHeight, fmt.Sprintf("回復 %d　射程 %s　残り %d/%d", w.Heal, rangeText(w), w.Uses, w.MaxUses), StylePlain)
+	} else {
+		v.text(x+weaponTextX, y+lineHeight, fmt.Sprintf("威力 %d　命中 %d　射程 %s", w.Might, w.Hit, rangeText(w)), StylePlain)
+	}
 	y += WeaponIconSize
 
 	v.text(x, y, "手持ち: "+itemsText(u.Items), StylePlain)
@@ -441,6 +462,9 @@ func forecastEmphasis(f tactics.Forecast) ForecastEmphasis {
 
 // TargetView は攻撃の相手の文字・色と、自分の移動先の危険枠を返す（DES-UI-07）。
 func (c *Controller) TargetView() TargetView {
+	if f, ok := c.healForecast(); ok {
+		return TargetView{Text: fmt.Sprintf("+%d", f.Amount), Pos: c.Units()[c.target].Pos, Style: StyleGood, Visible: true}
+	}
 	f, ok := c.attackForecast()
 	if !ok {
 		return TargetView{}
@@ -534,6 +558,8 @@ func weaponTypeName(t tactics.WeaponType) string {
 		return "槍"
 	case tactics.Axe:
 		return "斧"
+	case tactics.Staff:
+		return "杖"
 	case tactics.Bow:
 		return "弓"
 	}
@@ -573,4 +599,13 @@ func skillDescription(s tactics.Skill) string {
 		return fmt.Sprintf("移動せずに攻撃すると命中 +%d", s.Hit)
 	}
 	return ""
+}
+
+// healForecast は回復対象を選んでいるときだけ core の予測を返す（DES-UI-18）。
+func (c *Controller) healForecast() (tactics.HealForecast, bool) {
+	if c.state != HealTargeting || c.target < 0 {
+		return tactics.HealForecast{}, false
+	}
+	f, err := c.battle.HealForecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Heal, Target: c.target})
+	return f, err == nil
 }

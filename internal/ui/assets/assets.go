@@ -64,6 +64,8 @@ var (
 	PlayerLance = Tile{Dungeon, 96}
 	// PlayerAxe は自軍の斧の使い手（ファイター）。
 	PlayerAxe = Tile{Dungeon, 87}
+	// PlayerStaff は自軍の僧侶（DES-UI-18）。
+	PlayerStaff = Tile{Dungeon, 108}
 	// PlayerBow は自軍の弓の使い手（アーチャー）。
 	PlayerBow = Tile{Dungeon, 112}
 	// EnemyBoss は敵のボス。
@@ -86,6 +88,8 @@ var (
 	WeaponLance = Tile{Dungeon, 131}
 	// WeaponAxe は斧（片刃）。
 	WeaponAxe = Tile{Dungeon, 119}
+	// WeaponStaff は杖（DES-UI-18）。
+	WeaponStaff = Tile{Dungeon, 125}
 	// WeaponBow は弓。
 	WeaponBow = Tile{Town, 118}
 )

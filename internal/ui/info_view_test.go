@@ -177,7 +177,7 @@ func TestInfoView(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-UNT-09-11 武器の行に武器の種類の絵を添える。剣・槍・斧は Tiny Dungeon、弓は Tiny Town", func(t *testing.T) {
+	t.Run("TC-FR-UNT-09-11 武器の行に武器の種類の絵を添える。剣・槍・斧・杖は Tiny Dungeon、弓は Tiny Town", func(t *testing.T) {
 		sheets, err := assets.Load()
 		if err != nil {
 			t.Fatal(err)
@@ -191,6 +191,7 @@ func TestInfoView(t *testing.T) {
 			{tactics.Lance, assets.WeaponLance, assets.Dungeon},
 			{tactics.Axe, assets.WeaponAxe, assets.Dungeon},
 			{tactics.Bow, assets.WeaponBow, assets.Town},
+			{tactics.Staff, assets.WeaponStaff, assets.Dungeon},
 		} {
 			got, ok := weaponTile(tc.typ)
 			if !ok || got != tc.want || got.Sheet != tc.kind {
@@ -208,12 +209,12 @@ func TestInfoView(t *testing.T) {
 				t.Errorf("%v の武器の絵 = %+v、文 %+v の左に 32 px のはず", tc.typ, v.Icons, w)
 			}
 		}
-		// 4 つの絵はすべて違う。
+		// 5 つの絵はすべて違う。
 		seen := map[assets.Tile]bool{}
-		for _, tl := range []assets.Tile{assets.WeaponSword, assets.WeaponLance, assets.WeaponAxe, assets.WeaponBow} {
+		for _, tl := range []assets.Tile{assets.WeaponSword, assets.WeaponLance, assets.WeaponAxe, assets.WeaponBow, assets.WeaponStaff} {
 			seen[tl] = true
 		}
-		if len(seen) != 4 {
+		if len(seen) != 5 {
 			t.Errorf("武器の絵が重なっている")
 		}
 		// 知らない種類なら武器の絵を描かない（文は出す）。

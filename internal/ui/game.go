@@ -176,14 +176,18 @@ func (g *Game) drawTerrain(dst *ebiten.Image) {
 	}
 }
 
-// drawOverlay は、移動できるマスを青、攻撃できるマスを赤で重ねる（DES-UI-03）。敵の範囲もこれで描く（DES-UI-08）。
+// drawOverlay は移動を青、攻撃の射程を赤、杖の射程を緑で重ねる（DES-UI-03、DES-UI-18）。敵の範囲もこれで描く（DES-UI-08）。
 func (g *Game) drawOverlay(dst *ebiten.Image) {
 	blue, red := g.ctrl.Overlay()
 	for p := range blue {
 		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, blueOverlay, false)
 	}
+	clr := redOverlay
+	if g.ctrl.RangeStyle() == StyleGood {
+		clr = greenOverlay
+	}
 	for p := range red {
-		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, redOverlay, false)
+		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, clr, false)
 	}
 }
 
@@ -228,7 +232,7 @@ func (g *Game) drawUnits(dst *ebiten.Image) {
 	}
 }
 
-// drawSelection は、選んだ自軍と攻撃の相手を枠で示す（DES-UI-02）。
+// drawSelection は選んだ自軍と攻撃・回復の相手を枠で示す（DES-UI-02、DES-UI-18）。
 func (g *Game) drawSelection(dst *ebiten.Image) {
 	c := g.ctrl
 	unit, dest, target := c.Selection()
@@ -238,15 +242,22 @@ func (g *Game) drawSelection(dst *ebiten.Image) {
 		strokeCell(dst, units[unit].Pos, cursorColor)
 	case Moved, ItemMenu:
 		strokeCell(dst, dest, cursorColor)
-	case Targeting:
+	case Targeting, HealTargeting:
 		clr := cursorColor
 		if c.TargetView().Danger {
 			clr = badColor
 		}
 		strokeCell(dst, dest, clr)
-		for _, t := range c.Targets() {
-			clr := targetColor
-			if t == target {
+		targets := c.Targets()
+		if c.State() == HealTargeting {
+			targets = c.HealTargets()
+		}
+		for _, t := range targets {
+			var clr color.Color = targetColor
+			if c.TargetStyle() == StyleGood {
+				clr = goodColor
+			}
+			if t == target && c.State() == Targeting {
 				clr = cursorColor
 			}
 			strokeCell(dst, units[t].Pos, clr)

@@ -21,6 +21,8 @@ func actionName(a tactics.Action) string {
 	switch a {
 	case tactics.Attack:
 		return "攻撃"
+	case tactics.Heal:
+		return "回復"
 	case tactics.UseItem:
 		return "アイテム"
 	default:
@@ -133,6 +135,13 @@ func (c *Controller) Guide() []string {
 			lines = append(lines, "左クリック: 攻撃する敵を選ぶ　右クリック・Esc: 戻る")
 		}
 		lines = append(lines, guideDanger)
+	case HealTargeting:
+		if c.target >= 0 {
+			lines = append(lines, fmt.Sprintf("%s を回復する。もう一度クリックで決定　右クリック・Esc: 戻る", b.Units()[c.target].Name))
+		} else {
+			lines = append(lines, "左クリック: 回復する味方を選ぶ　右クリック・Esc: 戻る")
+		}
+		lines = append(lines, guideDanger)
 	case ItemMenu:
 		lines = append(lines, "左クリック: 使うアイテムを選ぶ　右クリック・Esc: 戻る", guideDanger)
 	case Playing:
@@ -144,6 +153,10 @@ func (c *Controller) Guide() []string {
 		return lines
 	case Over:
 		lines = append(lines, fmt.Sprintf("%s　左クリック: 次へ", ResultText(b.Result)))
+	}
+	// 杖を使い切った理由を、回復が一覧にないときも伝える（DES-UI-18）。
+	if c.state == Moved && b.Units()[c.unit].Weapon.Type == tactics.Staff && b.Units()[c.unit].Weapon.Uses == 0 && c.message == "" {
+		lines = append(lines, tactics.ErrNoUses.Error())
 	}
 	if c.message != "" {
 		lines = append(lines, c.message)
