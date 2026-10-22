@@ -19,6 +19,13 @@ type Battle struct {
 
 	// rng は戦闘が持つシード付きの乱数（DES-RNG-01）。
 	rng *rand.Rand
+	// pcg は保存・復元する実際の乱数源（DES-RWD-03）。
+	pcg *rand.PCG
+	// 履歴の写し・続き・ID と通し出来事の境界（DES-RWD-01）。
+	progress      phaseProgress
+	history       []historyRecord
+	nextHistoryID uint64
+	eventCount    int
 	// roll は 0〜99 の乱数を 1 つ引く。テストでは export_test.go から差し替える（DES-RNG-01）。
 	roll func() int
 	// actEnemyOverride は、敵 1 体を動かす処理の差し替え。nil なら actEnemy を使う。
@@ -33,11 +40,13 @@ func New(setup Setup, seed uint64) (*Battle, []Event, error) {
 		return nil, nil, err
 	}
 	b := &Battle{
-		Turn:   1,
-		Phase:  Player,
-		Result: Ongoing,
-		rng:    rand.New(rand.NewPCG(seed, 0)),
+		Turn:          1,
+		Phase:         Player,
+		Result:        Ongoing,
+		pcg:           rand.NewPCG(seed, 0),
+		nextHistoryID: 1,
 	}
+	b.rng = rand.New(b.pcg)
 	b.roll = func() int { return b.rng.IntN(100) }
 
 	b.terrain = make([][]Terrain, len(setup.Terrain))

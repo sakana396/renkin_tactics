@@ -92,7 +92,7 @@
 | TC-FR-MAP-01-03 | FR-MAP-01 / DES-BTL-03 | 主人公の隣が森（費用 2） | 移動 1 と移動 2 で `Reachable` | 移動 1 では森に入れず、移動 2 なら入れる | 境界 |
 | TC-FR-MAP-01-04 | FR-MAP-01 / DES-MAP-01 | 3 × 2 の盤面（平地、森、壁、砦） | `Width`、`Height`、`TerrainAt` | 3、2 と、`Setup` のとおりの地形。マップの外はゼロ値 | 正常 |
 | TC-FR-MAP-01-05 | FR-MAP-01 / DES-BTL-03 | 3 × 3 の平地の角に移動 2 の主人公 | `Reachable` | マップの中のマスだけを返す | 境界 |
-| TC-NFR-06-01 | NFR-06 / DES-RNG-01 | 種 42 の戦闘を 2 つ | それぞれで乱数を 1000 回引く | 2 つの列が同じで、値はすべて 0〜99 | 正常 |
+| TC-NFR-06-01 | NFR-06 / DES-RNG-01 | 種 42 の戦闘を 2 つ | それぞれで乱数を 1000 回引く | 2 つの列が同じで、値はすべて 0〜99。PCG を明示的に所有しても従来の `rand.New(rand.NewPCG(42, 0))` の列と一致（#61、DES-RWD-03） | 正常 |
 | TC-NFR-06-02 | NFR-06 / DES-RNG-01 | 種 7 の戦闘を 2 つ | 同じコマンドの列（`Wait` 3 回、`EndPhase`） | `New` からの出来事の列と、最後の状態が同じ | 正常 |
 | TC-NFR-06-03 | NFR-06 / DES-RNG-01 | — | `export_test.go` の口で、乱数を引く関数を (40, 90, 70, 50) を返すものに差し替えて 4 回引く | 40、90、70、50 が順に出る | 正常 |
 | TC-NFR-07-01 | NFR-07 / DES-BTL-04 | 戦闘の終わり・敵軍の番・行動済みで倒れた味方・行動済みの味方などを組み合わせる | 検証 0〜5 の 2 つ以上に当てはまるコマンド（`Wait`、`Attack`、`UseItem`）で `Act` | 番号の小さい検証の誤りを返す（0 `ErrInvalidAction` → 1 `ErrBattleOver` → 2 `ErrNotPlayerPhase` → 3 `ErrInvalidUnit` → 4 `ErrAlreadyActed` → 5 `ErrUnreachable`）。`UseItem` でも 5 を 6 より先に確かめる | 異常 |

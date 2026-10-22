@@ -41,8 +41,8 @@
 | NFR-03 | #7、#12 | DES-NFR-02 | TC-NFR-03-01〜02、TC-NFR-03-03〜04（手動） | `.github/workflows/ci.yml`、`cmd/renkin` | 一部実装（#7、#12。Windows 11 の手の確認 TC-NFR-03-03 は済み（REV-015）。Linux の手の確認 TC-NFR-03-04 は反復 1 では行わず、CI で代える（E-23）） |
 | NFR-04 | #7 | DES-NFR-01 | TC-NFR-04-01〜04 | `internal/core`（`deps_test.go`） | 実装済み |
 | NFR-05 | #7 | DES-NFR-01 | TC-NFR-05-01〜03 | `internal/core`（`deps_test.go`） | 実装済み |
-| NFR-06 | #6、#35、#43 | DES-RNG-01（反復 2 で追記）、DES-HEL-01 | TC-NFR-06-01〜03、TC-NFR-06-04〜06 | `internal/core/tactics` | 実装済み（#6。成長の乱数は #35、回復を含む再現性は #43） |
-| NFR-07 | #6、#9、#43、#37、#39 | DES-ERR-01、DES-BTL-08、DES-HEL-01、DES-CMP-08、DES-SAV-03 | TC-NFR-07-01〜08、TC-FR-CMP-03-03・06、TC-FR-CMP-01-03〜04 | `internal/core/tactics`、`internal/core` | 実装済み（TC-NFR-07-04 は #9 で `UseItem` の検証 6 に書き換えた。#43 で TC-NFR-07-05 に誤り 3 つを追加し、TC-NFR-07-06 で回復の検証順を確認。#39 でセーブの検証順・I/O 失敗・状態不変を確認） |
+| NFR-06 | #6、#35、#43、#61 | DES-RNG-01（反復 2 で追記）、DES-HEL-01、DES-RWD-03 | TC-NFR-06-01〜03、TC-NFR-06-04〜06、TC-FR-BTL-10-16 | `internal/core/tactics` | 実装済み（#6。成長の乱数は #35、回復を含む再現性は #43。#61 で従来の PCG 列と内部復元の再現性を確認） |
+| NFR-07 | #6、#9、#43、#37、#39、#61 | DES-ERR-01、DES-BTL-08、DES-HEL-01、DES-CMP-08、DES-SAV-03、DES-RWD-01・03 | TC-NFR-07-01〜08、TC-FR-CMP-03-03・06、TC-FR-CMP-01-03〜04、TC-FR-BTL-10-18〜19 | `internal/core/tactics`、`internal/core` | 実装済み（TC-NFR-07-04 は #9 で `UseItem` の検証 6 に書き換えた。#43 で TC-NFR-07-05 に誤り 3 つを追加し、TC-NFR-07-06 で回復の検証順を確認。#39 でセーブの検証順・I/O 失敗・状態不変を確認。#61 で失敗時の履歴・PCG・進行位置の不変を確認） |
 | NFR-09 | #7 | DES-NFR-03 | TC-NFR-09-01〜02 | `.github/workflows/ci.yml` | 実装済み |
 | IF-04 | #38、#40 | DES-PKG-08、DES-SAV-02、DES-CMD-02 | TC-IF-04-01〜06、TC-IF-04-07 | `internal/savefile`、`internal/ui`、`cmd/renkin` | 実装済み（#40 で保存先と起動を接続） |
 | NFR-08 | #38 | DES-PKG-08、DES-SAV-02 | TC-NFR-08-01〜06 | `internal/savefile` | 実装済み |
@@ -54,5 +54,5 @@
 | FR-CMP-10 | #37、#41 | DES-CMP-06、DES-UI-14 | TC-FR-CMP-10-01〜02 | `internal/core`、`internal/ui` | 実装済み（章の結果の生成と表示） |
 | FR-SYS-01 | #39、#40 | DES-SAV-01、DES-SAV-03、DES-SAV-02、DES-CMP-07 | TC-FR-SYS-01-01〜06、TC-FR-SYS-01-07 | `internal/core/save.go`、`internal/ui` | 実装済み（#40 で自動保存とメモリ保持） |
 | FR-SYS-02 | #40 | DES-UI-09、DES-UI-10 | TC-FR-SYS-02-01〜04 | `internal/ui`、`cmd/renkin` | 実装済み |
-| FR-BTL-10 | #60 | DES-RWD-01〜04、DES-UI-19 | 未定義（`test-spec-it03.md` の枠を作成。各実装 Issue で追加） | 未実装 | 要求・ユースケース反映済み（E-37、#60）。実装とテストは後続 Issue |
+| FR-BTL-10 | #60、#61 | DES-RWD-01〜04、DES-UI-19 | TC-FR-BTL-10-15〜20 | `internal/core/tactics/snapshot.go`、`history.go`、`battle.go`、`act.go`、`event.go` | 一部実装（#61: 内部の深い写し・PCG 復元・履歴 ID と表示境界。公開の巻き戻し・再開・回数と UI は後続 Issue） |
 | FR-CMP-11 | #60 | DES-DEP-01、DES-UI-20 | 未定義（`test-spec-it03.md` の枠を作成。各実装 Issue で追加） | 未実装 | 要求・ユースケース反映済み（E-37、#60）。実装とテストは後続 Issue |
