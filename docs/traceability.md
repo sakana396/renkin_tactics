@@ -15,14 +15,14 @@
 | FR-BTL-05 | #8 | DES-BTL-05 | TC-FR-BTL-05-01〜04 | `internal/core/tactics` | 実装済み |
 | FR-BTL-06 | #8 | DES-BTL-06 | TC-FR-BTL-06-01〜06 | `internal/core/tactics` | 実装済み |
 | FR-BTL-07 | #10 | DES-AI-01（反復 1 は突っ込む・待ち構えるの 2 種類。一部） | TC-FR-BTL-07-01〜18 | `internal/core/tactics` | 一部実装（反復 1 の 2 種類を実装済み） |
-| FR-BTL-08 | #8、#13、#29 | DES-BTL-07、DES-UI-01、DES-UI-07 | TC-FR-BTL-08-01〜07、TC-FR-BTL-08-08（手動）、TC-FR-BTL-08-09〜15、TC-FR-BTL-08-16（手動）、TC-FR-BTL-08-17 | `internal/core/tactics`、`internal/ui` | 実装済み（#8、#13、#29。手動のケースは開発者が確かめる） |
+| FR-BTL-08 | #8、#13、#29、#46 | DES-BTL-07、DES-UI-01、DES-UI-07 | TC-FR-BTL-08-01〜07、TC-FR-BTL-08-08（手動）、TC-FR-BTL-08-09〜15、TC-FR-BTL-08-16（手動）、TC-FR-BTL-08-17、TC-FR-BTL-08-20〜21 | `internal/core/tactics`、`internal/ui` | 実装済み（#8、#13、#29、#46。手動のケースは開発者が確かめる） |
 | FR-UNT-01 | #11 | DES-DAT-01、DES-CORE-01 | TC-FR-UNT-01-01〜06 | `internal/core` | 実装済み |
 | FR-UNT-02 | #11、#36 | DES-DAT-01、DES-CORE-01、DES-DAT-03 規則 4・21・22（反復 2）、設計書（反復 2）10.1 節 | TC-FR-UNT-02-01〜02（反復 2 の杖の定義は TC-FR-SYS-04-26〜28） | `internal/core`、`internal/defs`、`internal/defload`、`data` | 実装済み（#11、#36。騎兵と杖の定義データの型・検証。僧侶・杖の本体のデータは Issue 案 10） |
 | FR-UNT-03 | #36 | （H-01、H-08 で確かめる。振り返り。検証は D）、設計書（反復 2）10.3・10.9 節 | TC-FR-UNT-03-01（数値の向きだけを確かめる） | `data` | 役割の数値を入れた（#36）。役に立つかは振り返りで確かめる |
 | FR-UNT-04 | #35 | DES-GRW-01、DES-GRW-02、DES-GRW-03 | TC-FR-UNT-04-01〜10 | `internal/core/tactics` | 一部実装（#35。戦闘の中の経験とレベルアップ。キャンペーン（#37）・回復の経験（#43）・画面（DES-UI-16）は別の Issue） |
 | FR-UNT-05 | #35 | DES-GRW-02 | TC-FR-UNT-05-01〜04 | `internal/core/tactics` | 一部実装（#35。成長の判定。成長率の定義データ（DES-DAT-01）は #36） |
 | FR-UNT-07 | #8 | DES-SKL-01（反復 1 はキャラのスキルだけ。一部） | TC-FR-UNT-07-01〜07 | `internal/core/tactics` | 実装済み |
-| FR-UNT-09 | #13、#27、#28 | DES-UI-01、DES-UI-06、DES-UI-08 | TC-FR-UNT-09-01〜05、TC-FR-UNT-09-07〜12、TC-FR-UNT-09-06・TC-FR-UNT-09-13（手動）。敵の範囲（#28）は TC-IF-01-18〜19、TC-IF-01-31〜32、TC-IF-01-33〜34（手動） | `internal/ui` | 実装済み（#13、#27、#28。手動のケースは開発者が確かめる） |
+| FR-UNT-09 | #13、#27、#28、#46 | DES-UI-01、DES-UI-06、DES-UI-07、DES-UI-08 | TC-FR-UNT-09-01〜05、TC-FR-UNT-09-07〜12、TC-FR-UNT-09-06・TC-FR-UNT-09-13（手動）。敵の範囲（#28）は TC-IF-01-18〜19、TC-IF-01-31〜32、TC-IF-01-33〜34（手動） | `internal/ui` | 実装済み（#13、#27、#28、#46。手動のケースは開発者が確かめる） |
 | FR-MAP-01 | #6 | DES-BTL-03、DES-MAP-01 | TC-FR-MAP-01-01〜05 | `internal/core/tactics` | 実装済み |
 | FR-MAP-03 | #9 | DES-MAP-02、DES-MAP-03 | TC-FR-MAP-03-01〜07 | `internal/core/tactics` | 実装済み（反復 1 のギミックは砦と増援） |
 | FR-MAP-05 | #9 | DES-MAP-04（反復 1 はボスを倒す・主人公が倒れるだけ。一部） | TC-FR-MAP-05-01〜04 | `internal/core/tactics` | 実装済み（反復 1 の範囲） |

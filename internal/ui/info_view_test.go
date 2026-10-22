@@ -235,28 +235,40 @@ func TestInfoView(t *testing.T) {
 		if len(p.Forecast) != 8 || p.Unit == nil || p.Unit.Name != "ガルド" {
 			t.Fatalf("前提: 予測 %d 行、ユニット %+v", len(p.Forecast), p.Unit)
 		}
-		v := p.View()
-		if v.Bottom > ScreenHeight {
-			t.Errorf("一番下 = %d、%d を超える", v.Bottom, ScreenHeight)
-		}
-		// 予測（見出し・武器の絵 32 px・表 8 行・空き 1 行）の下 y = 8 + 16 + 32 + 128 + 16 = 200 から並べる。
-		pic := portraitOf(t, v)
-		if pic.Y != 200 || forecastBottom(8)+lineHeight != 200 {
-			t.Errorf("ユニットの絵の y = %d、予測の表の下 200 のはず", pic.Y)
-		}
-		for _, tx := range v.Texts {
-			if tx.X < MapSize || tx.X+textWidth(tx.Text) > ScreenWidth || tx.Y+lineHeight > ScreenHeight {
-				t.Errorf("文 %q（%d, %d）が情報欄からはみ出す", tx.Text, tx.X, tx.Y)
+		// 同じ 8 行の表で帯なし・撃破・危険を調べる。
+		for _, emphasis := range []ForecastEmphasis{ForecastNormal, ForecastDefeat, ForecastDanger} {
+			p.Emphasis = emphasis
+			shift := 0
+			if emphasis != ForecastNormal {
+				shift = 44
 			}
-		}
-		for _, b := range v.Bars {
-			if b.X < MapSize || b.X+max(b.Fill, b.Frame) > ScreenWidth || b.Y+barHeight > ScreenHeight {
-				t.Errorf("棒 %+v が情報欄からはみ出す", b)
+			v := p.View()
+			if v.Bottom > ScreenHeight {
+				t.Errorf("一番下 = %d、%d を超える", v.Bottom, ScreenHeight)
 			}
-		}
-		for _, ic := range v.Icons {
-			if ic.X < MapSize || ic.X+ic.Size > ScreenWidth || ic.Y+ic.Size > ScreenHeight {
-				t.Errorf("絵 %+v が情報欄からはみ出す", ic)
+			// 予測（見出し・武器の絵 32 px・表 8 行・空き 1 行）の下 y = 8 + 16 + 32 + 128 + 16 = 200 から並べる（帯ありはさらに 44 px 下）。
+			pic := portraitOf(t, v)
+			if pic.Y != 200+shift || forecastBottom(8)+lineHeight+shift != pic.Y {
+				t.Errorf("ユニットの絵の y = %d、予測の表の下 %d のはず", pic.Y, 200+shift)
+			}
+			for _, tx := range v.Texts {
+				scale := 1
+				if tx.Big {
+					scale = 2
+				}
+				if tx.X < MapSize || tx.X+scale*textWidth(tx.Text) > ScreenWidth || tx.Y+scale*lineHeight > ScreenHeight {
+					t.Errorf("文 %q（%d, %d）が情報欄からはみ出す", tx.Text, tx.X, tx.Y)
+				}
+			}
+			for _, b := range v.Bars {
+				if b.X < MapSize || b.X+max(b.Fill, b.Frame) > ScreenWidth || b.Y+barHeight > ScreenHeight {
+					t.Errorf("棒 %+v が情報欄からはみ出す", b)
+				}
+			}
+			for _, ic := range v.Icons {
+				if ic.X < MapSize || ic.X+ic.Size > ScreenWidth || ic.Y+ic.Size > ScreenHeight {
+					t.Errorf("絵 %+v が情報欄からはみ出す", ic)
+				}
 			}
 		}
 	})
