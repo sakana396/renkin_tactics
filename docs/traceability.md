@@ -10,16 +10,16 @@
 | QA-02 | — | tools/tccheck | TC-QA-02-01〜04 | `tools/tccheck`、CI | 実装済み（ふしぎ錬金から引き継ぎ） |
 | FR-BTL-01 | #6 | DES-BTL-01、DES-BTL-03、DES-BTL-04 | TC-FR-BTL-01-01〜12 | `internal/core/tactics` | 実装済み |
 | FR-BTL-02 | #6 | DES-BTL-02 | TC-FR-BTL-02-01〜07 | `internal/core/tactics` | 実装済み（敵軍の番は敵が動かない骨組み。動き方は #10） |
-| FR-BTL-03 | #6、#8、#9 | DES-BTL-04 | TC-FR-BTL-03-01〜07 | `internal/core/tactics` | 実装済み |
+| FR-BTL-03 | #6、#8、#9、#43 | DES-BTL-04、DES-HEL-01 | TC-FR-BTL-03-01〜15 | `internal/core/tactics` | 実装済み |
 | FR-BTL-04 | #8 | DES-BTL-05、DES-RNG-01 | TC-FR-BTL-04-01〜06 | `internal/core/tactics` | 実装済み |
 | FR-BTL-05 | #8 | DES-BTL-05 | TC-FR-BTL-05-01〜04 | `internal/core/tactics` | 実装済み |
-| FR-BTL-06 | #8 | DES-BTL-06 | TC-FR-BTL-06-01〜06 | `internal/core/tactics` | 実装済み |
+| FR-BTL-06 | #8、#43 | DES-BTL-06、DES-HEL-01 | TC-FR-BTL-06-01〜07 | `internal/core/tactics` | 実装済み |
 | FR-BTL-07 | #10 | DES-AI-01（反復 1 は突っ込む・待ち構えるの 2 種類。一部） | TC-FR-BTL-07-01〜18 | `internal/core/tactics` | 一部実装（反復 1 の 2 種類を実装済み） |
-| FR-BTL-08 | #8、#13、#29 | DES-BTL-07、DES-UI-01、DES-UI-07 | TC-FR-BTL-08-01〜07、TC-FR-BTL-08-08（手動）、TC-FR-BTL-08-09〜15、TC-FR-BTL-08-16（手動）、TC-FR-BTL-08-17 | `internal/core/tactics`、`internal/ui` | 実装済み（#8、#13、#29。手動のケースは開発者が確かめる） |
+| FR-BTL-08 | #8、#13、#29、#43 | DES-BTL-07、DES-UI-01、DES-UI-07、DES-HEL-02 | TC-FR-BTL-08-01〜07、TC-FR-BTL-08-08（手動）、TC-FR-BTL-08-09〜15、TC-FR-BTL-08-16（手動）、TC-FR-BTL-08-17〜19 | `internal/core/tactics`、`internal/ui` | 一部実装（#8、#13、#29、#43。回復の予測の規則は実装済み。回復の画面は別の Issue。手動のケースは開発者が確かめる） |
 | FR-UNT-01 | #11 | DES-DAT-01、DES-CORE-01 | TC-FR-UNT-01-01〜06 | `internal/core` | 実装済み |
 | FR-UNT-02 | #11 | DES-DAT-01、DES-CORE-01 | TC-FR-UNT-02-01 | `internal/core` | 実装済み |
 | FR-UNT-03 | — | （H-01 で確かめる。振り返り。検証は D） | — | — | 振り返りで確かめる |
-| FR-UNT-04 | #35 | DES-GRW-01、DES-GRW-02、DES-GRW-03 | TC-FR-UNT-04-01〜10 | `internal/core/tactics` | 一部実装（#35。戦闘の中の経験とレベルアップ。キャンペーン（#37）・回復の経験（#43）・画面（DES-UI-16）は別の Issue） |
+| FR-UNT-04 | #35、#43 | DES-GRW-01、DES-GRW-02、DES-GRW-03、DES-HEL-01 | TC-FR-UNT-04-01〜13 | `internal/core/tactics` | 一部実装（#35、#43。戦闘の中の経験とレベルアップ、回復の経験。キャンペーン（#37）・画面（DES-UI-16）は別の Issue） |
 | FR-UNT-05 | #35 | DES-GRW-02 | TC-FR-UNT-05-01〜04 | `internal/core/tactics` | 一部実装（#35。成長の判定。成長率の定義データ（DES-DAT-01）は #36） |
 | FR-UNT-07 | #8 | DES-SKL-01（反復 1 はキャラのスキルだけ。一部） | TC-FR-UNT-07-01〜07 | `internal/core/tactics` | 実装済み |
 | FR-UNT-09 | #13、#27、#28 | DES-UI-01、DES-UI-06、DES-UI-08 | TC-FR-UNT-09-01〜05、TC-FR-UNT-09-07〜12、TC-FR-UNT-09-06・TC-FR-UNT-09-13（手動）。敵の範囲（#28）は TC-IF-01-18〜19、TC-IF-01-31〜32、TC-IF-01-33〜34（手動） | `internal/ui` | 実装済み（#13、#27、#28。手動のケースは開発者が確かめる） |
@@ -38,6 +38,6 @@
 | NFR-03 | #7、#12 | DES-NFR-02 | TC-NFR-03-01〜02、TC-NFR-03-03〜04（手動） | `.github/workflows/ci.yml`、`cmd/renkin` | 一部実装（#7、#12。Windows 11 の手の確認 TC-NFR-03-03 は済み（REV-015）。Linux の手の確認 TC-NFR-03-04 は反復 1 では行わず、CI で代える（E-23）） |
 | NFR-04 | #7 | DES-NFR-01 | TC-NFR-04-01〜04 | `internal/core`（`deps_test.go`） | 実装済み |
 | NFR-05 | #7 | DES-NFR-01 | TC-NFR-05-01〜03 | `internal/core`（`deps_test.go`） | 実装済み |
-| NFR-06 | #6、#35 | DES-RNG-01（反復 2 で追記） | TC-NFR-06-01〜03、TC-NFR-06-04〜05 | `internal/core/tactics` | 実装済み（#6。成長の乱数は #35） |
-| NFR-07 | #6、#9 | DES-ERR-01、DES-BTL-08 | TC-NFR-07-01〜05 | `internal/core/tactics` | 実装済み（TC-NFR-07-04 は #9 で `UseItem` の検証 6 に書き換えた） |
+| NFR-06 | #6、#35、#43 | DES-RNG-01（反復 2 で追記）、DES-HEL-01 | TC-NFR-06-01〜03、TC-NFR-06-04〜06 | `internal/core/tactics` | 実装済み（#6。成長の乱数は #35、回復を含む再現性は #43） |
+| NFR-07 | #6、#9、#43 | DES-ERR-01、DES-BTL-08、DES-HEL-01 | TC-NFR-07-01〜06 | `internal/core/tactics` | 実装済み（TC-NFR-07-04 は #9 で `UseItem` の検証 6 に書き換えた。#43 で TC-NFR-07-05 に誤り 3 つを追加し、TC-NFR-07-06 で回復の検証順を確認） |
 | NFR-09 | #7 | DES-NFR-03 | TC-NFR-09-01〜02 | `.github/workflows/ci.yml` | 実装済み |

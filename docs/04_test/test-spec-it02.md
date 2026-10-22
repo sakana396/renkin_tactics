@@ -96,8 +96,20 @@
 | TC-FR-BTL-08-19 | FR-BTL-08 / DES-HEL-02、DES-BTL-07、DES-BTL-08 | TC-FR-BTL-08-18 の盤面 | `HealForecast` に `Action` が `Attack`・`Wait`・`UseItem`・4（戦闘が終わっていても）、戦闘の終わり、敵軍の番、敵のユニット、移動できないマス、剣のユニット、杖の残り 0、敵が相手、射程の外、HP が最大の相手。`Forecast` に `Heal` のコマンド、杖のユニットの `Attack` | `HealForecast` は順に `ErrInvalidAction`（`Heal` でないことを最初に確かめる）、`ErrBattleOver`、`ErrNotPlayerPhase`、`ErrInvalidUnit`、`ErrUnreachable`、`ErrCannotHeal`、`ErrNoUses`、`ErrNoTarget`、`ErrOutOfRange`、`ErrFullHP`。`Forecast` は `ErrInvalidAction` と `ErrCannotAttack`。予測はゼロ値で、状態は変わらない | 異常 |
 | TC-FR-UNT-04-11 | FR-UNT-04 / DES-GRW-01（回復の経験）、DES-GRW-02、DES-HEL-01 | 計算例 7。リナ（Lv 1、経験 95、成長率 55/0/40/60/30）の隣に HP 12/19 のレオン | 成長の乱数 (10, 0, 50, 59, 40) で `Heal` | 出来事は `Heal`（レオン、7、「癒やしの杖」）→ `Exp`（リナ、10）→ `LevelUp`（Lv 2、`Gains` は HP・速さが 1）。乱数は成長の 5 つだけ引く。リナは Lv 2、経験 5、能力 17/0/2/7/2/5、今の HP 17 | 正常 |
 | TC-FR-UNT-04-12 | FR-UNT-04 / DES-GRW-01（回復の経験） | 回復される側は Lv 1、経験 0 のレオン | (a) Lv 0 のリナが回復、(b) Lv 20 のリナが回復 | どちらも `Exp` が出ず、乱数を引かず、リナのレベルと経験は変わらない。回復されたレオンも経験を得ない | 境界 |
+| TC-FR-UNT-04-13 | FR-UNT-04 / DES-GRW-01、DES-HEL-01 | 使用回数の計算例 4。リナ（Lv 1、経験 0、杖 15/15） | TC-FR-BTL-03-12 と同じ操作で、15 回回復する | 回復で得る経験は合計 150（Lv 2、経験 50）。16 回目は `ErrNoUses` で経験を得ない。成長の乱数は 10 回目の 5 つだけ | 正常・境界 |
 | TC-NFR-06-06 | NFR-06 / DES-RNG-01（反復 2 で追記）、DES-HEL-01 | リナ（Lv 1、経験 95）がいる種 5 の戦闘を 2 つ | 同じコマンドの列（リナが回復してレベルが上がる、レオンが待機して敵軍の番を経る） | 出来事の列（`Heal`・`Exp`・`LevelUp` を含む）と、最後の状態（杖の残り、経験・レベル・能力）が同じ | 正常 |
-| TC-NFR-07-06 | NFR-07 / DES-HEL-01、DES-BTL-04、DES-ERR-01 | TC-FR-BTL-03-10 の盤面 | 検証の 2 つ以上に当てはまる `Heal`・`Attack` のコマンド（範囲外の `Action` 4、移動できないマスで剣のユニットが `Heal`、剣のユニットの残り 0 で `Target` -1、杖の残り 0 で `Target` -1、自分を `Target` にして HP が最大、HP が最大の相手を射程の外から、杖のユニットが `Target` -1 で `Attack`、杖のユニットが移動できないマスから `Attack`） | 順の早い検証の誤りを返す（0 `ErrInvalidAction`、5 `ErrUnreachable`、6a `ErrCannotHeal`、6b `ErrNoUses`、6c `ErrNoTarget`、6d `ErrOutOfRange`。`Attack` は `ErrCannotAttack` を `ErrNoTarget` より先、`ErrUnreachable` より後に確かめる）。出来事は nil で、状態は変わらない | 異常 |
+| TC-NFR-07-06 | NFR-07 / DES-HEL-01、DES-BTL-04、DES-ERR-01 | TC-FR-BTL-03-10 の盤面 | 検証の 2 つ以上に当てはまる `Heal`・`Attack` のコマンド（範囲外の `Action` 4、移動できないマスで剣のユニットが `Heal`、剣のユニットの残り 0 で `Target` -1、杖の残り 0 で `Target` -1、自分を `Target` にして HP が最大、射程の外の敵を `Target` にする、HP が最大の相手を射程の外から、杖のユニットが `Target` -1 で `Attack`、杖のユニットが移動できないマスから `Attack`） | 順の早い検証の誤りを返す（0 `ErrInvalidAction`、5 `ErrUnreachable`、6a `ErrCannotHeal`、6b `ErrNoUses`、6c `ErrNoTarget`、6d `ErrOutOfRange`。`Attack` は `ErrCannotAttack` を `ErrNoTarget` より先、`ErrUnreachable` より後に確かめる）。出来事は nil で、状態は変わらない | 異常 |
+
+Issue #43 のミュータント検査では、次の変更を 1 件ずつ一時的に加え、対応するテストが失敗することを確認した。毎回、変更前のファイルをバイト単位で復元し、復元後に通常のテストを実行して成功を確認した。
+
+| 一時的に壊した規則 | 失敗を確認したテストケース |
+|---|---|
+| 杖であること（6a）より、残り回数（6b）を先に検証する | TC-FR-BTL-03-10、TC-NFR-07-06 |
+| 回復量の最大 HP による制限を外す | TC-FR-BTL-03-08、TC-FR-BTL-03-09 |
+| 杖の使用回数を減らさない | TC-FR-BTL-03-08 |
+| `New` で杖を満タンにしない | TC-FR-BTL-03-08、TC-FR-BTL-03-13 |
+| 杖でも反撃できるようにする | TC-FR-BTL-06-07 |
+| 回復した杖のユニットに経験を与えない | TC-FR-UNT-04-11 |
 
 ### FR-UNT-02・FR-SYS-03（僧侶の本体のデータと、core の杖の変換。Issue 案 10。設計書 v0.3）
 
