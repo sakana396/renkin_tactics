@@ -55,6 +55,7 @@ func New(setup Setup, seed uint64) (*Battle, []Event, error) {
 }
 
 // newUnit は UnitSetup から、HP が最大の生きているユニットを作る。
+// 杖の使用回数は満タン（Uses = MaxUses）にする。Setup の Uses は見ない（DES-HEL-01、E-33）。
 func newUnit(us UnitSetup) Unit {
 	u := Unit{
 		Name:      us.Name,
@@ -74,10 +75,13 @@ func newUnit(us UnitSetup) Unit {
 		AI:        us.AI,
 		Alive:     true,
 	}
+	if u.Weapon.Type == Staff {
+		u.Weapon.Uses = u.Weapon.MaxUses
+	}
 	return u.clone()
 }
 
-// validateSetup は Setup の規則 1〜7 を確かめる（DES-BTL-01）。最初に見つかった誤りを返す。
+// validateSetup は Setup の規則 1〜8 を確かめる（DES-BTL-01）。最初に見つかった誤りを返す。
 func validateSetup(s Setup) error {
 	bad := func(format string, args ...any) error {
 		return fmt.Errorf("%w: %s", ErrInvalidSetup, fmt.Sprintf(format, args...))
@@ -163,7 +167,7 @@ func validateSetup(s Setup) error {
 	return nil
 }
 
-// validateUnit はユニット 1 体の規則 4・6・7 を確かめる（DES-BTL-01、DES-GRW-03）。
+// validateUnit はユニット 1 体の規則 4・6・7・8 を確かめる（DES-BTL-01、DES-GRW-03、DES-HEL-01）。
 func validateUnit(u UnitSetup) error {
 	// 規則 4: 能力。
 	st := u.Stats
@@ -186,9 +190,12 @@ func validateUnit(u UnitSetup) error {
 			return fmt.Errorf("items[%d]: 回復量 %d は 1 以上でなければなりません", k, it.Item.Heal)
 		}
 	}
-	// 規則 6: 定数の型の値。
-	if u.Weapon.Type < Sword || u.Weapon.Type > Bow {
+	// 規則 6・8: 定数の型の値。武器の種類は Sword〜Staff のどれか。
+	if u.Weapon.Type < Sword || u.Weapon.Type > Staff {
 		return fmt.Errorf("武器の種類 %d が正しくありません", u.Weapon.Type)
+	}
+	if err := validateStaff(u); err != nil {
+		return err
 	}
 	if u.Skill.Effect < NoSkill || u.Skill.Effect > Snipe {
 		return fmt.Errorf("スキルの効果 %d が正しくありません", u.Skill.Effect)
@@ -208,6 +215,29 @@ func validateUnit(u UnitSetup) error {
 		return fmt.Errorf("スキルの倍率 %d が正しくありません（0 以上、怒りでは 1 以上）", sk.Multiplier)
 	}
 	return validateGrowth(u)
+}
+
+// validateStaff はユニット 1 体の規則 8（杖）を確かめる（DES-HEL-01）。
+// 杖は Heal と MaxUses が 1 以上（Uses は New で MaxUses にするので見ない）。杖でない武器は Heal・Uses・MaxUses が 0。
+// 敵（増援を含む）の武器は杖でない。
+func validateStaff(u UnitSetup) error {
+	w := u.Weapon
+	if w.Type != Staff {
+		if w.Heal != 0 || w.Uses != 0 || w.MaxUses != 0 {
+			return fmt.Errorf("杖でない武器の回復量 %d・使用回数 %d・最大 %d は 0 でなければなりません", w.Heal, w.Uses, w.MaxUses)
+		}
+		return nil
+	}
+	if u.Side == Enemy {
+		return fmt.Errorf("敵の武器は杖にできません")
+	}
+	if w.Heal < 1 {
+		return fmt.Errorf("杖の回復量 %d は 1 以上でなければなりません", w.Heal)
+	}
+	if w.MaxUses < 1 {
+		return fmt.Errorf("杖の使用回数 %d は 1 以上でなければなりません", w.MaxUses)
+	}
+	return nil
 }
 
 // validateGrowth はユニット 1 体の規則 7（レベル・経験・成長率）を確かめる（DES-GRW-03）。

@@ -75,8 +75,10 @@ func (b *Battle) strikeValues(s, r int, still bool) (damage, rate int) {
 }
 
 // canCounter は、守る側 d が攻撃する側 a に反撃できるか（d の武器の射程に a がいるか）を返す（DES-BTL-06）。
+// 杖のユニットは反撃しない（射程に a がいても偽。DES-HEL-01）。
 func (b *Battle) canCounter(a, d int) bool {
-	return inRange(b.units[d].Weapon, distance(b.units[a].Pos, b.units[d].Pos))
+	w := b.units[d].Weapon
+	return w.Type != Staff && inRange(w, distance(b.units[a].Pos, b.units[d].Pos))
 }
 
 // strikeOrder は、a が d を攻撃するときに 1 撃を行うユニットの順を返す（DES-BTL-06）。
@@ -181,8 +183,12 @@ func (b *Battle) judge(events []Event) []Event {
 }
 
 // validateAttack は Attack の検証 6 を確かめる（DES-BTL-04）。状態は変えない。
-// Target が生きている相手の陣営のユニットで（ErrNoTarget）、To から武器の射程に入っている（ErrOutOfRange）。
+// 武器が杖でなく（ErrCannotAttack。DES-HEL-01）、Target が生きている相手の陣営のユニットで（ErrNoTarget）、
+// To から武器の射程に入っている（ErrOutOfRange）。
 func (b *Battle) validateAttack(cmd Command) error {
+	if b.units[cmd.Unit].Weapon.Type == Staff {
+		return ErrCannotAttack
+	}
 	if !b.validUnit(cmd.Target) {
 		return ErrNoTarget
 	}

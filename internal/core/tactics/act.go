@@ -5,6 +5,7 @@ package tactics
 // 共通の検証 0〜5 と、行動ごとの検証 6 を順に確かめ、最初に当てはまった誤りを返す。
 // 失敗したら状態を変えない（DES-ERR-01）。
 // Attack は移動してから Target を攻撃する（DES-BTL-06）。UseItem は移動してから Item 番目のアイテムを使う（DES-ITM-01）。
+// Heal は移動してから、杖で Target の味方を回復する（DES-HEL-01）。
 // 行動のあと、戦闘が続いていて、生きている自軍が全員行動済みなら、敵軍の番と次の自軍の番の始めまでを進める（DES-BTL-02）。
 // 返す出来事は、その間に起きたことすべて（DES-EVT-01）。
 func (b *Battle) Act(cmd Command) ([]Event, error) {
@@ -18,6 +19,10 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 		}
 	case UseItem:
 		if err := b.validateUseItem(cmd); err != nil {
+			return nil, err
+		}
+	case Heal:
+		if err := b.validateHeal(cmd); err != nil {
 			return nil, err
 		}
 	}
@@ -38,6 +43,8 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 		events = b.attack(events, cmd.Unit, cmd.Target, cmd.To == from)
 	case UseItem:
 		events = b.useItem(events, cmd.Unit, cmd.Item)
+	case Heal:
+		events = b.healWithStaff(events, cmd.Unit, cmd.Target)
 	}
 
 	if b.Result != Ongoing {
@@ -51,8 +58,8 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 
 // validateCommand は Act の共通の検証 0〜5 を順に確かめる（DES-BTL-04）。状態は変えない。
 func (b *Battle) validateCommand(cmd Command) error {
-	// 0. Action が 3 つのどれかである。
-	if cmd.Action < Wait || cmd.Action > UseItem {
+	// 0. Action が 4 つ（Wait・Attack・UseItem・Heal）のどれかである（DES-HEL-01）。
+	if cmd.Action < Wait || cmd.Action > Heal {
 		return ErrInvalidAction
 	}
 	// 1. 戦闘が終わっていない。

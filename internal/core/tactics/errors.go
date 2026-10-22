@@ -14,17 +14,25 @@ var (
 	ErrAlreadyActed = errors.New("tactics: そのユニットはすでに行動しました")
 	// ErrUnreachable は、そのマスに移動できないことを表す。
 	ErrUnreachable = errors.New("tactics: そのマスには移動できません")
-	// ErrNoTarget は、狙う相手がいない（いない、倒れている、味方である）ことを表す。
+	// ErrNoTarget は、狙う相手がいないことを表す。
+	// 攻撃では、いない、倒れている、味方である。回復では、いない、倒れている、敵である、自分である（DES-HEL-01）。
 	ErrNoTarget = errors.New("tactics: 狙う相手がいません")
 	// ErrOutOfRange は、相手が武器の射程に入っていないことを表す。
 	ErrOutOfRange = errors.New("tactics: 相手が武器の射程に入っていません")
 	// ErrNoItem は、そのアイテムがないことを表す。
 	ErrNoItem = errors.New("tactics: そのアイテムはありません")
-	// ErrFullHP は、HP が最大なので回復薬を使えないことを表す。
+	// ErrFullHP は、HP が最大なので、回復薬を使えない（UseItem）、
+	// または回復できない（Heal。相手の HP）ことを表す（DES-HEL-01）。
 	ErrFullHP = errors.New("tactics: HP が最大なので使えません")
 	// ErrInvalidAction は、Action が定められた値でないこと、
-	// または Forecast に Attack でないコマンドを渡したことを表す。
+	// または Forecast に Attack でないコマンドを、HealForecast に Heal でないコマンドを渡したことを表す（DES-HEL-02）。
 	ErrInvalidAction = errors.New("tactics: 行動の種類が正しくありません")
+	// ErrCannotAttack は、杖のユニットは攻撃できないことを表す（DES-HEL-01）。
+	ErrCannotAttack = errors.New("tactics: 杖のユニットは攻撃できません")
+	// ErrCannotHeal は、杖を持っていないので回復できないことを表す（DES-HEL-01）。
+	ErrCannotHeal = errors.New("tactics: 杖を持っていないので回復できません")
+	// ErrNoUses は、杖の使用回数が残っていないことを表す（DES-HEL-01、E-33）。
+	ErrNoUses = errors.New("tactics: 杖の使用回数が残っていません")
 	// ErrInvalidSetup は、Setup が正しくないことを表す（New だけ）。
 	ErrInvalidSetup = errors.New("tactics: 戦闘の入力が正しくありません")
 )

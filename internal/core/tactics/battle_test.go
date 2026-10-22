@@ -132,7 +132,7 @@ func TestNewInvalidSetup(t *testing.T) {
 		{"規則 6 増援のターンが 1", func(s *tactics.Setup) {
 			s.Reinforcements = []tactics.ReinforcementSetup{{Turn: 1, Unit: foe("増援", 4, 0)}}
 		}, "ターン 1"},
-		{"規則 6 武器の種類が範囲外", func(s *tactics.Setup) { s.Units[1].Weapon.Type = tactics.Bow + 1 }, "武器の種類"},
+		{"規則 6 武器の種類が範囲外", func(s *tactics.Setup) { s.Units[1].Weapon.Type = tactics.Staff + 1 }, "武器の種類"},
 		{"規則 6 武器の種類が負", func(s *tactics.Setup) { s.Units[1].Weapon.Type = -1 }, "武器の種類"},
 		{"規則 6 スキルの効果が範囲外", func(s *tactics.Setup) { s.Units[1].Skill.Effect = tactics.Snipe + 1 }, "スキルの効果"},
 		{"規則 6 動き方が範囲外", func(s *tactics.Setup) { s.Units[3].AI = tactics.Hold + 1 }, "動き方"},
