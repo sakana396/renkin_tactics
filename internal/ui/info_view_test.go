@@ -235,7 +235,8 @@ func TestInfoView(t *testing.T) {
 		if len(p.Forecast) != 8 || p.Unit == nil || p.Unit.Name != "ガルド" {
 			t.Fatalf("前提: 予測 %d 行、ユニット %+v", len(p.Forecast), p.Unit)
 		}
-		// 同じ 8 行の表で帯なし・撃破・危険を調べる。
+		// レベル・経験を含め、同じ8行の表で帯なし・撃破・危険を調べる（DES-UI-16）。
+		p.Unit.Level, p.Unit.Exp = 2, 40
 		for _, emphasis := range []ForecastEmphasis{ForecastNormal, ForecastDefeat, ForecastDanger} {
 			p.Emphasis = emphasis
 			shift := 0
@@ -243,6 +244,7 @@ func TestInfoView(t *testing.T) {
 				shift = 44
 			}
 			v := p.View()
+			textOf(t, v, "Lv 2　経験 40")
 			if v.Bottom > ScreenHeight {
 				t.Errorf("一番下 = %d、%d を超える", v.Bottom, ScreenHeight)
 			}
