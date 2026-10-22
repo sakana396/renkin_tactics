@@ -266,11 +266,20 @@ func (g *Game) drawTargetLabel(dst *ebiten.Image) {
 	}
 }
 
-// drawEvent は再生中の出来事を描く（DES-UI-03、DES-UI-04）。
+// drawEvent は再生中の出来事を描く（DES-UI-03、DES-UI-04、DES-UI-16）。
 // PhaseStart は番の帯、Strike は当たり・外れ・ダメージ・必殺・大盾、Heal は回復量を文字で出す。
 func (g *Game) drawEvent(dst *ebiten.Image) {
 	e, _, ok := g.ctrl.Event()
 	if !ok {
+		return
+	}
+	if v := GrowthEventView(e); v.Visible {
+		if v.Band {
+			vector.DrawFilledRect(dst, 0, MapSize/2-32, MapSize, 64, bandColor, false)
+			g.centerLabel(dst, v.Text, MapSize/2-lineHeight/2, gold)
+		} else {
+			g.popup(dst, v.Text, v.Pos, gold)
+		}
 		return
 	}
 	switch e.Kind {

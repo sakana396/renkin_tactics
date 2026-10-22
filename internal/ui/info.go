@@ -224,13 +224,25 @@ func (v *InfoView) text(x, y int, s string, st InfoStyle) {
 }
 
 // addUnit は、ユニットの絵・名前・クラス・HP と能力の棒・移動・武器・手持ち・スキルを (x, y) から並べ、
-// 使った一番下の y を返す（FR-UNT-09、DES-UI-06）。
+// 使った一番下の y を返す。自軍のレベルと経験は名前・クラスの下に置く（FR-UNT-09、DES-UI-06、DES-UI-16）。
 func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
-	// 名前の横に、盤面と同じタイルを 4 倍で描く。名前とクラスは絵の高さの真ん中に 2 行で並べる。
+	// 名前の横に、盤面と同じタイルを 4 倍で描く。レベルがある自軍は絵の横に3行で並べる。
 	v.Icons = append(v.Icons, InfoIcon{X: x, Y: y, Size: PortraitSize, Tile: unitTile(u)})
-	ty := y + (PortraitSize-2*lineHeight)/2
+	lines := 2
+	showLevel := u.Side == tactics.Player && u.Level > 0
+	if showLevel {
+		lines = 3
+	}
+	ty := y + (PortraitSize-lines*lineHeight)/2
 	v.text(x+portraitTextX, ty, unitName(u), StyleTitle)
 	v.text(x+portraitTextX, ty+lineHeight, "クラス: "+u.ClassName, StylePlain)
+	if showLevel {
+		exp := fmt.Sprint(u.Exp)
+		if u.Level == 20 {
+			exp = "―"
+		}
+		v.text(x+portraitTextX, ty+2*lineHeight, fmt.Sprintf("Lv %d　経験 %s", u.Level, exp), StylePlain)
+	}
 	y += PortraitSize + blockGap
 
 	// HP は枠に割合で塗り、力・技・速さ・守備は値に比例した棒にする。移動は数字だけ。
