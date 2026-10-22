@@ -59,6 +59,8 @@ type SceneController struct {
 	paragraphs       []string
 	paragraph        int
 	joined           int
+	prepareMember    int
+	deployment       map[int]bool
 }
 
 // NewSceneController はタイトルでセーブを調べる（DES-UI-10）。
@@ -179,6 +181,8 @@ func (s *SceneController) Choose(i int) {
 		s.campaign = c
 		s.saveChapter()
 		s.beforeStory()
+	case Prepare:
+		s.choosePrepare(i)
 	case GameOver:
 		switch i {
 		case 0:
@@ -192,7 +196,7 @@ func (s *SceneController) Choose(i int) {
 			s.battle = nil
 			s.message = ""
 			s.saveWarning = ""
-			s.scene = Prepare
+			s.enterPrepare()
 		case 1:
 			s.enterTitle("")
 		}
@@ -232,7 +236,7 @@ func (s *SceneController) endStory() {
 	if len(s.cfg.Catalog.Chapters()[s.storyChapter].Joins) > 0 {
 		s.scene = Joined
 	} else {
-		s.scene = Prepare
+		s.enterPrepare()
 	}
 }
 
@@ -247,10 +251,10 @@ func (s *SceneController) Advance() {
 	case Joined:
 		s.joined++
 		if s.joined >= len(s.cfg.Catalog.Chapters()[s.storyChapter].Joins) {
-			s.scene = Prepare
+			s.enterPrepare()
 		}
 	case Prepare:
-		s.StartBattle(s.DefaultMembers())
+		s.StartBattle(s.SelectedMembers())
 	case Battle:
 		if s.battle == nil || s.battle.State() != Over {
 			return
@@ -290,26 +294,6 @@ func (s *SceneController) Cancel() {
 			s.confirmOverwrite = false
 		}
 	}
-}
-
-// DefaultMembers は仮の準備で名簿順に枠まで選ぶ。主人公を先頭にする（9 章 Issue 6）。
-func (s *SceneController) DefaultMembers() []int {
-	ch := s.cfg.Catalog.Chapters()[s.campaign.Chapter]
-	m, _ := s.cfg.Catalog.Map(ch.Map)
-	var members []int
-	for i, v := range s.campaign.Roster {
-		c, _ := s.cfg.Catalog.Character(v.Character)
-		if v.Alive && c.Lord {
-			members = append(members, i)
-		}
-	}
-	for i, v := range s.campaign.Roster {
-		c, _ := s.cfg.Catalog.Character(v.Character)
-		if v.Alive && !c.Lord && len(members) < len(m.Slots) {
-			members = append(members, i)
-		}
-	}
-	return members
 }
 
 // StartBattle は準備で選んだ名簿から戦闘の Controller を作る（DES-CMP-05、DES-UI-09）。

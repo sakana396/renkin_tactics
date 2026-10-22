@@ -277,11 +277,20 @@ func (g *Game) drawTargetLabel(dst *ebiten.Image) {
 	}
 }
 
-// drawEvent は再生中の出来事を描く（DES-UI-03、DES-UI-04）。
+// drawEvent は再生中の出来事を描く（DES-UI-03、DES-UI-04、DES-UI-16）。
 // PhaseStart は番の帯、Strike は当たり・外れ・ダメージ・必殺・大盾、Heal は回復量を文字で出す。
 func (g *Game) drawEvent(dst *ebiten.Image) {
 	e, _, ok := g.ctrl.Event()
 	if !ok {
+		return
+	}
+	if v := GrowthEventView(e); v.Visible {
+		if v.Band {
+			vector.DrawFilledRect(dst, 0, MapSize/2-32, MapSize, 64, bandColor, false)
+			g.centerLabel(dst, v.Text, MapSize/2-lineHeight/2, gold)
+		} else {
+			g.popup(dst, v.Text, v.Pos, gold)
+		}
 		return
 	}
 	switch e.Kind {
@@ -353,6 +362,11 @@ func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 	p := g.ctrl.Panel(CellAt(cx, cy))
 	// 予測・ユニット・地形は、位置を決めた InfoView のとおりに描く（DES-UI-06、DES-UI-07）。
 	v := p.View()
+	g.drawInfoView(dst, v)
+}
+
+// drawInfoView は戦闘と準備で情報欄の描画を共有する（DES-UI-06、13）。
+func (g *Game) drawInfoView(dst *ebiten.Image, v InfoView) {
 	if b := v.Banner; b != nil {
 		vector.DrawFilledRect(dst, float32(b.Rect.Min.X), float32(b.Rect.Min.Y), float32(b.Rect.Dx()), float32(b.Rect.Dy()), infoStyleColor(b.Style), false)
 	}
@@ -454,6 +468,15 @@ func (g *Game) centerLabel(dst *ebiten.Image, s string, y int, clr color.Color) 
 // drawScene は表示用の値を描く（DES-UI-09〜12、15）。
 func (g *Game) drawScene(dst *ebiten.Image) {
 	v := g.scenes.View()
+	if v.Info != nil {
+		vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
+		g.drawInfoView(dst, *v.Info)
+	}
+	for _, r := range v.Rows {
+		if r.Selected {
+			vector.DrawFilledRect(dst, float32(r.Rect.Min.X), float32(r.Rect.Min.Y), float32(r.Rect.Dx()), float32(r.Rect.Dy()), playerBase, false)
+		}
+	}
 	for _, t := range v.Texts {
 		if t.Big {
 			g.scaledLabel(dst, t.Text, t.X, t.Y, 2, infoStyleColor(t.Style))

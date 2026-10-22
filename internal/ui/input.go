@@ -35,6 +35,9 @@ const FramesPerEvent = 20
 // FastFramesPerEvent は、早送り（Space か Enter を押している間）に出来事 1 つを表示するフレームの数（DES-UI-04）。
 const FastFramesPerEvent = 4
 
+// LevelUpFrames はレベルアップの帯を表示するフレーム数（DES-UI-16）。
+const LevelUpFrames = 60
+
 // Factory は Controller の初期化に渡す戦闘を作る（DES-UI-09）。
 type Factory func() (*tactics.Battle, []tactics.Event, error)
 
@@ -217,7 +220,7 @@ func (c *Controller) SetFastForward(on bool) {
 	c.fast = on
 }
 
-// Tick は 1 フレームを進める（DES-UI-04）。再生中なら、出来事を 20 フレームごとに 1 つ進める。
+// Tick は 1 フレームを進める（DES-UI-04、DES-UI-16）。通常は20フレーム、レベルアップは60フレーム表示する。
 // 早送りの間は FastFramesPerEvent フレームごとに進める。
 func (c *Controller) Tick() {
 	if c.state != Playing {
@@ -225,6 +228,9 @@ func (c *Controller) Tick() {
 	}
 	c.frame++
 	limit := FramesPerEvent
+	if c.events[c.index].Kind == tactics.EventLevelUp {
+		limit = LevelUpFrames
+	}
 	if c.fast {
 		limit = FastFramesPerEvent
 	}
