@@ -25,3 +25,6 @@ func (b *Battle) SetEnemyTarget(f func(unit int) int) {
 		return events
 	}
 }
+
+// SetUses は、ユニットの杖の残りの使用回数を変える（使い切った杖を手早く作るため。DES-HEL-01）。
+func (b *Battle) SetUses(i, n int) { b.units[i].Weapon.Uses = n }

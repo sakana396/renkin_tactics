@@ -10,7 +10,8 @@ const (
 	EventPhaseStart EventKind = iota
 	// EventReinforce は増援が現れたこと。Unit、To を持つ。
 	EventReinforce
-	// EventHeal は砦かアイテムで回復したこと。Unit、Amount、Item を持つ。
+	// EventHeal は砦・回復薬・杖で回復したこと。Unit、Amount、Item を持つ（DES-HEL-01）。
+	// Unit は回復されたユニット、Amount は実際に回復した量、Item は回復薬か杖の名前（砦なら空）。
 	EventHeal
 	// EventMove は移動したこと。Unit、From、To を持つ。
 	EventMove

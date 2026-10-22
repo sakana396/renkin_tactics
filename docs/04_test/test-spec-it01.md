@@ -70,7 +70,7 @@
 | TC-FR-BTL-01-07 | FR-BTL-01 / DES-BTL-01 | 倒れたユニットがいる | 倒れたユニット、添字 -1、添字が数を超えるユニットで `Reachable`・`AttackRange` | nil を返す | 異常 |
 | TC-FR-BTL-01-08 | FR-BTL-01 / DES-BTL-01 | 5 × 5 の平地 | 剣（射程 1）で (2, 2) から、弓（射程 2）で (0, 0) と (4, 4) から `AttackRange` | 剣は隣の 4 マス。弓は隣を含まず、マップの端で切れる。y、x の小さい順 | 正常 |
 | TC-FR-BTL-01-09 | FR-BTL-01 / DES-BTL-01 | 正しい `Setup`（自軍 2 体、敵 2 体） | `New` | 誤りがなく、盤面の大きさが正しく、ユニットは `Setup` の順で、HP は最大、生きていて、行動していない | 正常 |
-| TC-FR-BTL-01-10 | FR-BTL-01 / DES-BTL-01 | 正しい `Setup` を 1 か所だけ壊す | `Setup` の規則 1〜6 のそれぞれに反する `Setup`（地形の行がない・空・長さ違い、座標がマップの外・通れない地形、重なり、能力・射程・アイテムの範囲、主人公とボスの数と陣営、増援の主人公・ボス・陣営・ターン、定数の値、スキルの数値）で `New` | `ErrInvalidSetup` を包んだ誤りを返し、誤りの文に理由（位置と規則）を含む。戦闘と出来事は nil | 異常 |
+| TC-FR-BTL-01-10 | FR-BTL-01 / DES-BTL-01 | 正しい `Setup` を 1 か所だけ壊す | `Setup` の規則 1〜6 のそれぞれに反する `Setup`（地形の行がない・空・長さ違い、座標がマップの外・通れない地形、重なり、能力・射程・アイテムの範囲、主人公とボスの数と陣営、増援の主人公・ボス・陣営・ターン、定数の値（武器の種類の範囲外は、反復 2 で `Staff` の次の値にした）、スキルの数値）で `New` | `ErrInvalidSetup` を包んだ誤りを返し、誤りの文に理由（位置と規則）を含む。戦闘と出来事は nil | 異常 |
 | TC-FR-BTL-01-11 | FR-BTL-01 / DES-BTL-01 | — | 最大 HP 1、ほかの能力 0、射程 1〜1、アイテムの数と回復量 1、大盾の確率 0 と 100、怒りの倍率 1、増援のターン 2（初めのユニットと同じマス）、1 行のマップで `New` | 誤りにならない | 境界 |
 | TC-FR-BTL-01-12 | FR-BTL-01 / DES-BTL-01 | 戦闘を作った | 渡した `Setup` の地形と手持ちを変え、`Units()` の写しの HP と手持ちを変える | 戦闘の状態と地形は変わらない | 正常 |
 | TC-FR-BTL-02-01 | FR-BTL-02 / DES-BTL-02 | — | `New` | 1 ターン目の自軍の番で、戦闘は続いている。出来事は `PhaseStart`（自軍、1 ターン目）だけ | 正常 |
@@ -96,10 +96,10 @@
 | TC-NFR-06-02 | NFR-06 / DES-RNG-01 | 種 7 の戦闘を 2 つ | 同じコマンドの列（`Wait` 3 回、`EndPhase`） | `New` からの出来事の列と、最後の状態が同じ | 正常 |
 | TC-NFR-06-03 | NFR-06 / DES-RNG-01 | — | `export_test.go` の口で、乱数を引く関数を (40, 90, 70, 50) を返すものに差し替えて 4 回引く | 40、90、70、50 が順に出る | 正常 |
 | TC-NFR-07-01 | NFR-07 / DES-BTL-04 | 戦闘の終わり・敵軍の番・行動済みで倒れた味方・行動済みの味方などを組み合わせる | 検証 0〜5 の 2 つ以上に当てはまるコマンド（`Wait`、`Attack`、`UseItem`）で `Act` | 番号の小さい検証の誤りを返す（0 `ErrInvalidAction` → 1 `ErrBattleOver` → 2 `ErrNotPlayerPhase` → 3 `ErrInvalidUnit` → 4 `ErrAlreadyActed` → 5 `ErrUnreachable`）。`UseItem` でも 5 を 6 より先に確かめる | 異常 |
-| TC-NFR-07-02 | NFR-07 / DES-BTL-04 / DES-BTL-08 | 1 ターン目の自軍の番 | `Action` が範囲外（3、-1）、勝ち・負けのあと、敵軍の番、`Unit` が -1・数を超える・敵・倒れた味方、行動済み、`To` が壁・マップの外・移動を超える・味方のいるマス・敵のいるマス | それぞれ `ErrInvalidAction`、`ErrBattleOver`、`ErrNotPlayerPhase`、`ErrInvalidUnit`、`ErrAlreadyActed`、`ErrUnreachable` を返す | 異常 |
+| TC-NFR-07-02 | NFR-07 / DES-BTL-04 / DES-BTL-08 | 1 ターン目の自軍の番 | `Action` が範囲外（4、-1）、勝ち・負けのあと、敵軍の番、`Unit` が -1・数を超える・敵・倒れた味方、行動済み、`To` が壁・マップの外・移動を超える・味方のいるマス・敵のいるマス | それぞれ `ErrInvalidAction`、`ErrBattleOver`、`ErrNotPlayerPhase`、`ErrInvalidUnit`、`ErrAlreadyActed`、`ErrUnreachable` を返す | 異常 |
 | TC-NFR-07-03 | NFR-07 / DES-ERR-01 | TC-NFR-07-01・02 のそれぞれ | 失敗する `Act` | 出来事は nil で、ターン・番・結果・ユニット（位置、HP、行動済み、手持ちなど）が変わらない | 異常 |
 | TC-NFR-07-04 | NFR-07 / DES-ERR-01 / DES-BTL-04 | TC-FR-ITM-02-03 と同じ | 検証 0〜5 を通り、検証 6（`UseItem`）で失敗する `Act`（#9。#6 では、まだ作っていない `UseItem` の扱いを確かめていた） | 出来事は nil で、状態は変わらない（`To` が移動できるマスでも移動しない） | 異常 |
-| TC-NFR-07-05 | NFR-07 / DES-BTL-08 | — | 公開の誤り 11 個どうしを `errors.Is` で比べる | 自分とだけ一致し、ほかとは一致しない | 正常 |
+| TC-NFR-07-05 | NFR-07 / DES-BTL-08 | — | 公開の誤り 14 個（反復 2 で `ErrCannotAttack`・`ErrCannotHeal`・`ErrNoUses` を足した）どうしを `errors.Is` で比べる | 自分とだけ一致し、ほかとは一致しない | 正常 |
 
 ### NFR-03・NFR-04・NFR-05・NFR-09（非機能の検査。#7）
 
@@ -147,7 +147,7 @@ NFR-03・NFR-09 は、CI（`.github/workflows/ci.yml`）の手順で確かめる
 | TC-FR-BTL-06-06 | FR-BTL-06 / DES-BTL-06 | 速さ 9・HP 7 の味方の隣に敵 | 1 撃目を外し、反撃を当てて `Attack` | 出来事は `Strike`、`Strike`、`Fall`（味方）で、追撃しない。味方は HP 0、倒れて行動済み。主人公が残っているので自軍の番が続く | 正常 |
 | TC-FR-BTL-08-01 | FR-BTL-08 / DES-BTL-07 / UC-03 | 計算例 4 の盤面 | `Forecast`（乱数を引けば失敗にする） | 攻撃する側はガルド・HP 24・9・73・1 回・必殺なし・効くスキルは鼓舞と大盾。守る側はファイター・HP 24・6・79・1 回・スキルなし。状態は変わらない | 正常 |
 | TC-FR-BTL-08-02 | FR-BTL-08 / DES-BTL-07 | 主人公から離れた (4, 3) にソルジャー | 森 (3, 3) を `To` にして `Forecast` | 反撃のダメージ・命中率は、森にいる主人公に対する値（9・73）。主人公の位置は変わらない | 正常 |
-| TC-FR-BTL-08-03 | FR-BTL-08 / DES-BTL-07 / DES-BTL-08 | 計算例 1 の盤面 | `Action` が `Wait`・`UseItem`・3（戦闘が終わっていても）、戦闘の終わり、敵軍の番、敵のユニット、移動できないマス、いない相手、射程の外、行動済みのユニットで `Forecast` | それぞれ `ErrInvalidAction`（`Attack` でないことを最初に確かめる）、`ErrBattleOver`、`ErrNotPlayerPhase`、`ErrInvalidUnit`、`ErrUnreachable`、`ErrNoTarget`、`ErrOutOfRange`、`ErrAlreadyActed`。予測はゼロ値で、状態は変わらない | 異常 |
+| TC-FR-BTL-08-03 | FR-BTL-08 / DES-BTL-07 / DES-BTL-08 | 計算例 1 の盤面 | `Action` が `Wait`・`UseItem`・4（戦闘が終わっていても。反復 2 で 3 は `Heal` になった）、戦闘の終わり、敵軍の番、敵のユニット、移動できないマス、いない相手、射程の外、行動済みのユニットで `Forecast` | それぞれ `ErrInvalidAction`（`Attack` でないことを最初に確かめる）、`ErrBattleOver`、`ErrNotPlayerPhase`、`ErrInvalidUnit`、`ErrUnreachable`、`ErrNoTarget`、`ErrOutOfRange`、`ErrAlreadyActed`。予測はゼロ値で、状態は変わらない | 異常 |
 | TC-FR-BTL-08-04 | FR-BTL-08 / DES-BTL-07、DES-UI-01 / UC-03 1（#13。テストは `internal/ui`） | 計算例 1 の盤面（7 × 7 の平地、(3, 3) が森）。レオン (2, 3)、森にボスのソルジャー 3 | レオンを今いるマスにとどめて「攻撃」を選び、ソルジャー 3 を相手に選んで、情報欄（`Controller.Panel`）を見る | 予測の表は、名前「レオン」「ソルジャー 3★」、HP「20 → 11」・「18 → 8」（#29 で今 → 後に変えた）、ダメージ 5・9、命中率 63%・85%、回数 ×2・×1、必殺 ―・―、スキル ―・―。表の下にカーソルのあるソルジャー 3 の情報（「ソルジャー 3　★ボス」）も出る | 正常 |
 | TC-FR-BTL-08-05 | FR-BTL-08 / DES-BTL-07、DES-SKL-01 / UC-03 1（#13。テストは `internal/ui`） | 計算例 4 の盤面（7 × 7 の平地）。レオン (1, 1)、ガルド (2, 2)、ファイター (3, 2) | ガルドを今いるマスにとどめてファイターを相手に選び、情報欄を見る | 名前「ガルド」「ファイター」、HP「24 → 18」・「24 → 15」（#29）、ダメージ 9・6、命中率 73%・79%、回数 ×1・×1、必殺 ―・―。ガルドの効くスキルは「鼓舞」「大盾 30%」の 2 行、ファイターは ― | 正常 |
 | TC-FR-BTL-08-06 | FR-BTL-08 / DES-BTL-07、DES-UI-02 / UC-03 2（#13。テストは `internal/ui`） | 計算例 1 の盤面 | 「攻撃」を選んで相手を選ぶ前、相手を選んだあと、取り消して Moved に戻ったあとに情報欄を見る | 相手を選ぶ前（Targeting で相手なし）と、取り消して Moved に戻ったあとは予測を出さない。相手を選んだあとは出す | 境界 |

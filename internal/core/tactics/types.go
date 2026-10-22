@@ -43,6 +43,8 @@ const (
 	Axe
 	// Bow は弓。
 	Bow
+	// Staff は杖。攻撃も反撃もせず、行動 Heal で味方を回復する（DES-HEL-01）。
+	Staff
 )
 
 // SkillEffect はスキルの効果の種類（DES-BTL-01、DES-SKL-01）。
@@ -81,6 +83,8 @@ const (
 	Attack
 	// UseItem はアイテムの使用。
 	UseItem
+	// Heal は杖による味方の回復（DES-HEL-01）。
+	Heal
 )
 
 // Stats はユニットの能力（DES-BTL-01）。HP は最大 HP。
@@ -94,6 +98,7 @@ type Stats struct {
 }
 
 // Weapon は武器（DES-BTL-01）。射程はマンハッタン距離の最小と最大。
+// Heal・Uses・MaxUses は杖の回復量・残りの使用回数・使用回数の最大で、杖でなければどれも 0（DES-HEL-01）。
 type Weapon struct {
 	Name     string
 	Type     WeaponType
@@ -101,6 +106,9 @@ type Weapon struct {
 	Hit      int
 	MinRange int
 	MaxRange int
+	Heal     int
+	Uses     int
+	MaxUses  int
 }
 
 // Terrain は地形（DES-BTL-01、DES-MAP-01）。Cost が 0 の地形には入れない。
@@ -201,7 +209,7 @@ type Unit struct {
 }
 
 // Command は、自軍のユニット 1 体の移動と行動（DES-BTL-01、DES-BTL-04）。
-// Target は Attack のとき、Item は UseItem のときだけ使う。
+// Target は Attack のとき攻撃する相手、Heal のとき回復する味方の添字（DES-HEL-01）。Item は UseItem のときだけ使う。
 type Command struct {
 	Unit   int
 	To     Pos
