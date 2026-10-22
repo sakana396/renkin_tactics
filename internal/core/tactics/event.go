@@ -25,6 +25,11 @@ const (
 	EventWon
 	// EventLost は負けが決まったこと。
 	EventLost
+	// EventExp は経験を得たこと。Unit、Amount（得た経験。1・10・30 のどれか）を持つ（DES-GRW-03）。
+	EventExp
+	// EventLevelUp はレベルが上がったこと。Unit、Level（上がったあとのレベル）、
+	// Gains（上がった能力が 1、ほかは 0。移動は 0）を持つ（DES-GRW-03）。
+	EventLevelUp
 )
 
 // Event は起きたこと 1 つ（DES-EVT-01）。Kind ごとに決まった項目だけが意味を持つ。
@@ -42,6 +47,8 @@ type Event struct {
 	Crit   bool
 	Pavise bool
 	Item   string
+	Level  int
+	Gains  Stats
 	Units  []Unit
 }
 
