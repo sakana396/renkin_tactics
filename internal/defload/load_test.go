@@ -56,13 +56,13 @@ func remove(file string) edit {
 	return func(t *testing.T, m fstest.MapFS) { delete(m, file) }
 }
 
-// smallMap は検証を通る小さなマップ（maps[1]）を足す。rows と、追加の TOML を差し替えられる。
+// smallMap は検証を通る小さなマップ（本体の 3 つのマップの後ろの maps[3]）を足す。rows と、追加の TOML を差し替えられる。
 func smallMap(rows, extra string) edit {
 	return appendTo("maps.toml", `[[maps]]
 id = "small"
 name = "小さなマップ"
 rows = [`+rows+`]
-allies = [{ character = "leon", x = 0, y = 0 }]
+slots = [{ x = 0, y = 0 }]
 `+extra)
 }
 
@@ -109,25 +109,25 @@ func TestLoad(t *testing.T) {
 		{"TC-FR-SYS-04-03 アイテムの参照がない",
 			[]edit{replace("characters.toml", `items = [{ item = "potion", count = 2 }]`, `items = [{ item = "elixir", count = 2 }]`)},
 			[]string{`characters.toml: characters[0].items[0].item: アイテム "elixir" がありません`}},
-		{"TC-FR-SYS-04-03 キャラの参照がない",
-			[]edit{replace("maps.toml", `character = "mira"`, `character = "nobody"`)},
-			[]string{`maps.toml: maps[0].allies[3].character: キャラ "nobody" がありません`}},
+		{"TC-FR-SYS-04-03 名簿のキャラの参照がない",
+			[]edit{replace("game.toml", `"mira"]`, `"nobody"]`)},
+			[]string{`game.toml: party[3]: キャラ "nobody" がありません`}},
 		{"TC-FR-SYS-04-03 スキルの参照がない",
 			[]edit{replace("characters.toml", `skill = "wrath"`, `skill = "rage"`)},
 			[]string{`characters.toml: characters[2].skill: スキル "rage" がありません`}},
 		{"TC-FR-SYS-04-03 地形の文字がない",
 			[]edit{replace("maps.toml", `"................", # y 15`, `"..............X.", # y 15`)},
 			[]string{`maps.toml: maps[0].rows[15]: 15 文字目の地形の文字 "X" がありません`}},
-		{"TC-FR-SYS-04-03 始めるマップがない",
-			[]edit{replace("game.toml", `start_map = "ch01"`, `start_map = "ch99"`)},
-			[]string{`game.toml: start_map: マップ "ch99" がありません`}},
+		{"TC-FR-SYS-04-03 章のマップがない",
+			[]edit{replace("chapters.toml", `map = "ch01"`, `map = "ch99"`)},
+			[]string{`chapters.toml: chapters[0].map: マップ "ch99" がありません`}},
 		{"TC-FR-SYS-04-03 スキルは空でもよい",
 			[]edit{replace("characters.toml", `skill = "wrath"`, `skill = ""`)},
 			nil},
 		// 規則 4
 		{"TC-FR-SYS-04-04 武器の種類が決まった値でない",
 			[]edit{replace("weapons.toml", `type = "axe"`, `type = "spear"`)},
-			[]string{`weapons.toml: weapons[2].type: 武器の種類 "spear" は使えません（sword・lance・axe・bow のどれか）`}},
+			[]string{`weapons.toml: weapons[2].type: 武器の種類 "spear" は使えません（sword・lance・axe・bow・staff のどれか）`}},
 		{"TC-FR-SYS-04-04 クラスの武器の種類が決まった値でない",
 			[]edit{replace("classes.toml", `weapon_type = "bow"`, `weapon_type = "gun"`)},
 			[]string{`classes.toml: classes[3].weapon_type: 武器の種類 "gun" は使えません`}},
@@ -229,13 +229,13 @@ func TestLoad(t *testing.T) {
 			[]string{"maps.toml: maps[0].rows: 行の数 17 は 1 以上 16 以下にしてください"}},
 		{"TC-FR-SYS-04-11 行の数が 0",
 			[]edit{smallMap(``, smallBoss)},
-			[]string{"maps.toml: maps[1].rows: 行の数 0 は 1 以上 16 以下にしてください"}},
+			[]string{"maps.toml: maps[3].rows: 行の数 0 は 1 以上 16 以下にしてください"}},
 		{"TC-FR-SYS-04-11 行の長さが 17",
 			[]edit{smallMap(`"................."`, smallBoss)},
-			[]string{"maps.toml: maps[1].rows[0]: 行の長さ 17 は 1 以上 16 以下にしてください"}},
+			[]string{"maps.toml: maps[3].rows[0]: 行の長さ 17 は 1 以上 16 以下にしてください"}},
 		{"TC-FR-SYS-04-11 行の長さが 0",
 			[]edit{smallMap(`""`, smallBoss)},
-			[]string{"maps.toml: maps[1].rows[0]: 行の長さ 0 は 1 以上 16 以下にしてください"}},
+			[]string{"maps.toml: maps[3].rows[0]: 行の長さ 0 は 1 以上 16 以下にしてください"}},
 		{"TC-FR-SYS-04-12 1 行 2 マスのマップは通る",
 			[]edit{smallMap(`".."`, smallBoss)},
 			nil},
@@ -244,30 +244,30 @@ func TestLoad(t *testing.T) {
 			nil},
 		// 規則 9
 		{"TC-FR-SYS-04-13 配置の座標がマップの外",
-			[]edit{replace("maps.toml", "x = 15\ny = 15", "x = 16\ny = 15"), replace("maps.toml", `{ character = "mira", x = 1, y = 15 }`, `{ character = "mira", x = 1, y = -1 }`)},
-			[]string{"maps.toml: maps[0].reinforcements[2]: 座標 (16, 15) がマップの外です", "maps.toml: maps[0].allies[3]: 座標 (1, -1) がマップの外です"}},
+			[]edit{replace("maps.toml", "x = 15\ny = 15", "x = 16\ny = 15"), replace("maps.toml", `{ x = 1, y = 15 },`, `{ x = 1, y = -1 },`)},
+			[]string{"maps.toml: maps[0].reinforcements[2]: 座標 (16, 15) がマップの外です", "maps.toml: maps[0].slots[3]: 座標 (1, -1) がマップの外です"}},
 		{"TC-FR-SYS-04-13 配置の座標が通れない地形",
 			[]edit{replace("maps.toml", "x = 11\ny = 3", "x = 12\ny = 3")},
 			[]string{`maps.toml: maps[0].enemies[3]: 座標 (12, 3) の地形 "wall" は通れません`}},
 		{"TC-FR-SYS-04-13 増援の座標が通れない地形",
 			[]edit{replace("maps.toml", "x = 15\ny = 15", "x = 12\ny = 3")},
 			[]string{`maps.toml: maps[0].reinforcements[2]: 座標 (12, 3) の地形 "wall" は通れません`}},
-		{"TC-FR-SYS-04-13 初めの配置が重なる",
+		{"TC-FR-SYS-04-13 初めの敵の配置が出撃の枠と重なる",
 			[]edit{replace("maps.toml", "x = 12\ny = 7", "x = 1\ny = 14")},
-			[]string{"maps.toml: maps[0].enemies[6]: 座標 (1, 14) が maps[0].allies[0] と重なっています"}},
+			[]string{"maps.toml: maps[0].enemies[6]: 座標 (1, 14) が maps[0].slots[0] と重なっています"}},
 		{"TC-FR-SYS-04-14 増援は初めの配置と重なってもよい",
 			[]edit{replace("maps.toml", "x = 15\ny = 15", "x = 1\ny = 15")},
 			nil},
 		// 規則 10
-		{"TC-FR-SYS-04-15 主人公がいない",
-			[]edit{replace("maps.toml", `{ character = "leon", x = 1, y = 14 },`, ``)},
-			[]string{"maps.toml: maps[0].allies: lord = true のキャラを、ちょうど 1 人置いてください（0 人）"}},
-		{"TC-FR-SYS-04-15 主人公が 2 人",
+		{"TC-FR-SYS-04-15 名簿に主人公がいない（名簿の外に lord = true のキャラがいる）",
+			[]edit{replace("game.toml", `party = ["leon", `, `party = [`)},
+			[]string{"game.toml: party: lord = true のキャラを、ちょうど 1 人入れてください（0 人）", `characters.toml: characters[0].lord: lord = true のキャラ "leon" が party にいません`}},
+		{"TC-FR-SYS-04-15 名簿に主人公が 2 人",
 			[]edit{replace("characters.toml", `skill = "pavise"`, "skill = \"pavise\"\nlord = true")},
-			[]string{"maps.toml: maps[0].allies: lord = true のキャラを、ちょうど 1 人置いてください（2 人）"}},
-		{"TC-FR-SYS-04-15 同じキャラを 2 回置く",
-			[]edit{replace("maps.toml", `character = "mira"`, `character = "gald"`)},
-			[]string{`maps.toml: maps[0].allies[3].character: キャラ "gald" を 2 回置いています（maps[0].allies[1] と同じ）`}},
+			[]string{"game.toml: party: lord = true のキャラを、ちょうど 1 人入れてください（2 人）"}},
+		{"TC-FR-SYS-04-15 名簿に同じキャラを 2 回入れる",
+			[]edit{replace("game.toml", `"mira"]`, `"gald"]`)},
+			[]string{`game.toml: party[3]: キャラ "gald" を 2 回入れています（party[1] と同じ）`}},
 		// 規則 11
 		{"TC-FR-SYS-04-16 ボスがいない",
 			[]edit{replace("maps.toml", "boss = true\n", "")},
@@ -290,8 +290,8 @@ func TestLoad(t *testing.T) {
 			[]edit{replace("terrains.toml", "cost = 2\navoid = 20\ndef = 1\nheal_percent = 0", "cost = 2\navoid = 20\ndef = 1\nheal_precent = 0")},
 			[]string{"terrains.toml: terrains[1].heal_precent: 知らないキーです"}},
 		{"TC-FR-SYS-04-20 インラインの表の中の知らないキー",
-			[]edit{replace("characters.toml", "bonus = { hp = 2, str = 1, skl = 1", "bonus = { hpp = 2, str = 1, skl = 1"), replace("maps.toml", `{ character = "mira", x = 1, y = 15 }`, `{ character = "mira", x = 1, y = 15, z = 0 }`)},
-			[]string{"characters.toml: characters[0].bonus.hpp: 知らないキーです", "maps.toml: maps[0].allies[3].z: 知らないキーです"}},
+			[]edit{replace("characters.toml", "bonus = { hp = 1, str = 2, skl = 4", "bonus = { hpp = 1, str = 2, skl = 4"), replace("maps.toml", `{ x = 1, y = 15 },`, `{ x = 1, y = 15, z = 0 },`)},
+			[]string{"characters.toml: characters[0].bonus.hpp: 知らないキーです", "maps.toml: maps[0].slots[3].z: 知らないキーです"}},
 		{"TC-FR-SYS-04-20 入れ子の配列の表と、いちばん上の知らないキー",
 			[]edit{replace("maps.toml", "ai = \"charge\"\nx = 6", "aii = \"charge\"\nx = 6"), appendTo("game.toml", `start_mapp = "ch01"`)},
 			[]string{"maps.toml: maps[0].enemies[0].aii: 知らないキーです", "game.toml: start_mapp: 知らないキーです"}},
@@ -306,9 +306,9 @@ func TestLoad(t *testing.T) {
 			[]edit{
 				replace("characters.toml", `class = "fighter"`, `class = "knight"`),
 				replace("maps.toml", "turn = 5", "turn = 1"),
-				replace("game.toml", `start_map = "ch01"`, `start_map = "ch99"`),
+				replace("chapters.toml", `map = "ch01"`, `map = "ch99"`),
 			},
-			[]string{`characters.toml: characters[2].class: クラス "knight" がありません`, "maps.toml: maps[0].reinforcements[2].turn: ", "game.toml: start_map: "}},
+			[]string{`characters.toml: characters[2].class: クラス "knight" がありません`, "maps.toml: maps[0].reinforcements[2].turn: ", "chapters.toml: chapters[0].map: "}},
 		{"TC-FR-SYS-04-19 ファイルがない",
 			[]edit{remove("skills.toml")},
 			[]string{"skills.toml: ファイルを読めません"}},
@@ -373,7 +373,7 @@ func TestLoadKeyCase(t *testing.T) {
 			},
 			[]string{"terrains.toml: terrains[1].heal_precent: 知らないキーです"}},
 		{"TC-FR-SYS-04-21 大文字・小文字だけが違う表の中の知らないキー",
-			[]edit{replace("characters.toml", "bonus = { hp = 2, str = 1, skl = 1", "Bonus = { hpp = 2, str = 1, skl = 1")},
+			[]edit{replace("characters.toml", "bonus = { hp = 1, str = 2, skl = 4", "Bonus = { hpp = 1, str = 2, skl = 4")},
 			[]string{"characters.toml: characters[0].Bonus.hpp: 知らないキーです"}},
 	}
 	for _, tt := range tests {

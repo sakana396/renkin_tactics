@@ -12,7 +12,7 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/defs"
 )
 
-// 本体のデータを読み込み、設計書 10 章・3.7 節の値になっていることを確かめる。
+// 本体のデータを読み込み、設計書 10 章・3.7 節の値（反復 2 で変えたものは設計書（反復 2）10 章の値）になっていることを確かめる。
 func TestBaseData(t *testing.T) {
 	cat, err := defload.Load(data.Base())
 	if err != nil {
@@ -20,8 +20,8 @@ func TestBaseData(t *testing.T) {
 	}
 
 	t.Run("TC-FR-SYS-03-01 本体のデータが誤りなく読み込め、10 章の値になっている", func(t *testing.T) {
-		if cat.Game.StartMap != "ch01" {
-			t.Errorf("始めるマップ = %q", cat.Game.StartMap)
+		if want := []string{"leon", "gald", "bran", "mira"}; !reflect.DeepEqual(cat.Game.Party, want) {
+			t.Errorf("名簿 = %q", cat.Game.Party)
 		}
 		terrains := []defs.TerrainDef{
 			{ID: "plain", Name: "平地", Symbol: ".", Cost: 1},
@@ -40,6 +40,7 @@ func TestBaseData(t *testing.T) {
 			{ID: "archer", Name: "アーチャー", WeaponType: "bow", Base: defs.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5}},
 			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5}},
 			{ID: "myrmidon", Name: "剣士", WeaponType: "sword", Base: defs.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5}},
+			{ID: "cavalier", Name: "騎兵", WeaponType: "lance", Base: defs.Stats{HP: 20, Str: 6, Skl: 5, Spd: 6, Def: 5, Mov: 7}},
 		}
 		for _, want := range classes {
 			if got, ok := cat.Class(want.ID); !ok || got != want {
@@ -71,15 +72,16 @@ func TestBaseData(t *testing.T) {
 				t.Errorf("スキル %s = %+v, %v", want.ID, got, ok)
 			}
 		}
-		// 能力は 10.3 節の「能力」の列（クラス ＋ ボーナス）と一致すること。
+		// 能力は設計書（反復 2）10.3 節の「能力」の列（クラス ＋ ボーナス）と一致すること。
 		chars := []struct {
 			def   defs.CharacterDef
 			stats defs.Stats
 		}{
-			{defs.CharacterDef{ID: "leon", Name: "レオン", Class: "lord", Bonus: defs.Stats{HP: 2, Str: 1, Skl: 1, Spd: 1}, Weapon: "iron_sword", Items: []defs.ItemCount{{Item: "potion", Count: 2}}, Skill: "inspire", Lord: true}, defs.Stats{HP: 20, Str: 6, Skl: 8, Spd: 9, Def: 4, Mov: 5}},
-			{defs.CharacterDef{ID: "gald", Name: "ガルド", Class: "armor", Bonus: defs.Stats{HP: 2, Def: 1}, Weapon: "iron_lance", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "pavise"}, defs.Stats{HP: 24, Str: 6, Skl: 3, Spd: 2, Def: 10, Mov: 4}},
-			{defs.CharacterDef{ID: "bran", Name: "ブラン", Class: "fighter", Bonus: defs.Stats{HP: 2, Str: 1, Spd: 1}, Weapon: "iron_axe", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "wrath"}, defs.Stats{HP: 26, Str: 8, Skl: 4, Spd: 5, Def: 3, Mov: 5}},
-			{defs.CharacterDef{ID: "mira", Name: "ミラ", Class: "archer", Bonus: defs.Stats{Skl: 2, Spd: 1}, Weapon: "iron_bow", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "snipe"}, defs.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5}},
+			{defs.CharacterDef{ID: "leon", Name: "レオン", Class: "lord", Bonus: defs.Stats{HP: 1, Str: 2, Skl: 4, Spd: 4}, Level: 1, Growth: defs.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20}, Weapon: "iron_sword", Items: []defs.ItemCount{{Item: "potion", Count: 2}}, Skill: "inspire", Lord: true}, defs.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5}},
+			{defs.CharacterDef{ID: "gald", Name: "ガルド", Class: "armor", Bonus: defs.Stats{HP: 2, Skl: -2, Def: 2}, Level: 1, Growth: defs.Growth{HP: 85, Str: 40, Skl: 20, Spd: 10, Def: 70}, Weapon: "iron_lance", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "pavise"}, defs.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4}},
+			{defs.CharacterDef{ID: "bran", Name: "ブラン", Class: "fighter", Bonus: defs.Stats{HP: -2, Str: 4, Skl: 1, Spd: 1, Def: -1}, Level: 1, Growth: defs.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15}, Weapon: "iron_axe", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "wrath"}, defs.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5}},
+			{defs.CharacterDef{ID: "mira", Name: "ミラ", Class: "archer", Bonus: defs.Stats{Skl: 2, Spd: 1}, Level: 1, Growth: defs.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20}, Weapon: "iron_bow", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "snipe"}, defs.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5}},
+			{defs.CharacterDef{ID: "elsa", Name: "エルザ", Class: "cavalier", Bonus: defs.Stats{HP: 1, Str: 1, Skl: 1, Spd: 1}, Level: 2, Growth: defs.Growth{HP: 65, Str: 45, Skl: 40, Spd: 40, Def: 35}, Weapon: "iron_lance", Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 21, Str: 7, Skl: 6, Spd: 7, Def: 5, Mov: 7}},
 		}
 		for _, want := range chars {
 			got, ok := cat.Character(want.def.ID)
@@ -100,9 +102,10 @@ func TestBaseData(t *testing.T) {
 		if m.Name != "国境の砦" {
 			t.Errorf("マップの名前 = %q", m.Name)
 		}
-		allies := []defs.AllyPlacement{{Character: "leon", X: 1, Y: 14}, {Character: "gald", X: 2, Y: 13}, {Character: "bran", X: 3, Y: 14}, {Character: "mira", X: 1, Y: 15}}
-		if !reflect.DeepEqual(m.Allies, allies) {
-			t.Errorf("自軍の配置 = %+v", m.Allies)
+		// 出撃の枠は、反復 1 の自軍の配置と同じ座標を同じ順に並べ、5 番目に (2, 15) を足したもの（設計書（反復 2）10.4 節）。
+		slots := []defs.Slot{{X: 1, Y: 14}, {X: 2, Y: 13}, {X: 3, Y: 14}, {X: 1, Y: 15}, {X: 2, Y: 15}}
+		if !reflect.DeepEqual(m.Slots, slots) {
+			t.Errorf("出撃の枠 = %+v", m.Slots)
 		}
 		enemies := []defs.EnemyPlacement{
 			{Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 6, Y: 10},
@@ -112,7 +115,7 @@ func TestBaseData(t *testing.T) {
 			{Class: "fighter", Weapon: "iron_axe", AI: "charge", X: 10, Y: 11},
 			{Class: "fighter", Weapon: "iron_axe", AI: "hold", X: 13, Y: 8},
 			{Class: "archer", Weapon: "iron_bow", AI: "hold", X: 12, Y: 7},
-			{Class: "soldier", Weapon: "iron_lance", Bonus: defs.Stats{HP: 8, Str: 3, Skl: 3, Spd: 2, Def: 3}, AI: "hold", Boss: true, X: 13, Y: 1},
+			{Name: "ハーゲン", Class: "soldier", Weapon: "iron_lance", Bonus: defs.Stats{HP: 8, Str: 3, Skl: 3, Spd: 2, Def: 3}, AI: "hold", Boss: true, X: 13, Y: 1},
 		}
 		if !reflect.DeepEqual(m.Enemies, enemies) {
 			t.Errorf("敵の配置 = %+v", m.Enemies)
@@ -153,13 +156,13 @@ func TestBaseData(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-IF-03-01 本体のデータは 8 つの TOML のテキストのファイル", func(t *testing.T) {
+	t.Run("TC-IF-03-01 本体のデータは 10 の TOML のテキストのファイル", func(t *testing.T) {
 		names, err := fs.Glob(data.Base(), "*")
 		if err != nil {
 			t.Fatal(err)
 		}
 		sort.Strings(names)
-		want := []string{"characters.toml", "classes.toml", "game.toml", "items.toml", "maps.toml", "skills.toml", "terrains.toml", "weapons.toml"}
+		want := []string{"chapters.toml", "characters.toml", "classes.toml", "game.toml", "items.toml", "maps.toml", "skills.toml", "story.toml", "terrains.toml", "weapons.toml"}
 		if !reflect.DeepEqual(names, want) {
 			t.Errorf("ファイル = %v", names)
 		}

@@ -26,7 +26,8 @@ func NewBattle(cat *defs.Catalog, mapID string, seed uint64) (*tactics.Battle, [
 
 // newSetup は、目録のマップ mapID の定義から tactics.Setup を組み立てる（DES-CORE-01）。
 //
-// 自軍は allies の順、敵は enemies の順に並べ、増援は reinforcements の順に並べる。
+// 自軍は partyOrder の順に出撃の枠（slots）の数まで並べ、枠の同じ順の座標に置く（反復 2 で変更）。
+// 敵は enemies の順に並べ、増援は reinforcements の順に並べる。
 // 能力はクラスの Base にボーナスを足したもの（FR-UNT-01、FR-UNT-02）。
 func newSetup(cat *defs.Catalog, mapID string) (tactics.Setup, error) {
 	m, ok := cat.Map(mapID)
@@ -41,10 +42,10 @@ func newSetup(cat *defs.Catalog, mapID string) (tactics.Setup, error) {
 	}
 	setup.Terrain = terrain
 
-	for i, a := range m.Allies {
-		u, err := allyUnit(cat, a)
+	for i, id := range partyOrder(cat, len(m.Slots)) {
+		u, err := allyUnit(cat, id, m.Slots[i])
 		if err != nil {
-			return tactics.Setup{}, fmt.Errorf("core: マップ %q の allies[%d]: %w", m.ID, i, err)
+			return tactics.Setup{}, fmt.Errorf("core: マップ %q の slots[%d]: %w", m.ID, i, err)
 		}
 		setup.Units = append(setup.Units, u)
 	}
@@ -100,11 +101,31 @@ func convertTerrain(cat *defs.Catalog, m defs.MapDef) ([][]tactics.Terrain, erro
 	return rows, nil
 }
 
-// allyUnit は自軍のキャラの配置から、ユニット 1 体の入力を作る（DES-CORE-01）。
-func allyUnit(cat *defs.Catalog, a defs.AllyPlacement) (tactics.UnitSetup, error) {
-	ch, ok := cat.Character(a.Character)
+// partyOrder は、出撃させる名簿のキャラの ID を、枠に置く順に最大 n 人返す（DES-CORE-01 の反復 2 の変更）。
+//
+// game.toml の party の順に並べるが、主人公（lord = true のキャラ）は party のどこにいても先頭（主人公の枠）にする。
+// 目録にないキャラは、主人公でないものとしてそのまま並べる（allyUnit が誤りにする）。
+func partyOrder(cat *defs.Catalog, n int) []string {
+	var lords, others []string
+	for _, id := range cat.Game.Party {
+		if ch, ok := cat.Character(id); ok && ch.Lord {
+			lords = append(lords, id)
+		} else {
+			others = append(others, id)
+		}
+	}
+	order := append(lords, others...)
+	if len(order) > n {
+		order = order[:n]
+	}
+	return order
+}
+
+// allyUnit は名簿のキャラ id から、出撃の枠 slot に置くユニット 1 体の入力を作る（DES-CORE-01。反復 2 で変更）。
+func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, error) {
+	ch, ok := cat.Character(id)
 	if !ok {
-		return tactics.UnitSetup{}, fmt.Errorf("キャラ %q がありません", a.Character)
+		return tactics.UnitSetup{}, fmt.Errorf("party のキャラ %q がありません", id)
 	}
 	cls, ok := cat.Class(ch.Class)
 	if !ok {
@@ -127,7 +148,7 @@ func allyUnit(cat *defs.Catalog, a defs.AllyPlacement) (tactics.UnitSetup, error
 		ClassName: cls.Name,
 		Side:      tactics.Player,
 		Stats:     addStats(cls.Base, ch.Bonus),
-		Pos:       tactics.Pos{X: a.X, Y: a.Y},
+		Pos:       tactics.Pos{X: slot.X, Y: slot.Y},
 		Weapon:    weapon,
 		Items:     items,
 		Skill:     skill,
