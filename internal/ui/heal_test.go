@@ -75,7 +75,16 @@ func TestHealUI(t *testing.T) {
 		if c.target != -1 {
 			t.Fatal("回復できない相手を選べた")
 		}
+		if got := c.targetFrameColor(1); got != goodColor {
+			t.Fatal("未選択の回復候補枠が緑でない", got)
+		}
 		c.Click(tactics.Pos{X: 3, Y: 1})
+		if got := c.targetFrameColor(1); got != cursorColor {
+			t.Fatal("選んだ味方の枠がカーソル色でない", got)
+		}
+		if got := c.targetFrameColor(2); got != goodColor {
+			t.Fatal("選んだ味方以外の枠の色が変わった", got)
+		}
 		if c.State() != HealTargeting || c.target != 1 || !reflect.DeepEqual(before, c.Battle().Units()) || c.Units()[0].Pos != (tactics.Pos{X: 3, Y: 2}) {
 			t.Fatal("予測前に状態が変わった")
 		}

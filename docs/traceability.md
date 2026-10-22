@@ -22,7 +22,7 @@
 | FR-UNT-04 | #35、#43、#37、#42 | DES-GRW-01、DES-GRW-02、DES-GRW-03、DES-HEL-01、DES-CMP-05、DES-CMP-06、DES-UI-16 | TC-FR-UNT-04-01〜17 | `internal/core/tactics`、`internal/core`、`internal/ui` | 実装済み（#35、#43、#37、#42。経験・成長、キャンペーンの持ち越し、戦闘中の再生） |
 | FR-UNT-05 | #35 | DES-GRW-02 | TC-FR-UNT-05-01〜04 | `internal/core/tactics` | 一部実装（#35。成長の判定。成長率の定義データ（DES-DAT-01）は #36） |
 | FR-UNT-07 | #8 | DES-SKL-01（反復 1 はキャラのスキルだけ。一部） | TC-FR-UNT-07-01〜07 | `internal/core/tactics` | 実装済み |
-| FR-UNT-09 | #13、#27、#28、#46、#42、#45 | DES-UI-01、DES-UI-06、DES-UI-07、DES-UI-08、DES-UI-16、DES-UI-18 | TC-FR-UNT-09-01〜05、TC-FR-UNT-09-07〜12、TC-FR-UNT-09-14〜15、TC-FR-UNT-09-06・TC-FR-UNT-09-13（手動）。敵の範囲（#28）は TC-IF-01-18〜19、TC-IF-01-31〜32、TC-IF-01-33〜34（手動） | `internal/ui` | 実装済み
+| FR-UNT-09 | #13、#27、#28、#46、#42、#45 | DES-UI-01、DES-UI-06、DES-UI-07、DES-UI-08、DES-UI-16、DES-UI-18 | TC-FR-UNT-09-01〜05、TC-FR-UNT-09-07〜12、TC-FR-UNT-09-14〜15、TC-FR-UNT-09-06・TC-FR-UNT-09-13（手動）。敵の範囲（#28）は TC-IF-01-18〜19、TC-IF-01-31〜32、TC-IF-01-33〜34（手動） | `internal/ui` | 実装済み（#13、#27、#28、#46、#42、#45。手動のケースは開発者が確かめる） |
 | FR-MAP-01 | #6 | DES-BTL-03、DES-MAP-01 | TC-FR-MAP-01-01〜05 | `internal/core/tactics` | 実装済み |
 | FR-MAP-03 | #9 | DES-MAP-02、DES-MAP-03 | TC-FR-MAP-03-01〜07 | `internal/core/tactics` | 実装済み（反復 1 のギミックは砦と増援） |
 | FR-MAP-05 | #9 | DES-MAP-04（反復 1 はボスを倒す・主人公が倒れるだけ。一部） | TC-FR-MAP-05-01〜04 | `internal/core/tactics` | 実装済み（反復 1 の範囲） |

@@ -235,7 +235,7 @@ func (g *Game) drawUnits(dst *ebiten.Image) {
 // drawSelection は選んだ自軍と攻撃・回復の相手を枠で示す（DES-UI-02、DES-UI-18）。
 func (g *Game) drawSelection(dst *ebiten.Image) {
 	c := g.ctrl
-	unit, dest, target := c.Selection()
+	unit, dest, _ := c.Selection()
 	units := c.Units()
 	switch c.State() {
 	case Selected:
@@ -253,14 +253,7 @@ func (g *Game) drawSelection(dst *ebiten.Image) {
 			targets = c.HealTargets()
 		}
 		for _, t := range targets {
-			var clr color.Color = targetColor
-			if c.TargetStyle() == StyleGood {
-				clr = goodColor
-			}
-			if t == target && c.State() == Targeting {
-				clr = cursorColor
-			}
-			strokeCell(dst, units[t].Pos, clr)
+			strokeCell(dst, units[t].Pos, c.targetFrameColor(t))
 		}
 	}
 }

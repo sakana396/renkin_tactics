@@ -43,5 +43,4 @@
 | 槍 | Tiny Dungeon | 131 | 柄の長い槍 |
 | 斧 | Tiny Dungeon | 119 | 片刃の斧 |
 | 弓 | Tiny Town | 118 | 弓 |
-
 | 杖（DES-UI-18、#45） | Tiny Dungeon | 125 | 紫の宝玉の杖 |

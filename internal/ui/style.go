@@ -66,3 +66,14 @@ func infoStyleColor(s InfoStyle) color.Color {
 	}
 	return white
 }
+
+// targetFrameColor は攻撃・回復の候補枠の色を返し、選んだ相手をカーソル色で示す（DES-UI-02、DES-UI-18）。
+func (c *Controller) targetFrameColor(target int) color.Color {
+	if target == c.target {
+		return cursorColor
+	}
+	if c.TargetStyle() == StyleGood {
+		return goodColor
+	}
+	return targetColor
+}
