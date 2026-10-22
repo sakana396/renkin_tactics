@@ -42,7 +42,7 @@
 | NFR-04 | #7 | DES-NFR-01 | TC-NFR-04-01〜04 | `internal/core`（`deps_test.go`） | 実装済み |
 | NFR-05 | #7 | DES-NFR-01 | TC-NFR-05-01〜03 | `internal/core`（`deps_test.go`） | 実装済み |
 | NFR-06 | #6、#35、#43 | DES-RNG-01（反復 2 で追記）、DES-HEL-01 | TC-NFR-06-01〜03、TC-NFR-06-04〜06 | `internal/core/tactics` | 実装済み（#6。成長の乱数は #35、回復を含む再現性は #43） |
-| NFR-07 | #6、#9、#43、#37 | DES-ERR-01、DES-BTL-08、DES-HEL-01、DES-CMP-08 | TC-NFR-07-01〜06、TC-FR-CMP-03-03・06、TC-FR-CMP-01-03〜04 | `internal/core/tactics`、`internal/core` | 実装済み（TC-NFR-07-04 は #9 で `UseItem` の検証 6 に書き換えた。#43 で TC-NFR-07-05 に誤り 3 つを追加し、TC-NFR-07-06 で回復の検証順を確認） |
+| NFR-07 | #6、#9、#43、#37、#39 | DES-ERR-01、DES-BTL-08、DES-HEL-01、DES-CMP-08、DES-SAV-03 | TC-NFR-07-01〜08、TC-FR-CMP-03-03・06、TC-FR-CMP-01-03〜04 | `internal/core/tactics`、`internal/core` | 実装済み（TC-NFR-07-04 は #9 で `UseItem` の検証 6 に書き換えた。#43 で TC-NFR-07-05 に誤り 3 つを追加し、TC-NFR-07-06 で回復の検証順を確認。#39 でセーブの検証順・I/O 失敗・状態不変を確認） |
 | NFR-09 | #7 | DES-NFR-03 | TC-NFR-09-01〜02 | `.github/workflows/ci.yml` | 実装済み |
 | IF-04 | #38 | DES-PKG-08、DES-SAV-02 | TC-IF-04-01〜06 | `internal/savefile` | 一部実装（#38。保存先の決め方とファイルの操作。起動からの呼び出しと `-savedir` は #40（DES-CMD-02）） |
 | NFR-08 | #38 | DES-PKG-08、DES-SAV-02 | TC-NFR-08-01〜06 | `internal/savefile` | 実装済み |
@@ -52,3 +52,4 @@
 | FR-CMP-05 | #37 | DES-CMP-05、DES-CMP-06 | TC-FR-CMP-05-01 | `internal/core` | 実装済み（離脱と次章での復帰） |
 | FR-CMP-06 | #37 | DES-CMP-05、DES-CMP-06 | TC-FR-CMP-06-01 | `internal/core` | 実装済み（戦死者を名簿に残し、出撃不可・手持ち消失） |
 | FR-CMP-10 | #37 | DES-CMP-06 | TC-FR-CMP-10-01 | `internal/core` | 一部実装（章の結果の生成。表示は #41） |
+| FR-SYS-01 | #39 | DES-SAV-01、DES-SAV-03 | TC-FR-SYS-01-01〜06 | `internal/core/save.go` | 一部実装（#39。JSON の読み書きと検証。自動セーブ・画面からの呼び出しは #40） |
