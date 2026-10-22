@@ -135,14 +135,28 @@ func TestCampaignDeployment(t *testing.T) {
 		}
 	})
 	t.Run("TC-FR-CMP-03-03", func(t *testing.T) {
-		for _, ids := range [][]int{nil, {0, 1, 2, 3}, {-1}, {99}, {0, 0}, {1, 0}, {0, 3}} {
-			c := newCampaign(t, core.Withdraw)
-			c.Roster[3].Alive = false
-			before := campaignSnapshot(c)
-			s, ev, err := c.StartBattle(ids, 1)
-			if !errors.Is(err, core.ErrInvalidDeployment) || s != nil || ev != nil || !reflect.DeepEqual(*c, before) {
-				t.Fatalf("%v: %v", ids, err)
-			}
+		for _, tc := range []struct {
+			name string
+			ids  []int
+			dead bool
+		}{
+			{"空", nil, false},
+			{"枠超過（全員生存）", []int{0, 1, 2, 3}, false},
+			{"範囲外（下限）", []int{-1}, false},
+			{"範囲外（上限）", []int{99}, false},
+			{"重複", []int{0, 0}, false},
+			{"主人公が先頭でない", []int{1, 0}, false},
+			{"戦死", []int{0, 3}, true},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				c := newCampaign(t, core.Withdraw)
+				c.Roster[3].Alive = !tc.dead
+				before := campaignSnapshot(c)
+				s, ev, err := c.StartBattle(tc.ids, 1)
+				if !errors.Is(err, core.ErrInvalidDeployment) || s != nil || ev != nil || !reflect.DeepEqual(*c, before) {
+					t.Fatalf("%v: %v", tc.ids, err)
+				}
+			})
 		}
 		c := newCampaign(t, core.Withdraw)
 		c.Cleared = true

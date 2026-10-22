@@ -242,7 +242,8 @@ func addStats(base, bonus defs.Stats) tactics.Stats {
 	}
 }
 
-// convertWeapon は武器の ID から tactics の武器を作る（DES-CORE-01）。
+// convertWeapon は武器の ID から tactics の武器を作る（DES-CORE-01、DES-HEL-01）。
+// 杖の定義の Uses は MaxUses に渡し、戦闘開始時に tactics.New が満タンにする。
 func convertWeapon(cat *defs.Catalog, id string) (tactics.Weapon, error) {
 	w, ok := cat.Weapon(id)
 	if !ok {
@@ -258,6 +259,8 @@ func convertWeapon(cat *defs.Catalog, id string) (tactics.Weapon, error) {
 		typ = tactics.Axe
 	case defs.WeaponBow:
 		typ = tactics.Bow
+	case defs.WeaponStaff:
+		typ = tactics.Staff
 	default:
 		return tactics.Weapon{}, fmt.Errorf("武器 %q の種類 %q は使えません", id, w.Type)
 	}
@@ -268,6 +271,8 @@ func convertWeapon(cat *defs.Catalog, id string) (tactics.Weapon, error) {
 		Hit:      w.Hit,
 		MinRange: w.MinRange,
 		MaxRange: w.MaxRange,
+		Heal:     w.Heal,
+		MaxUses:  w.Uses,
 	}, nil
 }
 

@@ -12,15 +12,15 @@ import (
 // core.NewBattle の自軍の置き方（DES-CORE-01 の反復 2 の変更）を確かめる。
 // 自軍は game.toml の party の順に、マップの slots の数まで、slots の同じ順の座標に置く。主人公は枠の 1 番目。
 func TestNewBattlePartySlots(t *testing.T) {
-	t.Run("TC-FR-SYS-03-09 本体の 2 章・3 章では、名簿の 4 人が枠の先頭から名簿の順に置かれ、その後ろに敵が続く", func(t *testing.T) {
+	t.Run("TC-FR-SYS-03-09 本体の 2 章・3 章では、名簿の 5 人が枠の先頭から名簿の順に置かれ、その後ろに敵が続く", func(t *testing.T) {
 		cat := loadBase(t)
 		tests := []struct {
 			mapID   string
 			pos     []tactics.Pos
 			enemies int
 		}{
-			{"ch02", []tactics.Pos{{X: 1, Y: 7}, {X: 1, Y: 6}, {X: 1, Y: 8}, {X: 0, Y: 6}}, 8},
-			{"ch03", []tactics.Pos{{X: 7, Y: 14}, {X: 6, Y: 15}, {X: 8, Y: 15}, {X: 7, Y: 15}}, 10},
+			{"ch02", []tactics.Pos{{X: 1, Y: 7}, {X: 1, Y: 6}, {X: 1, Y: 8}, {X: 0, Y: 6}, {X: 0, Y: 8}}, 8},
+			{"ch03", []tactics.Pos{{X: 7, Y: 14}, {X: 6, Y: 15}, {X: 8, Y: 15}, {X: 7, Y: 15}, {X: 8, Y: 14}}, 10},
 		}
 		for _, tt := range tests {
 			b, _, err := core.NewBattle(cat, tt.mapID, 1)
@@ -38,7 +38,7 @@ func TestNewBattlePartySlots(t *testing.T) {
 					t.Errorf("%s: units[%d] = %+v", tt.mapID, i, u)
 				}
 			}
-			if want := []string{"レオン", "ガルド", "ブラン", "ミラ"}; !reflect.DeepEqual(names, want) {
+			if want := []string{"レオン", "ガルド", "ブラン", "ミラ", "リナ"}; !reflect.DeepEqual(names, want) {
 				t.Errorf("%s: 自軍 = %q", tt.mapID, names)
 			}
 			if !units[0].Lord {

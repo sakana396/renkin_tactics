@@ -64,14 +64,15 @@ func TestNewBattleCh01(t *testing.T) {
 			t.Errorf("出来事 = %+v", events)
 		}
 		units := b.Units()
-		if len(units) != 12 {
-			t.Fatalf("ユニットの数 = %d（自軍 4、敵 8）", len(units))
+		if len(units) != 13 {
+			t.Fatalf("ユニットの数 = %d（自軍 5、敵 8）", len(units))
 		}
 		want := []tactics.Unit{
 			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20}, Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: tactics.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5}, HP: 19, Pos: tactics.Pos{X: 1, Y: 14}, Weapon: sword, Items: []tactics.ItemStack{{Item: potion, Count: 2}}, Skill: inspire, Lord: true, Alive: true},
 			{Level: 1, Growth: tactics.Growth{HP: 85, Str: 40, Skl: 20, Spd: 10, Def: 70}, Name: "ガルド", ClassName: "アーマー", Side: tactics.Player, Stats: tactics.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4}, HP: 24, Pos: tactics.Pos{X: 2, Y: 13}, Weapon: lance, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: pavise, Alive: true},
 			{Level: 1, Growth: tactics.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15}, Name: "ブラン", ClassName: "ファイター", Side: tactics.Player, Stats: tactics.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5}, HP: 22, Pos: tactics.Pos{X: 3, Y: 14}, Weapon: axe, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: wrath, Alive: true},
 			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20}, Name: "ミラ", ClassName: "アーチャー", Side: tactics.Player, Stats: tactics.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5}, HP: 17, Pos: tactics.Pos{X: 1, Y: 15}, Weapon: bow, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: snipe, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 0, Skl: 40, Spd: 60, Def: 30}, Name: "リナ", ClassName: "僧侶", Side: tactics.Player, Stats: tactics.Stats{HP: 16, Str: 0, Skl: 2, Spd: 6, Def: 2, Mov: 5}, HP: 16, Pos: tactics.Pos{X: 2, Y: 15}, Weapon: tactics.Weapon{Name: "癒やしの杖", Type: tactics.Staff, Heal: 10, Uses: 15, MaxUses: 15, MinRange: 1, MaxRange: 1}, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Alive: true},
 		}
 		for i, w := range want {
 			if !reflect.DeepEqual(units[i], w) {
@@ -102,11 +103,11 @@ func TestNewBattleCh01(t *testing.T) {
 			{"ソルジャー", boss, lance, tactics.Pos{X: 13, Y: 1}, tactics.Hold, true},
 		}
 		for i, w := range want {
-			u := units[4+i]
+			u := units[5+i]
 			if u.Side != tactics.Enemy || u.ClassName != w.class || u.Stats != w.stats || u.HP != w.stats.HP ||
 				u.Weapon != w.weapon || u.Pos != w.pos || u.AI != w.ai || u.Boss != w.boss || u.Lord ||
 				u.Skill != (tactics.Skill{}) || u.Items != nil || !u.Alive || u.Acted || u.Level != 0 || (w.boss && u.Name != "ハーゲン") {
-				t.Errorf("units[%d] = %+v", 4+i, u)
+				t.Errorf("units[%d] = %+v", 5+i, u)
 			}
 		}
 	})
@@ -114,7 +115,7 @@ func TestNewBattleCh01(t *testing.T) {
 	t.Run("TC-FR-UNT-01-03 敵の名前に、名前のない同じクラスが 2 体以上なら増援も通して番号を付ける", func(t *testing.T) {
 		b, _ := newCh01(t)
 		var got []string
-		for _, u := range b.Units()[4:] {
+		for _, u := range b.Units()[5:] {
 			got = append(got, u.Name)
 		}
 		want := []string{"ソルジャー 1", "ソルジャー 2", "剣士 1", "剣士 2", "ファイター 1", "ファイター 2", "アーチャー", "ハーゲン"}
@@ -168,7 +169,7 @@ func TestNewBattleCh01(t *testing.T) {
 		b, _ := newCh01(t)
 		classWeapon := map[string]tactics.WeaponType{
 			"ロード": tactics.Sword, "アーマー": tactics.Lance, "ファイター": tactics.Axe,
-			"アーチャー": tactics.Bow, "ソルジャー": tactics.Lance, "剣士": tactics.Sword,
+			"僧侶": tactics.Staff, "アーチャー": tactics.Bow, "ソルジャー": tactics.Lance, "剣士": tactics.Sword,
 		}
 		for i, u := range b.Units() {
 			if wt, ok := classWeapon[u.ClassName]; !ok || u.Weapon.Type != wt {
@@ -184,8 +185,8 @@ func TestNewBattleCh01(t *testing.T) {
 		}
 		// 同じクラスでボーナスのない敵は、同じ能力になる。クラスが違えば能力が違う。
 		units := b.Units()
-		if units[4].Stats != units[5].Stats || units[4].Stats == units[6].Stats {
-			t.Errorf("ソルジャー %+v、%+v、剣士 %+v", units[4].Stats, units[5].Stats, units[6].Stats)
+		if units[5].Stats != units[6].Stats || units[5].Stats == units[7].Stats {
+			t.Errorf("ソルジャー %+v、%+v、剣士 %+v", units[5].Stats, units[6].Stats, units[7].Stats)
 		}
 	})
 
@@ -287,13 +288,13 @@ func TestNewBattleCh01(t *testing.T) {
 	t.Run("TC-FR-ITM-03-01 自軍は回復薬を初めから持ち、敵の手持ちも定義のとおりになる", func(t *testing.T) {
 		b, _ := newCh01(t)
 		units := b.Units()
-		for i, wantCount := range []int{2, 1, 1, 1} {
+		for i, wantCount := range []int{2, 1, 1, 1, 1} {
 			want := []tactics.ItemStack{{Item: potion, Count: wantCount}}
 			if !reflect.DeepEqual(units[i].Items, want) {
 				t.Errorf("%s の手持ち = %+v, want %+v", units[i].Name, units[i].Items, want)
 			}
 		}
-		for _, u := range units[4:] {
+		for _, u := range units[5:] {
 			if len(u.Items) != 0 {
 				t.Errorf("%s の手持ち = %+v（ch01 の敵は持たない）", u.Name, u.Items)
 			}
