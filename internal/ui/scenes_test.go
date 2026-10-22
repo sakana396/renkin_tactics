@@ -170,7 +170,8 @@ func winScene(t *testing.T, s *SceneController) {
 	if s.Scene() != Prepare {
 		t.Fatal(s.Scene())
 	}
-	s.Advance()
+	clickSceneButton(t, s, "配置へ")
+	clickSceneButton(t, s, "戦闘開始")
 	c := s.BattleController()
 	playOut(c)
 	c.Click(tactics.Pos{X: 0, Y: 0})
@@ -371,7 +372,8 @@ func TestBattleScenes(t *testing.T) {
 			}
 			s.campaign.Roster[0].Stats.HP = 1
 			s.campaign.Roster[0].Stats.Def = 0
-			s.Advance()
+			clickSceneButton(t, s, "配置へ")
+			clickSceneButton(t, s, "戦闘開始")
 			playOut(s.battle)
 			s.battle.EndPhase()
 			s.battle.EndPhase()
@@ -392,7 +394,8 @@ func TestBattleScenes(t *testing.T) {
 			if s.Scene() != Prepare || !bytes.Equal(b.Bytes(), baseline) || m.writes != 1 {
 				t.Fatal("章の始めへ戻らない")
 			}
-			s.Advance()
+			clickSceneButton(t, s, "配置へ")
+			clickSceneButton(t, s, "戦闘開始")
 			if s.Scene() != Battle || !s.sortie.Battle.Units()[0].Alive || s.sortie.Battle.Units()[0].HP != 20 {
 				t.Fatal("再出撃できない")
 			}

@@ -83,7 +83,7 @@ func (s *SceneController) choosePrepare(i int) {
 	case i < len(stock)+len(hand):
 		err = s.campaign.StoreItem(s.prepareMember, hand[i-len(stock)].Item)
 	case i == len(stock)+len(hand):
-		s.StartBattle(s.SelectedMembers())
+		s.enterDeploy()
 		return
 	default:
 		return
@@ -145,7 +145,7 @@ func (s *SceneController) prepareView() SceneView {
 			v.Buttons = append(v.Buttons, SceneButton{prefix + it.Name, image.Rect(16+col*248, y+n*40, 252+col*248, y+n*40+36), true})
 		}
 	}
-	v.Buttons = append(v.Buttons, SceneButton{"出撃", image.Rect(360, 528, 504, 568), true})
+	v.Buttons = append(v.Buttons, SceneButton{"配置へ", image.Rect(360, 528, 504, 568), true})
 	info := s.prepareInfo()
 	v.Info = &info
 	return v

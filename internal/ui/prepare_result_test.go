@@ -64,7 +64,7 @@ func TestPrepare(t *testing.T) {
 		if len(v.Rows) != 4 || s.prepareMember != 2 || !reflect.DeepEqual(s.SelectedMembers(), []int{2, 0, 3, 4}) {
 			t.Fatal(v.Rows, s.SelectedMembers(), s.prepareMember)
 		}
-		if !strings.Contains(viewStrings(v), "出撃 4/5") || len(v.Icons) != 4 || v.Info == nil {
+		if !strings.Contains(viewStrings(v), "出撃 4/5") || len(v.Icons) != 4 || v.Info == nil || v.Buttons[len(v.Buttons)-1].Label != "配置へ" {
 			t.Fatal(v)
 		}
 		for _, tx := range v.Info.Texts {
@@ -129,7 +129,11 @@ func TestPrepare(t *testing.T) {
 		}
 		seeds := 0
 		s.cfg.NextSeed = func() uint64 { seeds++; return 71 }
-		clickSceneButton(t, s, "出撃")
+		clickSceneButton(t, s, "配置へ")
+		if s.Scene() != Deploy || seeds != 0 {
+			t.Fatal("配置へ進まない、または配置中に種を取得", s.Scene(), seeds)
+		}
+		clickSceneButton(t, s, "戦闘開始")
 		if seeds != 1 {
 			t.Fatal("種の取得回数", seeds)
 		}

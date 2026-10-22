@@ -37,6 +37,7 @@ const (
 	Result
 	GameOver
 	Clear
+	Deploy
 )
 
 // SceneController は描画や OS 入力から独立した場面の進行（DES-UI-09）。
@@ -60,6 +61,9 @@ type SceneController struct {
 	paragraph        int
 	joined           int
 	prepareMember    int
+	deployMembers    []int
+	deploySlots      []int
+	deploySelected   int
 	deployment       map[int]bool
 }
 
@@ -186,6 +190,8 @@ func (s *SceneController) Choose(i int) {
 		s.beforeStory()
 	case Prepare:
 		s.choosePrepare(i)
+	case Deploy:
+		s.chooseDeploy(i)
 	case GameOver:
 		switch i {
 		case 2:
@@ -261,7 +267,7 @@ func (s *SceneController) Advance() {
 			s.enterPrepare()
 		}
 	case Prepare:
-		s.StartBattle(s.SelectedMembers())
+		s.enterDeploy()
 	case Battle:
 		if s.battle == nil || (s.battle.State() != Over || s.battle.rewind.open) {
 			return
@@ -289,13 +295,20 @@ func (s *SceneController) Advance() {
 	}
 }
 
-// Cancel はルール選択の取消しと、物語の残りの省略（DES-UI-11、12）。
+// Cancel はルール選択の取消し、物語の省略、配置の解除と準備への戻り（DES-UI-11、12、20）。
 func (s *SceneController) Cancel() {
 	if (s.scene == Battle || s.scene == GameOver) && s.battle != nil && s.battle.rewind.open {
 		s.battle.Cancel()
 		return
 	}
 	switch s.scene {
+	case Deploy:
+		if s.deploySelected >= 0 {
+			s.deploySelected = -1
+			s.message = ""
+		} else {
+			s.leaveDeploy()
+		}
 	case RuleSelect:
 		s.enterTitle("")
 	case Story:
@@ -307,12 +320,12 @@ func (s *SceneController) Cancel() {
 	}
 }
 
-// StartBattle は準備で選んだ名簿から戦闘の Controller を作る（DES-CMP-05、DES-UI-09）。
-func (s *SceneController) StartBattle(members []int) {
-	if s.scene != Prepare {
+// startDeployedBattle は配置を確定して戦闘の Controller を作る（DES-UI-20）。
+func (s *SceneController) startDeployedBattle() {
+	if s.scene != Deploy {
 		return
 	}
-	sortie, events, err := s.campaign.StartBattle(members, s.cfg.NextSeed())
+	sortie, events, err := s.campaign.StartBattleAt(s.deployMembers, s.deploySlots, s.cfg.NextSeed())
 	if err != nil {
 		s.message = err.Error()
 		return
@@ -351,4 +364,11 @@ func (s *SceneController) BattleGuide() []string {
 		lines = append(lines, s.message)
 	}
 	return lines
+}
+
+// rewindKey は戦闘と敗北の選択だけで巻き戻しのキーを受け付ける（DES-UI-19、DES-UI-20）。
+func (s *SceneController) rewindKey(key string) {
+	if (s.scene == Battle || s.scene == GameOver) && s.battle != nil {
+		s.battle.rewindKey(key)
+	}
 }

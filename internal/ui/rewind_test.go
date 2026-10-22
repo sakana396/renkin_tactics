@@ -209,7 +209,8 @@ func TestRewindScene(t *testing.T) {
 		startScenes(s)
 		s.campaign.Roster[0].Stats.HP = 1
 		s.campaign.Roster[0].Stats.Def = 0
-		s.Advance()
+		clickSceneButton(t, s, "配置へ")
+		clickSceneButton(t, s, "戦闘開始")
 		playOut(s.battle)
 		s.battle.EndPhase()
 		s.battle.EndPhase()
@@ -423,4 +424,32 @@ func checkResumeLayout(t *testing.T, c *Controller) {
 			}
 		}
 	}
+}
+
+func TestRewindSceneEntry(t *testing.T) {
+	t.Run("TC-FR-BTL-10-12 巻き戻しのキーとボタンは戦闘と敗北の選択だけ", func(t *testing.T) {
+		for _, scene := range []Scene{Title, RuleSelect, Story, Joined, Prepare, Deploy, Battle, Result, GameOver, Clear} {
+			for _, input := range []string{"T", "ボタン"} {
+				s := fixtureScenes(&memoryStore{}, true, true)
+				startScenes(s)
+				s.Cancel()
+				clickSceneButton(t, s, "配置へ")
+				s.storyChapter = 1
+				// 以前の戦闘が残っていても、配置などの場面から開かない。
+				c := newIdle(t)
+				s.battle = c
+				s.scene = scene
+				if input == "T" {
+					s.rewindKey("T")
+				} else {
+					r := c.RewindView().Buttons[0].Rect
+					s.Click(r.Min.X+r.Dx()/2, r.Min.Y+r.Dy()/2)
+				}
+				want := scene == Battle || scene == GameOver
+				if c.rewind.open != want {
+					t.Fatalf("場面 %v、入力 %s: 開いた=%v、期待=%v", scene, input, c.rewind.open, want)
+				}
+			}
+		}
+	})
 }
