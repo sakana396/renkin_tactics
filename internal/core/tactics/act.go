@@ -27,6 +27,12 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 		}
 	}
 
+	// 検証成功後、移動の前に記録する（DES-RWD-01）。
+	target := -1
+	if cmd.Action == Attack || cmd.Action == Heal {
+		target = cmd.Target
+	}
+	record := b.beginHistory(historyEntry{Kind: historyAction, Action: cmd.Action, Unit: cmd.Unit, Target: target, To: cmd.To})
 	// ここから状態を変える。まず移動する。
 	var events []Event
 	u := &b.units[cmd.Unit]
@@ -47,11 +53,12 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 		events = b.healWithStaff(events, cmd.Unit, cmd.Target)
 	}
 
+	b.finishHistory(record)
 	if b.Result != Ongoing {
 		return events, nil
 	}
 	if b.allPlayersActed() {
-		events = b.runEnemyPhase(events)
+		events = b.runEnemyPhase(events, true)
 	}
 	return events, nil
 }
@@ -94,7 +101,7 @@ func (b *Battle) EndPhase() ([]Event, error) {
 	if b.Phase != Player {
 		return nil, ErrNotPlayerPhase
 	}
-	return b.runEnemyPhase(nil), nil
+	return b.runEnemyPhase(nil, false), nil
 }
 
 // allPlayersActed は、生きている自軍が全員行動済みかを返す。
@@ -120,8 +127,10 @@ func (b *Battle) startPlayerPhase(events []Event) []Event {
 	return b.healOnForts(events, Player)
 }
 
-// runEnemyPhase は敵軍の番を始めから終わりまで進め、次のターンの自軍の番を始める（DES-BTL-02）。
-func (b *Battle) runEnemyPhase(events []Event) []Event {
+// runEnemyPhase は敵軍の番と次の自軍の番の始めまで進め、処理ごとの行動前を記録する（DES-BTL-02、DES-RWD-01）。
+func (b *Battle) runEnemyPhase(events []Event, automatic bool) []Event {
+	b.progress = phaseProgress{stage: enemyStart, automatic: automatic}
+	record := b.beginHistory(historyEntry{Kind: historyEndPhase, Unit: -1, Target: -1, Automatic: automatic})
 	// 敵軍の番の始め: PhaseStart → 増援 → 砦の回復。
 	b.Phase = Enemy
 	events = b.emit(events, Event{Kind: EventPhaseStart, Side: Enemy, Turn: b.Turn})
@@ -130,17 +139,36 @@ func (b *Battle) runEnemyPhase(events []Event) []Event {
 	events = b.placeReinforcements(events)
 	events = b.healOnForts(events, Enemy)
 
+	b.progress = phaseProgress{stage: enemyAction, enemyCount: n}
+	b.finishHistory(record)
 	// 敵軍の番: 生きている敵を添字の順に 1 体ずつ動かす。
 	for i := 0; i < n; i++ {
 		if b.Result != Ongoing {
 			return events
 		}
 		if u := b.units[i]; u.Alive && u.Side == Enemy {
+			b.progress.nextEnemy = i
+			record = b.beginHistory(historyEntry{Kind: historyAction, Unit: i, Target: -1, To: u.Pos})
+			eventStart := len(events)
 			if b.actEnemyOverride != nil {
 				events = b.actEnemyOverride(events, i)
 			} else {
 				events = b.actEnemy(events, i)
 			}
+			// 敵の選択は従来どおり一度だけ実行し、出来事から一覧の要約を得る。
+			for _, e := range events[eventStart:] {
+				if e.Kind == EventMove {
+					b.history[record].entry.To = e.To
+				}
+				if e.Kind == EventStrike && e.Unit == i {
+					b.history[record].entry.Action = Attack
+					b.history[record].entry.Target = e.Target
+					b.history[record].entry.TargetName = b.units[e.Target].Name
+					break
+				}
+			}
+			b.progress.nextEnemy = i + 1
+			b.finishHistory(record)
 		}
 	}
 	if b.Result != Ongoing {
@@ -148,8 +176,13 @@ func (b *Battle) runEnemyPhase(events []Event) []Event {
 	}
 
 	// 敵軍の番の終わり: ターンを進め、自軍の番を始める。
+	b.progress = phaseProgress{stage: playerStart}
+	record = b.beginHistory(historyEntry{Kind: historyPlayerStart, Unit: -1, Target: -1})
 	b.Turn++
-	return b.startPlayerPhase(events)
+	events = b.startPlayerPhase(events)
+	b.progress = phaseProgress{}
+	b.finishHistory(record)
+	return events
 }
 
 // placeReinforcements は、このターンの増援を、増援の定義の順に置く（DES-MAP-03）。
