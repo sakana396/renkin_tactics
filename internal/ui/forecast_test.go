@@ -104,25 +104,26 @@ func textsAt(v InfoView, x, y int) []InfoText {
 	return out
 }
 
-// sideMarks は、列 colX の武器の絵の右に置いた相性の印（2 倍）と、その右の「撃破」「危険」（絵の高さの真ん中）の文を返す。
-// なければ空の InfoText。
+// sideMarks は武器の右の相性の印と、その側が倒れる予測の帯の見出しを返す。
 func sideMarks(t *testing.T, v InfoView, colX int) (mark, badge InfoText) {
 	t.Helper()
-	for i, at := range [][2]int{{colX + weaponTextX, iconRowY}, {colX + forecastBadgeX, iconRowY + (WeaponIconSize-lineHeight)/2}} {
-		x, y := at[0], at[1]
-		got := textsAt(v, x, y)
-		if len(got) > 1 {
-			t.Fatalf("(%d, %d) に文が %d 個: %+v", x, y, len(got), got)
-		}
-		if len(got) == 1 {
-			if i == 0 {
-				mark = got[0]
-			} else {
-				badge = got[0]
-			}
+	y := iconRowY
+	if v.Banner != nil {
+		y += 44
+	}
+	got := textsAt(v, colX+weaponTextX, y)
+	if len(got) > 1 {
+		t.Fatalf("印が重複: %+v", got)
+	}
+	if len(got) == 1 {
+		mark = got[0]
+	}
+	for _, tx := range v.Texts {
+		if (colX == attackColX && tx.Text == "危険") || (colX == defendColX && tx.Text == "撃破") {
+			badge = tx
 		}
 	}
-	return mark, badge
+	return
 }
 
 func TestForecastVisual(t *testing.T) {
@@ -164,7 +165,7 @@ func TestForecastVisual(t *testing.T) {
 					want string
 				}{{attackColX, tc.attackerBadge}, {defendColX, tc.defenderBadge}} {
 					_, badge := sideMarks(t, v, side.col)
-					if badge.Text != side.want || (side.want != "" && badge.Style != StyleAlert) {
+					if badge.Text != side.want || (side.want != "" && !badge.Big) {
 						t.Errorf("列 %d の「撃破」「危険」 = %+v、%q のはず", side.col, badge, side.want)
 					}
 				}
@@ -235,9 +236,13 @@ func TestForecastVisual(t *testing.T) {
 			target(t, c, tc.unit, tc.target)
 			v := c.Panel(tc.target, true).View()
 			// 武器の絵は、両側の列の頭（見出しの下）に 32 px で描く。
+			iconY := iconRowY
+			if v.Banner != nil {
+				iconY += 44
+			}
 			icons := []InfoIcon{
-				{X: attackColX, Y: iconRowY, Size: WeaponIconSize, Tile: tc.weapons[0]},
-				{X: defendColX, Y: iconRowY, Size: WeaponIconSize, Tile: tc.weapons[1]},
+				{X: attackColX, Y: iconY, Size: WeaponIconSize, Tile: tc.weapons[0]},
+				{X: defendColX, Y: iconY, Size: WeaponIconSize, Tile: tc.weapons[1]},
 			}
 			if len(v.Icons) < 2 || !reflect.DeepEqual(v.Icons[:2], icons) {
 				t.Errorf("%s: 武器の絵 = %+v\nのはず %+v", tc.name, v.Icons, icons)
@@ -292,6 +297,8 @@ func TestForecastVisual(t *testing.T) {
 			want         string
 		}{
 			{"計算例 1（追撃 ×2）", example1Setup, tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3}, "5×2 63%"},
+			{"危険（追撃 ×2）", example1HP(9), tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3}, "危険 5×2 63%"},
+			{"撃破（1 回）", example2Setup(10), tactics.Pos{X: 2, Y: 2}, tactics.Pos{X: 3, Y: 2}, "撃破 13 45%"},
 			{"計算例 4（1 回）", example4Setup, tactics.Pos{X: 2, Y: 2}, tactics.Pos{X: 3, Y: 2}, "9 73%"},
 			{"反撃なしの相手（1 回）", archerSetup, tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3}, "8 94%"},
 		} {
@@ -358,6 +365,9 @@ func TestForecastVisual(t *testing.T) {
 			t.Errorf("HP・必殺の行 = %q、%q", p.Forecast[1], p.Forecast[5])
 		}
 		v := p.View()
+		if m := c.TargetView(); !m.Danger || m.DangerPos != (tactics.Pos{X: 4, Y: 2}) || m.Style != StyleBad {
+			t.Errorf("移動後の危険枠 = %+v", m)
+		}
 		if _, badge := sideMarks(t, v, attackColX); badge.Text != "危険" {
 			t.Errorf("ブランの列 = %+v、「危険」のはず", badge)
 		}
@@ -381,8 +391,11 @@ func TestForecastVisual(t *testing.T) {
 			p := c.Panel(tc.target, true)
 			v := p.View()
 			bottom := forecastBottom(len(p.Forecast))
+			if v.Banner != nil {
+				bottom += 44
+			}
 			for _, tx := range v.Texts {
-				if tx.Y >= bottom {
+				if tx.Y >= bottom || (v.Banner != nil && tx.Y < v.Banner.Rect.Max.Y) {
 					continue
 				}
 				right := tx.X + textWidth(tx.Text)
@@ -400,7 +413,7 @@ func TestForecastVisual(t *testing.T) {
 				// 絵の右に置く印（2 倍）と「撃破」「危険」は、絵とも互いとも重ならない。表の文は絵より下に置く。
 				if tx.Big {
 					for _, o := range v.Texts {
-						if o.Style == StyleAlert && o.Y < tx.Y+2*lineHeight && o.X < right && o.X+textWidth(o.Text) > tx.X {
+						if (o.Text == "撃破" || o.Text == "危険") && o.Y < tx.Y+2*lineHeight && o.X < right && o.X+textWidth(o.Text) > tx.X {
 							t.Errorf("印 %+v と %+v が重なる", tx, o)
 						}
 					}

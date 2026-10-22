@@ -249,7 +249,11 @@ func (g *Game) drawSelection(dst *ebiten.Image) {
 	case Moved, ItemMenu:
 		strokeCell(dst, dest, cursorColor)
 	case Targeting:
-		strokeCell(dst, dest, cursorColor)
+		clr := cursorColor
+		if c.TargetView().Danger {
+			clr = badColor
+		}
+		strokeCell(dst, dest, clr)
 		for _, t := range c.Targets() {
 			clr := targetColor
 			if t == target {
@@ -267,8 +271,8 @@ func strokeCell(dst *ebiten.Image, p tactics.Pos, clr color.Color) {
 // drawTargetLabel は、選んだ相手のマスの上に「ダメージ×回数 命中率%」を、出来事の文字と同じ形（popup）で出す（DES-UI-07）。
 // 相手を選ぶ前は出さない。
 func (g *Game) drawTargetLabel(dst *ebiten.Image) {
-	if s, p, ok := g.ctrl.TargetLabel(); ok {
-		g.popup(dst, s, p, white)
+	if v := g.ctrl.TargetView(); v.Visible {
+		g.popup(dst, v.Text, v.Pos, infoStyleColor(v.Style))
 	}
 }
 
@@ -350,6 +354,9 @@ func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 	p := g.ctrl.Panel(CellAt(cx, cy))
 	// 予測・ユニット・地形は、位置を決めた InfoView のとおりに描く（DES-UI-06、DES-UI-07）。
 	v := p.View()
+	if b := v.Banner; b != nil {
+		vector.DrawFilledRect(dst, float32(b.Rect.Min.X), float32(b.Rect.Min.Y), float32(b.Rect.Dx()), float32(b.Rect.Dy()), infoStyleColor(b.Style), false)
+	}
 	for _, ic := range v.Icons {
 		g.drawTileSize(dst, ic.Tile, ic.X, ic.Y, ic.Size)
 	}
@@ -387,8 +394,8 @@ func infoStyleColor(s InfoStyle) color.Color {
 		return goodColor
 	case StyleBad:
 		return badColor
-	case StyleAlert:
-		return dangerColor
+	case StyleBlack:
+		return color.Black
 	case StyleTitle:
 		return gold
 	case StyleLabel:
