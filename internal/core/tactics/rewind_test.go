@@ -214,8 +214,12 @@ func TestRewindResume(t *testing.T) {
 						t.Fatal("番処理を重ねたか省略した")
 					}
 					wantUnits := 4
+					wantPos := Pos{2, 1}
 					if blocked {
-						wantUnits = 3
+						wantPos = Pos{1, 0}
+					}
+					if b.units[3].Pos != wantPos {
+						t.Fatal("占有時も固定順の代替位置へ出ない")
 					}
 					if len(b.units) != wantUnits || b.Turn != 2 || b.units[1].HP != 60 || b.units[1].Acted {
 						t.Fatal("増援・砦・Turn・Acted が不正")

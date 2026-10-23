@@ -987,7 +987,7 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 		v.add(f, p+".enemies", "boss = true の敵を、ちょうど 1 体置いてください（%d 体）", bosses)
 	}
 
-	// 増援（規則 3、4、5、6、9、11、12、19、22）。増援は初めの配置と重なってもよい（現れるときにふさがっていれば現れない）。
+	// 増援（規則 3、4、5、6、9、11、12、19、22）。増援は初めの配置と重なってもよい（出現時は距離 2 以内の立てる空きマスを距離・Y・X の順で選び、候補なしなら出さず延期しない（DES-MAP-03））。
 	for j, e := range r.Reinforcements {
 		q := fmt.Sprintf("%s.reinforcements[%d]", p, j)
 		ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapon: e.Weapon, Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Boss: e.Boss, X: e.X, Y: e.Y}
