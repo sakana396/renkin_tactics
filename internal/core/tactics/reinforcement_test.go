@@ -170,7 +170,7 @@ func TestAlternativeReinforcements(t *testing.T) {
 			}
 			id := b.History()[0].ID
 			rewindTo(t, b, id)
-			resumed, err := b.Resume()
+			resumed, err := b.EndPhase()
 			if err != nil || !reflect.DeepEqual(events, resumed) || !reflect.DeepEqual(after, b.snapshot()) {
 				t.Fatal("再開で結果が変化")
 			}
@@ -373,7 +373,7 @@ func TestReinforcementHints(t *testing.T) {
 				t.Fatal("復元と予兆が不一致")
 			}
 			assertReinforcementFailures(t, b)
-			resumed, err := b.Resume()
+			resumed, err := b.EndPhase()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -393,7 +393,7 @@ func TestReinforcementHints(t *testing.T) {
 				if err != nil || len(v.ReinforcementHints()) != 0 {
 					t.Fatal("処理後に予兆")
 				}
-				rewindTo(t, b, h.ID)
+				restoreHistoryForResume(t, b, h.ID)
 				if _, err := b.Resume(); err != nil || !reflect.DeepEqual(after, b.snapshot()) {
 					t.Fatal("処理後の再開が不正")
 				}

@@ -135,15 +135,32 @@ func (b *Battle) startPlayerPhase(events []Event) []Event {
 
 // runEnemyPhase は敵軍の番と次の自軍の番の始めまで進め、処理ごとの行動前を記録する（DES-BTL-02、DES-RWD-01）。
 func (b *Battle) runEnemyPhase(events []Event, automatic bool) []Event {
+	// 明示の番終了だけは、自動進行へ移る前の入力待ちを保存する（DES-IT04 7.1 節）。
+	var before *battleSnapshot
+	if !automatic {
+		s := b.snapshot()
+		before = &s
+	}
 	b.progress = phaseProgress{stage: enemyStart, automatic: automatic}
-	return b.continuePhase(events)
+	return b.continuePhaseBefore(events, before)
 }
 
 // continuePhase は通常進行と巻き戻し後の再開で同じ番処理を使う（DES-RWD-02、DES-BTL-02）。
 func (b *Battle) continuePhase(events []Event) []Event {
+	return b.continuePhaseBefore(events, nil)
+}
+
+// continuePhaseBefore は明示の番終了の写しを渡し、敵軍開始の履歴を一度だけ作る（DES-RWD-01・02）。
+func (b *Battle) continuePhaseBefore(events []Event, before *battleSnapshot) []Event {
 	if b.progress.stage == enemyStart {
 		automatic := b.progress.automatic
-		record := b.beginHistory(historyEntry{Kind: historyEndPhase, Unit: -1, Target: -1, Automatic: automatic})
+		var snapshot battleSnapshot
+		if before != nil {
+			snapshot = *before
+		} else {
+			snapshot = b.snapshot()
+		}
+		record := b.beginHistoryBefore(historyEntry{Kind: historyEndPhase, Unit: -1, Target: -1, Automatic: automatic}, snapshot)
 		// 敵軍の番の始め: PhaseStart → 増援 → 砦の回復。
 		b.Phase = Enemy
 		events = b.emit(events, Event{Kind: EventPhaseStart, Side: Enemy, Turn: b.Turn})

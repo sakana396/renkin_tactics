@@ -41,19 +41,15 @@ func (c *Controller) refreshHints() {
 
 // ReinforcementHintView は通常の盤面の増援の気配を返す（DES-UI-24）。
 // 出来事の再生中・勝敗の確定後（Over）・巻き戻しの一覧を開いている間は隠す。
-// 案内は案内欄の 3 行目の右端に出す。再開待ちで再開ボタン（y=550〜）があるときは 2 行目の右端に出す。
+// 案内は自軍入力待ちの案内欄の 3 行目の右端に出す（DES-IT04 7.4 節）。
 func (c *Controller) ReinforcementHintView() HintView {
 	if c.state == Playing || c.state == Over || c.rewind.open || len(c.hints) == 0 {
 		return HintView{}
 	}
-	row := 2
-	if c.battle.NeedsResume() {
-		row = 1
-	}
 	return HintView{
 		Visible: true,
 		Areas:   append([]tactics.ReinforcementHint(nil), c.hints...),
-		Text:    SceneText{Text: hintText, X: MapSize - 8 - textWidth(hintText), Y: MapSize + 2 + row*lineHeight, Style: StyleHint},
+		Text:    SceneText{Text: hintText, X: MapSize - 8 - textWidth(hintText), Y: MapSize + 2 + 2*lineHeight, Style: StyleHint},
 	}
 }
 

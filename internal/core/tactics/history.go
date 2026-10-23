@@ -58,6 +58,11 @@ func (b *Battle) historyEntries() []historyEntry {
 
 // beginHistory は検証後、変更の直前に戻り先を記録する（DES-RWD-01）。
 func (b *Battle) beginHistory(e historyEntry) int {
+	return b.beginHistoryBefore(e, b.snapshot())
+}
+
+// beginHistoryBefore は番終了直前に取得した写しも、同じ出来事境界で記録する（DES-RWD-01）。
+func (b *Battle) beginHistoryBefore(e historyEntry, before battleSnapshot) int {
 	e.ID = b.nextHistoryID
 	b.nextHistoryID++
 	e.Turn = b.Turn
@@ -74,7 +79,7 @@ func (b *Battle) beginHistory(e historyEntry) int {
 	if b.validUnit(e.Target) {
 		e.TargetName = b.units[e.Target].Name
 	}
-	b.history = append(b.history, historyRecord{entry: e, before: b.snapshot()})
+	b.history = append(b.history, historyRecord{entry: e, before: before})
 	return len(b.history) - 1
 }
 

@@ -117,6 +117,9 @@ func TestRewindResume(t *testing.T) {
 			if waiting {
 				b.units[0].Pos = Pos{0, 0}
 			}
+			cmd := Command{Unit: 1, To: Pos{0, 1}, Action: Wait}
+			rewindAct(t, b, cmd)
+			boundary := b.eventCount
 			ev, err := b.EndPhase()
 			if err != nil {
 				t.Fatal(err)
@@ -131,7 +134,7 @@ func TestRewindResume(t *testing.T) {
 			if h.ID == 0 || (waiting && h.Action != Wait) || (!waiting && b.units[3].AI != Charge) {
 				t.Fatal("敵 B の待機・Hold 変化を通っていない")
 			}
-			rewindTo(t, b, h.ID)
+			restoreHistoryForResume(t, b, h.ID)
 			if !b.NeedsResume() || b.units[3].AI != Hold {
 				t.Fatal("敵 B の行動前に戻らない")
 			}
@@ -145,9 +148,15 @@ func TestRewindResume(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			// EventStart は New を含む通し添字。EndPhase の返却列は 1 から始まる。
-			if !reflect.DeepEqual(got, ev[h.EventStart-1:]) || !reflect.DeepEqual(b.snapshot(), after) || b.NeedsResume() {
+			// 出来事の通し添字から、番終了前までの境界を引く。
+			if !reflect.DeepEqual(got, ev[h.EventStart-boundary:]) || !reflect.DeepEqual(b.snapshot(), after) || b.NeedsResume() {
 				t.Fatal("敵 A を重ねたか、敵 B からの展開が変わった")
+			}
+			rewindTo(t, b, b.History()[0].ID)
+			rewindAct(t, b, cmd)
+			again, err := b.EndPhase()
+			if err != nil || !reflect.DeepEqual(again, ev) || !reflect.DeepEqual(after, b.snapshot()) {
+				t.Fatal("自軍行動からの公開巻き戻しの再現が不正")
 			}
 		}
 	})
@@ -186,25 +195,33 @@ func TestRewindResume(t *testing.T) {
 					if h.ID == 0 {
 						t.Fatal("番境界がない")
 					}
-					rewindTo(t, b, h.ID)
-					if !b.NeedsResume() {
-						t.Fatal("再開待ちにならない")
+					restoreHistoryForResume(t, b, h.ID)
+					if b.NeedsResume() != (automatic || kind != HistoryEndPhase) {
+						t.Fatal("入力待ち・再開待ちの区別が不正")
 					}
 					if kind == HistoryEndPhase {
 						if b.Phase != Player || b.Turn != 1 || b.units[2].HP != 40 {
 							t.Fatal("敵番開始前へ戻らない")
 						}
-						if _, err := b.EndPhase(); !errors.Is(err, ErrResumeRequired) {
-							t.Fatal(err)
-						}
-						if _, err := b.Act(Command{Unit: 1, To: Pos{0, 1}, Action: Wait}); !errors.Is(err, ErrResumeRequired) {
-							t.Fatal(err)
+						if automatic {
+							if _, err := b.EndPhase(); !errors.Is(err, ErrResumeRequired) {
+								t.Fatal(err)
+							}
+							if _, err := b.Act(Command{Unit: 1, To: Pos{0, 1}, Action: Wait}); !errors.Is(err, ErrResumeRequired) {
+								t.Fatal(err)
+							}
 						}
 					}
 					if kind == HistoryPlayerStart && (b.Turn != 1 || b.units[1].HP != 40) {
 						t.Fatal("自軍番開始前へ戻らない")
 					}
-					got, err := b.Resume()
+					var got []Event
+					var err error
+					if !automatic && kind == HistoryEndPhase {
+						got, err = b.EndPhase()
+					} else {
+						got, err = b.Resume()
+					}
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -347,7 +364,15 @@ func TestRewindErrorsAndBranch(t *testing.T) {
 		if _, err := b.EndPhase(); err != nil {
 			t.Fatal(err)
 		}
-		rewindTo(t, b, b.History()[0].ID)
+		restoreHistoryForResume(t, b, b.History()[1].ID)
+		assertRewindFailure(t, b, ErrNotPlayerPhase, func() error { _, err := b.EndPhase(); return err })
+		assertRewindFailure(t, b, ErrNotPlayerPhase, func() error { _, err := b.Act(Command{Action: Wait}); return err })
+		pending := b.snapshot()
+		pending.progress = phaseProgress{stage: enemyStart}
+		pending.Phase = Player
+		if err := b.restore(pending); err != nil {
+			t.Fatal(err)
+		}
 		assertRewindFailure(t, b, ErrResumeRequired, func() error { _, err := b.EndPhase(); return err })
 		assertRewindFailure(t, b, ErrResumeRequired, func() error { _, err := b.Act(Command{Action: Wait}); return err })
 	})
@@ -394,7 +419,9 @@ func TestRewindErrorsAndBranch(t *testing.T) {
 			} else {
 				b.units[2].HP = 1
 			}
-			// 敵軍中の主人公撃破、または主人公の反撃によるボス撃破。
+			// 自軍行動を用意し、敵軍中の主人公撃破、または反撃でボス撃破。
+			cmd := Command{Unit: 1, To: Pos{0, 1}, Action: Wait}
+			rewindAct(t, b, cmd)
 			if _, err := b.EndPhase(); err != nil {
 				t.Fatal(err)
 			}
@@ -406,12 +433,13 @@ func TestRewindErrorsAndBranch(t *testing.T) {
 				t.Fatal("勝敗または終了後の再開待ちが不正")
 			}
 			assertRewindFailure(t, b, ErrNoPendingResume, func() error { _, err := b.Resume(); return err })
-			h := b.History()[1]
+			h := b.History()[0]
 			rewindTo(t, b, h.ID)
-			if b.Result != Ongoing || !b.NeedsResume() || !b.units[0].Alive || !b.units[2].Alive {
+			if b.Result != Ongoing || b.NeedsResume() || !b.units[0].Alive || !b.units[2].Alive {
 				t.Fatal("勝敗決定前へ復帰できない")
 			}
-			if _, err := b.Resume(); err != nil {
+			rewindAct(t, b, cmd)
+			if _, err := b.EndPhase(); err != nil {
 				t.Fatal(err)
 			}
 			if b.Result != want || b.NeedsResume() {
@@ -419,4 +447,30 @@ func TestRewindErrorsAndBranch(t *testing.T) {
 			}
 		}
 	})
+}
+
+// restoreHistoryForResume は公開操作の拒否とプレビューを検査し、内部の継続位置だけを復元する（DES-IT04 7.1 節）。
+func restoreHistoryForResume(t *testing.T, b *Battle, id uint64) {
+	t.Helper()
+	for i, h := range b.history {
+		if h.entry.ID != id {
+			continue
+		}
+		if h.entry.Side == Player && (h.entry.Kind == HistoryAction || h.entry.Kind == HistoryEndPhase && !h.entry.Automatic) {
+			rewindTo(t, b, id)
+			return
+		}
+		v, err := b.PreviewRewind(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertBoard(t, v, h.before)
+		assertRewindFailure(t, b, ErrInvalidRewind, func() error { return b.Rewind(id) })
+		if err := b.restore(h.before); err != nil {
+			t.Fatal(err)
+		}
+		b.history = b.history[:i]
+		return
+	}
+	t.Fatal("内部復元のIDなし")
 }

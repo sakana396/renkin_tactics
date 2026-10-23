@@ -43,6 +43,7 @@ func TestRewindUI(t *testing.T) {
 		if c.rewind.selected != len(h)-1 {
 			t.Fatal("末尾")
 		}
+		c.rewindSelect(0)
 		c.RewindEnter()
 		if !c.rewind.confirm {
 			t.Fatal("確認なし")
@@ -57,13 +58,7 @@ func TestRewindUI(t *testing.T) {
 		}
 		for i := 0; i < 10; i++ {
 			c.OpenRewind()
-			c.RewindMove(-100)
-			c.RewindEnter()
-			c.RewindEnter()
-			c.Resume()
-			c.EndPhase()
-			c.EndPhase()
-			playOut(c)
+			consumeExplicitRewind(t, c, i)
 		}
 		c.OpenRewind()
 		c.RewindEnter()
@@ -71,7 +66,7 @@ func TestRewindUI(t *testing.T) {
 			t.Fatal("0 回の表示")
 		}
 		for _, b := range c.RewindView().Buttons {
-			if b.Label == "この前へ" && b.Enabled {
+			if b.Label == "決定" && b.Enabled {
 				t.Fatal("0 回で確定可能")
 			}
 		}
@@ -111,44 +106,14 @@ func TestRewindUI(t *testing.T) {
 			}
 		}
 	})
-	t.Run("TC-FR-BTL-10-13 再開だけを許して同じ展開を再生", func(t *testing.T) {
+	t.Run("TC-FR-BTL-10-13 敵軍行動を閲覧できるが決定できない", func(t *testing.T) {
 		c := newIdle(t)
-		c.EndPhase()
-		c.EndPhase()
-		playOut(c)
-		want := c.battle.Units()
-		var selected int
-		for i, e := range c.battle.History() {
-			if e.Kind == tactics.HistoryAction && e.Side == tactics.Enemy {
-				selected = i
-				break
-			}
-		}
+		endTurn(c)
 		c.OpenRewind()
-		c.rewindSelect(selected)
-		c.RewindEnter()
-		c.RewindEnter()
-		if !c.battle.NeedsResume() || len(c.RewindView().Buttons) != 2 {
-			t.Fatal("再開なし")
-		}
-		checkResumeLayout(t, c)
-		h := c.battle.History()
-		c.Click(tactics.Pos{})
-		c.EndPhase()
-		c.ChooseAction(tactics.Wait)
-		if c.state != Idle || !reflect.DeepEqual(h, c.battle.History()) {
-			t.Fatal("自軍操作を受理")
-		}
-		c.OpenRewind()
+		c.rewindSelect(historyIndex(t, c.battle.History(), tactics.HistoryAction, tactics.Enemy))
+		checkReadOnlyRewind(t, c)
 		c.Cancel()
-		c.RewindClick(200, 560)
-		if c.state != Playing {
-			t.Fatal("再生なし")
-		}
-		playOut(c)
-		if !reflect.DeepEqual(want, c.battle.Units()) {
-			t.Fatal("同じ展開でない")
-		}
+		checkInputLayout(t, c)
 	})
 	t.Run("TC-FR-BTL-10-11 行の移動と長い名前・全文詳細", func(t *testing.T) {
 		c := newIdle(t)
@@ -230,14 +195,14 @@ func TestRewindScene(t *testing.T) {
 		s.battle.RewindEnter()
 		s.battle.RewindEnter()
 		s.syncRewind()
-		if s.Scene() != Battle || s.battle.state == Over || !s.battle.battle.Units()[0].Alive || m.writes != 1 {
+		if s.Scene() != Battle || s.battle.state == Over || !s.battle.battle.Units()[0].Alive || s.battle.battle.Units()[0].Acted || s.battle.battle.NeedsResume() || s.battle.battle.RewindsLeft() != 9 || m.writes != 1 {
 			t.Fatal("敗北復帰失敗")
 		}
 	})
 }
 
 func TestRewindBoundaries(t *testing.T) {
-	t.Run("TC-FR-BTL-10-13 自動移行と自軍開始前も再開だけを許す", func(t *testing.T) {
+	t.Run("TC-FR-BTL-10-13 自動移行と自軍開始前を閲覧できるが決定できない", func(t *testing.T) {
 		for _, kind := range []tactics.HistoryKind{tactics.HistoryEndPhase, tactics.HistoryPlayerStart} {
 			c := newIdle(t)
 			for _, p := range []tactics.Pos{{X: 0, Y: 0}, {X: 0, Y: 2}} {
@@ -246,51 +211,11 @@ func TestRewindBoundaries(t *testing.T) {
 				c.ChooseAction(tactics.Wait)
 				playOut(c)
 			}
-			h := c.battle.History()
-			i := -1
-			for j, e := range h {
-				if e.Kind == kind {
-					i = j
-					break
-				}
-			}
-			if i < 0 {
-				t.Fatal("境界なし")
-			}
 			c.OpenRewind()
-			c.rewindSelect(i)
-			c.RewindEnter()
-			c.RewindEnter()
-			if !c.battle.NeedsResume() {
-				t.Fatal("再開なし")
-			}
-			if kind == tactics.HistoryEndPhase && !h[i].Automatic {
-				t.Fatal("自動移行でない")
-			}
-			if kind == tactics.HistoryEndPhase && !strings.Contains(c.rewindLabel(h[i]), "番の移行（自動）") {
-				t.Fatal("自動移行の行動名がない", c.rewindLabel(h[i]))
-			}
-			checkResumeLayout(t, c)
-			before := c.battle.Units()
-			h = c.battle.History()
-			c.Click(tactics.Pos{})
-			c.ChooseAction(tactics.Wait)
-			c.ChooseItem(0)
-			c.EndPhase()
-			if !reflect.DeepEqual(before, c.battle.Units()) || !reflect.DeepEqual(h, c.battle.History()) {
-				t.Fatal("再開前に自軍操作")
-			}
-			if c.RewindView().Buttons[1].Label != "番の処理を再開" {
-				t.Fatal(c.RewindView())
-			}
-			c.rewindKey("Enter")
-			if c.state != Playing {
-				t.Fatal("Enter で再開しない")
-			}
-			playOut(c)
-			if c.battle.NeedsResume() || c.battle.Turn != 2 {
-				t.Fatal("再開失敗")
-			}
+			c.rewindSelect(historyIndex(t, c.battle.History(), kind, tactics.Player))
+			checkReadOnlyRewind(t, c)
+			c.Cancel()
+			checkInputLayout(t, c)
 		}
 	})
 	t.Run("TC-FR-BTL-10-11 敵の移動だけと待機を区別し長い詳細を読める", func(t *testing.T) {
@@ -383,7 +308,7 @@ func TestRewindMouse(t *testing.T) {
 		if c.rewind.selected != 0 {
 			t.Fatal("行を選べない")
 		}
-		// 「この前へ」は右欄の下端の右（x=680〜824、y=520〜560）。
+		// 「決定」は右欄の下端の右（x=680〜824、y=520〜560）。
 		c.RewindClick(750, 540)
 		if !c.rewind.confirm || c.battle.RewindsLeft() != 10 {
 			t.Fatal("確認なしで消費")
@@ -402,28 +327,28 @@ func TestRewindMouse(t *testing.T) {
 	})
 }
 
-// 再開待ちの全ボタンが盤面・案内文・互いを隠さないことを確かめる（DES-UI-19、UC-14）。
-func checkResumeLayout(t *testing.T, c *Controller) {
+// 自軍入力待ちの全ボタンが盤面・案内文・互いを隠さないことを確かめる（DES-UI-19、UC-14）。
+func checkInputLayout(t *testing.T, c *Controller) {
 	t.Helper()
 	v := c.RewindView()
 	for i, b := range v.Buttons {
 		if !b.Rect.In(image.Rect(0, MapSize, MapSize, ScreenHeight)) {
-			t.Fatal("再開待ちのボタンが盤面に重なるか案内欄の外にある", b)
+			t.Fatal("自軍入力待ちのボタンが盤面に重なるか案内欄の外にある", b)
 		}
 		for j, line := range c.Guide() {
 			y := MapSize + 2 + j*lineHeight
 			if b.Rect.Overlaps(image.Rect(8, y, 8+textWidth(line), y+lineHeight)) {
-				t.Fatal("再開待ちのボタンが案内文を隠す", b, line)
+				t.Fatal("自軍入力待ちのボタンが案内文を隠す", b, line)
 			}
 		}
 		for _, tx := range v.Texts {
 			if b.Rect.Overlaps(image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+lineHeight)) {
-				t.Fatal("再開待ちのボタンが操作案内を隠す", b, tx)
+				t.Fatal("自軍入力待ちのボタンが操作案内を隠す", b, tx)
 			}
 		}
 		for _, other := range v.Buttons[i+1:] {
 			if b.Rect.Overlaps(other.Rect) {
-				t.Fatal("再開待ちのボタン同士が重なる", b, other)
+				t.Fatal("自軍入力待ちのボタン同士が重なる", b, other)
 			}
 		}
 	}
@@ -455,4 +380,54 @@ func TestRewindSceneEntry(t *testing.T) {
 			}
 		}
 	})
+}
+
+// consumeExplicitRewind は毎回作り直された明示の番終了を探し、成功と新しいIDを確認する。
+func consumeExplicitRewind(t *testing.T, c *Controller, n int) {
+	t.Helper()
+	h := c.battle.History()
+	i := -1
+	for j, e := range h {
+		if e.Kind == tactics.HistoryEndPhase && !e.Automatic {
+			i = j
+			break
+		}
+	}
+	if i < 0 {
+		t.Fatal("明示の番終了なし")
+	}
+	oldID := h[i].ID
+	c.rewindSelect(i)
+	c.RewindEnter()
+	c.RewindEnter()
+	if c.battle.NeedsResume() || c.state != Idle || c.rewind.open || c.battle.RewindsLeft() != 9-n {
+		t.Fatal("1消費・自軍入力待ちでない")
+	}
+	// 同じ番終了を再実行し、古いIDを再利用しないことを確かめる。
+	endTurn(c)
+	h = c.battle.History()
+	if len(h) <= i || h[i].ID <= oldID || h[i].Automatic {
+		t.Fatal("番終了の再作成でIDを再利用")
+	}
+}
+
+// checkReadOnlyRewind は選択・プレビューを保ち、クリックとEnterの双方を拒否することを確かめる。
+func checkReadOnlyRewind(t *testing.T, c *Controller) {
+	t.Helper()
+	before, history, left := c.battle.Units(), c.battle.History(), c.battle.RewindsLeft()
+	if !c.RewindBoard().Available || buttonOf(t, c.RewindView(), "決定").Enabled {
+		t.Fatal("閲覧専用の盤面・決定")
+	}
+	if !strings.Contains(strings.Join(c.rewindReasons(), ""), "自軍の行動か『番を終える』の前だけ戻せます") {
+		t.Fatal("対象外の理由なし")
+	}
+	for _, input := range []func(){func() { clickButton(t, c, "決定") }, func() { c.rewindKey("Enter") }, c.RewindEnter} {
+		input()
+		if c.rewind.confirm || !c.rewind.open || c.battle.RewindsLeft() != left || !reflect.DeepEqual(before, c.battle.Units()) || !reflect.DeepEqual(history, c.battle.History()) {
+			t.Fatal("閲覧専用の行で確認・確定を受理")
+		}
+	}
+	if strings.Contains(strings.Join(c.RewindBoard().Lines, ""), "再開") {
+		t.Fatal("プレビューに再開案内")
+	}
 }

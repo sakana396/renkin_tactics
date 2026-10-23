@@ -22,7 +22,7 @@ func (b *Battle) Rewind(id uint64) error {
 		if h.entry.ID != id {
 			continue
 		}
-		if !h.completed {
+		if !h.completed || h.entry.Side != Player || (h.entry.Kind != HistoryAction && (h.entry.Kind != HistoryEndPhase || h.entry.Automatic)) {
 			break
 		}
 		// restore は別の PCG と深い写しを用意してから置き換え、失敗時は現在値を保つ。

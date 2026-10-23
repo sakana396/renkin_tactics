@@ -117,6 +117,9 @@ const (
 	StyleBlack
 	// StyleHint は増援の気配の案内（黄土色。DES-UI-24）。
 	StyleHint
+	// 閲覧専用の敵軍行と自軍番開始行の薄い文字（DES-UI-21）。
+	StyleRewindEnemy
+	StyleRewindBoundary
 )
 
 // InfoText は情報欄に描く文（DES-UI-06）。(X, Y) は文の左上の画面の座標。

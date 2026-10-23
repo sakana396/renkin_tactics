@@ -56,6 +56,10 @@ var (
 // infoStyleColor は情報欄の文の色の種類を色に読み替える（DES-UI-06、DES-UI-07）。
 func infoStyleColor(s InfoStyle) color.Color {
 	switch s {
+	case StyleRewindEnemy:
+		return color.NRGBA{R: 255, G: 100, B: 100, A: 128}
+	case StyleRewindBoundary:
+		return color.NRGBA{R: 180, G: 180, B: 180, A: 128}
 	case StyleGood:
 		return goodColor
 	case StyleBad:

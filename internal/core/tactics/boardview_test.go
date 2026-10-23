@@ -110,8 +110,7 @@ func TestPreviewFallenAndActed(t *testing.T) {
 		b.units[1].Acted = true
 		b.units[0].Acted = true
 		before := b.snapshot()
-		// 番終了の before は敵軍開始を保留した状態（DES-IT03、DES-RWD-02）。
-		before.progress = phaseProgress{stage: enemyStart}
+		// 明示の番終了は行動済みも保った自軍入力待ち（DES-IT04 7.1 節）。
 		if _, err := b.EndPhase(); err != nil {
 			t.Fatal(err)
 		}
@@ -123,7 +122,7 @@ func TestPreviewFallenAndActed(t *testing.T) {
 		rewindTo(t, b, b.History()[0].ID)
 		assertBoard(t, v, b.snapshot())
 		current := b.BoardView()
-		if !current.NeedsResume() || current.NeedsResume() != b.NeedsResume() {
+		if current.NeedsResume() || current.NeedsResume() != b.NeedsResume() {
 			t.Fatal("番終了前への巻き戻し後の盤面が戦闘の再開待ちと一致しない")
 		}
 		for _, result := range []Result{Won, Lost} {

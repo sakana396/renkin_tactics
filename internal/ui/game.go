@@ -101,10 +101,6 @@ func (g *Game) Update() error {
 		if left && c.RewindClick(ebiten.CursorPosition()) {
 			return nil
 		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) && c.Battle().NeedsResume() {
-			c.rewindKey("Enter")
-			return nil
-		}
 	}
 	if s.Scene() != Battle {
 		if s.Scene() == Deploy {
@@ -644,7 +640,7 @@ func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 	}
 }
 
-// drawRewind は一覧を閉じているときの巻き戻しの入口と再開のボタンを描く（DES-UI-19）。
+// drawRewind は一覧を閉じているときの巻き戻しの入口を描く（DES-UI-19）。
 func (g *Game) drawRewind(dst *ebiten.Image) {
 	g.drawSceneView(dst, g.ctrl.RewindView())
 }

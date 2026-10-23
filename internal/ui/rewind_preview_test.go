@@ -66,7 +66,7 @@ func clickButton(t *testing.T, c *Controller, label string) {
 }
 
 func TestRewindPreviewSelect(t *testing.T) {
-	t.Run("TC-FR-BTL-10-24 開いた直後・上下・行クリック・8 行境界・ページ移動で選んだ行の前の盤面に切り替える", func(t *testing.T) {
+	t.Run("TC-FR-BTL-10-24 / TC-FR-BTL-10-28 開いた直後・上下・行クリック・8 行境界・ページ移動で選んだ行の前の盤面に切り替える", func(t *testing.T) {
 		c := longHistory(t)
 		h := c.battle.History()
 		last := len(h) - 1
@@ -161,12 +161,12 @@ func TestRewindPreviewSelect(t *testing.T) {
 			t.Fatal("行のラベル", label)
 		}
 		lines := strings.Join(c.RewindBoard().Lines, "\n")
-		if !strings.Contains(lines, "盤面: 1T 敵軍") || !strings.Contains(lines, "確定後は再開操作で続行") || c.RewindBoard().HasFrame {
+		if !strings.Contains(lines, "盤面: 1T 敵軍") || strings.Contains(lines, "再開") || c.RewindBoard().HasFrame {
 			t.Fatal("番開始前の盤面の案内", lines)
 		}
 		e := historyIndex(t, h, tactics.HistoryAction, tactics.Enemy)
 		c.rewindSelect(e)
-		if lines := strings.Join(c.RewindBoard().Lines, "\n"); !strings.Contains(lines, "盤面: 1T 敵軍") || !strings.Contains(lines, "確定後は再開操作で続行") {
+		if lines := strings.Join(c.RewindBoard().Lines, "\n"); !strings.Contains(lines, "盤面: 1T 敵軍") || strings.Contains(lines, "再開") {
 			t.Fatal("敵軍の行動前の案内", lines)
 		}
 		if h[0].Kind != tactics.HistoryAction || h[0].Side != tactics.Player {
@@ -190,7 +190,7 @@ func TestRewindPreviewSelect(t *testing.T) {
 		if !strings.Contains(strings.Join(v.Lines, "\n"), "戻せる行動がありません") || !strings.Contains(viewStrings(c.RewindView()), "戻せる行動がありません") {
 			t.Fatal("空の案内", v.Lines)
 		}
-		if buttonOf(t, c.RewindView(), "この前へ").Enabled {
+		if buttonOf(t, c.RewindView(), "決定").Enabled {
 			t.Fatal("空で決定できる")
 		}
 		c.RewindEnter()
@@ -213,7 +213,7 @@ func TestRewindPreviewSelect(t *testing.T) {
 		if v.Available || v.Units != nil || v.Notice != "プレビューを表示できません" || !strings.Contains(strings.Join(v.Lines, "\n"), "表示できません") {
 			t.Fatal("失敗時に古い盤面か案内がない", v)
 		}
-		if buttonOf(t, c.RewindView(), "この前へ").Enabled || !strings.Contains(viewStrings(c.RewindView()), "プレビューを表示できない") {
+		if buttonOf(t, c.RewindView(), "決定").Enabled || !strings.Contains(viewStrings(c.RewindView()), "プレビューを表示できない") {
 			t.Fatal("失敗時に決定できる")
 		}
 		c.RewindEnter()
@@ -233,13 +233,7 @@ func TestRewindPreviewSelect(t *testing.T) {
 		playOut(c)
 		for i := 0; i < 10; i++ {
 			c.OpenRewind()
-			c.RewindMove(-100)
-			c.RewindEnter()
-			c.RewindEnter()
-			c.Resume()
-			c.EndPhase()
-			c.EndPhase()
-			playOut(c)
+			consumeExplicitRewind(t, c, i)
 		}
 		if c.battle.RewindsLeft() != 0 {
 			t.Fatal("前提: 残り 0 回でない", c.battle.RewindsLeft())
@@ -251,7 +245,7 @@ func TestRewindPreviewSelect(t *testing.T) {
 			t.Fatal("0 回で閲覧できない")
 		}
 		c.RewindEnter()
-		if c.rewind.confirm || buttonOf(t, c.RewindView(), "この前へ").Enabled || !strings.Contains(viewStrings(c.RewindView()), "残り回数が 0") {
+		if c.rewind.confirm || buttonOf(t, c.RewindView(), "決定").Enabled || !strings.Contains(viewStrings(c.RewindView()), "残り回数が 0") {
 			t.Fatal("0 回の決定が無効でない")
 		}
 		if !reflect.DeepEqual(h, c.battle.History()) {
@@ -307,19 +301,19 @@ func TestRewindPreviewConfirm(t *testing.T) {
 		c := longHistory(t)
 		h := c.battle.History()
 		c.OpenRewind()
-		c.rewindSelect(3)
+		c.rewindSelect(0)
 		c.RewindEnter()
 		if !c.rewind.confirm || !c.RewindBoard().Available || !strings.Contains(strings.Join(c.RewindBoard().Lines, "\n"), "一覧へ") {
 			t.Fatal("確認中にプレビューがない")
 		}
 		loads := c.rewind.previewLoads
 		c.Cancel()
-		if c.rewind.selected != 3 || c.rewind.previewID != h[3].ID || c.rewind.previewLoads != loads {
+		if c.rewind.selected != 0 || c.rewind.previewID != h[0].ID || c.rewind.previewLoads != loads {
 			t.Fatal("確認の取消しで選択かプレビューが変わった")
 		}
 		// 盤面のクリック・行動・番終了・Q・再開は受け付けない。盤面のクリックは一覧にも透過しない。
 		units := c.battle.Units()
-		if !c.RewindClick(16, 16) || c.rewind.selected != 3 {
+		if !c.RewindClick(16, 16) || c.rewind.selected != 0 {
 			t.Fatal("盤面のクリックが一覧へ透過した")
 		}
 		c.Click(tactics.Pos{})
@@ -327,18 +321,18 @@ func TestRewindPreviewConfirm(t *testing.T) {
 		c.EndPhase()
 		danger := c.danger
 		c.ToggleDanger()
-		c.Resume()
+		c.rewindKey("Enter")
 		if c.danger != danger || c.state == Playing || !reflect.DeepEqual(units, c.battle.Units()) || !reflect.DeepEqual(h, c.battle.History()) {
 			t.Fatal("閲覧中に盤面の入力を受けた")
 		}
 	})
 	t.Run("TC-FR-BTL-10-25 確定の成功だけ 1 消費し、未来を捨てて見ていた盤面に戻る", func(t *testing.T) {
 		c := longHistory(t)
-		i := 2
+		i := 0
 		c.OpenRewind()
 		c.rewindSelect(i)
 		seen := c.RewindBoard().Units
-		clickButton(t, c, "この前へ")
+		clickButton(t, c, "決定")
 		if c.battle.RewindsLeft() != 10 || !c.rewind.confirm {
 			t.Fatal("確認の前に消費した")
 		}
@@ -361,35 +355,17 @@ func TestRewindPreviewConfirm(t *testing.T) {
 			t.Fatal("閉じた一覧への Enter で二重に消費した")
 		}
 	})
-	t.Run("TC-FR-BTL-10-25 敵軍・番の境界への確定は再開を待ち、プレビュー中には再開しない", func(t *testing.T) {
+	t.Run("TC-FR-BTL-10-25 敵軍・番の境界のプレビューから確認と確定はできない", func(t *testing.T) {
 		for _, kind := range []tactics.HistoryKind{tactics.HistoryAction, tactics.HistoryPlayerStart} {
 			c := newIdle(t)
-			c.EndPhase()
-			c.EndPhase()
-			playOut(c)
+			endTurn(c)
 			side := tactics.Enemy
 			if kind == tactics.HistoryPlayerStart {
 				side = tactics.Player
 			}
-			i := historyIndex(t, c.battle.History(), kind, side)
 			c.OpenRewind()
-			c.rewindSelect(i)
-			c.rewindKey("Enter")
-			c.Resume()
-			if !c.rewind.confirm || c.state == Playing {
-				t.Fatal("プレビュー中に再開した")
-			}
-			c.rewindKey("Enter")
-			if c.rewind.open || c.state != Idle || !c.battle.NeedsResume() || c.battle.RewindsLeft() != 9 {
-				t.Fatal("確定後に再開待ちでない", kind)
-			}
-			if len(c.RewindView().Buttons) != 2 {
-				t.Fatal("再開のボタンがない")
-			}
-			c.rewindKey("Enter")
-			if c.state != Playing {
-				t.Fatal("再開できない")
-			}
+			c.rewindSelect(historyIndex(t, c.battle.History(), kind, side))
+			checkReadOnlyRewind(t, c)
 		}
 	})
 	t.Run("TC-FR-BTL-10-25 敗北の選択から閲覧して取り消すと敗北のまま、確定で戦闘へ戻る", func(t *testing.T) {
