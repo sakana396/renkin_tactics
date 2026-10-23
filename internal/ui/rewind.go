@@ -9,22 +9,72 @@ import (
 )
 
 // rewindMenu は入力を保持して重ねる一覧と確認（DES-UI-19）。
+// 選択中の 1 件の行動前の盤面だけを写しとして持つ（DES-UI-21）。
 type rewindMenu struct {
 	detailOffset  int
 	open, confirm bool
 	selected      int
 	message       string
+
+	// previewID は preview を取得した履歴 ID。loaded が偽なら未取得。
+	previewID     uint64
+	preview       tactics.BoardView
+	previewUnits  []tactics.Unit
+	previewErr    error
+	previewLoaded bool
+	// previewLoads は PreviewRewind を呼んだ回数。描画ごとに取得し直さないことの確認に使う（DES-UI-21）。
+	previewLoads int
 }
 
-// OpenRewind は再生完了後だけ一覧を開く。閲覧では戦闘と選択を変えない（DES-UI-19）。
+// OpenRewind は再生完了後だけ一覧を開き、最新行の行動前を表示する。閲覧では戦闘と選択を変えない（DES-UI-19、DES-UI-21）。
 func (c *Controller) OpenRewind() {
 	if c.state == Playing || c.rewind.open {
 		return
 	}
 	c.rewind = rewindMenu{open: true, selected: len(c.battle.History()) - 1}
+	c.loadPreview()
 }
 
-// RewindMove は上下とページ移動を先頭・末尾で止める（DES-UI-19）。
+// loadPreview は選択した行が変わったときだけ、その 1 件の行動前を取得し直す（DES-UI-21、DES-RWD-05）。
+// 取得に失敗したら、前の行の盤面を残さない。
+func (c *Controller) loadPreview() {
+	h := c.battle.History()
+	i := c.rewind.selected
+	if i < 0 || i >= len(h) {
+		return
+	}
+	if c.rewind.previewLoaded && c.rewind.previewID == h[i].ID {
+		return
+	}
+	c.fetchPreview(h[i].ID)
+}
+
+// fetchPreview は ID の行動前を取得して写しを入れ替える（DES-UI-21）。
+func (c *Controller) fetchPreview(id uint64) {
+	c.rewind.previewLoads++
+	v, err := c.battle.PreviewRewind(id)
+	c.rewind.previewID, c.rewind.previewLoaded, c.rewind.previewErr = id, true, err
+	c.rewind.preview, c.rewind.previewUnits = tactics.BoardView{}, nil
+	if err == nil {
+		c.rewind.preview, c.rewind.previewUnits = v, v.Units()
+	}
+}
+
+// previewOK は選択中の行の行動前を表示できているかを返す（DES-UI-21）。
+func (c *Controller) previewOK() bool {
+	h := c.battle.History()
+	i := c.rewind.selected
+	return i >= 0 && i < len(h) && c.rewind.previewLoaded && c.rewind.previewErr == nil && c.rewind.previewID == h[i].ID
+}
+
+// rewindSelect は一覧の i 行目を選び、プレビューを切り替える（DES-UI-19、DES-UI-21）。
+func (c *Controller) rewindSelect(i int) {
+	c.rewind.selected = i
+	c.rewind.detailOffset = 0
+	c.loadPreview()
+}
+
+// RewindMove は上下とページ移動を先頭・末尾で止め、選んだ行の盤面に切り替える（DES-UI-19、DES-UI-21）。
 func (c *Controller) RewindMove(delta int) {
 	if !c.rewind.open || c.rewind.confirm {
 		return
@@ -33,28 +83,28 @@ func (c *Controller) RewindMove(delta int) {
 	if n == 0 {
 		return
 	}
-	c.rewind.selected = max(0, min(n-1, c.rewind.selected+delta))
-	c.rewind.detailOffset = 0
+	c.rewindSelect(max(0, min(n-1, c.rewind.selected+delta)))
 }
 
 // RewindEnter は確認を経て一度だけ巻き戻す。消える項目の境界を先に保持する（DES-UI-19）。
+// 残り 0 回とプレビューを取得できない選択では確定しない。失敗したら一覧に戻り、消費しない（DES-UI-21）。
 func (c *Controller) RewindEnter() {
-	if !c.rewind.open || c.battle.RewindsLeft() == 0 {
+	if !c.rewind.open || c.battle.RewindsLeft() == 0 || !c.previewOK() {
 		return
 	}
 	h := c.battle.History()
 	i := c.rewind.selected
-	if i < 0 || i >= len(h) {
-		return
-	}
 	if !c.rewind.confirm {
 		c.rewind.confirm = true
+		c.rewind.detailOffset = 0
 		return
 	}
 	entry := h[i]
 	if err := c.battle.Rewind(entry.ID); err != nil {
 		c.rewind.confirm = false
+		c.rewind.detailOffset = 0
 		c.rewind.message = err.Error()
+		c.fetchPreview(entry.ID)
 		return
 	}
 	clear(c.record[min(len(c.record), entry.EventStart):])
@@ -120,17 +170,71 @@ func fitRewind(s string, width int) string {
 	return string(r) + "…"
 }
 
-// RewindView は 8 行の一覧、確認、回数、入口と再開の配置（DES-UI-19）。
+// 右欄の一覧・確認の配置（DES-UI-21）。盤面の右 x=512〜832 だけを使い、左右に 8 px の余白を置く。
+const (
+	rewindLeft   = MapSize + 8
+	rewindWidth  = InfoWidth - 16
+	rewindRight  = rewindLeft + rewindWidth
+	rewindRowTop = 60
+	rewindRowH   = 28
+	// rewindDetailLines は一覧の詳細に出す行の数、rewindConfirmLines は確認に出す行の数。
+	rewindDetailLines  = 5
+	rewindConfirmLines = 18
+)
+
+// wrapWidth は文を width px で文字の単位で折り返す（DES-UI-21）。
+func wrapWidth(s string, width int) []string {
+	var out []string
+	for _, line := range strings.Split(s, "\n") {
+		row := ""
+		for _, r := range line {
+			next := row + string(r)
+			if textWidth(next) > width && row != "" {
+				out = append(out, row)
+				row = string(r)
+			} else {
+				row = next
+			}
+		}
+		out = append(out, row)
+	}
+	return out
+}
+
+// rewindDetail は、詳細・確認で送って読む全文の行。行動名の全文に、誤りの全文を続ける（DES-UI-21）。
+func (c *Controller) rewindDetail() []SceneText {
+	var out []SceneText
+	h := c.battle.History()
+	if i := c.rewind.selected; i >= 0 && i < len(h) {
+		text := c.rewindLabel(h[i])
+		if c.rewind.confirm {
+			text = "この行動から先を取り消して戻りますか。\n" + text
+		}
+		for _, s := range wrapWidth(text, rewindWidth) {
+			out = append(out, SceneText{Text: s})
+		}
+	}
+	if c.rewind.message != "" {
+		for _, s := range wrapWidth(c.rewind.message, rewindWidth) {
+			out = append(out, SceneText{Text: s, Style: StyleBad})
+		}
+	}
+	return out
+}
+
+// RewindView は右欄の 8 行の一覧と確認、回数、閉じているときの入口と再開の配置（DES-UI-19、DES-UI-21）。
 func (c *Controller) RewindView() SceneView {
 	var v SceneView
-	add := func(s string, x, y int) { v.Texts = append(v.Texts, SceneText{Text: s, X: x, Y: y}) }
+	add := func(s string, x, y int, style InfoStyle) {
+		v.Texts = append(v.Texts, SceneText{Text: s, X: x, Y: y, Style: style})
+	}
 	button := func(s string, r image.Rectangle, on bool) { v.Buttons = append(v.Buttons, SceneButton{s, r, on}) }
 	if !c.rewind.open {
 		if c.state == Playing {
 			return v
 		}
 		button(fmt.Sprintf("巻き戻し 残り %d/10", c.battle.RewindsLeft()), image.Rect(304, 512, 504, 530), true)
-		add("T: 巻き戻し", 216, 514)
+		add("T: 巻き戻し", 216, 514, StylePlain)
 		if c.battle.NeedsResume() {
 			label := "番の処理を再開"
 			if c.resumeEnemy {
@@ -140,48 +244,117 @@ func (c *Controller) RewindView() SceneView {
 		}
 		return v
 	}
-	add(fmt.Sprintf("巻き戻し 残り %d/10", c.battle.RewindsLeft()), 48, 32)
 	h := c.battle.History()
 	n := c.battle.RewindsLeft()
+	ok := c.previewOK()
+	add(fmt.Sprintf("巻き戻し 残り %d/10", n), rewindLeft, 8, StyleTitle)
+	left := image.Rect(rewindLeft, 520, rewindLeft+144, 560)
+	right := image.Rect(rewindRight-144, 520, rewindRight, 560)
+	detail := c.rewindDetail()
 	if c.rewind.confirm {
-		add(fmt.Sprintf("この行動から先を取り消して戻りますか。残り %d → %d", n, n-1), 48, 112)
-		button("やめる", image.Rect(48, 480, 208, 520), true)
-		button("戻す", image.Rect(592, 480, 784, 520), n > 0)
-	} else {
-		add("選んだ行動の「前」に戻る", 48, 64)
-		start := max(0, c.rewind.selected/8*8)
-		for i := start; i < min(len(h), start+8); i++ {
-			r := image.Rect(48, 96+(i-start)*30, 784, 124+(i-start)*30)
-			v.Rows = append(v.Rows, PrepareRow{Rect: r, Selected: i == c.rewind.selected})
-			add(fitRewind(c.rewindLabel(h[i]), 720), 56, r.Min.Y+6)
-		}
-		if len(h) == 0 {
-			add("戻せる行動がありません", 48, 112)
-		}
-		button("前", image.Rect(48, 344, 144, 380), start > 0)
-		button("次", image.Rect(160, 344, 256, 380), start+8 < len(h))
-		button("戻る", image.Rect(48, 520, 208, 560), true)
-		button("この前へ", image.Rect(592, 520, 784, 560), n > 0 && len(h) > 0)
-		if c.rewind.selected >= 0 && c.rewind.selected < len(h) {
-			for i, s := range wrapSceneText(c.rewindLabel(h[c.rewind.selected]))[c.rewind.detailOffset:] {
-				if i >= 5 {
-					break
-				}
-				add(s, 48, 388+i*20)
+		add("確認（左の盤面に戻ります）", rewindLeft, 34, StylePlain)
+		for i, t := range detail[min(len(detail), c.rewind.detailOffset):] {
+			if i >= rewindConfirmLines {
+				break
 			}
+			add(t.Text, rewindLeft, rewindRowTop+i*20, t.Style)
 		}
-		add("詳細: マウスホイールで全文を読む", 280, 372)
-		if n == 0 {
-			add("残り回数が 0 のため巻き戻せません", 280, 352)
+		add(fmt.Sprintf("残り %d → %d", n, n-1), rewindLeft, 436, StylePlain)
+		add("ホイール: 全文を読む", rewindLeft, 456, StyleLabel)
+		button("やめる", left, true)
+		button("戻す", right, n > 0 && ok)
+		return v
+	}
+	add("選んだ行動の「前」に戻る", rewindLeft, 34, StylePlain)
+	start := max(0, c.rewind.selected/8*8)
+	for i := start; i < min(len(h), start+8); i++ {
+		r := image.Rect(rewindLeft, rewindRowTop+(i-start)*rewindRowH, rewindRight, rewindRowTop+(i-start+1)*rewindRowH)
+		v.Rows = append(v.Rows, PrepareRow{Rect: r, Selected: i == c.rewind.selected})
+		add(fitRewind(c.rewindLabel(h[i]), rewindWidth-16), rewindLeft+8, r.Min.Y+6, StylePlain)
+	}
+	if len(h) == 0 {
+		add("戻せる行動がありません", rewindLeft+8, rewindRowTop+6, StylePlain)
+	}
+	button("前", image.Rect(rewindLeft, 292, rewindLeft+80, 320), start > 0)
+	button("次", image.Rect(rewindLeft+88, 292, rewindLeft+168, 320), start+8 < len(h))
+	for i, t := range detail[min(len(detail), c.rewind.detailOffset):] {
+		if i >= rewindDetailLines {
+			break
+		}
+		add(t.Text, rewindLeft, 328+i*20, t.Style)
+	}
+	add("ホイール: 詳細の全文を読む", rewindLeft, 436, StyleLabel)
+	reason := ""
+	switch {
+	case len(h) == 0:
+		reason = "戻せる行動がありません"
+	case !ok:
+		reason = "プレビューを表示できないため戻せません"
+	case n == 0:
+		reason = "残り回数が 0 のため巻き戻せません"
+	}
+	if reason != "" {
+		for i, s := range wrapWidth(reason, rewindWidth) {
+			if i >= 2 {
+				break
+			}
+			add(s, rewindLeft, 456+i*20, StyleBad)
 		}
 	}
-	if c.rewind.message != "" {
-		add(c.rewind.message, 48, 496)
+	button("戻る", left, true)
+	button("この前へ", right, n > 0 && ok)
+	return v
+}
+
+// RewindBoardView は一覧・確認中に左の盤面と下の案内へ描く値（DES-UI-21）。
+type RewindBoardView struct {
+	// Visible は一覧・確認を開いていること。偽なら通常の盤面を描く。
+	Visible bool
+	// Available は盤面を描けること。取得に失敗したら偽で、古い盤面を描かない。
+	Available bool
+	Board     tactics.BoardView
+	Units     []tactics.Unit
+	// Frame は選んだ行動者のマス。HasFrame が偽なら描かない。
+	Frame    tactics.Pos
+	HasFrame bool
+	// Notice は盤面に重ねる知らせ、Lines は下の案内の行。
+	Notice string
+	Lines  []string
+}
+
+// RewindBoard は選択中の行動前の盤面と案内を返す。取得し直さず、保持した 1 件の写しを使う（DES-UI-21）。
+// 履歴がなければ元の盤面を静止して見せる。
+func (c *Controller) RewindBoard() RewindBoardView {
+	if !c.rewind.open {
+		return RewindBoardView{}
+	}
+	back := "Esc・右クリック: 元の盤面へ"
+	if c.rewind.confirm {
+		back = "Esc・右クリック: 一覧へ"
+	}
+	h := c.battle.History()
+	if len(h) == 0 {
+		return RewindBoardView{Visible: true, Available: true, Board: c.battle.BoardView(), Units: c.Units(),
+			Lines: []string{"戻せる行動がありません（今の盤面）", back}}
+	}
+	if !c.previewOK() {
+		return RewindBoardView{Visible: true, Notice: "プレビューを表示できません",
+			Lines: []string{"プレビュー中・未確定　盤面を表示できません", back}}
+	}
+	p := c.rewind.preview
+	v := RewindBoardView{Visible: true, Available: true, Board: p, Units: c.rewind.previewUnits}
+	v.Lines = []string{"プレビュー中・未確定", fmt.Sprintf("盤面: %dT %s　%s", p.Turn, sideName(p.Phase), back)}
+	if p.NeedsResume() {
+		v.Lines = append(v.Lines, "確定後は再開操作で続行")
+	}
+	if e := h[c.rewind.selected]; e.Kind == tactics.HistoryAction && e.Unit >= 0 && e.Unit < len(v.Units) && v.Units[e.Unit].Alive {
+		v.Frame, v.HasFrame = v.Units[e.Unit].Pos, true
 	}
 	return v
 }
 
-// RewindClick は表示と同じ矩形を使い、一覧の外への入力を通さない（DES-UI-19）。
+// RewindClick は表示と同じ矩形を使い、一覧を開いている間は盤面への入力を通さない（DES-UI-19、DES-UI-21）。
+// 行のクリックは選択とプレビューの切替だけで、確定しない。
 func (c *Controller) RewindClick(x, y int) bool {
 	v := c.RewindView()
 	p := image.Pt(x, y)
@@ -209,8 +382,7 @@ func (c *Controller) RewindClick(x, y int) bool {
 	if c.rewind.open {
 		for i, r := range v.Rows {
 			if p.In(r.Rect) {
-				c.rewind.selected = c.rewind.selected/8*8 + i
-				c.rewind.detailOffset = 0
+				c.rewindSelect(c.rewind.selected/8*8 + i)
 			}
 		}
 		return true
@@ -226,14 +398,17 @@ func (s *SceneController) syncRewind() {
 	}
 }
 
-// RewindDetail は長い行動名の全文を 5 行ずつ読めるようにする（DES-UI-19）。
+// RewindDetail は長い行動名と誤りの全文を、一覧では 5 行、確認では 18 行ずつ読めるようにする（DES-UI-19、DES-UI-21）。
 func (c *Controller) RewindDetail(delta int) {
-	h := c.battle.History()
-	if !c.rewind.open || c.rewind.confirm || c.rewind.selected < 0 || c.rewind.selected >= len(h) {
+	if !c.rewind.open {
 		return
 	}
-	n := len(wrapSceneText(c.rewindLabel(h[c.rewind.selected])))
-	c.rewind.detailOffset = max(0, min(max(0, n-5), c.rewind.detailOffset+delta))
+	limit := rewindDetailLines
+	if c.rewind.confirm {
+		limit = rewindConfirmLines
+	}
+	n := len(c.rewindDetail())
+	c.rewind.detailOffset = max(0, min(max(0, n-limit), c.rewind.detailOffset+delta))
 }
 
 // rewindKey はキーの押し始めだけを受け、一覧と確認の入力を読み替える（DES-UI-19）。
