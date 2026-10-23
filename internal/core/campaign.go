@@ -237,40 +237,65 @@ func (c *Campaign) StartBattle(members []int, seed uint64) (*Sortie, []tactics.E
 // members[0] は主人公とし、slots[i] は members[i] を置くマップの枠の添字。
 // 主人公も空き枠へ移せる。検証・組み立てに失敗しても Campaign と入力は変えない。
 func (c *Campaign) StartBattleAt(members []int, slots []int, seed uint64) (*Sortie, []tactics.Event, error) {
+	setup, before, err := c.deploymentSetup(members, slots)
+	if err != nil {
+		return nil, nil, err
+	}
+	b, events, err := tactics.New(setup, seed)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &Sortie{Battle: b, Members: append([]int(nil), members...), members: append([]int(nil), members...), before: before, campaign: c, chapter: c.Chapter}, events, nil
+}
+
+// DeploymentView は仮配置から独立した初期盤面を返す（DES-DEP-02）。
+// 出撃者・枠の検証と変換は実出撃と共用し、戦闘・乱数・番処理を作らない。
+// members と slots の順序を保ち、成功・失敗のどちらでも Campaign と入力を変えない。
+func (c *Campaign) DeploymentView(members, slots []int) (tactics.BoardView, error) {
+	setup, _, err := c.deploymentSetup(members, slots)
+	if err != nil {
+		return tactics.BoardView{}, err
+	}
+	return tactics.NewBoardView(setup)
+}
+
+// deploymentSetup は実出撃と配置表示の検証・組み立てを共用する（DES-DEP-01、DES-DEP-02）。
+// 結果反映用の名簿も手持ちを含めて写し、元の Campaign には触れない。
+func (c *Campaign) deploymentSetup(members, slots []int) (tactics.Setup, []Member, error) {
 	if c.Cleared {
-		return nil, nil, ErrCleared
+		return tactics.Setup{}, nil, ErrCleared
 	}
 	chapter := c.cat.Chapters()[c.Chapter]
 	m, ok := c.cat.Map(chapter.Map)
 	if !ok {
-		return nil, nil, fmt.Errorf("core: マップ %q がありません", chapter.Map)
+		return tactics.Setup{}, nil, fmt.Errorf("core: マップ %q がありません", chapter.Map)
 	}
 	if len(members) < 1 || len(members) > len(m.Slots) {
-		return nil, nil, fmt.Errorf("%w: 人数は 1 人以上 %d 人以下です", ErrInvalidDeployment, len(m.Slots))
+		return tactics.Setup{}, nil, fmt.Errorf("%w: 人数は 1 人以上 %d 人以下です", ErrInvalidDeployment, len(m.Slots))
 	}
 	seen := map[int]bool{}
 	for _, i := range members {
 		if i < 0 || i >= len(c.Roster) || !c.Roster[i].Alive || seen[i] {
-			return nil, nil, fmt.Errorf("%w: 名簿の添字 %d は範囲外・戦死・重複のいずれかです", ErrInvalidDeployment, i)
+			return tactics.Setup{}, nil, fmt.Errorf("%w: 名簿の添字 %d は範囲外・戦死・重複のいずれかです", ErrInvalidDeployment, i)
 		}
 		seen[i] = true
 	}
 	lord, ok := c.cat.Character(c.Roster[members[0]].Character)
 	if !ok || !lord.Lord {
-		return nil, nil, fmt.Errorf("%w: 先頭は主人公でなければなりません", ErrInvalidDeployment)
+		return tactics.Setup{}, nil, fmt.Errorf("%w: 先頭は主人公でなければなりません", ErrInvalidDeployment)
 	}
 	if len(slots) != len(members) {
-		return nil, nil, fmt.Errorf("%w: 枠と出撃者の長さが違います", ErrInvalidDeployment)
+		return tactics.Setup{}, nil, fmt.Errorf("%w: 枠と出撃者の長さが違います", ErrInvalidDeployment)
 	}
 	for i, slot := range slots {
 		if slot < 0 || slot >= len(m.Slots) {
-			return nil, nil, fmt.Errorf("%w: slots[%d] の枠 %d は範囲外です", ErrInvalidDeployment, i, slot)
+			return tactics.Setup{}, nil, fmt.Errorf("%w: slots[%d] の枠 %d は範囲外です", ErrInvalidDeployment, i, slot)
 		}
 	}
 	used := make(map[int]bool, len(slots))
 	for _, slot := range slots {
 		if used[slot] {
-			return nil, nil, fmt.Errorf("%w: 枠 %d が重複しています", ErrInvalidDeployment, slot)
+			return tactics.Setup{}, nil, fmt.Errorf("%w: 枠 %d が重複しています", ErrInvalidDeployment, slot)
 		}
 		used[slot] = true
 	}
@@ -280,14 +305,14 @@ func (c *Campaign) StartBattleAt(members []int, slots []int, seed uint64) (*Sort
 		member := c.Roster[index]
 		u, err := allyUnit(c.cat, member.Character, m.Slots[slots[i]])
 		if err != nil {
-			return nil, nil, err
+			return tactics.Setup{}, nil, err
 		}
 		u.Level = member.Level
 		u.Exp = member.Exp
 		u.Stats = member.Stats
 		u.Items, err = convertItems(c.cat, member.Items)
 		if err != nil {
-			return nil, nil, err
+			return tactics.Setup{}, nil, err
 		}
 		allies = append(allies, u)
 		member.Items = append([]defs.ItemCount(nil), member.Items...)
@@ -295,13 +320,9 @@ func (c *Campaign) StartBattleAt(members []int, slots []int, seed uint64) (*Sort
 	}
 	setup, err := setupWithAllies(c.cat, m, allies)
 	if err != nil {
-		return nil, nil, err
+		return tactics.Setup{}, nil, err
 	}
-	b, events, err := tactics.New(setup, seed)
-	if err != nil {
-		return nil, nil, err
-	}
-	return &Sortie{Battle: b, Members: append([]int(nil), members...), members: append([]int(nil), members...), before: before, campaign: c, chapter: c.Chapter}, events, nil
+	return setup, before, nil
 }
 
 // FinishChapter は勝利の成長・手持ち・報酬を反映し、次の章に入る（DES-CMP-06〜08）。
