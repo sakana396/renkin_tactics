@@ -189,7 +189,7 @@ func TestReinforcements(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-MAP-03-05 現れるマスにユニットがいれば、増援はそのターンにも後のターンにも現れない", func(t *testing.T) {
+	t.Run("TC-FR-MAP-03-05 占有する主人公と先行増援を避け、固定順で近くへ現れる", func(t *testing.T) {
 		s := baseSetup()
 		s.Reinforcements = []tactics.ReinforcementSetup{
 			// 主人公のいるマス。
@@ -202,15 +202,15 @@ func TestReinforcements(t *testing.T) {
 		mustEndPhase(t, b)
 		events := mustEndPhase(t, b)
 		assertEqual(t, "2 ターン目", evs(events), []ev{
-			phaseStart(tactics.Enemy, 2), reinforceEv(4, pos(2, 2)), phaseStart(tactics.Player, 3),
+			phaseStart(tactics.Enemy, 2), reinforceEv(4, pos(1, 0)), reinforceEv(5, pos(2, 2)), reinforceEv(6, pos(2, 1)), phaseStart(tactics.Player, 3),
 		})
-		assertEqual(t, "増援の名前", b.Units()[4].Name, "増援 1")
+		assertEqual(t, "増援の名前", b.Units()[4].Name, "ふさがれた増援")
 
-		// 主人公がマスを空けても、後のターンには現れない。
-		mustAct(t, b, tactics.Command{Unit: 0, To: pos(1, 0), Action: tactics.Wait})
+		// 主人公がマスを空けても、後のターンには二重に現れない。
+		mustAct(t, b, tactics.Command{Unit: 0, To: pos(0, 1), Action: tactics.Wait})
 		mustEndPhase(t, b)
 		mustEndPhase(t, b)
-		assertEqual(t, "ユニットの数", len(b.Units()), 5)
+		assertEqual(t, "ユニットの数", len(b.Units()), 7)
 	})
 
 	t.Run("TC-FR-MAP-03-06 倒れたユニットのいたマスには増援が現れる", func(t *testing.T) {
