@@ -122,6 +122,10 @@ func TestPreviewFallenAndActed(t *testing.T) {
 		assertBoard(t, v, before)
 		rewindTo(t, b, b.History()[0].ID)
 		assertBoard(t, v, b.snapshot())
+		current := b.BoardView()
+		if !current.NeedsResume() || current.NeedsResume() != b.NeedsResume() {
+			t.Fatal("番終了前への巻き戻し後の盤面が戦闘の再開待ちと一致しない")
+		}
 		for _, result := range []Result{Won, Lost} {
 			b.Result = result
 			assertBoard(t, b.BoardView(), b.snapshot())
@@ -132,6 +136,7 @@ func TestPreviewFallenAndActed(t *testing.T) {
 func TestPreviewIndependence(t *testing.T) {
 	t.Run("TC-FR-BTL-10-22 繰り返し閲覧と返却値変更は実PCGと履歴を変えない", func(t *testing.T) {
 		b, control := snapshotBattle(t), snapshotBattle(t)
+		before := b.snapshot()
 		cmd := Command{Unit: 0, To: Pos{1, 0}, Action: Attack, Target: 2}
 		rewindAct(t, b, cmd)
 		rewindAct(t, control, cmd)
@@ -141,18 +146,15 @@ func TestPreviewIndependence(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := v.Units()
 			units := v.Units()
 			units[0].Items[0].Count = 99
 			units[1] = Unit{}
 			terrain := v.TerrainAt(Pos{0, 0})
 			terrain.Cost = 99
+			assertBoard(t, v, before)
 			v.Turn = 99
 			v.Phase = Enemy
 			v.Result = Lost
-			if !reflect.DeepEqual(v.Units(), want) || v.TerrainAt(Pos{0, 0}).Cost != 1 {
-				t.Fatal("返却配列・地形が参照値を変えた")
-			}
 			// パッケージ内からも、参照値の内部と元の戦闘・履歴の独立を確かめる。
 			v.units[0].Items[0].Count = 88
 			v.terrain[0][0].Cost = 88

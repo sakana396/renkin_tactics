@@ -129,9 +129,11 @@ TC-FR-BTL-10-21〜23 を実装し、種別の「未実装」を外した。期�
 | Items を浅く写す | TC-FR-BTL-10-22 |
 | 参照値の地形を元の戦闘・履歴と共有する | TC-FR-BTL-10-22 |
 | 閲覧で実 PCG を消費する | TC-FR-BTL-10-22 |
+| Units() が内部の配列をそのまま返す（REV-044 F-01） | TC-FR-BTL-10-22 |
+| Battle.BoardView() の再開待ちを常に偽にする（REV-044 F-02） | TC-FR-BTL-10-21 |
 | 武器の最小射程を無視する | TC-FR-BTL-01-08 |
 | 味方のいるマスへの停止を許す | TC-FR-BTL-01-04 |
 
-全 9 種で対象テストが終了コード 1 となった。各変更は検査前のバイト列へ必ず復元し、復元後の全指定検査は成功した。
+全 11 種で対象テストが終了コード 1 となった。REV-044 F-01 では、返却配列の変更後に参照値から取得した期待値ではなく行動前の深い写しと比較するよう補強した。F-02 では、番終了前への巻き戻し直後の Battle.BoardView() の NeedsResume() が真で、Battle.NeedsResume() と一致することを追加した。各変更は検査前のバイト列へ必ず復元し、復元後の全指定検査は成功した。
 
-後続への申し送り: `NewBoardView(Setup) (BoardView, error)`、`Battle.BoardView() BoardView`、`PreviewRewind(uint64) (BoardView, error)` を追加した。BoardView は Units・TerrainAt・Width・Height・Reachable・AttackRange・NeedsResume と実際の Turn・Phase・Result を持つ。失敗時の返却値はゼロ値で、盤外地形や存在しないユニットの参照も安全である。#77 は選択 ID の before と実際の番を表示し、取得失敗時に古い盤面を使わないこと。#78 は NewBoardView を配置に使い、#81 は現在／履歴の参照値へ予兆を追加する。予兆・代替出現・UI は本 Issue では実装していない。設計への提案なし。手動確認・別担当レビュー・コミット・PR は管理役に引き継ぐ。
+`NewBoardView(Setup) (BoardView, error)`、`Battle.BoardView() BoardView`、`PreviewRewind(uint64) (BoardView, error)` を追加した。BoardView は Units・TerrainAt・Width・Height・Reachable・AttackRange・NeedsResume と実際の Turn・Phase・Result を持つ。失敗時の返却値はゼロ値で、盤外地形や存在しないユニットの参照も安全である。予兆・代替出現・UI は本 Issue では実装していない。設計への提案なし。
