@@ -90,6 +90,30 @@ func NewCampaign(cat *defs.Catalog, rule Rule) (*Campaign, error) {
 	if rule != Withdraw && rule != Permadeath {
 		return nil, ErrInvalidRule
 	}
+	chapters := cat.Chapters()
+	if len(chapters) == 0 {
+		return nil, fmt.Errorf("core: 最初の章がありません")
+	}
+	return NewCampaignAt(cat, rule, chapters[0].ID)
+}
+
+// NewCampaignAt は指定章までの加入者と前章までの報酬で開発用の開始状態を作る（DES-CMD-03）。
+// cat は検証済みの目録。レベル・能力は初期値を使い、過去の戦闘の成長は再現しない。
+func NewCampaignAt(cat *defs.Catalog, rule Rule, chapterID string) (*Campaign, error) {
+	if rule != Withdraw && rule != Permadeath {
+		return nil, ErrInvalidRule
+	}
+	chapters := cat.Chapters()
+	target := -1
+	for i, chapter := range chapters {
+		if chapter.ID == chapterID {
+			target = i
+			break
+		}
+	}
+	if target < 0 {
+		return nil, fmt.Errorf("core: 章 %q がありません", chapterID)
+	}
 	c := &Campaign{Rule: rule, cat: cat}
 	for _, id := range cat.Game.Party {
 		m, err := newMember(cat, id)
@@ -101,10 +125,18 @@ func NewCampaign(cat *defs.Catalog, rule Rule) (*Campaign, error) {
 	for _, ic := range cat.Game.Stock {
 		c.Stock = changeItem(c.Stock, ic.Item, ic.Count)
 	}
-	c.sortStock()
-	if err := c.enterChapter(); err != nil {
-		return nil, err
+	for i := 0; i <= target; i++ {
+		c.Chapter = i
+		if err := c.enterChapter(); err != nil {
+			return nil, err
+		}
+		if i < target {
+			for _, ic := range chapters[i].Reward {
+				c.Stock = changeItem(c.Stock, ic.Item, ic.Count)
+			}
+		}
 	}
+	c.sortStock()
 	return c, nil
 }
 
