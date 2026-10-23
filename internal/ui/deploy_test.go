@@ -44,6 +44,17 @@ func TestDeploy(t *testing.T) {
 				if view.Deploy == nil || len(view.Deploy.Slots) != 5 || len(view.Deploy.Units) != count+len(s.deployMap().Enemies) || len(view.Deploy.Terrain) != 16 {
 					t.Fatal("マップ・敵・枠がない", view.Deploy)
 				}
+				board, err := s.campaign.DeploymentView(s.deployMembers, s.deploySlots)
+				if err != nil || !reflect.DeepEqual(view.Deploy.Units, board.Units()) {
+					t.Fatal("配置が共通の完全なユニット表示と違う", err)
+				}
+				for y, row := range view.Deploy.Terrain {
+					for x, terrain := range row {
+						if terrain != board.TerrainAt(tactics.Pos{X: x, Y: y}) {
+							t.Fatal("地形が共通の表示と違う", x, y)
+						}
+					}
+				}
 				slots := view.Deploy.Slots
 				for i := 0; i < count; i++ {
 					if view.Deploy.Units[i].Pos != slots[i] {
@@ -142,6 +153,8 @@ func TestDeploy(t *testing.T) {
 		clickDeployCell(s, slots[1])
 		s.Cancel()
 		clickSceneButton(t, s, "配置へ")
+		s.ToggleDeployDanger()
+		s.SetDeployCursor(cellCenter(tactics.Pos{X: s.deployMap().Enemies[0].X, Y: s.deployMap().Enemies[0].Y}))
 		_ = s.View()
 		_ = s.View()
 		if seeds != 0 || s.battle != nil || s.sortie != nil {
@@ -177,6 +190,9 @@ func TestDeployLayout(t *testing.T) {
 		clickSceneButton(t, s, "配置へ")
 		for _, p := range s.View().Deploy.Slots {
 			clickDeployCell(s, p)
+			s.ToggleDeployDanger()
+			// Q と枠外の理由も、既存の案内・情報・ボタンと重ねない（DES-UI-23）。
+			clickDeployCell(s, tactics.Pos{X: 15, Y: 0})
 			v := s.View()
 			if v.Info == nil || v.Info.Bottom > v.Buttons[0].Rect.Min.Y {
 				t.Fatal("情報とボタンが重なる", v.Info)
@@ -186,9 +202,20 @@ func TestDeployLayout(t *testing.T) {
 					t.Fatal("情報が欄外", tx)
 				}
 			}
-			for _, tx := range v.Texts {
+			for i, tx := range v.Texts {
 				if tx.X < 0 || tx.X+textWidth(tx.Text) > ScreenWidth || tx.Y+lineHeight > ScreenHeight {
 					t.Fatal("案内が画面外", tx)
+				}
+				r := image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+lineHeight)
+				for _, other := range v.Texts[i+1:] {
+					if r.Overlaps(image.Rect(other.X, other.Y, other.X+textWidth(other.Text), other.Y+lineHeight)) {
+						t.Fatal("案内同士が重なる", tx, other)
+					}
+				}
+				for _, b := range v.Buttons {
+					if r.Overlaps(b.Rect) {
+						t.Fatal("案内とボタンが重なる", tx)
+					}
 				}
 			}
 			for _, b := range v.Buttons {
