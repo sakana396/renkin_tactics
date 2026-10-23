@@ -5,12 +5,13 @@ import "fmt"
 // BoardView は進行操作・乱数・履歴・回数を持たない独立した盤面参照値（DES-RWD-05、DES-DEP-02）。
 // Turn・Phase・Result は取得時点の実際の値。変更しても元の戦闘には影響しない。
 type BoardView struct {
-	Turn          int
-	Phase         Side
-	Result        Result
-	terrain       [][]Terrain
-	units         []Unit
-	pendingResume bool
+	Turn               int
+	Phase              Side
+	Result             Result
+	terrain            [][]Terrain
+	units              []Unit
+	pendingResume      bool
+	reinforcementHints []ReinforcementHint
 }
 
 // NewBoardView は初期入力の検証と変換だけを行い、番処理や乱数の作成を行わない（DES-RWD-05、DES-DEP-02）。
@@ -28,7 +29,9 @@ func NewBoardView(setup Setup) (BoardView, error) {
 
 // BoardView は現在の戦闘から独立した参照値を返す（DES-RWD-05）。
 func (b *Battle) BoardView() BoardView {
-	return newBoardView(b.terrain, b.units, b.Turn, b.Phase, b.Result, b.NeedsResume())
+	v := newBoardView(b.terrain, b.units, b.Turn, b.Phase, b.Result, b.NeedsResume())
+	v.reinforcementHints = reinforcementHints(v.Width(), v.Height(), b.Turn, b.Result, b.progress, b.reinforcements)
+	return v
 }
 
 // PreviewRewind は実行済み ID の行動前を、復元・回数消費・乱数への接触なしに返す（DES-RWD-05）。
@@ -42,7 +45,9 @@ func (b *Battle) PreviewRewind(id uint64) (BoardView, error) {
 			break
 		}
 		s := h.before
-		return newBoardView(s.terrain, s.units, s.Turn, s.Phase, s.Result, s.Result == Ongoing && s.progress.stage != playerInput), nil
+		v := newBoardView(s.terrain, s.units, s.Turn, s.Phase, s.Result, s.Result == Ongoing && s.progress.stage != playerInput)
+		v.reinforcementHints = reinforcementHints(v.Width(), v.Height(), s.Turn, s.Result, s.progress, s.reinforcements)
+		return v, nil
 	}
 	return BoardView{}, fmt.Errorf("%w: 履歴 ID %d は実行済みの戻り先にありません", ErrInvalidRewind, id)
 }
