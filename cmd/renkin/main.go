@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/sakana396/renkin_tactics/data"
@@ -22,26 +23,36 @@ func main() {
 	os.Exit(run(os.Args[1:], os.Stderr, data.Base(), time.Now, ui.Run))
 }
 
-// run は定義データ・種・保存先を画面へ渡し、終了コードを返す（DES-CMD-02）。
+// run は定義データ・種・保存先を画面へ渡し、終了コードを返す（DES-CMD-02・03）。
 func run(args []string, stderr io.Writer, fsys fs.FS, now func() time.Time, start func(ui.Config) error) int {
 	return runWithDirEnv(args, stderr, fsys, now, start, savefile.DirEnv{OS: runtime.GOOS, XDGDataHome: os.Getenv("XDG_DATA_HOME"), UserConfigDir: os.UserConfigDir, UserHomeDir: os.UserHomeDir})
 }
 
-// runWithDirEnv は保存先の解決失敗も OS に依存せず検査する口（DES-CMD-02）。
+// runWithDirEnv は保存先の解決失敗も OS に依存せず検査する口（DES-CMD-02・03）。
 func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.Time, start func(ui.Config) error, env savefile.DirEnv) int {
 	flags := flag.NewFlagSet("renkin", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	savedir := flags.String("savedir", "", "セーブのディレクトリ（指定しなければ OS の標準の場所）")
+	chapter := flags.String("chapter", "", "開発用の開始章 ID（-savedir も必須。成長は初期値）")
 	seed := flags.Uint64("seed", 0, "乱数の種。指定すると、やり直しても同じ種を使う（指定しなければ時刻から決める）")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
 	seedSet := false
+	chapterSet := false
 	flags.Visit(func(f *flag.Flag) {
+		if f.Name == "chapter" {
+			chapterSet = true
+		}
 		if f.Name == "seed" {
 			seedSet = true
 		}
 	})
+
+	if chapterSet && *savedir == "" {
+		fmt.Fprintln(stderr, "-chapter を指定するときは、専用の保存先を -savedir で指定してください")
+		return 2
+	}
 
 	cat, err := defload.Load(fsys)
 	if err != nil {
@@ -51,13 +62,28 @@ func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.
 		return 1
 	}
 
+	if chapterSet {
+		var ids []string
+		found := false
+		for _, ch := range cat.Chapters() {
+			ids = append(ids, ch.ID)
+			if ch.ID == *chapter {
+				found = true
+			}
+		}
+		if !found {
+			fmt.Fprintf(stderr, "章 %q はありません。指定できる章 ID: %s\n", *chapter, strings.Join(ids, ", "))
+			return 2
+		}
+	}
+
 	nextSeed := seeder(seedSet, *seed, now)
 	dir, err := savefile.ResolveDir(*savedir, env)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
-	if err := start(ui.Config{Catalog: cat, Store: savefile.Store{Dir: dir}, NextSeed: nextSeed}); err != nil {
+	if err := start(ui.Config{Catalog: cat, Store: savefile.Store{Dir: dir}, NextSeed: nextSeed, StartChapter: *chapter}); err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}

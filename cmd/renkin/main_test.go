@@ -62,7 +62,7 @@ func TestRun(t *testing.T) {
 		var cfg ui.Config
 		dir := t.TempDir()
 		code := run([]string{"-seed", "7", "-savedir", dir}, &stderr, data.Base(), fixedNow, func(c ui.Config) error { cfg = c; return nil })
-		if code != 0 || cfg.Catalog == nil || cfg.Store == nil || cfg.NextSeed == nil || stderr.Len() != 0 {
+		if code != 0 || cfg.Catalog == nil || cfg.Store == nil || cfg.NextSeed == nil || cfg.StartChapter != "" || stderr.Len() != 0 {
 			t.Fatal(code, stderr.String())
 		}
 		store, ok := cfg.Store.(savefile.Store)
@@ -96,6 +96,9 @@ func TestSeed(t *testing.T) {
 			var cfg ui.Config
 			if code := run(args, &bytes.Buffer{}, data.Base(), now, func(c ui.Config) error { cfg = c; return nil }); code != 0 {
 				t.Fatal(code)
+			}
+			if cfg.StartChapter != "" {
+				t.Fatal("開始章未指定の Config が変わった")
 			}
 			if calls != 0 {
 				t.Fatal("起動時に時刻取得")
@@ -155,6 +158,55 @@ func TestSaveDirStartup(t *testing.T) {
 					t.Fatal(code, started, stderr.String())
 				}
 			}
+		}
+	})
+}
+
+func TestStartChapterFlag(t *testing.T) {
+	t.Run("TC-IF-01-37 開始章と専用保存先の検証", func(t *testing.T) {
+		fsys := copyBase(t)
+		fsys["chapters.toml"].Data = append(fsys["chapters.toml"].Data, []byte("\n[[chapters]]\nid = \"ch09\"\nname = \"試験用の最終章\"\nmap = \"ch03\"\n")...)
+		for _, tc := range []struct {
+			name    string
+			args    []string
+			code    int
+			chapter string
+			reasons []string
+		}{
+			{"指定", []string{"-chapter", "ch02", "-savedir", "dev"}, 0, "ch02", nil},
+			{"4章目", []string{"-chapter", "ch09", "-savedir", "dev"}, 0, "ch09", nil},
+			{"保存先なし", []string{"-chapter", "ch02"}, 2, "", []string{"-chapter", "-savedir"}},
+			{"空の保存先", []string{"-chapter", "ch02", "-savedir", ""}, 2, "", []string{"-savedir"}},
+			{"未知", []string{"-chapter", "missing", "-savedir", "dev"}, 2, "", []string{"missing", "ch01", "ch02", "ch03", "ch09"}},
+			{"空の章", []string{"-chapter", "", "-savedir", "dev"}, 2, "", []string{"章", "ch01", "ch09"}},
+			{"値なし", []string{"-chapter"}, 2, "", []string{"chapter"}},
+			{"未指定", nil, 0, "", nil},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				var stderr bytes.Buffer
+				started := false
+				code := run(tc.args, &stderr, fsys, fixedNow, func(cfg ui.Config) error {
+					started = true
+					if cfg.StartChapter != tc.chapter {
+						t.Fatal(cfg.StartChapter, tc.chapter)
+					}
+					if tc.chapter != "" && cfg.Store.(savefile.Store).Dir != "dev" {
+						t.Fatal(cfg.Store)
+					}
+					return nil
+				})
+				if code != tc.code || started != (tc.code == 0) {
+					t.Fatal(code, started, stderr.String())
+				}
+				for _, reason := range tc.reasons {
+					if !strings.Contains(stderr.String(), reason) {
+						t.Fatal(stderr.String(), reason)
+					}
+				}
+				if tc.code == 0 && stderr.Len() != 0 {
+					t.Fatal(stderr.String())
+				}
+			})
 		}
 	})
 }
