@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
+	"github.com/sakana396/renkin_tactics/internal/ui/assets"
 )
 
 // previewUnits は tactics の PreviewRewind が返す行動前のユニット（DES-RWD-05）。UI の写しと比べる基準。
@@ -530,5 +531,47 @@ func TestRewindPreviewLayout(t *testing.T) {
 		c = newIdle(t)
 		c.OpenRewind()
 		checkView("履歴なし")
+	})
+}
+
+// プレビューの盤面も戦闘と同じ絵の選択（unitTile）を通す（DES-UI-21、DES-UI-22、REV-045 F-03）。
+func TestRewindPreviewCavalier(t *testing.T) {
+	t.Run("TC-FR-UNT-09-18 プレビューの盤面のエルザと敵の騎兵も騎乗の絵になる", func(t *testing.T) {
+		s := NewSceneController(Config{Catalog: cavalierCatalog(), Store: &memoryStore{}, NextSeed: func() uint64 { return 7 }})
+		startScenes(s)
+		clickSceneButton(t, s, "配置へ")
+		clickSceneButton(t, s, "戦闘開始")
+		c := s.BattleController()
+		playOut(c)
+		// エルザ（名簿の 2 番目。枠 (0, 1)）が待機してから一覧を開く。
+		c.Click(tactics.Pos{X: 0, Y: 1})
+		c.Click(tactics.Pos{X: 0, Y: 1})
+		c.ChooseAction(tactics.Wait)
+		playOut(c)
+		if len(c.battle.History()) != 1 {
+			t.Fatal("前提: エルザの待機の履歴がない")
+		}
+		c.OpenRewind()
+		v := c.RewindBoard()
+		if !v.Available {
+			t.Fatal("プレビューがない")
+		}
+		want := map[string]assets.Tile{"主人公": assets.PlayerLord, "エルザ": assets.Cavalier, "ガルド": assets.PlayerLance}
+		cavaliers := 0
+		for _, u := range v.Units {
+			got := unitTile(u)
+			if w, ok := want[u.Name]; ok && got != w {
+				t.Errorf("プレビューの %s の絵 = %v、%v のはず", u.Name, got, w)
+			}
+			if u.Side == tactics.Enemy && u.ClassName == "アーマー" && got != assets.EnemyLance {
+				t.Errorf("プレビューの敵のアーマーの絵 = %v", got)
+			}
+			if got == assets.Cavalier {
+				cavaliers++
+			}
+		}
+		if cavaliers != 3 {
+			t.Errorf("プレビューの騎乗の絵が %d 体、3 体（エルザ・隊長・騎兵）のはず", cavaliers)
+		}
 	})
 }
