@@ -17,11 +17,13 @@ type SaveStore interface {
 	Write(func(io.Writer) error) error
 }
 
-// Config は起動時に渡す目録・保存先・戦闘の種（DES-UI-09、DES-CMD-02）。
+// Config は起動時に渡す目録・保存先・戦闘の種と開発用の開始章（DES-UI-09、DES-CMD-02・03）。
 type Config struct {
 	Catalog  *defs.Catalog
 	Store    SaveStore
 	NextSeed func() uint64
+	// StartChapter は新規開始の章 ID。空なら最初の章から始める（DES-CMD-03）。
+	StartChapter string
 }
 
 // Scene はキャンペーンの場面（DES-UI-09）。
@@ -182,7 +184,13 @@ func (s *SceneController) Choose(i int) {
 		if i < 0 || i > 1 {
 			return
 		}
-		c, err := core.NewCampaign(s.cfg.Catalog, core.Rule(i))
+		var c *core.Campaign
+		var err error
+		if s.cfg.StartChapter == "" {
+			c, err = core.NewCampaign(s.cfg.Catalog, core.Rule(i))
+		} else {
+			c, err = core.NewCampaignAt(s.cfg.Catalog, core.Rule(i), s.cfg.StartChapter)
+		}
 		if err != nil {
 			s.message = err.Error()
 			return
