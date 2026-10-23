@@ -166,6 +166,12 @@ func (g *Game) Layout(_, _ int) (int, int) { return ScreenWidth, ScreenHeight }
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(bgColor)
 	if g.scenes != nil {
+		// 巻き戻しの一覧・確認中は、戦闘でも敗北の選択でも、左に行動前の盤面・右に一覧を描く（DES-UI-21）。
+		if sc := g.scenes.Scene(); (sc == Battle || sc == GameOver) && g.scenes.BattleController() != nil && g.scenes.BattleController().rewind.open {
+			g.ctrl = g.scenes.BattleController()
+			g.drawRewindPreview(screen)
+			return
+		}
 		if g.scenes.Scene() != Battle {
 			g.drawScene(screen)
 			if g.scenes.Scene() == GameOver {
@@ -175,6 +181,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			return
 		}
 		g.ctrl = g.scenes.BattleController()
+	} else if g.ctrl.rewind.open {
+		g.drawRewindPreview(screen)
+		return
 	}
 	g.drawTerrain(screen)
 	g.drawOverlay(screen)
@@ -209,7 +218,18 @@ func (g *Game) drawTile(dst *ebiten.Image, t assets.Tile, x, y int, scale float3
 
 // drawTerrain は地形を描く。どのマスにも草の下地を描き、平地でなければタイルを重ねる（DES-UI-01、DES-UI-05）。
 func (g *Game) drawTerrain(dst *ebiten.Image) {
-	b := g.ctrl.Battle()
+	g.drawBoardTerrain(dst, g.ctrl.Battle())
+}
+
+// terrainSource は戦闘と盤面参照値に共通する地形の参照口（DES-UI-21、DES-RWD-05）。
+type terrainSource interface {
+	Width() int
+	Height() int
+	TerrainAt(tactics.Pos) tactics.Terrain
+}
+
+// drawBoardTerrain は地形を、戦闘と巻き戻しのプレビューで同じ絵で描く（DES-UI-05、DES-UI-21）。
+func (g *Game) drawBoardTerrain(dst *ebiten.Image, b terrainSource) {
 	for y := 0; y < b.Height(); y++ {
 		for x := 0; x < b.Width(); x++ {
 			px, py := x*CellSize, y*CellSize
@@ -575,10 +595,34 @@ func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 	}
 }
 
-// drawRewind は入力を保持した盤面の上に一覧を描く（DES-UI-19）。
+// drawRewind は一覧を閉じているときの巻き戻しの入口と再開のボタンを描く（DES-UI-19）。
 func (g *Game) drawRewind(dst *ebiten.Image) {
-	if g.ctrl.rewind.open {
-		vector.DrawFilledRect(dst, 24, 16, 784, 552, panelColor, false)
+	g.drawSceneView(dst, g.ctrl.RewindView())
+}
+
+// drawRewindPreview は左に選んだ行動の前の盤面、下にプレビューの案内、右欄に一覧・確認を描く（DES-UI-21）。
+// 範囲・仮移動・予測・行動の一覧・再生と勝敗の帯は描かない。ユニットは戦闘と同じ drawUnitList で描く。
+func (g *Game) drawRewindPreview(dst *ebiten.Image) {
+	v := g.ctrl.RewindBoard()
+	if v.Available {
+		g.drawBoardTerrain(dst, v.Board)
+		g.drawUnitList(dst, v.Units)
+		if v.HasFrame {
+			strokeCell(dst, v.Frame, cursorColor)
+		}
 	}
+	if v.Notice != "" {
+		vector.DrawFilledRect(dst, 0, MapSize/2-32, MapSize, 64, bandColor, false)
+		g.centerLabel(dst, v.Notice, MapSize/2-lineHeight/2, white)
+	}
+	vector.DrawFilledRect(dst, 0, MapSize, MapSize, GuideHeight, panelColor, false)
+	for i, line := range v.Lines {
+		clr := white
+		if i > 0 {
+			clr = muted
+		}
+		g.label(dst, line, 8, MapSize+2+i*lineHeight, clr)
+	}
+	vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
 	g.drawSceneView(dst, g.ctrl.RewindView())
 }

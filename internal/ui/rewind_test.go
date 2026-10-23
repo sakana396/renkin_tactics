@@ -125,7 +125,7 @@ func TestRewindUI(t *testing.T) {
 			}
 		}
 		c.OpenRewind()
-		c.rewind.selected = selected
+		c.rewindSelect(selected)
 		c.RewindEnter()
 		c.RewindEnter()
 		if !c.battle.NeedsResume() || len(c.RewindView().Buttons) != 2 {
@@ -258,7 +258,7 @@ func TestRewindBoundaries(t *testing.T) {
 				t.Fatal("境界なし")
 			}
 			c.OpenRewind()
-			c.rewind.selected = i
+			c.rewindSelect(i)
 			c.RewindEnter()
 			c.RewindEnter()
 			if !c.battle.NeedsResume() {
@@ -378,21 +378,24 @@ func TestRewindMouse(t *testing.T) {
 		c.EndPhase()
 		playOut(c)
 		c.RewindClick(310, 520)
-		c.RewindClick(100, 110)
+		// 右欄の 1 行目（x=520〜824、y=60〜88）。DES-UI-21 の配置。
+		c.RewindClick(600, 70)
 		if c.rewind.selected != 0 {
 			t.Fatal("行を選べない")
 		}
-		c.RewindClick(650, 540)
+		// 「この前へ」は右欄の下端の右（x=680〜824、y=520〜560）。
+		c.RewindClick(750, 540)
 		if !c.rewind.confirm || c.battle.RewindsLeft() != 10 {
 			t.Fatal("確認なしで消費")
 		}
-		c.RewindClick(60, 490)
+		// 「やめる」は右欄の下端の左（x=520〜664）。
+		c.RewindClick(560, 540)
 		if c.rewind.confirm || !c.rewind.open {
 			t.Fatal("やめるが一覧に戻らない")
 		}
-		c.RewindClick(650, 540)
-		c.RewindClick(650, 490)
-		c.RewindClick(650, 490)
+		c.RewindClick(750, 540)
+		c.RewindClick(750, 540)
+		c.RewindClick(750, 540)
 		if c.rewind.open || c.battle.RewindsLeft() != 9 {
 			t.Fatal("マウスで復帰または消費が不正")
 		}
