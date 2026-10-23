@@ -204,15 +204,21 @@ func (b *Battle) continuePhase(events []Event) []Event {
 }
 
 // placeReinforcements は、このターンの増援を、増援の定義の順に置く（DES-MAP-03）。
-// 現れるマスに生きているユニットがいれば、その増援は現れない（増援はターンを 1 つだけ持つので、後のターンにも現れない）。
+// 元のマスから距離 2 以内の立てる空きマスを距離・Y・X の順で選ぶ。候補がなければ出さず、延期しない。
 // 現れた増援はユニットの列の終わりに足し、Reinforce を出す。
 func (b *Battle) placeReinforcements(events []Event) []Event {
 	for _, r := range b.reinforcements {
-		if r.Turn != b.Turn || b.unitAt(r.Unit.Pos) >= 0 {
+		if r.Turn != b.Turn {
 			continue
 		}
-		b.units = append(b.units, newUnit(r.Unit))
-		events = b.emit(events, Event{Kind: EventReinforce, Unit: len(b.units) - 1, To: r.Unit.Pos})
+		pos, ok := b.reinforcementPosition(r.Unit.Pos)
+		if !ok {
+			continue
+		}
+		u := newUnit(r.Unit)
+		u.Pos = pos
+		b.units = append(b.units, u)
+		events = b.emit(events, Event{Kind: EventReinforce, Unit: len(b.units) - 1, To: pos})
 	}
 	return events
 }
