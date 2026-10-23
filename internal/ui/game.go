@@ -107,6 +107,12 @@ func (g *Game) Update() error {
 		}
 	}
 	if s.Scene() != Battle {
+		if s.Scene() == Deploy {
+			s.SetDeployCursor(ebiten.CursorPosition())
+			if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+				s.ToggleDeployDanger()
+			}
+		}
 		if cancel {
 			s.Cancel()
 		} else if left {
@@ -607,7 +613,7 @@ func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
 	}
 }
 
-// drawDeploy は地形・枠の色・初期敵と味方・枠線を重ねる（DES-UI-20）。
+// drawDeploy は地形→出撃下地→個別範囲→ユニット→出撃枠→危険枠→選択枠を重ねる（DES-UI-23）。
 func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 	for y, row := range d.Terrain {
 		for x, t := range row {
@@ -620,9 +626,18 @@ func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 	for _, p := range d.Slots {
 		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, blueOverlay, false)
 	}
+	for p := range d.Blue {
+		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, blueOverlay, false)
+	}
+	for p := range d.Red {
+		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, redOverlay, false)
+	}
 	g.drawUnitList(dst, d.Units)
 	for _, p := range d.Slots {
 		strokeCell(dst, p, menuBorder)
+	}
+	for p := range d.Danger {
+		vector.StrokeRect(dst, float32(p.X*CellSize)+3, float32(p.Y*CellSize)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
 	}
 	if d.Selected >= 0 {
 		strokeCell(dst, d.Units[d.Selected].Pos, cursorColor)

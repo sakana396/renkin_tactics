@@ -188,9 +188,10 @@ func (s *SceneController) View() SceneView {
 	if s.message != "" {
 		y := 424
 		if s.scene == Deploy {
-			y = 552
+			add(s.message, 280, 552, false, StyleBad)
+		} else {
+			lines(s.message, y, StyleBad)
 		}
-		lines(s.message, y, StyleBad)
 	}
 	if s.saveWarning != "" {
 		y := 88

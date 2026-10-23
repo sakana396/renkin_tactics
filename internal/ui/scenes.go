@@ -64,6 +64,8 @@ type SceneController struct {
 	deployMembers    []int
 	deploySlots      []int
 	deploySelected   int
+	deployCursor     tactics.Pos
+	deployDanger     bool
 	deployment       map[int]bool
 }
 
@@ -325,6 +327,11 @@ func (s *SceneController) startDeployedBattle() {
 	if s.scene != Deploy {
 		return
 	}
+	// 検証失敗では種を取得しない（DES-DEP-02、DES-UI-23）。
+	if _, err := s.campaign.DeploymentView(s.deployMembers, s.deploySlots); err != nil {
+		s.message = err.Error()
+		return
+	}
 	sortie, events, err := s.campaign.StartBattleAt(s.deployMembers, s.deploySlots, s.cfg.NextSeed())
 	if err != nil {
 		s.message = err.Error()
@@ -335,6 +342,7 @@ func (s *SceneController) startDeployedBattle() {
 		s.message = err.Error()
 		return
 	}
+	s.resetDeploy()
 	s.sortie = sortie
 	s.battle = ctrl
 	s.message = ""
