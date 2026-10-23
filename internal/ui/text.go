@@ -129,9 +129,6 @@ const (
 func (c *Controller) Guide() []string {
 	b := c.battle
 	lines := []string{fmt.Sprintf("ターン %d　%sの番", c.shownTurn, sideName(c.shownSide))}
-	if c.state != Playing && b.NeedsResume() {
-		return append(lines, "Enter: 再開　T: 巻き戻し")
-	}
 	switch c.state {
 	case Idle:
 		lines = append(lines, "左クリック: 自軍を選ぶ・敵の範囲を出し続ける（もう一度で消す）　E: 番を終える", guideEnemyRange)

@@ -11,6 +11,7 @@ import (
 // rewindMenu は入力を保持して重ねる一覧と確認（DES-UI-19）。
 // 選択中の 1 件の行動前の盤面だけを写しとして持つ（DES-UI-21）。
 type rewindMenu struct {
+	reasonOffset  int
 	detailOffset  int
 	open, confirm bool
 	selected      int
@@ -73,6 +74,7 @@ func (c *Controller) previewOK() bool {
 func (c *Controller) rewindSelect(i int) {
 	c.rewind.selected = i
 	c.rewind.detailOffset = 0
+	c.rewind.reasonOffset = 0
 	c.loadPreview()
 }
 
@@ -91,7 +93,7 @@ func (c *Controller) RewindMove(delta int) {
 // RewindEnter は確認を経て一度だけ巻き戻す。消える項目の境界を先に保持する（DES-UI-19）。
 // 残り 0 回とプレビューを取得できない選択では確定しない。失敗したら一覧に戻り、消費しない（DES-UI-21）。
 func (c *Controller) RewindEnter() {
-	if !c.rewind.open || c.battle.RewindsLeft() == 0 || !c.previewOK() {
+	if !c.rewind.open || c.battle.RewindsLeft() == 0 || !c.previewOK() || !c.rewindAllowed() {
 		return
 	}
 	h := c.battle.History()
@@ -111,7 +113,6 @@ func (c *Controller) RewindEnter() {
 	}
 	clear(c.record[min(len(c.record), entry.EventStart):])
 	c.record = c.record[:min(len(c.record), entry.EventStart)]
-	c.resumeEnemy = entry.Kind == tactics.HistoryAction && entry.Side == tactics.Enemy
 	c.rewind = rewindMenu{}
 	c.events, c.index, c.frame = nil, 0, 0
 	c.unit, c.target, c.watched = -1, -1, -1
@@ -120,19 +121,6 @@ func (c *Controller) RewindEnter() {
 	c.shownTurn, c.shownSide = c.battle.Turn, c.battle.Phase
 	c.state = Idle
 	c.refreshHints()
-}
-
-// Resume は続きだけを実行し、通常と同じ出来事再生へ渡す（DES-UI-19）。
-func (c *Controller) Resume() {
-	if c.rewind.open || c.state == Playing || !c.battle.NeedsResume() {
-		return
-	}
-	events, err := c.battle.Resume()
-	if err != nil {
-		c.message = err.Error()
-		return
-	}
-	c.play(events)
 }
 
 // rewindLabel は描画と独立した行動の全文。移動だけの敵も出来事の境界から区別する（DES-UI-19）。
@@ -225,7 +213,7 @@ func (c *Controller) rewindDetail() []SceneText {
 	return out
 }
 
-// RewindView は右欄の 8 行の一覧と確認、回数、閉じているときの入口と再開の配置（DES-UI-19、DES-UI-21）。
+// RewindView は右欄の 8 行の一覧と確認、回数、閉じているときの入口の配置（DES-UI-19、DES-UI-21）。
 func (c *Controller) RewindView() SceneView {
 	var v SceneView
 	add := func(s string, x, y int, style InfoStyle) {
@@ -238,13 +226,7 @@ func (c *Controller) RewindView() SceneView {
 		}
 		button(fmt.Sprintf("巻き戻し 残り %d/10", c.battle.RewindsLeft()), image.Rect(304, 512, 504, 530), true)
 		add("T: 巻き戻し", 216, 514, StylePlain)
-		if c.battle.NeedsResume() {
-			label := "番の処理を再開"
-			if c.resumeEnemy {
-				label = "敵軍の行動を再開"
-			}
-			button(label, image.Rect(144, 550, 464, 574), true)
-		}
+
 		return v
 	}
 	h := c.battle.History()
@@ -269,7 +251,7 @@ func (c *Controller) RewindView() SceneView {
 		add(fmt.Sprintf("残り %d → %d", n, n-1), rewindLeft, 436, StylePlain)
 		add("ホイール: 全文を読む", rewindLeft, 456, StyleLabel)
 		button("やめる", left, true)
-		button("戻す", right, n > 0 && ok)
+		button("戻す", right, n > 0 && ok && c.rewindAllowed())
 		return v
 	}
 	add("選んだ行動の「前」に戻る", rewindLeft, 34, StylePlain)
@@ -277,7 +259,7 @@ func (c *Controller) RewindView() SceneView {
 	for i := start; i < min(len(h), start+8); i++ {
 		r := image.Rect(rewindLeft, rewindRowTop+(i-start)*rewindRowH, rewindRight, rewindRowTop+(i-start+1)*rewindRowH)
 		v.Rows = append(v.Rows, PrepareRow{Rect: r, Selected: i == c.rewind.selected})
-		add(fitRewind(c.rewindLabel(h[i]), rewindWidth-16), rewindLeft+8, r.Min.Y+6, StylePlain)
+		add(fitRewind(c.rewindLabel(h[i]), rewindWidth-16), rewindLeft+8, r.Min.Y+6, rewindStyle(h[i]))
 	}
 	if len(h) == 0 {
 		add("戻せる行動がありません", rewindLeft+8, rewindRowTop+6, StylePlain)
@@ -291,25 +273,14 @@ func (c *Controller) RewindView() SceneView {
 		add(t.Text, rewindLeft, 328+i*20, t.Style)
 	}
 	add("ホイール: 詳細の全文を読む", rewindLeft, 436, StyleLabel)
-	reason := ""
-	switch {
-	case len(h) == 0:
-		reason = "戻せる行動がありません"
-	case !ok:
-		reason = "プレビューを表示できないため戻せません"
-	case n == 0:
-		reason = "残り回数が 0 のため巻き戻せません"
-	}
-	if reason != "" {
-		for i, s := range wrapWidth(reason, rewindWidth) {
-			if i >= 2 {
-				break
-			}
-			add(s, rewindLeft, 456+i*20, StyleBad)
+	for i, line := range c.rewindReasons()[min(c.rewind.reasonOffset, len(c.rewindReasons())):] {
+		if i >= 2 {
+			break
 		}
+		add(line, rewindLeft, 456+i*20, StyleBad)
 	}
 	button("戻る", left, true)
-	button("この前へ", right, n > 0 && ok)
+	button("決定", right, n > 0 && ok && c.rewindAllowed())
 	return v
 }
 
@@ -354,9 +325,6 @@ func (c *Controller) RewindBoard() RewindBoardView {
 	p := c.rewind.preview
 	v := RewindBoardView{Visible: true, Available: true, Board: p, Units: c.rewind.previewUnits, Hint: c.rewindHintView(c.rewind.previewHints)}
 	v.Lines = []string{"プレビュー中・未確定", fmt.Sprintf("盤面: %dT %s　%s", p.Turn, sideName(p.Phase), back)}
-	if p.NeedsResume() {
-		v.Lines = append(v.Lines, "確定後は再開操作で続行")
-	}
 	if e := h[c.rewind.selected]; e.Kind == tactics.HistoryAction && e.Unit >= 0 && e.Unit < len(v.Units) && v.Units[e.Unit].Alive {
 		v.Frame, v.HasFrame = v.Units[e.Unit].Pos, true
 	}
@@ -380,10 +348,8 @@ func (c *Controller) RewindClick(x, y int) bool {
 					c.RewindMove(8)
 				case b.Label == "戻る" || b.Label == "やめる":
 					c.Cancel()
-				case b.Label == "戻す" || b.Label == "この前へ":
+				case b.Label == "戻す" || b.Label == "決定":
 					c.RewindEnter()
-				default:
-					c.Resume()
 				}
 			}
 			return true
@@ -417,6 +383,9 @@ func (c *Controller) RewindDetail(delta int) {
 	if c.rewind.confirm {
 		limit = rewindConfirmLines
 	}
+	if !c.rewind.confirm {
+		c.rewind.reasonOffset = max(0, min(max(0, len(c.rewindReasons())-2), c.rewind.reasonOffset+delta))
+	}
 	n := len(c.rewindDetail())
 	c.rewind.detailOffset = max(0, min(max(0, n-limit), c.rewind.detailOffset+delta))
 }
@@ -429,8 +398,6 @@ func (c *Controller) rewindKey(key string) {
 	case "Enter":
 		if c.rewind.open {
 			c.RewindEnter()
-		} else {
-			c.Resume()
 		}
 	case "Up":
 		c.RewindMove(-1)
@@ -441,4 +408,49 @@ func (c *Controller) rewindKey(key string) {
 	case "PageDown":
 		c.RewindMove(8)
 	}
+}
+
+// rewindAllowed は表示文や写しの番に依存せず、履歴の属性で決定可否を調べる（DES-UI-21）。
+func (c *Controller) rewindAllowed() bool {
+	h := c.battle.History()
+	i := c.rewind.selected
+	if i < 0 || i >= len(h) {
+		return false
+	}
+	e := h[i]
+	return e.Side == tactics.Player && (e.Kind == tactics.HistoryAction || e.Kind == tactics.HistoryEndPhase && !e.Automatic)
+}
+
+// rewindStyle は選択の有無にかかわらず、種類ごとの色と濃さを保つ（DES-UI-21）。
+func rewindStyle(e tactics.HistoryEntry) InfoStyle {
+	if e.Kind == tactics.HistoryPlayerStart {
+		return StyleRewindBoundary
+	}
+	if e.Side == tactics.Enemy || e.Kind == tactics.HistoryEndPhase && e.Automatic {
+		return StyleRewindEnemy
+	}
+	return StylePlain
+}
+
+// rewindReasons は併発した理由をすべて折り返し、専用の2行内で送って読めるようにする（DES-UI-21）。
+func (c *Controller) rewindReasons() []string {
+	var reasons []string
+	if len(c.battle.History()) == 0 {
+		reasons = append(reasons, "戻せる行動がありません")
+	} else {
+		if !c.rewindAllowed() {
+			reasons = append(reasons, "自軍の行動か『番を終える』の前だけ戻せます")
+		}
+		if !c.previewOK() {
+			reasons = append(reasons, "プレビューを表示できないため戻せません")
+		}
+	}
+	if c.battle.RewindsLeft() == 0 {
+		reasons = append(reasons, "残り回数が 0 のため巻き戻せません")
+	}
+	var lines []string
+	for _, r := range reasons {
+		lines = append(lines, wrapWidth(r, rewindWidth)...)
+	}
+	return lines
 }

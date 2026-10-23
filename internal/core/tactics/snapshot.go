@@ -24,6 +24,7 @@ type phaseProgress struct {
 }
 
 // battleSnapshot は復元対象だけの深い写し。履歴と次の ID・残り回数は含めない（DES-RWD-01・03）。
+// 明示の番終了は playerInput、自動移行は enemyStart を保存する（DES-IT04 7.1 節）。
 // 地形と増援定義は New が入力から独立させ、戦闘中に変更しないので共有する。
 type battleSnapshot struct {
 	Turn           int

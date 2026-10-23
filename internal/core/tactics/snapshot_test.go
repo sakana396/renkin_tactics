@@ -178,7 +178,7 @@ func TestHistoryFoundation(t *testing.T) {
 		if end.entry.Kind != historyEndPhase || end.entry.Automatic || enemy.entry.Side != Enemy || enemy.entry.Unit != 2 || enemy.before.units[2].AI != Hold || start.entry.Kind != historyPlayerStart || start.entry.Side != Player || start.entry.Turn != 2 || start.before.Turn != 1 || b.Turn != 2 {
 			t.Fatal("番境界または敵の行動前が不正")
 		}
-		if enemy.entry.Action != Attack || enemy.entry.Target != 0 || enemy.entry.TargetName != "主人公" || enemy.entry.UnitName != "ボス" || enemy.before.progress.stage != enemyAction || enemy.before.progress.nextEnemy != 2 || enemy.before.progress.enemyCount != 3 || end.before.progress.stage != enemyStart || start.before.progress.stage != playerStart {
+		if enemy.entry.Action != Attack || enemy.entry.Target != 0 || enemy.entry.TargetName != "主人公" || enemy.entry.UnitName != "ボス" || enemy.before.progress.stage != enemyAction || enemy.before.progress.nextEnemy != 2 || enemy.before.progress.enemyCount != 3 || end.before.progress.stage != playerInput || end.entry.Automatic || start.before.progress.stage != playerStart {
 			t.Fatal("敵の要約と再開位置が不正")
 		}
 		if end.entry.EventStart != first.entry.EventEnd || end.entry.EventEnd != enemy.entry.EventStart || enemy.entry.EventEnd != start.entry.EventStart || start.entry.EventEnd != b.eventCount || b.eventCount != first.entry.EventEnd+len(ev) {
@@ -201,7 +201,7 @@ func TestHistoryFoundation(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !b.history[2].entry.Automatic {
+		if !b.history[2].entry.Automatic || b.history[2].before.progress.stage != enemyStart {
 			t.Fatal("自動移行を区別していない")
 		}
 		h := b.history[3]

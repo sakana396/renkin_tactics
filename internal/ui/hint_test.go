@@ -216,7 +216,7 @@ func TestReinforcementHintNormal(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-MAP-03-11 / TC-FR-UNT-09-12 気配の案内は案内欄の別の行に収まり、案内文・巻き戻しの入口・再開ボタンと重ならない", func(t *testing.T) {
+	t.Run("TC-FR-MAP-03-11 / TC-FR-UNT-09-12 気配の案内は通常位置で案内文・巻き戻しの入口と重ならず再開操作はない", func(t *testing.T) {
 		c := newIdleWith(t, hintSetup)
 		endTurn(c)
 		checkGuideLayout(t, c, "2T Idle")
@@ -236,7 +236,7 @@ func TestReinforcementHintNormal(t *testing.T) {
 		c.EndPhase()
 		playOut(c)
 
-		// 2T の番終了の前（敵軍開始前）へ戻すと、再開待ちでも予兆を出す。
+		// 2T の明示の番終了前は自軍入力待ちとなり、通常位置に同じ予兆を出す。
 		h := c.battle.History()
 		i := -1
 		for j, e := range h {
@@ -251,16 +251,17 @@ func TestReinforcementHintNormal(t *testing.T) {
 		c.rewindSelect(i)
 		c.RewindEnter()
 		c.RewindEnter()
-		if !c.battle.NeedsResume() || c.battle.Turn != 2 {
-			t.Fatalf("2T の敵軍開始前に戻っていない（Turn %d、再開 %v）", c.battle.Turn, c.battle.NeedsResume())
+		if c.battle.NeedsResume() || c.battle.Turn != 2 {
+			t.Fatalf("2T の番終了前の自軍入力待ちに戻っていない（Turn %d、再開 %v）", c.battle.Turn, c.battle.NeedsResume())
 		}
-		checkNormalHint(t, c, "2T 敵軍開始前（再開待ち）", hintAreasT2)
-		checkGuideLayout(t, c, "2T 再開待ち")
-		checkResumeLayout(t, c)
-		c.Resume()
-		checkNormalHint(t, c, "再開の再生中", nil)
+		checkNormalHint(t, c, "2T 明示の番終了前（自軍入力待ち）", hintAreasT2)
+		checkGuideLayout(t, c, "2T 自軍入力待ち")
+		checkInputLayout(t, c)
+		c.EndPhase()
+		c.EndPhase()
+		checkNormalHint(t, c, "番終了の再生中", nil)
 		playOut(c)
-		checkNormalHint(t, c, "再開後の 3T", hintAreasT3)
+		checkNormalHint(t, c, "番終了後の 3T", hintAreasT3)
 	})
 }
 

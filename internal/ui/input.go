@@ -47,11 +47,10 @@ type Factory func() (*tactics.Battle, []tactics.Event, error)
 // 時間はフレーム数（Tick）で数え、core には渡さない。
 type Controller struct {
 	// 巻き戻しの表示と通し出来事の境界を保持する（DES-UI-19）。
-	resumeEnemy bool
-	rewind      rewindMenu
-	record      []tactics.Event
-	battle      *tactics.Battle
-	state       State
+	rewind rewindMenu
+	record []tactics.Event
+	battle *tactics.Battle
+	state  State
 
 	// unit は選んだ自軍、dest は移動先、target は攻撃・回復の相手（いなければ -1）。
 	unit   int
