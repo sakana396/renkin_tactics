@@ -34,6 +34,7 @@
 | 計画 | 反復 4 の振り返り | [iterations/it04/retrospective.md](iterations/it04/retrospective.md) | v0.2 承認（E-48） |
 | 計画 | 反復 5 計画書 | [iterations/it05/plan.md](iterations/it05/plan.md) | v0.3（承認（E-50）） |
 | 設計 | 設計書（反復 5） | [03_design/design-it05.md](03_design/design-it05.md) | v0.3（承認（E-50）） |
+| 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.1（#102。開発者の試遊の記録は未実施） |
 
 ## エージェント向けのルール
 

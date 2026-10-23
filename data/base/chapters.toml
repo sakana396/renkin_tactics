@@ -25,3 +25,11 @@ name = "王都の奪還"
 map = "ch03"
 before = "ch03_before"
 after = "ch03_after"
+
+# 9 章（DES-IT05 3.3 節、DES-CMP-09）。最後の章で、勝つとクリア。ch04〜ch08 は #103・#104 で ch03 との間に入れる
+[[chapters]]
+id = "ch09"
+name = "ヴァルトの門"
+map = "ch09"
+before = "ch09_before"
+after = "ch09_after"

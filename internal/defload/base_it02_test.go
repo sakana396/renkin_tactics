@@ -184,7 +184,8 @@ func TestBaseDataIt02(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-CMP-01-01 章は 3 つで、章の順・名前・マップ・出撃の枠の数・報酬・ボスが 10.4 節のとおり", func(t *testing.T) {
+	// 反復 5 で章が増えた（DES-IT05 3.3 節）。ここでは先頭の 3 章を確かめ、章の数と並びは TC-FR-CMP-01-05 で確かめる（8.3 節）。
+	t.Run("TC-FR-CMP-01-01 先頭の 3 章の順・名前・マップ・出撃の枠の数・報酬・ボスが 10.4 節のとおり", func(t *testing.T) {
 		potion2 := []defs.ItemCount{{Item: "potion", Count: 2}}
 		want := []struct {
 			id, name, mapID string
@@ -197,7 +198,7 @@ func TestBaseDataIt02(t *testing.T) {
 			{"ch03", "王都の奪還", "ch03", 5, nil, "グラウス"},
 		}
 		chapters := cat.Chapters()
-		if len(chapters) != len(want) {
+		if len(chapters) < len(want) {
 			t.Fatalf("章の数 = %d", len(chapters))
 		}
 		for i, w := range want {
@@ -229,8 +230,9 @@ func TestBaseDataIt02(t *testing.T) {
 	})
 
 	t.Run("TC-FR-CMP-07-01 各章の前後に物語があり、段落は 10.8 節の下書きのとおりで 200 文字以下", func(t *testing.T) {
-		counts := map[string]int{"ch01_before": 6, "ch01_after": 5, "ch02_before": 5, "ch02_after": 4, "ch03_before": 4, "ch03_after": 4}
-		for _, c := range cat.Chapters() {
+		// ch03_after は反復 5 で結末から次の章への橋渡しに書き換えた（DES-IT05 3.3 節）。反復 5 で足した章は TC-FR-CMP-07-05 で確かめる。
+		counts := map[string]int{"ch01_before": 6, "ch01_after": 5, "ch02_before": 5, "ch02_after": 4, "ch03_before": 4, "ch03_after": 5}
+		for _, c := range cat.Chapters()[:3] {
 			for _, id := range []string{c.Before, c.After} {
 				if id != c.ID+"_before" && id != c.ID+"_after" {
 					t.Errorf("章 %s の物語の ID %q が、章の ID に _before・_after を付けたものでない", c.ID, id)
@@ -260,7 +262,8 @@ func TestBaseDataIt02(t *testing.T) {
 			{"ch01_before", 3, "隊には、砦へ薬を届けに来ていた工房の見習い、リナもいた。癒やしの杖を握る手は震えていたが、引き返すとは言わなかった。"},
 			{"ch01_before", 5, "レオン「行こう。守将ハーゲンを討てば、先遣隊は崩れる」"},
 			{"ch02_before", 2, "エルザ「村を焼けという命令に、従えなかった。この戦は、錬金術の技を奪うための略奪だ。剣を向ける相手を、選び直したい」"},
-			{"ch03_after", 3, "帝国との戦がこれで終わるのかは、まだ誰にも分からない。それでも、工房の煙突から、久しぶりに煙が上がった。"},
+			{"ch03_before", 1, "捕らえた帝国兵の話では、総大将グラウスは城の奥の玉座の間にいる。自ら剣を取る男で、近づけば必ず出てくるという。"},
+			{"ch03_after", 4, "レオン「王都は取り戻した。だが、まだ何も終わっていない。援軍が着く前に、門を落とす」"},
 		}
 		for _, sp := range spot {
 			s, _ := cat.Story(sp.id)
@@ -271,12 +274,15 @@ func TestBaseDataIt02(t *testing.T) {
 	})
 
 	t.Run("TC-FR-CMP-08-01 エルザは名簿になく、2 章の始めに加わる（レベル 2）", func(t *testing.T) {
-		var joins [][]string
+		// 反復 5 で足した章に加入はない（DES-IT05 3.3 節）。
 		for _, c := range cat.Chapters() {
-			joins = append(joins, c.Joins)
-		}
-		if !reflect.DeepEqual(joins, [][]string{nil, {"elsa"}, nil}) {
-			t.Errorf("加入 = %q", joins)
+			want := []string(nil)
+			if c.ID == "ch02" {
+				want = []string{"elsa"}
+			}
+			if !reflect.DeepEqual(c.Joins, want) {
+				t.Errorf("章 %s の加入 = %q", c.ID, c.Joins)
+			}
 		}
 		for _, id := range cat.Game.Party {
 			if id == "elsa" {
