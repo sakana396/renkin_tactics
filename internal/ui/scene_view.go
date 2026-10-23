@@ -219,7 +219,7 @@ func (s *SceneController) Click(x, y int) {
 				return
 			}
 		}
-		if p, ok := CellAt(x, y); ok {
+		if p, ok := s.deployCamera.CellAt(x, y); ok {
 			s.clickDeploy(p)
 		}
 		return

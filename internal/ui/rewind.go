@@ -11,6 +11,7 @@ import (
 // rewindMenu は入力を保持して重ねる一覧と確認（DES-UI-19）。
 // 選択中の 1 件の行動前の盤面だけを写しとして持つ（DES-UI-21）。
 type rewindMenu struct {
+	camera        Camera
 	reasonOffset  int
 	detailOffset  int
 	open, confirm bool
@@ -34,7 +35,7 @@ func (c *Controller) OpenRewind() {
 	if c.state == Playing || c.rewind.open {
 		return
 	}
-	c.rewind = rewindMenu{open: true, selected: len(c.battle.History()) - 1}
+	c.rewind = rewindMenu{camera: c.camera, open: true, selected: len(c.battle.History()) - 1}
 	c.loadPreview()
 }
 
@@ -58,8 +59,11 @@ func (c *Controller) fetchPreview(id uint64) {
 	v, err := c.battle.PreviewRewind(id)
 	c.rewind.previewID, c.rewind.previewLoaded, c.rewind.previewErr = id, true, err
 	c.rewind.preview, c.rewind.previewUnits, c.rewind.previewHints = tactics.BoardView{}, nil, nil
+	c.rewind.camera = Camera{}
 	if err == nil {
 		c.rewind.preview, c.rewind.previewUnits, c.rewind.previewHints = v, v.Units(), v.ReinforcementHints()
+		c.rewind.camera = Camera{Width: v.Width(), Height: v.Height()}
+		c.focusHistory(&c.rewind.camera, v.Units())
 	}
 }
 
@@ -113,6 +117,8 @@ func (c *Controller) RewindEnter() {
 	}
 	clear(c.record[min(len(c.record), entry.EventStart):])
 	c.record = c.record[:min(len(c.record), entry.EventStart)]
+	c.camera = Camera{Width: c.battle.Width(), Height: c.battle.Height()}
+	focusHistoryEntry(&c.camera, entry, c.battle.Units())
 	c.rewind = rewindMenu{}
 	c.events, c.index, c.frame = nil, 0, 0
 	c.unit, c.target, c.watched = -1, -1, -1
@@ -272,7 +278,7 @@ func (c *Controller) RewindView() SceneView {
 		}
 		add(t.Text, rewindLeft, 328+i*20, t.Style)
 	}
-	add("ホイール: 詳細の全文を読む", rewindLeft, 436, StyleLabel)
+	add("右欄ホイール: 詳細／盤面: 移動", rewindLeft, 436, StyleLabel)
 	for i, line := range c.rewindReasons()[min(c.rewind.reasonOffset, len(c.rewindReasons())):] {
 		if i >= 2 {
 			break
@@ -324,7 +330,7 @@ func (c *Controller) RewindBoard() RewindBoardView {
 	}
 	p := c.rewind.preview
 	v := RewindBoardView{Visible: true, Available: true, Board: p, Units: c.rewind.previewUnits, Hint: c.rewindHintView(c.rewind.previewHints)}
-	v.Lines = []string{"プレビュー中・未確定", fmt.Sprintf("盤面: %dT %s　%s", p.Turn, sideName(p.Phase), back)}
+	v.Lines = []string{"プレビュー中・未確定", fmt.Sprintf("盤面: %dT %s　%s", p.Turn, sideName(p.Phase), back), "盤面ホイール: 上下／Shift 併用: 左右"}
 	if e := h[c.rewind.selected]; e.Kind == tactics.HistoryAction && e.Unit >= 0 && e.Unit < len(v.Units) && v.Units[e.Unit].Alive {
 		v.Frame, v.HasFrame = v.Units[e.Unit].Pos, true
 	}

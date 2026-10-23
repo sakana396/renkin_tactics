@@ -46,11 +46,11 @@ func (c *Controller) ReinforcementHintView() HintView {
 	if c.state == Playing || c.state == Over || c.rewind.open || len(c.hints) == 0 {
 		return HintView{}
 	}
-	return HintView{
+	return c.Camera().hintView(HintView{
 		Visible: true,
 		Areas:   append([]tactics.ReinforcementHint(nil), c.hints...),
 		Text:    SceneText{Text: hintText, X: MapSize - 8 - textWidth(hintText), Y: MapSize + 2 + 2*lineHeight, Style: StyleHint},
-	}
+	})
 }
 
 // rewindHintView は巻き戻しの一覧・確認で、選択中の写しの予兆を返す（DES-UI-24、DES-UI-21）。
@@ -59,11 +59,11 @@ func (c *Controller) rewindHintView(areas []tactics.ReinforcementHint) HintView 
 	if len(areas) == 0 {
 		return HintView{}
 	}
-	return HintView{
+	return c.Camera().hintView(HintView{
 		Visible: true,
 		Areas:   append([]tactics.ReinforcementHint(nil), areas...),
 		Text:    SceneText{Text: hintText, X: rewindLeft, Y: hintRewindY, Style: StyleHint},
-	}
+	})
 }
 
 // hintShapes は予兆領域の外周の破線と、中央付近の印の左上の座標を返す（DES-UI-24）。
@@ -97,4 +97,41 @@ func hintShapes(areas []tactics.ReinforcementHint) (dashes []image.Rectangle, ma
 		}
 	}
 	return dashes, marks
+}
+
+// hintView は世界の予兆を削らず、画面外にもあることだけを案内する（DES-UI-25）。
+func (c Camera) hintView(v HintView) HintView {
+	for _, a := range v.Areas {
+		if !c.Visible(a.Min) || !c.Visible(a.Max) {
+			v.Text.Text = hintText + " 画面外にも気配"
+			v.Text.X = rewindLeft
+			if v.Text.Y != hintRewindY {
+				v.Text.Y = ScreenHeight - 2*lineHeight
+			}
+			break
+		}
+	}
+	return v
+}
+
+// hintShapes は共通カメラで変換して表示領域と交差する部分だけ返す（DES-UI-25）。
+func (c Camera) hintShapes(areas []tactics.ReinforcementHint) ([]image.Rectangle, []image.Point) {
+	d, m := hintShapes(areas)
+	offset := image.Pt(c.X*CellSize, c.Y*CellSize)
+	bounds := image.Rect(0, 0, MapSize, MapSize)
+	var ds []image.Rectangle
+	var ms []image.Point
+	for _, r := range d {
+		r = r.Sub(offset).Intersect(bounds)
+		if !r.Empty() {
+			ds = append(ds, r)
+		}
+	}
+	for _, p := range m {
+		p = p.Sub(offset)
+		if p.In(bounds) {
+			ms = append(ms, p)
+		}
+	}
+	return ds, ms
 }
