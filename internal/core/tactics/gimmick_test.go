@@ -194,7 +194,7 @@ func TestReinforcements(t *testing.T) {
 		s.Reinforcements = []tactics.ReinforcementSetup{
 			// 主人公のいるマス。
 			{Turn: 2, Unit: foe("ふさがれた増援", 0, 0)},
-			// 同じターンに同じマスに 2 体。2 体目は 1 体目にふさがれる。
+			// 同じターンに同じマスに 2 体。2 体目は 1 体目を避け、近くの (2,1) へ出る。
 			{Turn: 2, Unit: foe("増援 1", 2, 2)},
 			{Turn: 2, Unit: foe("増援 2", 2, 2)},
 		}

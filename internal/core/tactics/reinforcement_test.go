@@ -32,12 +32,15 @@ func TestAlternativeReinforcements(t *testing.T) {
 			origin  Pos
 			blocked []Pos
 			walls   []Pos
+			terrain *Terrain
 			dead    []Pos
 			want    Pos
 			exists  bool
 		}{
 			{name: "元の空き", origin: Pos{2, 2}, want: Pos{2, 2}, exists: true},
 			{name: "自軍占有", origin: Pos{2, 2}, blocked: []Pos{{2, 2}}, want: Pos{2, 1}, exists: true},
+			{name: "森へ出現", origin: Pos{2, 2}, blocked: []Pos{{2, 2}}, terrain: &Terrain{Name: "森", Cost: 2}, want: Pos{2, 1}, exists: true},
+			{name: "山へ出現", origin: Pos{2, 2}, blocked: []Pos{{2, 2}}, terrain: &Terrain{Name: "山", Cost: 3}, want: Pos{2, 1}, exists: true},
 			{name: "距離2", origin: Pos{2, 2}, blocked: []Pos{{2, 2}, {2, 1}, {1, 2}, {3, 2}, {2, 3}}, want: Pos{2, 0}, exists: true},
 			{name: "X順", origin: Pos{2, 2}, blocked: []Pos{{2, 2}, {2, 1}}, want: Pos{1, 2}, exists: true},
 			{name: "端", origin: Pos{0, 0}, blocked: []Pos{{0, 0}}, want: Pos{1, 0}, exists: true},
@@ -64,6 +67,9 @@ func TestAlternativeReinforcements(t *testing.T) {
 				}
 				for _, p := range tc.walls {
 					b.terrain[p.Y][p.X].Cost = 0
+				}
+				if tc.terrain != nil {
+					b.terrain[1][2] = *tc.terrain
 				}
 				before := b.snapshot()
 				n := len(b.units)
@@ -132,7 +138,8 @@ func TestAlternativeReinforcements(t *testing.T) {
 					if abs(x-2)+abs(y-2) > 2 {
 						continue
 					}
-					if occupied {
+					// 元の平地は生存ユニットでふさぎ、距離 1・2 だけ地形を変える。
+					if occupied || p == (Pos{2, 2}) {
 						u := b.units[2].clone()
 						u.Pos = p
 						u.AI = Hold

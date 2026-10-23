@@ -1,15 +1,27 @@
 # 画像素材の出典
 
-ふしぎ錬金（`sakana396/fushigi_renkin` の `internal/ui/assets/`、ふしぎ錬金の ADR-0003）から、配布物の画像と同梱の利用許諾をそのまま持ち込んだ（2026-10-20、E-02）。利用許諾のファイルは原本から変更していない。読み込むコードは `assets.go`（DES-UI-05、#12）。
+Kenney の画像は、ふしぎ錬金（`sakana396/fushigi_renkin` の `internal/ui/assets/`、ふしぎ錬金の ADR-0003）から、配布物の画像と同梱の利用許諾をそのまま持ち込んだ（2026-10-20、E-02）。利用許諾のファイルは原本から変更していない。読み込むコードは `assets.go`（DES-UI-05、#12）。
 
 | 素材名と版 | 作者 | 配布元 | 利用許諾 | 確かめた日 | 取り込んだファイル（元のファイル名） |
 |---|---|---|---|---|---|
 | Tiny Town 1.1 | Kenney | <https://kenney.nl/assets/tiny-town> | CC0 1.0（`kenney_tiny_town_License.txt`） | 2026-10-15 | `tiny_town.png`（`Tilemap/tilemap_packed.png`）、`kenney_tiny_town_License.txt`（`License.txt`） |
 | Tiny Dungeon 1.0 | Kenney | <https://kenney.nl/assets/tiny-dungeon> | CC0 1.0（`kenney_tiny_dungeon_License.txt`） | 2026-10-15 | `tiny_dungeon.png`（`Tilemap/tilemap_packed.png`）、`kenney_tiny_dungeon_License.txt`（`License.txt`） |
 
+### 自作の画像（DES-UI-22、#80）
+
+両軍の騎兵（自軍のエルザ・敵の cavalier）の、馬に乗った絵（決定（E-41））。Tiny Town・Tiny Dungeon には騎乗の絵がなく、Tiny Dungeon 97（面頬の騎士）の代用は採らない（REV-042 F-01）。
+
+| 素材 | 作者 | 作成日 | 利用許諾 | ファイル |
+|---|---|---|---|---|
+| 騎兵（16 × 16、1 枚） | レンキン・タクティクスの開発（sakana396。Claude Code が描いた） | 2026-10-23 | 自作。CC0 1.0 として扱う（同梱の Kenney 素材と同じ条件）。ライセンスの原本はない | `original.png` |
+
+- 探した素材（2026-10-23）: Kenney の他のパック（Tiny Battle は CC0・16 × 16 だが、現代の兵器と兵士で馬はない）、OpenGameArt の CC0 素材（zwonky の「Horses - Arne16」<https://opengameart.org/content/horses-arne16> と、それに乗せる騎士の絵は 16 × 16・CC0 だが、Arne16 の 16 色で描かれ、馬だけで 16 × 16 を使い、人物は別の絵を重ねる作り。馬の元の絵は DualR の作で、元の絵の利用許諾はページに書かれていない。配色・描き方が Tiny Dungeon と違い、出どころも一つにならない）。絵柄の合う騎乗の絵が見つからなかったので自作した
+- 作り方: Go の `image/png` で書く小さなプログラム（リポジトリには入れていない）で、16 × 16 の文字の表から画素を置いた。色は `tiny_dungeon.png` の中で使われている色だけ（輪郭 #3f2631、馬の茶 #763b36・#bd6c4a・#eaa56c、鋼 #c0cbdc・#8b9bb4・#52607c、肌 #f7c282・#e19a65、目 #262b44）を使い、Tiny Dungeon と同じく太い暗い輪郭で囲んだ
+- 絵: 左を向いた茶色の馬に、鋼の兜をかぶった人物が乗る。陣営の色は持たず、自軍・敵とも同じ絵を使い、下地の色（青・赤）で見分ける
+
 ## 使ったタイル（DES-UI-05、#12）
 
-タイルの番号は、画像の左上を 0 として右へ数える（1 行に 12 枚。番号 n は x = n % 12、y = n / 12 の位置）。16 × 16 px を 2 倍で描く。定数は `assets.go` にある。
+タイルの番号は、画像の左上を 0 として右へ数える（1 行に 12 枚。番号 n は x = n % 12、y = n / 12 の位置）。自作の画像（`original.png`）は 1 枚だけで、番号 0 を使う。16 × 16 px を 2 倍で描く。定数は `assets.go` にある。
 
 | 用途 | 画像 | 番号 | 絵 |
 |---|---|---|---|
@@ -22,16 +34,17 @@
 | 自軍の剣（主人公以外。反復 1 の本体のデータにはいない） | Tiny Dungeon | 85 | 男 |
 | 自軍の槍（アーマー） | Tiny Dungeon | 96 | 鎧の騎士 |
 | 自軍の斧（ファイター） | Tiny Dungeon | 87 | 角の兜の戦士 |
-| 自軍の杖（僧侶。DES-UI-18、#45） | Tiny Dungeon | 108 | 紫の服と白髪の術者 |
+| 自軍の杖（僧侶。DES-UI-18、#45） | Tiny Dungeon | 108 | 緑のゴースト |
 | 自軍の弓（アーチャー） | Tiny Dungeon | 112 | 緑の鉢巻きの狩人 |
 | 敵のボス | Tiny Dungeon | 97 | 面頬の騎士 |
 | 敵の剣（剣士） | Tiny Dungeon | 111 | 頭巾の男 |
 | 敵の槍（ソルジャー） | Tiny Dungeon | 98 | 兜の兵士 |
 | 敵の斧（ファイター） | Tiny Dungeon | 86 | 禿頭の荒くれ |
 | 敵の弓（アーチャー） | Tiny Dungeon | 100 | 白髪の男 |
+| 両軍の騎兵（自軍のエルザ・敵の騎兵。DES-UI-22、#80） | 自作（original.png） | 0 | 馬に乗った鋼の兜の人物 |
 
 - 地形は `tactics.Terrain` の名前（平地・森・山・砦・壁）で選ぶ。名前の分からない地形は、通れなければ壁、回復があれば砦、それ以外は平地として描く
-- ユニットは陣営と武器の種類で選ぶ（`tactics.Unit` はクラスの ID を持たないため）。自軍と敵は下地の色（青・赤）でも見分ける
+- ユニットは、主人公 → 騎兵 → ボス → 陣営と武器の種類、の順で選ぶ（DES-UI-22）。`tactics.Unit` はクラスの ID を持たないため、騎兵はクラスの表示名（`ClassName` が「騎兵」）で両軍とも見分ける。騎兵のボスも騎乗の絵にし、ボスの印を重ねる。それ以外のクラスは陣営と武器の種類で選ぶ。自軍と敵は下地の色（青・赤）でも見分ける
 
 ## 武器の種類の絵（DES-UI-06、#27）
 
