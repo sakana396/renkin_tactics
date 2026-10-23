@@ -11,6 +11,11 @@ var directions = [...]Pos{{0, -1}, {-1, 0}, {1, 0}, {0, 1}}
 // Cost が 0 の地形には入れない。味方のいるマスは通り抜けられるが止まれず、相手の陣営のいるマスには入れない。
 // unit が存在しないか倒れていれば nil を返す。
 func (b *Battle) Reachable(unit int) map[Pos]int {
+	return (BoardView{terrain: b.terrain, units: b.units}).Reachable(unit)
+}
+
+// Reachable は Battle と共通の移動費・占有規則で移動先を返す（DES-RWD-05、DES-BTL-03、DES-DEP-02）。
+func (b BoardView) Reachable(unit int) map[Pos]int {
 	if !b.validUnit(unit) || !b.units[unit].Alive {
 		return nil
 	}
@@ -67,6 +72,11 @@ func (b *Battle) Reachable(unit int) map[Pos]int {
 // from からのマンハッタン距離が武器の射程（最小〜最大）に入るマップの中のマスを、y、x の小さい順に返す。
 // unit が存在しないか倒れていれば nil を返す（Reachable と同じ）。
 func (b *Battle) AttackRange(unit int, from Pos) []Pos {
+	return (BoardView{terrain: b.terrain, units: b.units}).AttackRange(unit, from)
+}
+
+// AttackRange は Battle と共通の最小〜最大射程で y・x 順の攻撃マスを返す（DES-RWD-05、DES-BTL-03、DES-DEP-02）。
+func (b BoardView) AttackRange(unit int, from Pos) []Pos {
 	if !b.validUnit(unit) || !b.units[unit].Alive {
 		return nil
 	}
