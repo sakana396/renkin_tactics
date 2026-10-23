@@ -30,6 +30,7 @@
 | 計画 | 反復 3 の振り返り | [iterations/it03/retrospective.md](iterations/it03/retrospective.md) | v0.2 承認（E-42） |
 | 計画 | 反復 4 計画書 | [iterations/it04/plan.md](iterations/it04/plan.md) | v0.4（承認（E-46）） |
 | 設計 | 設計書（反復 4） | [03_design/design-it04.md](03_design/design-it04.md) | v0.4（承認（E-46）） |
+| 計画 | 反復 4 の振り返り | [iterations/it04/retrospective.md](iterations/it04/retrospective.md) | v0.2 承認（E-48） |
 
 ## エージェント向けのルール
 
