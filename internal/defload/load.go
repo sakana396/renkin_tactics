@@ -39,8 +39,8 @@ const maxLevel = 20
 // 物語の 1 段落の長さの上限（rune で数える。DES-DAT-03 規則 18、設計書 10.7 節）。
 const maxParagraph = 200
 
-// マップの行の数と行の長さの上限（DES-DAT-03 規則 8。反復 1 はスクロールしない）。
-const maxMapSize = 16
+// マップの行の数と行の長さの上限（DES-DAT-03 規則 8、DES-MAP-05）。
+const maxMapSize = 32
 
 // Diagnostic は定義データの 1 つの誤り（DES-DAT-03）。
 // 文法の誤りは Line（1 から数える）を、意味の誤りは Path（キーの道筋）を持つ。
