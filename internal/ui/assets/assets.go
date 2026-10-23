@@ -1,4 +1,4 @@
-// Package assets は、画面で使う Kenney の画像を埋め込み、地形とユニットのタイルを切り出す（DES-UI-05）。
+// Package assets は、画面で使う Kenney の画像と自作の画像を埋め込み、地形とユニットのタイルを切り出す（DES-UI-05、DES-UI-22）。
 //
 // 画像の読み込みはふしぎ錬金（sakana396/fushigi_renkin の internal/ui/assets/assets.go）と同じ形にした。
 // 使ったタイルの番号と意味は README.md に記録する。
@@ -18,10 +18,14 @@ var tinyTownPNG []byte
 //go:embed tiny_dungeon.png
 var tinyDungeonPNG []byte
 
+//go:embed original.png
+var originalPNG []byte
+
 // TileSize はタイル 1 枚の大きさ（ピクセル）。画面では 2 倍で描く（DES-UI-01）。
 const TileSize = 16
 
-// Columns は、どちらの画像でも 1 行に並ぶタイルの数。タイルの番号は左上から右へ 0, 1, 2, … と数える。
+// Columns は、Kenney のどちらの画像でも 1 行に並ぶタイルの数。タイルの番号は左上から右へ 0, 1, 2, … と数える。
+// 自作の画像（original.png）は 1 枚だけなので、番号 0 だけを使う。
 const Columns = 12
 
 // Sheet はタイルの画像の種類。
@@ -32,6 +36,8 @@ const (
 	Town Sheet = iota
 	// Dungeon は Tiny Dungeon（tiny_dungeon.png）。
 	Dungeon
+	// Original は自作の画像（original.png）。Kenney に騎乗の絵がないため描いた（DES-UI-22）。
+	Original
 )
 
 // Tile は画像の種類とタイルの番号の組（DES-UI-05）。
@@ -54,7 +60,7 @@ var (
 	Wall = Tile{Dungeon, 40}
 )
 
-// ユニットのタイル（DES-UI-05）。どれも Tiny Dungeon の人物。
+// ユニットのタイル（DES-UI-05）。騎兵のほかは Tiny Dungeon の人物。
 var (
 	// PlayerLord は自軍の主人公（ロード）。
 	PlayerLord = Tile{Dungeon, 88}
@@ -78,6 +84,8 @@ var (
 	EnemyAxe = Tile{Dungeon, 86}
 	// EnemyBow は敵の弓の使い手（アーチャー）。
 	EnemyBow = Tile{Dungeon, 100}
+	// Cavalier は両軍の騎兵（馬に乗った人物。DES-UI-22）。自軍と敵で同じ絵を使い、下地の色で見分ける。
+	Cavalier = Tile{Original, 0}
 )
 
 // 武器の種類の絵（DES-UI-06）。情報欄の武器の行に添える。剣・槍・斧は Tiny Dungeon、弓は Tiny Town にしかない。
@@ -110,6 +118,7 @@ func Load() (map[Sheet]image.Image, error) {
 	}{
 		{Town, "Tiny Town", tinyTownPNG},
 		{Dungeon, "Tiny Dungeon", tinyDungeonPNG},
+		{Original, "自作の画像", originalPNG},
 	} {
 		img, err := png.Decode(bytes.NewReader(s.data))
 		if err != nil {
