@@ -177,6 +177,19 @@ func TestCameraInput(t *testing.T) {
 	})
 }
 
+func TestCameraStrikeIncludesActor(t *testing.T) {
+	t.Run("TC-FR-MAP-06-03 攻撃対象と実行者を同時に見せる", func(t *testing.T) {
+		c := newIdleWith(t, wideSetup)
+		c.camera = Camera{X: 16, Y: 16, Width: 32, Height: 32}
+		units := []tactics.Unit{{Pos: tactics.Pos{X: 2, Y: 2}}, {Pos: tactics.Pos{X: 3, Y: 2}}}
+		c.play([]tactics.Event{{Kind: tactics.EventStrike, Unit: 0, Target: 1, Units: units}})
+		// 4.3節: 実行者 (2,2) へ最小移動し、対象 (3,2) も16四方に入るので追加移動は不要。
+		if c.Camera().X != 2 || c.Camera().Y != 2 {
+			t.Fatal("両者を映せるときは実行者も表示", c.Camera())
+		}
+	})
+}
+
 func TestCameraFocusLifecycle(t *testing.T) {
 	t.Run("TC-FR-MAP-06-03 対象選択と取消しと再生の焦点", func(t *testing.T) {
 		c := newIdleWith(t, wideSetup)
@@ -305,6 +318,47 @@ func TestCameraDeploy(t *testing.T) {
 		if s.deployCamera.X != 16 || s.deployCamera.Y != 16 {
 			t.Fatal("配置の主人公", s.deployCamera)
 		}
+		t.Run("TC-FR-MAP-06-02 配置のスクロールとクリックの優先順位", func(t *testing.T) {
+			for _, tt := range []struct {
+				name         string
+				dx, dy, x, y int
+				wheel        float64
+				shift        bool
+				want         image.Point
+			}{
+				{"矢印で左上へ", -16, -16, 16, 16, 0, false, image.Pt(0, 0)},
+				{"盤面のホイール", 0, 0, 511, 511, 1, false, image.Pt(16, 15)},
+				{"Shiftで左右", 0, 0, 511, 511, 1, true, image.Pt(15, 16)},
+				{"右下の端でもクリックしない", 1, 1, 511, 511, -1, false, image.Pt(16, 16)},
+				{"キーだけでも端でクリックしない", 1, 0, 511, 511, 0, false, image.Pt(16, 16)},
+			} {
+				t.Run(tt.name, func(t *testing.T) {
+					s.deployCamera = Camera{X: 16, Y: 16, Width: 32, Height: 32}
+					s.DeployInput(tt.dx, tt.dy, tt.x, tt.y, tt.wheel, tt.shift, true)
+					if s.deployCamera.X != tt.want.X || s.deployCamera.Y != tt.want.Y {
+						t.Fatal("移動先", s.deployCamera, tt.want)
+					}
+					if s.deploySelected != -1 || s.message != "" || !reflect.DeepEqual(s.deploySlots, []int{0, 1}) {
+						t.Fatal("同じフレームのクリックが通った")
+					}
+				})
+			}
+			s.deployCamera = Camera{Width: 32, Height: 32}
+			if !s.DeployWheel(0, 0, 1, false) || !s.DeployWheel(0, 0, 1, true) || s.deployCamera.X != 0 || s.deployCamera.Y != 0 {
+				t.Fatal("左上の端で止めて入力を消費")
+			}
+			for _, pt := range []image.Point{image.Pt(512, 10), image.Pt(600, 10), image.Pt(10, 512), image.Pt(-1, 10)} {
+				if s.DeployWheel(pt.X, pt.Y, -1, false) || s.deployCamera.X != 0 || s.deployCamera.Y != 0 {
+					t.Fatal("右欄・盤外のホイール", pt)
+				}
+			}
+			s.deployCamera = Camera{X: 16, Y: 16, Width: 32, Height: 32}
+			s.DeployInput(0, 0, 511, 511, 0, false, true)
+			if s.deploySelected != 0 {
+				t.Fatal("次のフレームではクリックできる")
+			}
+			s.deploySelected = -1
+		})
 		s.SetDeployCursor(14*32+16, 14*32+16)
 		if s.View().Deploy.Blue[tactics.Pos{X: 30, Y: 30}] != true {
 			t.Fatal("配置の敵ホバー")
@@ -356,9 +410,20 @@ func TestCameraHistorySwitchAndRandom(t *testing.T) {
 		}
 		c.Wheel(10, 10, -1, false)
 		c.rewindKey("Down")
-		if c.rewind.selected != 1 || c.Camera().X != 0 || c.Camera().Y != 0 {
+		if c.rewind.selected != 1 || c.Camera().X != 5 || c.Camera().Y != 5 {
 			t.Fatal("上下は行の選択", c.Camera())
 		}
+		// before の主人公は (20,20)。原点から16四方へ入れる最小移動は (20-15,20-15)=(5,5)。
+		for i, entry := range c.battle.History() {
+			if entry.Kind == tactics.HistoryAction {
+				continue
+			}
+			c.rewindSelect(i)
+			if !c.previewOK() || c.Camera().X != 5 || c.Camera().Y != 5 {
+				t.Fatalf("対象のない行 %v: %+v", entry, c.Camera())
+			}
+		}
+		c.rewindSelect(1)
 		c.RewindEnter()
 		c.Scroll(10, 10)
 		c.Cancel()
@@ -372,6 +437,37 @@ func TestCameraHistorySwitchAndRandom(t *testing.T) {
 		control.EndPhase()
 		if !reflect.DeepEqual(c.events, control.events) || !reflect.DeepEqual(c.battle.Units(), control.battle.Units()) || !reflect.DeepEqual(c.battle.History(), control.battle.History()) {
 			t.Fatal("閲覧で乱数か戦闘が変化")
+		}
+		playOut(c)
+		c.OpenRewind()
+		c.rewindSelect(1)
+		left := c.battle.RewindsLeft()
+		c.RewindEnter()
+		c.RewindEnter()
+		if c.rewind.open || c.battle.RewindsLeft() != left-1 || c.Camera().X != 5 || c.Camera().Y != 5 {
+			t.Fatal("明示の番終了へ復元後も主人公へ寄る", c.Camera())
+		}
+
+	})
+}
+
+func TestCameraHistoryWithoutAction(t *testing.T) {
+	t.Run("TC-FR-MAP-06-03 対象のない全種類の行はbeforeの主人公へ寄る", func(t *testing.T) {
+		for _, entry := range []tactics.HistoryEntry{
+			{Kind: tactics.HistoryEndPhase, Unit: -1, Target: -1},
+			{Kind: tactics.HistoryEndPhase, Automatic: true, Unit: -1, Target: -1},
+			{Kind: tactics.HistoryPlayerStart, Unit: -1, Target: -1},
+		} {
+			cam := Camera{Width: 32, Height: 32}
+			before := []tactics.Unit{
+				{Side: tactics.Enemy, Lord: true, Alive: true, Pos: tactics.Pos{X: 31, Y: 31}},
+				{Side: tactics.Player, Lord: true, Alive: true, Pos: tactics.Pos{X: 24, Y: 18}},
+			}
+			focusHistoryEntry(&cam, entry, before)
+			// 原点から主人公 (24,18) を含める最小移動は (24-15,18-15)=(9,3)。
+			if cam.X != 9 || cam.Y != 3 {
+				t.Fatalf("行 %+v: %+v", entry, cam)
+			}
 		}
 	})
 }

@@ -87,23 +87,62 @@ func (c *Controller) Wheel(x, y int, delta float64, shift bool) bool {
 	if delta == 0 {
 		return false
 	}
-	step := 1
-	if delta > 0 {
-		step = -1
-	}
-	if x >= 0 && x < MapSize && y >= 0 && y < MapSize {
-		if shift {
-			c.Scroll(step, 0)
-		} else {
-			c.Scroll(0, step)
-		}
+	if dx, dy, ok := boardWheel(x, y, delta, shift); ok {
+		c.Scroll(dx, dy)
 		return true
 	}
 	if c.rewind.open && x >= MapSize && x < ScreenWidth && y >= 0 && y < ScreenHeight {
+		step := 1
+		if delta > 0 {
+			step = -1
+		}
 		c.RewindDetail(step)
 		return true
 	}
 	return false
+}
+
+// boardWheel は盤面上のホイールを1マスの移動へ変換する（DES-UI-25）。
+func boardWheel(x, y int, delta float64, shift bool) (dx, dy int, ok bool) {
+	if delta == 0 || x < 0 || x >= MapSize || y < 0 || y >= MapSize {
+		return 0, 0, false
+	}
+	step := 1
+	if delta > 0 {
+		step = -1
+	}
+	if shift {
+		return step, 0, true
+	}
+	return 0, step, true
+}
+
+// DeployScroll は配置のキー移動を受け付け、端でも入力を消費する（DES-UI-25）。
+func (s *SceneController) DeployScroll(dx, dy int) bool {
+	if s.scene != Deploy || dx == 0 && dy == 0 {
+		return false
+	}
+	s.deployCamera.Move(dx, dy)
+	return true
+}
+
+// DeployWheel は配置の盤面上だけホイールを受け付ける（DES-UI-25）。
+func (s *SceneController) DeployWheel(x, y int, delta float64, shift bool) bool {
+	dx, dy, ok := boardWheel(x, y, delta, shift)
+	return ok && s.DeployScroll(dx, dy)
+}
+
+// DeployInput は配置の移動をクリックより優先し、同じフレームのクリックを抑える（DES-UI-25）。
+func (s *SceneController) DeployInput(dx, dy, x, y int, delta float64, shift, click bool) {
+	if s.scene != Deploy {
+		return
+	}
+	scrolled := s.DeployScroll(dx, dy)
+	scrolled = s.DeployWheel(x, y, delta, shift) || scrolled
+	s.SetDeployCursor(x, y)
+	if click && !scrolled {
+		s.Click(x, y)
+	}
 }
 
 // focusHero は新しい盤面の主人公へ寄る（DES-UI-25）。
@@ -151,6 +190,7 @@ func (c *Controller) focusHistory(cam *Camera, units []tactics.Unit) {
 // focusHistoryEntry は復元で履歴が削られた後も、保持した行から寄る（DES-UI-25）。
 func focusHistoryEntry(cam *Camera, e tactics.HistoryEntry, units []tactics.Unit) {
 	if e.Kind != tactics.HistoryAction {
+		cam.focusHero(units)
 		return
 	}
 	if e.Unit >= 0 && e.Unit < len(units) {

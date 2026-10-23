@@ -100,33 +100,19 @@ func (g *Game) Update() error {
 		}
 	}
 	if s.Scene() != Battle {
-		scrolled := false
-		if s.Scene() == Deploy {
+		deploy := s.Scene() == Deploy
+		if deploy {
 			dx, dy := cameraKeys()
-			s.deployCamera.Move(dx, dy)
-			scrolled = dx != 0 || dy != 0
 			x, y := ebiten.CursorPosition()
 			_, wheel := ebiten.Wheel()
-			if x >= 0 && x < MapSize && y >= 0 && y < MapSize && wheel != 0 {
-				scrolled = true
-				step := 1
-				if wheel > 0 {
-					step = -1
-				}
-				if ebiten.IsKeyPressed(ebiten.KeyShift) {
-					s.deployCamera.Move(step, 0)
-				} else {
-					s.deployCamera.Move(0, step)
-				}
-			}
-			s.SetDeployCursor(ebiten.CursorPosition())
+			s.DeployInput(dx, dy, x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift), left && !cancel)
 			if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
 				s.ToggleDeployDanger()
 			}
 		}
 		if cancel {
 			s.Cancel()
-		} else if left && !scrolled {
+		} else if left && !deploy {
 			s.Click(ebiten.CursorPosition())
 		} else if s.Scene() == Story && (inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeySpace)) {
 			s.Advance()
