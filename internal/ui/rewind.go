@@ -17,9 +17,11 @@ type rewindMenu struct {
 	message       string
 
 	// previewID は preview を取得した履歴 ID。loaded が偽なら未取得。
-	previewID     uint64
-	preview       tactics.BoardView
-	previewUnits  []tactics.Unit
+	previewID    uint64
+	preview      tactics.BoardView
+	previewUnits []tactics.Unit
+	// previewHints は preview の予兆領域。取得したときに 1 度だけ写す（DES-UI-24）。
+	previewHints  []tactics.ReinforcementHint
 	previewErr    error
 	previewLoaded bool
 	// previewLoads は PreviewRewind を呼んだ回数。描画ごとに取得し直さないことの確認に使う（DES-UI-21）。
@@ -54,9 +56,9 @@ func (c *Controller) fetchPreview(id uint64) {
 	c.rewind.previewLoads++
 	v, err := c.battle.PreviewRewind(id)
 	c.rewind.previewID, c.rewind.previewLoaded, c.rewind.previewErr = id, true, err
-	c.rewind.preview, c.rewind.previewUnits = tactics.BoardView{}, nil
+	c.rewind.preview, c.rewind.previewUnits, c.rewind.previewHints = tactics.BoardView{}, nil, nil
 	if err == nil {
-		c.rewind.preview, c.rewind.previewUnits = v, v.Units()
+		c.rewind.preview, c.rewind.previewUnits, c.rewind.previewHints = v, v.Units(), v.ReinforcementHints()
 	}
 }
 
@@ -117,6 +119,7 @@ func (c *Controller) RewindEnter() {
 	c.confirmEnd, c.fast, c.message = false, false, ""
 	c.shownTurn, c.shownSide = c.battle.Turn, c.battle.Phase
 	c.state = Idle
+	c.refreshHints()
 }
 
 // Resume は続きだけを実行し、通常と同じ出来事再生へ渡す（DES-UI-19）。
@@ -251,6 +254,10 @@ func (c *Controller) RewindView() SceneView {
 	left := image.Rect(rewindLeft, 520, rewindLeft+144, 560)
 	right := image.Rect(rewindRight-144, 520, rewindRight, 560)
 	detail := c.rewindDetail()
+	// 選択中の写しに予兆があれば、右欄の理由の下の空きに同じ案内を出す（DES-UI-24）。
+	if hv := c.RewindBoard().Hint; hv.Visible {
+		v.Texts = append(v.Texts, hv.Text)
+	}
 	if c.rewind.confirm {
 		add("確認（左の盤面に戻ります）", rewindLeft, 34, StylePlain)
 		for i, t := range detail[min(len(detail), c.rewind.detailOffset):] {
@@ -320,6 +327,8 @@ type RewindBoardView struct {
 	// Notice は盤面に重ねる知らせ、Lines は下の案内の行。
 	Notice string
 	Lines  []string
+	// Hint は表示中の盤面（選択中の写し）の増援の気配（DES-UI-24）。
+	Hint HintView
 }
 
 // RewindBoard は選択中の行動前の盤面と案内を返す。取得し直さず、保持した 1 件の写しを使う（DES-UI-21）。
@@ -334,15 +343,16 @@ func (c *Controller) RewindBoard() RewindBoardView {
 	}
 	h := c.battle.History()
 	if len(h) == 0 {
-		return RewindBoardView{Visible: true, Available: true, Board: c.battle.BoardView(), Units: c.Units(),
-			Lines: []string{"戻せる行動がありません（今の盤面）", back}}
+		b := c.battle.BoardView()
+		return RewindBoardView{Visible: true, Available: true, Board: b, Units: c.Units(),
+			Lines: []string{"戻せる行動がありません（今の盤面）", back}, Hint: c.rewindHintView(b.ReinforcementHints())}
 	}
 	if !c.previewOK() {
 		return RewindBoardView{Visible: true, Notice: "プレビューを表示できません",
 			Lines: []string{"プレビュー中・未確定　盤面を表示できません", back}}
 	}
 	p := c.rewind.preview
-	v := RewindBoardView{Visible: true, Available: true, Board: p, Units: c.rewind.previewUnits}
+	v := RewindBoardView{Visible: true, Available: true, Board: p, Units: c.rewind.previewUnits, Hint: c.rewindHintView(c.rewind.previewHints)}
 	v.Lines = []string{"プレビュー中・未確定", fmt.Sprintf("盤面: %dT %s　%s", p.Turn, sideName(p.Phase), back)}
 	if p.NeedsResume() {
 		v.Lines = append(v.Lines, "確定後は再開操作で続行")

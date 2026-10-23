@@ -78,6 +78,9 @@ type Controller struct {
 	shownSide tactics.Side
 
 	message string
+
+	// hints は通常の盤面に出す増援の予兆領域。再生の完了後と巻き戻しの成功後だけ取り直す（DES-UI-24）。
+	hints []tactics.ReinforcementHint
 }
 
 // NewController は、newBattle で戦闘を作り、初めの出来事の再生から始める（DES-UI-02、DES-UI-04）。
@@ -479,6 +482,7 @@ func (c *Controller) play(events []tactics.Event) {
 func (c *Controller) finish() {
 	// 画面に出すターンと番は、表示した PhaseStart で合わせてある（showPhase）。
 	c.events, c.index, c.frame = nil, 0, 0
+	c.refreshHints()
 	if c.battle.Result != tactics.Ongoing {
 		c.state = Over
 		return

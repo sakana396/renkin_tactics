@@ -37,6 +37,8 @@ type Game struct {
 	ctrl   *Controller
 	scenes *SceneController
 	sheets map[assets.Sheet]*ebiten.Image
+	// hintLayer は増援の気配を不透明に描いてから薄く重ねる層（DES-UI-24）。
+	hintLayer *ebiten.Image
 }
 
 // Run はタイトルからキャンペーンを始める（DES-UI-09、DES-CMD-02）。
@@ -193,6 +195,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	g.drawTerrain(screen)
 	g.drawOverlay(screen)
+	hint := g.ctrl.ReinforcementHintView()
+	g.drawHint(screen, hint)
 	g.drawUnits(screen)
 	g.drawDanger(screen)
 	g.drawSelection(screen)
@@ -203,7 +207,37 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	cx, cy := ebiten.CursorPosition()
 	g.drawInfo(screen, cx, cy)
 	g.drawGuide(screen)
+	g.drawHintText(screen, hint)
 	g.drawRewind(screen)
+}
+
+// drawHint は増援の予兆領域の外周を黄土色の破線で、中央付近に「…」を描く（DES-UI-24）。
+// 地形・範囲の塗りの上、ユニットの下に描く。不透明に描いた層を薄く重ね、重なる領域を濃くしない。
+func (g *Game) drawHint(dst *ebiten.Image, v HintView) {
+	if !v.Visible {
+		return
+	}
+	if g.hintLayer == nil {
+		g.hintLayer = ebiten.NewImage(MapSize, MapSize)
+	}
+	g.hintLayer.Clear()
+	dashes, marks := hintShapes(v.Areas)
+	for _, r := range dashes {
+		vector.DrawFilledRect(g.hintLayer, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), hintColor, false)
+	}
+	for _, p := range marks {
+		g.label(g.hintLayer, hintMark, p.X, p.Y, hintColor)
+	}
+	op := &ebiten.DrawImageOptions{}
+	op.ColorScale.ScaleAlpha(hintAlpha)
+	dst.DrawImage(g.hintLayer, op)
+}
+
+// drawHintText は案内欄に「付近に気配…」を描く（DES-UI-24）。
+func (g *Game) drawHintText(dst *ebiten.Image, v HintView) {
+	if v.Visible {
+		g.label(dst, v.Text.Text, v.Text.X, v.Text.Y, infoStyleColor(v.Text.Style))
+	}
 }
 
 // drawTile はタイル t を、画面の (x, y) に 2 倍で描く（DES-UI-01、DES-UI-05）。scale が 1 未満なら暗く描く。
@@ -621,6 +655,7 @@ func (g *Game) drawRewindPreview(dst *ebiten.Image) {
 	v := g.ctrl.RewindBoard()
 	if v.Available {
 		g.drawBoardTerrain(dst, v.Board)
+		g.drawHint(dst, v.Hint)
 		g.drawUnitList(dst, v.Units)
 		if v.HasFrame {
 			strokeCell(dst, v.Frame, cursorColor)
