@@ -6,6 +6,25 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 )
 
+// boardReader は戦闘と操作を持たない盤面の共通の参照口。
+type boardReader interface {
+	Reachable(int) map[tactics.Pos]int
+	AttackRange(int, tactics.Pos) []tactics.Pos
+	Width() int
+	Height() int
+	TerrainAt(tactics.Pos) tactics.Terrain
+}
+
+// boardReaders は同じ既知の期待値を各入口で検証する。
+func boardReaders(t *testing.T, s tactics.Setup, b *tactics.Battle) []boardReader {
+	t.Helper()
+	v, err := tactics.NewBoardView(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return []boardReader{b, b.BoardView(), v}
+}
+
 // diamond は、平地だけのとき c から距離 mov 以内のマスと費用（距離）を返す。
 func diamond(c tactics.Pos, mov, w, h int) map[tactics.Pos]int {
 	out := map[tactics.Pos]int{}
@@ -167,7 +186,9 @@ func TestReachable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := mustNew(t, tt.setup)
-			assertEqual(t, "Reachable", b.Reachable(tt.unit), tt.want)
+			for _, view := range boardReaders(t, tt.setup, b) {
+				assertEqual(t, "Reachable", view.Reachable(tt.unit), tt.want)
+			}
 		})
 	}
 }
@@ -182,25 +203,30 @@ func TestReachableFallenUnit(t *testing.T) {
 		b := mustNew(t, s)
 		b.KillUnit(1)
 		b.KillUnit(2)
-		assertEqual(t, "Reachable", b.Reachable(0), map[tactics.Pos]int{pos(0, 0): 0, pos(1, 0): 1, pos(2, 0): 2})
+		for _, view := range []boardReader{b, b.BoardView()} {
+			assertEqual(t, "Reachable", view.Reachable(0), map[tactics.Pos]int{pos(0, 0): 0, pos(1, 0): 1, pos(2, 0): 2})
+		}
 	})
 	t.Run("TC-FR-BTL-01-07 倒れたユニット・存在しないユニットの移動範囲と攻撃範囲は nil", func(t *testing.T) {
 		b := mustNew(t, s)
 		b.KillUnit(1)
-		if got := b.Reachable(1); got != nil {
-			t.Errorf("Reachable(倒れた) = %v, want nil", got)
-		}
-		if got := b.AttackRange(1, pos(1, 0)); got != nil {
-			t.Errorf("AttackRange(倒れた) = %v, want nil", got)
-		}
-		for _, i := range []int{-1, 4} {
-			if got := b.Reachable(i); got != nil {
-				t.Errorf("Reachable(%d) = %v, want nil", i, got)
+		for _, view := range []boardReader{b, b.BoardView()} {
+			if got := view.Reachable(1); got != nil {
+				t.Errorf("Reachable(倒れた) = %v, want nil", got)
 			}
-			if got := b.AttackRange(i, pos(0, 0)); got != nil {
-				t.Errorf("AttackRange(%d) = %v, want nil", i, got)
+			if got := view.AttackRange(1, pos(1, 0)); got != nil {
+				t.Errorf("AttackRange(倒れた) = %v, want nil", got)
+			}
+			for _, i := range []int{-1, 4} {
+				if got := view.Reachable(i); got != nil {
+					t.Errorf("Reachable(%d) = %v, want nil", i, got)
+				}
+				if got := view.AttackRange(i, pos(0, 0)); got != nil {
+					t.Errorf("AttackRange(%d) = %v, want nil", i, got)
+				}
 			}
 		}
+
 	})
 }
 
@@ -238,7 +264,9 @@ func TestAttackRange(t *testing.T) {
 				s.Units[0].Weapon = *tt.weapon
 			}
 			b := mustNew(t, s)
-			assertEqual(t, "AttackRange", b.AttackRange(0, tt.from), tt.want)
+			for _, view := range boardReaders(t, s, b) {
+				assertEqual(t, "AttackRange", view.AttackRange(0, tt.from), tt.want)
+			}
 		})
 	}
 }
@@ -250,13 +278,16 @@ func TestTerrainAt(t *testing.T) {
 			Terrain: grid(".F#", "T.."),
 			Units:   []tactics.UnitSetup{lord(0, 0, 1), boss(2, 1)},
 		})
-		assertEqual(t, "Width", b.Width(), 3)
-		assertEqual(t, "Height", b.Height(), 2)
-		assertEqual(t, "(1,0)", b.TerrainAt(pos(1, 0)), forest)
-		assertEqual(t, "(2,0)", b.TerrainAt(pos(2, 0)), wall)
-		assertEqual(t, "(0,1)", b.TerrainAt(pos(0, 1)), fort)
-		for _, p := range []tactics.Pos{pos(-1, 0), pos(3, 0), pos(0, 2), pos(0, -1)} {
-			assertEqual(t, "外", b.TerrainAt(p), tactics.Terrain{})
+		for _, view := range []boardReader{b, b.BoardView()} {
+			assertEqual(t, "Width", view.Width(), 3)
+			assertEqual(t, "Height", view.Height(), 2)
+			assertEqual(t, "(1,0)", view.TerrainAt(pos(1, 0)), forest)
+			assertEqual(t, "(2,0)", view.TerrainAt(pos(2, 0)), wall)
+			assertEqual(t, "(0,1)", view.TerrainAt(pos(0, 1)), fort)
+			for _, p := range []tactics.Pos{pos(-1, 0), pos(3, 0), pos(0, 2), pos(0, -1)} {
+				assertEqual(t, "外", view.TerrainAt(p), tactics.Terrain{})
+			}
 		}
+
 	})
 }

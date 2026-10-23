@@ -37,7 +37,8 @@ type Battle struct {
 // New は Setup を検証し、1 ターン目の自軍の番を始めた戦闘を作る（DES-BTL-01、DES-BTL-02、DES-RNG-01）。
 // 返す出来事は、自軍の番の始めの出来事。Setup が正しくなければ ErrInvalidSetup を包んだ誤りを返す。
 func New(setup Setup, seed uint64) (*Battle, []Event, error) {
-	if err := validateSetup(setup); err != nil {
+	view, err := NewBoardView(setup)
+	if err != nil {
 		return nil, nil, err
 	}
 	b := &Battle{
@@ -51,13 +52,7 @@ func New(setup Setup, seed uint64) (*Battle, []Event, error) {
 	b.rng = rand.New(b.pcg)
 	b.roll = func() int { return b.rng.IntN(100) }
 
-	b.terrain = make([][]Terrain, len(setup.Terrain))
-	for y, row := range setup.Terrain {
-		b.terrain[y] = append([]Terrain(nil), row...)
-	}
-	for _, us := range setup.Units {
-		b.units = append(b.units, newUnit(us))
-	}
+	b.terrain, b.units = view.terrain, view.units
 	for _, r := range setup.Reinforcements {
 		r.Unit.Items = append([]ItemStack(nil), r.Unit.Items...)
 		b.reinforcements = append(b.reinforcements, r)
@@ -295,11 +290,7 @@ func (b *Battle) TerrainAt(p Pos) Terrain {
 
 // Units はユニットの写しを返す（DES-BTL-01）。添字はユニットを指す番号で、倒れても変わらない。
 func (b *Battle) Units() []Unit {
-	out := make([]Unit, len(b.units))
-	for i, u := range b.units {
-		out[i] = u.clone()
-	}
-	return out
+	return cloneUnits(b.units)
 }
 
 // unitAt は p にいる生きているユニットの添字を返す。いなければ -1。
