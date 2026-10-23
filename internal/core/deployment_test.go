@@ -24,6 +24,10 @@ func TestCampaignDeploymentAt(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		v, err := c.DeploymentView(members, slots)
+		if err != nil || !reflect.DeepEqual(v.Units(), s.Battle.Units()) {
+			t.Fatalf("配置表示と実出撃が違う: %v", err)
+		}
 		units := s.Battle.Units()
 		for i, want := range []struct {
 			name string
@@ -59,6 +63,10 @@ func TestCampaignDeploymentAt(t *testing.T) {
 			s, _, err := c.StartBattleAt(tc.members, tc.slots, 1)
 			if err != nil {
 				t.Fatal(err)
+			}
+			v, err := c.DeploymentView(tc.members, tc.slots)
+			if err != nil || !reflect.DeepEqual(v.Units(), s.Battle.Units()) {
+				t.Fatalf("境界の配置表示: %v", err)
 			}
 			for i, pos := range tc.positions {
 				if s.Battle.Units()[i].Pos != pos {
@@ -109,6 +117,10 @@ func TestCampaignDeploymentAt(t *testing.T) {
 				s, ev, err := c.StartBattleAt(tc.members, tc.slots, 1)
 				if err == nil || (tc.want != nil && !errors.Is(err, tc.want)) || !strings.Contains(err.Error(), tc.reason) || s != nil || ev != nil {
 					t.Fatalf("出撃=%v 出来事=%v 誤り=%v", s, ev, err)
+				}
+				v, viewErr := c.DeploymentView(tc.members, tc.slots)
+				if viewErr == nil || viewErr.Error() != err.Error() || !reflect.DeepEqual(v, tactics.BoardView{}) {
+					t.Fatalf("配置表示の検証順・返却値: %v / %v", viewErr, err)
 				}
 				if !reflect.DeepEqual(*c, before) || !reflect.DeepEqual(tc.members, members) || !reflect.DeepEqual(tc.slots, slots) || !reflect.DeepEqual(old.Battle.Units(), oldUnits) || !reflect.DeepEqual(old.Members, oldMembers) {
 					t.Fatal("失敗で状態が変わった")
