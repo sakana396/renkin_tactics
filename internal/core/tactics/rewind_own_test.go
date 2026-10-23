@@ -2,6 +2,7 @@ package tactics
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -82,7 +83,13 @@ func TestRewindOwn(t *testing.T) {
 					}
 					allowed := h.entry.Side == Player && (h.entry.Kind == HistoryAction || h.entry.Kind == HistoryEndPhase && !h.entry.Automatic)
 					if !allowed {
-						assertRewindFailure(t, b, ErrInvalidRewind, func() error { return b.Rewind(h.entry.ID) })
+						assertRewindFailure(t, b, ErrInvalidRewind, func() error {
+							err := b.Rewind(h.entry.ID)
+							if err == nil || !strings.Contains(err.Error(), "自軍の行動か明示の番終了の前だけ戻せます") {
+								t.Fatal("対象外の理由がない", err)
+							}
+							return err
+						})
 					}
 					b.rewindsLeft = 0
 					v, err = b.PreviewRewind(h.entry.ID)

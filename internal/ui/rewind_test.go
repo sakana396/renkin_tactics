@@ -61,14 +61,13 @@ func TestRewindUI(t *testing.T) {
 			consumeExplicitRewind(t, c, i)
 		}
 		c.OpenRewind()
+		selectExplicitRewind(t, c)
 		c.RewindEnter()
 		if c.rewind.confirm || !strings.Contains(viewStrings(c.RewindView()), "残り回数が 0") {
 			t.Fatal("0 回の表示")
 		}
-		for _, b := range c.RewindView().Buttons {
-			if b.Label == "決定" && b.Enabled {
-				t.Fatal("0 回で確定可能")
-			}
+		if buttonOf(t, c.RewindView(), "決定").Enabled {
+			t.Fatal("0 回で確定可能")
 		}
 	})
 	t.Run("TC-FR-BTL-10-12 / TC-IF-01-12 / TC-FR-UNT-09-12 再生中拒否と選択保持・成功時の表示破棄", func(t *testing.T) {
@@ -430,4 +429,19 @@ func checkReadOnlyRewind(t *testing.T, c *Controller) {
 	if strings.Contains(strings.Join(c.RewindBoard().Lines, ""), "再開") {
 		t.Fatal("プレビューに再開案内")
 	}
+}
+
+// selectExplicitRewind は回数・取得失敗による拒否を対象外の拒否と分けて確かめるため、明示の番終了を選ぶ。
+func selectExplicitRewind(t *testing.T, c *Controller) {
+	t.Helper()
+	for i, h := range c.battle.History() {
+		if h.Side == tactics.Player && h.Kind == tactics.HistoryEndPhase && !h.Automatic {
+			c.rewindSelect(i)
+			if !c.rewindAllowed() || !c.previewOK() {
+				t.Fatal("前提: 決定対象のプレビューでない")
+			}
+			return
+		}
+	}
+	t.Fatal("前提: 明示の番終了なし")
 }

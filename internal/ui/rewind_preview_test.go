@@ -207,6 +207,7 @@ func TestRewindPreviewSelect(t *testing.T) {
 		if !c.RewindBoard().Available {
 			t.Fatal("前提: 最新行の盤面がない")
 		}
+		selectExplicitRewind(t, c)
 		// 実行済みでない ID の取得は ErrInvalidRewind で失敗する（DES-RWD-05）。
 		c.fetchPreview(1 << 40)
 		v := c.RewindBoard()
@@ -217,11 +218,10 @@ func TestRewindPreviewSelect(t *testing.T) {
 			t.Fatal("失敗時に決定できる")
 		}
 		c.RewindEnter()
-		c.RewindEnter()
 		if c.rewind.confirm || c.battle.RewindsLeft() != 10 {
 			t.Fatal("失敗時に確定した")
 		}
-		c.rewindKey("Up")
+		c.rewindKey("Down")
 		if v := c.RewindBoard(); !v.Available || !reflect.DeepEqual(v.Units, previewUnits(t, c, c.battle.History()[c.rewind.selected].ID)) {
 			t.Fatal("別の行で戻らない")
 		}
@@ -240,8 +240,8 @@ func TestRewindPreviewSelect(t *testing.T) {
 		}
 		h := c.battle.History()
 		c.OpenRewind()
-		c.rewindKey("Up")
-		if v := c.RewindBoard(); !v.Available || !reflect.DeepEqual(v.Units, previewUnits(t, c, h[len(h)-2].ID)) {
+		selectExplicitRewind(t, c)
+		if v := c.RewindBoard(); !v.Available || !reflect.DeepEqual(v.Units, previewUnits(t, c, h[c.rewind.selected].ID)) {
 			t.Fatal("0 回で閲覧できない")
 		}
 		c.RewindEnter()
