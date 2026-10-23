@@ -115,6 +115,8 @@ const (
 	StyleBad
 	// StyleBlack は撃破の帯の文（黒。DES-UI-07）。
 	StyleBlack
+	// StyleHint は増援の気配の案内（黄土色。DES-UI-24）。
+	StyleHint
 )
 
 // InfoText は情報欄に描く文（DES-UI-06）。(X, Y) は文の左上の画面の座標。

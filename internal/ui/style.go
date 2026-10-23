@@ -27,7 +27,12 @@ var (
 	healTextClr  = color.NRGBA{120, 255, 150, 255}
 	overShade    = color.NRGBA{0, 0, 0, 150}
 	textShadow   = color.NRGBA{0, 0, 0, 255}
+	// hintColor は増援の気配の黄土色。破線は hintAlpha を掛けて薄く描く（DES-UI-24）。
+	hintColor = color.NRGBA{200, 160, 80, 255}
 )
+
+// hintAlpha は予兆の破線と印の濃さ。地形と範囲の塗りを隠さないよう低くする（DES-UI-24）。
+const hintAlpha = 0.6
 
 const (
 	windowTitle = "レンキン・タクティクス"
@@ -63,6 +68,8 @@ func infoStyleColor(s InfoStyle) color.Color {
 		return muted
 	case StyleSkill:
 		return skillColor
+	case StyleHint:
+		return hintColor
 	}
 	return white
 }
