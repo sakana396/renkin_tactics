@@ -47,6 +47,7 @@ type Factory func() (*tactics.Battle, []tactics.Event, error)
 // 時間はフレーム数（Tick）で数え、core には渡さない。
 type Controller struct {
 	// 巻き戻しの表示と通し出来事の境界を保持する（DES-UI-19）。
+	camera Camera
 	rewind rewindMenu
 	record []tactics.Event
 	battle *tactics.Battle
@@ -90,6 +91,8 @@ func NewController(newBattle Factory) (*Controller, error) {
 		return nil, err
 	}
 	c.battle = b
+	c.camera = Camera{Width: b.Width(), Height: b.Height()}
+	c.camera.focusHero(b.Units())
 	c.play(events)
 	return c, nil
 }
@@ -138,6 +141,7 @@ func (c *Controller) Click(p tactics.Pos) {
 	case Selected:
 		if _, ok := c.battle.Reachable(c.unit)[p]; ok {
 			c.state, c.dest = Moved, p
+			c.camera.Focus(p)
 		}
 	case Targeting, HealTargeting:
 		targets, action := c.Targets(), tactics.Attack
@@ -177,6 +181,15 @@ func (c *Controller) ChooseAction(a tactics.Action) {
 	case tactics.UseItem:
 		c.state = ItemMenu
 	}
+	if c.state == Targeting || c.state == HealTargeting {
+		targets := c.Targets()
+		if c.state == HealTargeting {
+			targets = c.HealTargets()
+		}
+		if len(targets) > 0 {
+			c.camera.Focus(c.battle.Units()[targets[0]].Pos)
+		}
+	}
 }
 
 // ChooseItem は、アイテムの一覧から手持ちの k 番目を選んだときの処理（DES-UI-02）。
@@ -209,6 +222,7 @@ func (c *Controller) Cancel() {
 		c.state = Selected
 	case Targeting, HealTargeting:
 		c.state, c.target = Moved, -1
+		c.camera.Focus(c.dest)
 	case ItemMenu:
 		c.state = Moved
 	}
@@ -274,6 +288,7 @@ func (c *Controller) Tick() {
 
 // showPhase は、表示する出来事が PhaseStart なら、画面に出すターンと番を合わせる（DES-UI-03）。
 func (c *Controller) showPhase() {
+	c.focusEvent(c.events[c.index])
 	if e := c.events[c.index]; e.Kind == tactics.EventPhaseStart {
 		c.shownTurn, c.shownSide = e.Turn, e.Side
 	}
@@ -390,11 +405,11 @@ func (c *Controller) shownEnemy() int {
 // hoveredEnemy は、カーソルのあるマスにいる生きている敵の添字を返す（DES-UI-08）。
 // いないとき、カーソルが盤面の外か行動の一覧の上にあるときは -1。
 func (c *Controller) hoveredEnemy() int {
-	p, ok := CellAt(c.cursorX, c.cursorY)
+	p, ok := c.Camera().CellAt(c.cursorX, c.cursorY)
 	if !ok {
 		return -1
 	}
-	if n := len(c.MenuLabels()); n > 0 && HitMenu(MenuRects(c.dest, n), c.cursorX, c.cursorY) >= 0 {
+	if n := len(c.MenuLabels()); n > 0 && HitMenu(c.Camera().MenuRects(c.dest, n), c.cursorX, c.cursorY) >= 0 {
 		return -1
 	}
 	i, ok := c.unitAt(p)

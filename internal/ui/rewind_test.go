@@ -252,11 +252,15 @@ func TestRewindBoundaries(t *testing.T) {
 		c.ChooseAction(tactics.Wait)
 		playOut(c)
 		c.OpenRewind()
-		c.RewindDetail(1000)
+		for i := 0; i < 1000; i++ {
+			c.Wheel(600, 400, -1, false)
+		}
 		if !strings.Contains(viewStrings(c.RewindView()), "末尾") {
 			t.Fatal("詳細末尾なし")
 		}
-		c.RewindDetail(-1000)
+		for i := 0; i < 1000; i++ {
+			c.Wheel(600, 400, 1, false)
+		}
 		if c.rewind.detailOffset != 0 {
 			t.Fatal("詳細先頭")
 		}

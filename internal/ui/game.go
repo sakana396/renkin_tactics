@@ -6,6 +6,7 @@ package ui
 
 import (
 	"errors"
+	"image"
 	"image/color"
 	"strconv"
 	"strings"
@@ -34,9 +35,10 @@ func textWidth(s string) int {
 
 // Game は ebiten.Game を実装する（DES-PKG-06）。
 type Game struct {
-	ctrl   *Controller
-	scenes *SceneController
-	sheets map[assets.Sheet]*ebiten.Image
+	drawCamera Camera
+	ctrl       *Controller
+	scenes     *SceneController
+	sheets     map[assets.Sheet]*ebiten.Image
 	// hintLayer は増援の気配を不透明に描いてから薄く重ねる層（DES-UI-24）。
 	hintLayer *ebiten.Image
 }
@@ -73,16 +75,11 @@ func (g *Game) Update() error {
 		c := s.BattleController()
 		if c.rewind.open {
 			_, wheel := ebiten.Wheel()
-			if wheel != 0 {
-				step := 1
-				if wheel > 0 {
-					step = -1
-				}
-				c.RewindDetail(step)
-			}
+			x, y := ebiten.CursorPosition()
+			c.Wheel(x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift))
 			if cancel {
 				c.Cancel()
-			} else if left {
+			} else if left && wheel == 0 {
 				c.RewindClick(ebiten.CursorPosition())
 			} else if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 				c.rewindKey("Enter")
@@ -103,15 +100,19 @@ func (g *Game) Update() error {
 		}
 	}
 	if s.Scene() != Battle {
-		if s.Scene() == Deploy {
-			s.SetDeployCursor(ebiten.CursorPosition())
+		deploy := s.Scene() == Deploy
+		if deploy {
+			dx, dy := cameraKeys()
+			x, y := ebiten.CursorPosition()
+			_, wheel := ebiten.Wheel()
+			s.DeployInput(dx, dy, x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift), left && !cancel)
 			if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
 				s.ToggleDeployDanger()
 			}
 		}
 		if cancel {
 			s.Cancel()
-		} else if left {
+		} else if left && !deploy {
 			s.Click(ebiten.CursorPosition())
 		} else if s.Scene() == Story && (inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeySpace)) {
 			s.Advance()
@@ -119,13 +120,18 @@ func (g *Game) Update() error {
 	} else {
 		c := s.BattleController()
 		g.ctrl = c
-		c.SetCursor(ebiten.CursorPosition())
+		dx, dy := cameraKeys()
+		c.Scroll(dx, dy)
+		x, y := ebiten.CursorPosition()
+		_, wheel := ebiten.Wheel()
+		scrolled := c.Wheel(x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift)) || dx != 0 || dy != 0
+		c.SetCursor(x, y)
 		if c.State() == Over {
 			if left {
 				s.Click(ebiten.CursorPosition())
 			}
 		} else {
-			if left {
+			if left && !scrolled {
 				g.leftClick(ebiten.CursorPosition())
 			}
 			if cancel {
@@ -152,12 +158,12 @@ func (g *Game) leftClick(x, y int) {
 	c := g.ctrl
 	if labels := c.MenuLabels(); len(labels) > 0 {
 		_, dest, _ := c.Selection()
-		if i := HitMenu(MenuRects(dest, len(labels)), x, y); i >= 0 {
+		if i := HitMenu(c.Camera().MenuRects(dest, len(labels)), x, y); i >= 0 {
 			c.ClickMenu(i)
 		}
 		return
 	}
-	if p, ok := CellAt(x, y); ok {
+	if p, ok := c.Camera().CellAt(x, y); ok {
 		c.Click(p)
 	}
 }
@@ -189,17 +195,19 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.drawRewindPreview(screen)
 		return
 	}
-	g.drawTerrain(screen)
-	g.drawOverlay(screen)
+	g.drawCamera = g.ctrl.Camera()
+	board := screen.SubImage(image.Rect(0, 0, MapSize, MapSize)).(*ebiten.Image)
+	g.drawTerrain(board)
+	g.drawOverlay(board)
 	hint := g.ctrl.ReinforcementHintView()
-	g.drawHint(screen, hint)
-	g.drawUnits(screen)
-	g.drawDanger(screen)
-	g.drawSelection(screen)
-	g.drawTargetLabel(screen)
-	g.drawEvent(screen)
-	g.drawMenu(screen)
-	g.drawOver(screen)
+	g.drawHint(board, hint)
+	g.drawUnits(board)
+	g.drawDanger(board)
+	g.drawSelection(board)
+	g.drawTargetLabel(board)
+	g.drawEvent(board)
+	g.drawMenu(board)
+	g.drawOver(board)
 	cx, cy := ebiten.CursorPosition()
 	g.drawInfo(screen, cx, cy)
 	g.drawGuide(screen)
@@ -217,7 +225,7 @@ func (g *Game) drawHint(dst *ebiten.Image, v HintView) {
 		g.hintLayer = ebiten.NewImage(MapSize, MapSize)
 	}
 	g.hintLayer.Clear()
-	dashes, marks := hintShapes(v.Areas)
+	dashes, marks := g.drawCamera.hintShapes(v.Areas)
 	for _, r := range dashes {
 		vector.DrawFilledRect(g.hintLayer, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), hintColor, false)
 	}
@@ -266,9 +274,10 @@ type terrainSource interface {
 
 // drawBoardTerrain は地形を、戦闘と巻き戻しのプレビューで同じ絵で描く（DES-UI-05、DES-UI-21）。
 func (g *Game) drawBoardTerrain(dst *ebiten.Image, b terrainSource) {
-	for y := 0; y < b.Height(); y++ {
-		for x := 0; x < b.Width(); x++ {
-			px, py := x*CellSize, y*CellSize
+	for y := g.drawCamera.Y; y < min(b.Height(), g.drawCamera.Y+16); y++ {
+		for x := g.drawCamera.X; x < min(b.Width(), g.drawCamera.X+16); x++ {
+			pt := g.drawCamera.Screen(tactics.Pos{X: x, Y: y})
+			px, py := pt.X, pt.Y
 			g.drawTile(dst, assets.Grass, px, py, 1)
 			if t, ok := terrainTile(b.TerrainAt(tactics.Pos{X: x, Y: y})); ok {
 				g.drawTile(dst, t, px, py, 1)
@@ -281,14 +290,20 @@ func (g *Game) drawBoardTerrain(dst *ebiten.Image, b terrainSource) {
 func (g *Game) drawOverlay(dst *ebiten.Image) {
 	blue, red := g.ctrl.Overlay()
 	for p := range blue {
-		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, blueOverlay, false)
+		if !g.drawCamera.Visible(p) {
+			continue
+		}
+		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, blueOverlay, false)
 	}
 	clr := redOverlay
 	if g.ctrl.RangeStyle() == StyleGood {
 		clr = greenOverlay
 	}
 	for p := range red {
-		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, clr, false)
+		if !g.drawCamera.Visible(p) {
+			continue
+		}
+		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, clr, false)
 	}
 }
 
@@ -296,7 +311,10 @@ func (g *Game) drawOverlay(dst *ebiten.Image) {
 // 自軍のいるマスも見えるように、ユニットの上に描く。選択や攻撃の相手の枠（drawSelection）は、この上に描く。
 func (g *Game) drawDanger(dst *ebiten.Image) {
 	for p := range g.ctrl.Danger() {
-		vector.StrokeRect(dst, float32(p.X*CellSize)+3, float32(p.Y*CellSize)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
+		if !g.drawCamera.Visible(p) {
+			continue
+		}
+		vector.StrokeRect(dst, float32(g.drawCamera.Screen(p).X)+3, float32(g.drawCamera.Screen(p).Y)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
 	}
 }
 
@@ -308,10 +326,11 @@ func (g *Game) drawUnits(dst *ebiten.Image) {
 // drawUnitList は戦闘と配置で同じユニットの絵を描く（DES-UI-03、DES-UI-20）。
 func (g *Game) drawUnitList(dst *ebiten.Image, units []tactics.Unit) {
 	for _, u := range units {
-		if !u.Alive {
+		if !u.Alive || !g.drawCamera.Visible(u.Pos) {
 			continue
 		}
-		px, py := float32(u.Pos.X*CellSize), float32(u.Pos.Y*CellSize)
+		pt := g.drawCamera.Screen(u.Pos)
+		px, py := float32(pt.X), float32(pt.Y)
 		base := playerBase
 		if u.Side == tactics.Enemy {
 			base = enemyBase
@@ -345,27 +364,30 @@ func (g *Game) drawSelection(dst *ebiten.Image) {
 	units := c.Units()
 	switch c.State() {
 	case Selected:
-		strokeCell(dst, units[unit].Pos, cursorColor)
+		g.strokeCell(dst, units[unit].Pos, cursorColor)
 	case Moved, ItemMenu:
-		strokeCell(dst, dest, cursorColor)
+		g.strokeCell(dst, dest, cursorColor)
 	case Targeting, HealTargeting:
 		clr := cursorColor
 		if c.TargetView().Danger {
 			clr = badColor
 		}
-		strokeCell(dst, dest, clr)
+		g.strokeCell(dst, dest, clr)
 		targets := c.Targets()
 		if c.State() == HealTargeting {
 			targets = c.HealTargets()
 		}
 		for _, t := range targets {
-			strokeCell(dst, units[t].Pos, c.targetFrameColor(t))
+			g.strokeCell(dst, units[t].Pos, c.targetFrameColor(t))
 		}
 	}
 }
 
-func strokeCell(dst *ebiten.Image, p tactics.Pos, clr color.Color) {
-	vector.StrokeRect(dst, float32(p.X*CellSize)+1, float32(p.Y*CellSize)+1, CellSize-2, CellSize-2, 2, clr, false)
+func (g *Game) strokeCell(dst *ebiten.Image, p tactics.Pos, clr color.Color) {
+	if !g.drawCamera.Visible(p) {
+		return
+	}
+	vector.StrokeRect(dst, float32(g.drawCamera.Screen(p).X)+1, float32(g.drawCamera.Screen(p).Y)+1, CellSize-2, CellSize-2, 2, clr, false)
 }
 
 // drawTargetLabel は、選んだ相手のマスの上に「ダメージ×回数 命中率%」を、出来事の文字と同じ形（popup）で出す（DES-UI-07）。
@@ -397,7 +419,7 @@ func (g *Game) drawEvent(dst *ebiten.Image) {
 		vector.DrawFilledRect(dst, 0, MapSize/2-32, MapSize, 64, bandColor, false)
 		g.bigLabel(dst, BandText(e), MapSize/2-32+20, white)
 	case tactics.EventStrike:
-		strokeCell(dst, e.Units[e.Unit].Pos, cursorColor)
+		g.strokeCell(dst, e.Units[e.Unit].Pos, cursorColor)
 		clr := strikeHit
 		if !e.Hit {
 			clr = strikeMiss
@@ -406,19 +428,18 @@ func (g *Game) drawEvent(dst *ebiten.Image) {
 	case tactics.EventHeal:
 		g.popup(dst, "+"+strconv.Itoa(e.Amount), e.Units[e.Unit].Pos, healTextClr)
 	case tactics.EventMove, tactics.EventWait, tactics.EventReinforce, tactics.EventFall:
-		strokeCell(dst, e.Units[e.Unit].Pos, cursorColor)
+		g.strokeCell(dst, e.Units[e.Unit].Pos, cursorColor)
 	}
 }
 
 // popup は、マス p の上に文字を出す（DES-UI-04）。盤面の外に出ないように寄せる。
 func (g *Game) popup(dst *ebiten.Image, s string, p tactics.Pos, clr color.Color) {
 	w := textWidth(s)
-	x := p.X*CellSize + CellSize/2 - w/2
-	x = max(0, min(x, MapSize-w))
-	y := p.Y*CellSize - 16
-	if y < 0 {
-		y = p.Y*CellSize + CellSize
+	pt, ok := g.drawCamera.Popup(p, w)
+	if !ok {
+		return
 	}
+	x, y := pt.X, pt.Y
 	vector.DrawFilledRect(dst, float32(x-2), float32(y-1), float32(w+4), 15, bandColor, false)
 	g.label(dst, s, x, y, clr)
 }
@@ -430,7 +451,7 @@ func (g *Game) drawMenu(dst *ebiten.Image) {
 		return
 	}
 	_, dest, _ := g.ctrl.Selection()
-	for i, r := range MenuRects(dest, len(labels)) {
+	for i, r := range g.ctrl.Camera().MenuRects(dest, len(labels)) {
 		vector.DrawFilledRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), menuColor, false)
 		vector.StrokeRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), 1, menuBorder, false)
 		g.label(dst, labels[i], r.Min.X+8, r.Min.Y+4, white)
@@ -458,10 +479,11 @@ func (g *Game) drawOver(dst *ebiten.Image) {
 // (cx, cy) はカーソルの画面の座標で、マスは CellAt で引く。
 func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 	vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
-	p := g.ctrl.Panel(CellAt(cx, cy))
+	p := g.ctrl.Panel(g.ctrl.Camera().CellAt(cx, cy))
 	// 予測・ユニット・地形は、位置を決めた InfoView のとおりに描く（DES-UI-06、DES-UI-07）。
 	v := p.View()
 	g.drawInfoView(dst, v)
+	g.label(dst, cameraGuide, rewindLeft, cameraGuideY, muted)
 }
 
 // drawInfoView は戦闘と準備で情報欄の描画を共有する（DES-UI-06、13）。
@@ -611,32 +633,54 @@ func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
 
 // drawDeploy は地形→出撃下地→個別範囲→ユニット→出撃枠→危険枠→選択枠を重ねる（DES-UI-23）。
 func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
+	g.drawCamera = g.scenes.deployCamera
+	dst = dst.SubImage(image.Rect(0, 0, MapSize, MapSize)).(*ebiten.Image)
 	for y, row := range d.Terrain {
 		for x, t := range row {
-			g.drawTile(dst, assets.Grass, x*CellSize, y*CellSize, 1)
+			p := tactics.Pos{X: x, Y: y}
+			if !g.drawCamera.Visible(p) {
+				continue
+			}
+			pt := g.drawCamera.Screen(p)
+			g.drawTile(dst, assets.Grass, pt.X, pt.Y, 1)
 			if tile, ok := terrainTile(t); ok {
-				g.drawTile(dst, tile, x*CellSize, y*CellSize, 1)
+				g.drawTile(dst, tile, pt.X, pt.Y, 1)
 			}
 		}
 	}
 	for _, p := range d.Slots {
-		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, blueOverlay, false)
+		if !g.drawCamera.Visible(p) {
+			continue
+		}
+		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, blueOverlay, false)
 	}
 	for p := range d.Blue {
-		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, blueOverlay, false)
+		if !g.drawCamera.Visible(p) {
+			continue
+		}
+		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, blueOverlay, false)
 	}
 	for p := range d.Red {
-		vector.DrawFilledRect(dst, float32(p.X*CellSize), float32(p.Y*CellSize), CellSize, CellSize, redOverlay, false)
+		if !g.drawCamera.Visible(p) {
+			continue
+		}
+		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, redOverlay, false)
 	}
 	g.drawUnitList(dst, d.Units)
 	for _, p := range d.Slots {
-		strokeCell(dst, p, menuBorder)
+		if !g.drawCamera.Visible(p) {
+			continue
+		}
+		g.strokeCell(dst, p, menuBorder)
 	}
 	for p := range d.Danger {
-		vector.StrokeRect(dst, float32(p.X*CellSize)+3, float32(p.Y*CellSize)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
+		if !g.drawCamera.Visible(p) {
+			continue
+		}
+		vector.StrokeRect(dst, float32(g.drawCamera.Screen(p).X)+3, float32(g.drawCamera.Screen(p).Y)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
 	}
 	if d.Selected >= 0 {
-		strokeCell(dst, d.Units[d.Selected].Pos, cursorColor)
+		g.strokeCell(dst, d.Units[d.Selected].Pos, cursorColor)
 	}
 }
 
@@ -649,12 +693,14 @@ func (g *Game) drawRewind(dst *ebiten.Image) {
 // 範囲・仮移動・予測・行動の一覧・再生と勝敗の帯は描かない。ユニットは戦闘と同じ drawUnitList で描く。
 func (g *Game) drawRewindPreview(dst *ebiten.Image) {
 	v := g.ctrl.RewindBoard()
+	g.drawCamera = g.ctrl.Camera()
+	board := dst.SubImage(image.Rect(0, 0, MapSize, MapSize)).(*ebiten.Image)
 	if v.Available {
-		g.drawBoardTerrain(dst, v.Board)
-		g.drawHint(dst, v.Hint)
-		g.drawUnitList(dst, v.Units)
+		g.drawBoardTerrain(board, v.Board)
+		g.drawHint(board, v.Hint)
+		g.drawUnitList(board, v.Units)
 		if v.HasFrame {
-			strokeCell(dst, v.Frame, cursorColor)
+			g.strokeCell(board, v.Frame, cursorColor)
 		}
 	}
 	if v.Notice != "" {
@@ -671,4 +717,21 @@ func (g *Game) drawRewindPreview(dst *ebiten.Image) {
 	}
 	vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
 	g.drawSceneView(dst, g.ctrl.RewindView())
+}
+
+// cameraKeys はフレーム数だけで矢印のリピートを決める（DES-UI-25）。
+func cameraKeys() (dx, dy int) {
+	if keyRepeat(inpututil.KeyPressDuration(ebiten.KeyArrowLeft)) {
+		dx--
+	}
+	if keyRepeat(inpututil.KeyPressDuration(ebiten.KeyArrowRight)) {
+		dx++
+	}
+	if keyRepeat(inpututil.KeyPressDuration(ebiten.KeyArrowUp)) {
+		dy--
+	}
+	if keyRepeat(inpututil.KeyPressDuration(ebiten.KeyArrowDown)) {
+		dy++
+	}
+	return
 }

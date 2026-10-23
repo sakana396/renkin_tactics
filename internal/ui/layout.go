@@ -27,12 +27,9 @@ const (
 	menuHeight = 22
 )
 
-// CellAt は、画面の座標 (x, y) にあるマスを返す（DES-UI-01）。盤面の外なら ok が偽。
+// CellAt は原点・16×16 の座標変換を返す互換の入口（DES-UI-01、DES-UI-25）。実画面では Camera.CellAt を使う。
 func CellAt(x, y int) (p tactics.Pos, ok bool) {
-	if x < 0 || y < 0 || x >= MapSize || y >= MapSize {
-		return tactics.Pos{}, false
-	}
-	return tactics.Pos{X: x / CellSize, Y: y / CellSize}, true
+	return (Camera{Width: 16, Height: 16}).CellAt(x, y)
 }
 
 // MenuRects は、移動先 dest の横に n 個のボタンを縦に並べたときの、各ボタンの範囲を返す（DES-UI-02）。

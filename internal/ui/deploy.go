@@ -27,6 +27,11 @@ func (s *SceneController) enterDeploy() {
 	s.deploySelected = -1
 	s.message = ""
 	s.scene = Deploy
+	b, err := s.campaign.DeploymentView(s.deployMembers, s.deploySlots)
+	if err == nil {
+		s.deployCamera = Camera{Width: b.Width(), Height: b.Height()}
+		s.deployCamera.focusHero(b.Units())
+	}
 }
 
 // leaveDeploy は手持ちと出撃の印を残し、仮配置だけを捨てる（DES-UI-20）。
@@ -90,6 +95,7 @@ func (s *SceneController) chooseDeploy(i int) {
 
 // resetDeploy は仮配置と範囲の設定を捨てる（DES-UI-23）。
 func (s *SceneController) resetDeploy() {
+	s.deployCamera = Camera{}
 	s.deployMembers = nil
 	s.deploySlots = nil
 	s.deploySelected = -1
@@ -102,7 +108,7 @@ func (s *SceneController) SetDeployCursor(x, y int) {
 	if s.scene != Deploy {
 		return
 	}
-	p, ok := CellAt(x, y)
+	p, ok := s.deployCamera.CellAt(x, y)
 	if !ok {
 		p = tactics.Pos{X: -1, Y: -1}
 	}
@@ -183,6 +189,7 @@ func (s *SceneController) deployView() SceneView {
 	if s.deployDanger {
 		state = "ON"
 	}
+	v.Texts = append(v.Texts, SceneText{Text: cameraGuide, X: 528, Y: 520, Style: StyleLabel})
 	v.Texts = append(v.Texts, SceneText{Text: "Q: 敵の危険範囲 " + state, X: 16, Y: 552, Style: StyleLabel})
 	return v
 }

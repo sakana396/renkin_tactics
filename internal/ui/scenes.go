@@ -68,6 +68,7 @@ type SceneController struct {
 	deploySelected   int
 	deployCursor     tactics.Pos
 	deployDanger     bool
+	deployCamera     Camera
 	deployment       map[int]bool
 }
 
