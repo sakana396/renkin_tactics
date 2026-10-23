@@ -31,12 +31,21 @@ func terrainTile(t tactics.Terrain) (assets.Tile, bool) {
 	return assets.Tile{}, false
 }
 
-// unitTile はユニットのタイルを返す（DES-UI-05）。陣営と武器の種類で選び、主人公とボスは専用のタイルにする。
+// cavalierClassName は騎兵のクラスの表示名。core が cavalier をこの名前に変換する（DES-UI-22）。
+// 表示名を変えるときは、この判定とテストも変える。
+const cavalierClassName = "騎兵"
+
+// unitTile はユニットのタイルを返す（DES-UI-05、DES-UI-22）。戦闘・情報欄・準備・配置・加入で共通に使う。
+// 主人公 → 騎兵（両軍。ClassName で見分ける）→ ボス → 陣営と武器の種類、の順で選ぶ。
+// 騎兵のボスも騎乗の絵にし、ボスの印は描く側が Boss で重ねる。
 func unitTile(u tactics.Unit) assets.Tile {
+	if u.Side == tactics.Player && u.Lord {
+		return assets.PlayerLord
+	}
+	if u.ClassName == cavalierClassName {
+		return assets.Cavalier
+	}
 	if u.Side == tactics.Player {
-		if u.Lord {
-			return assets.PlayerLord
-		}
 		switch u.Weapon.Type {
 		case tactics.Lance:
 			return assets.PlayerLance

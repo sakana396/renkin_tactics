@@ -122,7 +122,8 @@ func (s *SceneController) deployView() SceneView {
 	for _, e := range m.Enemies {
 		cls, _ := s.cfg.Catalog.Class(e.Class)
 		// 敵の HP は core の enemyUnit（addStats）と同じ「クラスの基礎 HP + 配置の補正 HP」。
-		d.Units = append(d.Units, tactics.Unit{Side: tactics.Enemy, Alive: true, Boss: e.Boss, HP: cls.Base.HP + e.Bonus.HP, Stats: tactics.Stats{HP: cls.Base.HP + e.Bonus.HP}, Pos: tactics.Pos{X: e.X, Y: e.Y}})
+		// クラス名は騎兵の絵の選択に使う（DES-UI-22）。
+		d.Units = append(d.Units, tactics.Unit{ClassName: cls.Name, Side: tactics.Enemy, Alive: true, Boss: e.Boss, HP: cls.Base.HP + e.Bonus.HP, Stats: tactics.Stats{HP: cls.Base.HP + e.Bonus.HP}, Pos: tactics.Pos{X: e.X, Y: e.Y}})
 	}
 	v := SceneView{Deploy: d, Buttons: []SceneButton{
 		{"戦闘開始", image.Rect(528, 432, 816, 468), true},

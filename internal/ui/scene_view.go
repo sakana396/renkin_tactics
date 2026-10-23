@@ -124,7 +124,8 @@ func (s *SceneController) View() SceneView {
 			case "staff":
 				weaponType = tactics.Staff
 			}
-			v.Icons = append(v.Icons, SceneIcon{unitTile(tactics.Unit{Side: tactics.Player, Weapon: tactics.Weapon{Type: weaponType}}), 48, 208})
+			// 騎兵の絵を選べるよう、クラス名も渡す（DES-UI-22）。
+			v.Icons = append(v.Icons, SceneIcon{unitTile(tactics.Unit{ClassName: class.Name, Side: tactics.Player, Weapon: tactics.Weapon{Type: weaponType}}), 48, 208})
 			lines(fmt.Sprintf("%s　Lv %d", class.Name, m.Level), 256, StylePlain)
 			lines(fmt.Sprintf("HP %d　力 %d　技 %d　速さ %d　守備 %d　移動 %d", m.Stats.HP, m.Stats.Str, m.Stats.Skl, m.Stats.Spd, m.Stats.Def, m.Stats.Mov), 296, StylePlain)
 		}
