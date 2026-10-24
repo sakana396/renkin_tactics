@@ -154,12 +154,13 @@ func TestLoadIt02(t *testing.T) {
 		{"TC-FR-SYS-04-36 段落がない・空の段落・201 文字の段落",
 			[]edit{
 				replace("story.toml", "id = \"ch01_after\"\nparagraphs = [", "id = \"ch01_after\"\nparagraphs = [\"\", \""+long+"\", "),
-				appendTo("story.toml", "[[stories]]\nid = \"empty\"\nparagraphs = []"),
+				// 章の追加で物語の数が変わっても添字が変わらないよう、ch02_before の前（stories[2]）に入れる。
+				replace("story.toml", "[[stories]]\nid = \"ch02_before\"", "[[stories]]\nid = \"empty\"\nparagraphs = []\n\n[[stories]]\nid = \"ch02_before\""),
 			},
 			[]string{
 				"story.toml: stories[1].paragraphs[0]: 段落が空です",
 				"story.toml: stories[1].paragraphs[1]: 段落の長さ 201 文字は 200 文字以下にしてください",
-				"story.toml: stories[6].paragraphs: 段落を 1 つ以上書いてください",
+				"story.toml: stories[2].paragraphs: 段落を 1 つ以上書いてください",
 			}},
 		{"TC-FR-SYS-04-37 rune で 200 文字の段落は通る",
 			[]edit{replace("story.toml", "id = \"ch01_after\"\nparagraphs = [", "id = \"ch01_after\"\nparagraphs = [\""+long[:len(long)-len("あ")]+"\", ")},

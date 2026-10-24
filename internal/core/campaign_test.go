@@ -278,14 +278,16 @@ func TestCampaignFinish(t *testing.T) {
 		if c.Stock[0].Count != 3 {
 			t.Fatal("結果と在庫が共有")
 		}
-		for chapter := 1; chapter < 3; chapter++ {
+		// 最後の章の添字は章の数から求める（DES-IT05 8.3 節。3 に固定しない）。
+		last := len(campaignCatalog().Chapters()) - 1
+		for chapter := 1; chapter <= last; chapter++ {
 			s := sortie(t, c, 0)
 			win(t, s)
 			r, err = c.FinishChapter(s)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if c.Chapter != chapter+1 || c.Cleared != (chapter == 2) || r.Cleared != c.Cleared {
+			if c.Chapter != chapter+1 || c.Cleared != (chapter == last) || r.Cleared != c.Cleared {
 				t.Fatalf("進行 = %+v", c)
 			}
 		}

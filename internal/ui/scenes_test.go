@@ -304,7 +304,9 @@ func TestBattleScenes(t *testing.T) {
 		s := fixtureScenes(m, true, true)
 		startScenes(s)
 		s.Cancel()
-		for chapter := 0; chapter < 3; chapter++ {
+		// 最後の章の添字は章の数から求める（DES-IT05 8.3 節。3 に固定しない）。
+		last := len(s.cfg.Catalog.Chapters()) - 1
+		for chapter := 0; chapter <= last; chapter++ {
 			if chapter > 0 {
 				s.Cancel()
 				if s.Scene() == Joined {
@@ -335,7 +337,7 @@ func TestBattleScenes(t *testing.T) {
 				t.Fatal(s.Scene(), m.writes, s.campaign.Chapter)
 			}
 			stored, err := core.LoadCampaign(s.cfg.Catalog, bytes.NewReader(m.data))
-			if err != nil || stored.Chapter != chapter+1 || stored.Cleared != (chapter == 2) {
+			if err != nil || stored.Chapter != chapter+1 || stored.Cleared != (chapter == last) {
 				t.Fatal(stored, err)
 			}
 			s.Advance()

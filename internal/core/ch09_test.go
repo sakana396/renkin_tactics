@@ -1,0 +1,381 @@
+package core_test
+
+import (
+	"bytes"
+	"reflect"
+	"testing"
+
+	"github.com/sakana396/renkin_tactics/data"
+	"github.com/sakana396/renkin_tactics/internal/core"
+	"github.com/sakana396/renkin_tactics/internal/core/tactics"
+	"github.com/sakana396/renkin_tactics/internal/defload"
+	"github.com/sakana396/renkin_tactics/internal/defs"
+)
+
+// 本体の ch09「ヴァルトの門」（DES-MAP-06、DES-CMP-09。制作記録 docs/iterations/it05/map-ch09.md）。
+
+func baseCatalog(t *testing.T) *defs.Catalog {
+	t.Helper()
+	cat, err := defload.Load(data.Base())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return cat
+}
+
+// reachableByTerrain は、ユニットを無視して地形だけで start から行けるマスを返す。closed のマスは通れないものとする。
+func reachableByTerrain(m defs.MapDef, cat *defs.Catalog, start defs.Slot, closed map[defs.Slot]bool) map[defs.Slot]bool {
+	passable := func(p defs.Slot) bool {
+		if p.Y < 0 || p.Y >= len(m.Rows) || p.X < 0 || p.X >= len([]rune(m.Rows[0])) || closed[p] {
+			return false
+		}
+		sym := string([]rune(m.Rows[p.Y])[p.X])
+		for _, tr := range cat.Terrains() {
+			if tr.Symbol == sym {
+				return tr.Cost > 0
+			}
+		}
+		return false
+	}
+	seen := map[defs.Slot]bool{start: true}
+	queue := []defs.Slot{start}
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		for _, d := range []defs.Slot{{X: 0, Y: -1}, {X: -1, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}} {
+			n := defs.Slot{X: cur.X + d.X, Y: cur.Y + d.Y}
+			if !seen[n] && passable(n) {
+				seen[n] = true
+				queue = append(queue, n)
+			}
+		}
+	}
+	return seen
+}
+
+func TestCh09Map(t *testing.T) {
+	cat := baseCatalog(t)
+	m, ok := cat.Map("ch09")
+	if !ok {
+		t.Fatal("ch09 のマップがない")
+	}
+
+	t.Run("TC-FR-MAP-02-03 32×32・出撃 6・敵 26＋増援 8・最奥のボス・総 40 体", func(t *testing.T) {
+		if len(m.Rows) != 32 {
+			t.Fatalf("行の数 = %d", len(m.Rows))
+		}
+		for y, r := range m.Rows {
+			if n := len([]rune(r)); n != 32 {
+				t.Fatalf("行 %d の長さ = %d", y, n)
+			}
+		}
+		// 出撃の枠は南の出発地の 6 つ（1 番目は主人公）。
+		wantSlots := []defs.Slot{{X: 15, Y: 29}, {X: 16, Y: 29}, {X: 14, Y: 30}, {X: 15, Y: 30}, {X: 16, Y: 30}, {X: 17, Y: 30}}
+		if !reflect.DeepEqual(m.Slots, wantSlots) {
+			t.Errorf("出撃の枠 = %v", m.Slots)
+		}
+		if len(m.Enemies) != 26 || len(m.Reinforcements) != 8 {
+			t.Fatalf("敵 %d・増援 %d", len(m.Enemies), len(m.Reinforcements))
+		}
+		// ボスはちょうど 1 体で、本営の奥（玉座の砦 (15,2)）にいる。
+		var bosses []defs.EnemyPlacement
+		for _, e := range m.Enemies {
+			if e.Boss {
+				bosses = append(bosses, e)
+			}
+		}
+		if len(bosses) != 1 || bosses[0].Name != "ゲルハルト" || bosses[0].X != 15 || bosses[0].Y != 2 || m.Rows[2][15] != 'T' {
+			t.Errorf("ボス = %+v", bosses)
+		}
+		// 動き方: 突っ込む敵は東の騎兵 2 と西のファイター 1 だけ。残りは待ち構える（DES-IT05 6 章）。
+		charge := 0
+		for _, e := range m.Enemies {
+			if e.AI == "charge" {
+				charge++
+			}
+		}
+		if charge != 3 {
+			t.Errorf("突っ込む初期の敵 = %d", charge)
+		}
+		// 増援の時機と位置（3・5・7・9 ターンに 2 体ずつ。南西の背後、東の端、前庭の両端、本営の中）。
+		type rf struct{ turn, x, y int }
+		var got []rf
+		for _, r := range m.Reinforcements {
+			got = append(got, rf{r.Turn, r.X, r.Y})
+			if r.Boss || r.AI != "charge" {
+				t.Errorf("増援 %+v", r)
+			}
+		}
+		want := []rf{{3, 0, 29}, {3, 0, 30}, {5, 31, 22}, {5, 31, 23}, {7, 2, 8}, {7, 29, 8}, {9, 11, 2}, {9, 20, 2}}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("増援 = %v", got)
+		}
+		// 組み立てた戦闘: 自軍 6・敵 26 で始まり、増援を足して 40 体（TBD-11 の上限）。
+		c, err := core.NewCampaignAt(cat, core.Withdraw, "ch09")
+		if err != nil {
+			t.Fatal(err)
+		}
+		s, _, err := c.StartBattle([]int{0, 1, 2, 3, 4, 5}, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n := len(s.Battle.Units()); n != 32 {
+			t.Errorf("初めのユニット = %d", n)
+		}
+		setup, err := core.NewSetup(cat, "ch09")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var turns []int
+		for _, r := range setup.Reinforcements {
+			turns = append(turns, r.Turn)
+		}
+		if !reflect.DeepEqual(turns, []int{3, 3, 5, 5, 7, 7, 9, 9}) || len(m.Slots)+len(m.Enemies)+len(m.Reinforcements) != 40 {
+			t.Errorf("増援のターン = %v、総数 = %d", turns, len(m.Slots)+len(m.Enemies)+len(m.Reinforcements))
+		}
+	})
+
+	t.Run("TC-FR-MAP-02-03 二つの道: 外の城壁の門は西と東だけで、どちらを閉じても本営へ着き、両方を閉じると着かない", func(t *testing.T) {
+		// 外の城壁（y=11）で通れるマスは、西の門 x=4・5 と東の門 x=26・27 だけ。
+		var gates []int
+		for x, r := range []rune(m.Rows[11]) {
+			if r != '#' {
+				gates = append(gates, x)
+			}
+		}
+		if !reflect.DeepEqual(gates, []int{4, 5, 26, 27}) {
+			t.Errorf("外の城壁の切れ目 = %v", gates)
+		}
+		// 本営の門は (15,6)・(16,6) だけ。
+		for x := 9; x <= 22; x++ {
+			open := m.Rows[6][x] != '#'
+			if open != (x == 15 || x == 16) {
+				t.Errorf("本営の壁 (%d,6) = %q", x, m.Rows[6][x])
+			}
+		}
+		lord := m.Slots[0]
+		bossSide := defs.Slot{X: 15, Y: 3}
+		west := map[defs.Slot]bool{{X: 4, Y: 11}: true, {X: 5, Y: 11}: true}
+		east := map[defs.Slot]bool{{X: 26, Y: 11}: true, {X: 27, Y: 11}: true}
+		both := map[defs.Slot]bool{}
+		for k := range west {
+			both[k] = true
+		}
+		for k := range east {
+			both[k] = true
+		}
+		for _, tc := range []struct {
+			name   string
+			closed map[defs.Slot]bool
+			want   bool
+		}{
+			{"両方開く", nil, true},
+			{"西を閉じる（東の道）", west, true},
+			{"東を閉じる（西の道）", east, true},
+			{"両方を閉じる", both, false},
+		} {
+			if got := reachableByTerrain(m, cat, lord, tc.closed)[bossSide]; got != tc.want {
+				t.Errorf("%s: 本営の奥へ着く = %v", tc.name, got)
+			}
+		}
+		// 全ての枠・敵・増援の位置から、主人公の枠へ地形だけで行ける（閉じ込められた配置がない）。
+		all := reachableByTerrain(m, cat, lord, nil)
+		for _, s := range m.Slots {
+			if !all[s] {
+				t.Errorf("枠 %v に行けない", s)
+			}
+		}
+		for _, e := range m.Enemies {
+			if !all[defs.Slot{X: e.X, Y: e.Y}] {
+				t.Errorf("敵 %+v に行けない", e)
+			}
+		}
+		for _, r := range m.Reinforcements {
+			if !all[defs.Slot{X: r.X, Y: r.Y}] {
+				t.Errorf("増援 %+v に行けない", r)
+			}
+		}
+	})
+}
+
+func TestCh09Autoplay(t *testing.T) {
+	cat := baseCatalog(t)
+	// 固定の seed で、二手に分かれる攻略と、片方の道にまとめる攻略の両方がボス撃破まで届く（DES-MAP-06、制作記録 4 章）。
+	// 打ち手は autoplay_test.go の決まった手順で、人の遊び方の代わりではない（解ける手順がある下限の確かめ）。
+	for _, tc := range []struct {
+		name string
+		plan string
+		low  bool
+		seed uint64
+	}{
+		{"分かれる・平均の名簿", "split", false, 1},
+		{"分かれる・低めの名簿", "split", true, 10},
+		{"東の道にまとめる・平均の名簿", "east", false, 5},
+		{"西の道にまとめる・平均の名簿", "west", false, 7},
+	} {
+		t.Run("TC-FR-MAP-04-02 "+tc.name, func(t *testing.T) {
+			c := ch09Roster(t, cat, tc.low)
+			s, ids, err := autoCampaignBattle(c, tc.seed, 6)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r := autoPlay(s.Battle, ids, ch09Plans()[tc.plan], 50)
+			t.Log(r)
+			if r.Result != tactics.Won {
+				t.Fatalf("勝てなかった: %v", r)
+			}
+			// 勝てば ch09 で章が終わり、キャンペーンはクリアになる（FR-CMP-02）。
+			res, err := c.FinishChapter(s)
+			if err != nil || !res.Cleared || !c.Cleared || res.Chapter != "ch09" {
+				t.Fatalf("結果 = %+v, %v", res, err)
+			}
+		})
+	}
+}
+
+// winByForce は、主人公だけを極端に強くして（試験だけの名簿の書き換え）、今の章のボスを倒させる。
+// 章の流れ（DES-CMP-09）を確かめるためのもので、攻略の確かめではない。
+func winByForce(t *testing.T, c *core.Campaign, seed uint64) *core.Sortie {
+	t.Helper()
+	lord := c.Roster[0]
+	c.Roster[0].Stats = tactics.Stats{HP: 99, Str: 99, Skl: 99, Spd: 99, Def: 99, Mov: 99}
+	var members []int
+	for k, m := range c.Roster {
+		if m.Alive && len(members) < 5 {
+			members = append(members, k)
+		}
+	}
+	s, _, err := c.StartBattle(members, seed)
+	c.Roster[0] = lord
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := s.Battle
+	for turn := 0; turn < 30 && b.Result == tactics.Ongoing; turn++ {
+		units := b.Units()
+		boss := -1
+		for i, u := range units {
+			if u.Boss && u.Alive {
+				boss = i
+			}
+		}
+		// ボスを攻撃できればボスを、できなければボスに近い敵を攻撃する。攻撃できる敵がいなければボスへ近づく。
+		reach := sortedTiles(b.Reachable(0))
+		var best *tactics.Command
+		bestD := 1 << 30
+		for _, to := range reach {
+			for e, o := range units {
+				if !o.Alive || o.Side != tactics.Enemy || dist(to, o.Pos) != 1 {
+					continue
+				}
+				d := dist(o.Pos, units[boss].Pos)
+				if d < bestD {
+					cmd := tactics.Command{Unit: 0, To: to, Action: tactics.Attack, Target: e}
+					best, bestD = &cmd, d
+				}
+			}
+		}
+		if best == nil {
+			cmd := tactics.Command{Unit: 0, To: units[0].Pos, Action: tactics.Wait}
+			for _, to := range reach {
+				if dist(to, units[boss].Pos) < dist(cmd.To, units[boss].Pos) {
+					cmd.To = to
+				}
+			}
+			best = &cmd
+		}
+		if _, err := b.Act(*best); err != nil {
+			t.Fatal(err)
+		}
+		if b.Result == tactics.Ongoing && b.Phase == tactics.Player {
+			if _, err := b.EndPhase(); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if b.Result != tactics.Won {
+		t.Fatalf("勝てなかった（ターン %d）", b.Turn)
+	}
+	return s
+}
+
+func TestCh09ChapterFlow(t *testing.T) {
+	cat := baseCatalog(t)
+	t.Run("TC-FR-CMP-01-05 途中の版の章は ch01〜03・ch09 の 4 つで、順・名前・マップ・出撃の枠・ボスが表のとおり", func(t *testing.T) {
+		want := []struct {
+			id, name string
+			slots    int
+			boss     string
+		}{
+			{"ch01", "国境の砦", 5, "ハーゲン"},
+			{"ch02", "灰の街道", 6, "ヴォルグ"},
+			{"ch03", "王都の奪還", 5, "グラウス"},
+			{"ch09", "ヴァルトの門", 6, "ゲルハルト"},
+		}
+		chapters := cat.Chapters()
+		if len(chapters) != len(want) {
+			t.Fatalf("章の数 = %d", len(chapters))
+		}
+		for i, w := range want {
+			c := chapters[i]
+			m, ok := cat.Map(c.Map)
+			if c.ID != w.id || c.Name != w.name || c.Map != w.id || !ok || len(m.Slots) != w.slots {
+				t.Errorf("章 %d = %+v（枠 %d）", i+1, c, len(m.Slots))
+				continue
+			}
+			var bosses []string
+			for _, e := range m.Enemies {
+				if e.Boss {
+					bosses = append(bosses, e.Name)
+				}
+			}
+			if !reflect.DeepEqual(bosses, []string{w.boss}) {
+				t.Errorf("章 %s のボス = %q", c.ID, bosses)
+			}
+		}
+		if ch := chapters[3]; ch.Before != "ch09_before" || ch.After != "ch09_after" || ch.Joins != nil || ch.Reward != nil {
+			t.Errorf("ch09 = %+v", ch)
+		}
+	})
+
+	t.Run("TC-FR-CMP-01-05 ch03 に勝つと ch09 へ、ch09 に勝つとクリア。ch03 のセーブは ch09 へ進み、クリア済みのセーブはクリアのまま", func(t *testing.T) {
+		for _, rule := range []core.Rule{core.Withdraw, core.Permadeath} {
+			c, err := core.NewCampaignAt(cat, rule, "ch03")
+			if err != nil {
+				t.Fatal(err)
+			}
+			// ch03 のセーブ（章に入ったときの保存と同じ時機）。
+			var ch03Save bytes.Buffer
+			if err := c.Save(&ch03Save); err != nil {
+				t.Fatal(err)
+			}
+			r, err := c.FinishChapter(winByForce(t, c, 3))
+			if err != nil || r.Chapter != "ch03" || r.Cleared || c.Cleared || c.Chapter != 3 || cat.Chapters()[c.Chapter].ID != "ch09" {
+				t.Fatalf("ch03 の勝利の後 = %+v, 章 %d, %v", r, c.Chapter, err)
+			}
+			// ch03 のセーブから続けると ch03 から遊び、勝つと ch09 へ進む。
+			loaded, err := core.LoadCampaign(cat, bytes.NewReader(ch03Save.Bytes()))
+			if err != nil || loaded.Chapter != 2 {
+				t.Fatalf("ch03 のセーブ = %+v, %v", loaded, err)
+			}
+			if _, err := loaded.FinishChapter(winByForce(t, loaded, 5)); err != nil || loaded.Chapter != 3 || loaded.Cleared {
+				t.Fatalf("ch03 のセーブから続けた後 = 章 %d, %v", loaded.Chapter, err)
+			}
+			r, err = c.FinishChapter(winByForce(t, c, 9))
+			if err != nil || r.Chapter != "ch09" || !r.Cleared || !c.Cleared {
+				t.Fatalf("ch09 の勝利の後 = %+v, %v", r, err)
+			}
+			var cleared bytes.Buffer
+			if err := c.Save(&cleared); err != nil {
+				t.Fatal(err)
+			}
+			again, err := core.LoadCampaign(cat, &cleared)
+			if err != nil || !again.Cleared || again.Chapter != len(cat.Chapters()) {
+				t.Fatalf("クリア済みのセーブ = %+v, %v", again, err)
+			}
+			if _, _, err := again.StartBattle([]int{0}, 1); err == nil {
+				t.Fatal("クリア済みで出撃できた")
+			}
+		}
+	})
+}

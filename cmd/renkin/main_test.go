@@ -164,8 +164,8 @@ func TestSaveDirStartup(t *testing.T) {
 
 func TestStartChapterFlag(t *testing.T) {
 	t.Run("TC-IF-01-37 開始章と専用保存先の検証", func(t *testing.T) {
+		// 本体の 4 章目の ch09（#102 で本体に足した。それまでは試験用に足していた）。
 		fsys := copyBase(t)
-		fsys["chapters.toml"].Data = append(fsys["chapters.toml"].Data, []byte("\n[[chapters]]\nid = \"ch09\"\nname = \"試験用の最終章\"\nmap = \"ch03\"\n")...)
 		for _, tc := range []struct {
 			name    string
 			args    []string

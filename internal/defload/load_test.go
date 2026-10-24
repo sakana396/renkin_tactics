@@ -2,6 +2,7 @@ package defload_test
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"strings"
 	"testing"
@@ -56,7 +57,22 @@ func remove(file string) edit {
 	return func(t *testing.T, m fstest.MapFS) { delete(m, file) }
 }
 
-// smallMap は検証を通る小さなマップ（本体の 3 つのマップの後ろの maps[3]）を足す。rows と、追加の TOML を差し替えられる。
+// appended は、期待する誤りの文の maps[N] を、本体のマップの後ろに足したマップの添字に置き換える。
+// 本体のマップの数は章の追加（IT05 の #102〜#104）で変わるので、添字を数えて求める。
+func appended(t *testing.T, s string) string {
+	t.Helper()
+	b, err := fs.ReadFile(data.Base(), "maps.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := strings.Count(string(b), "\n[[maps]]\n")
+	if strings.HasPrefix(string(b), "[[maps]]\n") {
+		n++
+	}
+	return strings.ReplaceAll(s, "maps[N]", fmt.Sprintf("maps[%d]", n))
+}
+
+// smallMap は検証を通る小さなマップ（本体のマップの後ろの maps[N]。appended を参照）を足す。rows と、追加の TOML を差し替えられる。
 func smallMap(rows, extra string) edit {
 	return appendTo("maps.toml", `[[maps]]
 id = "small"
@@ -229,13 +245,13 @@ func TestLoad(t *testing.T) {
 			[]string{"maps.toml: maps[0].rows: 行の数 33 は 1 以上 32 以下にしてください"}},
 		{"TC-FR-SYS-04-11 行の数が 0",
 			[]edit{smallMap(``, smallBoss)},
-			[]string{"maps.toml: maps[3].rows: 行の数 0 は 1 以上 32 以下にしてください"}},
+			[]string{"maps.toml: maps[N].rows: 行の数 0 は 1 以上 32 以下にしてください"}},
 		{"TC-FR-SYS-04-11 行の長さが 33",
 			[]edit{smallMap(`"`+strings.Repeat(".", 33)+`"`, smallBoss)},
-			[]string{"maps.toml: maps[3].rows[0]: 行の長さ 33 は 1 以上 32 以下にしてください"}},
+			[]string{"maps.toml: maps[N].rows[0]: 行の長さ 33 は 1 以上 32 以下にしてください"}},
 		{"TC-FR-SYS-04-11 行の長さが 0",
 			[]edit{smallMap(`""`, smallBoss)},
-			[]string{"maps.toml: maps[3].rows[0]: 行の長さ 0 は 1 以上 32 以下にしてください"}},
+			[]string{"maps.toml: maps[N].rows[0]: 行の長さ 0 は 1 以上 32 以下にしてください"}},
 		{"TC-FR-SYS-04-12 1 行 2 マスのマップは通る",
 			[]edit{smallMap(`".."`, smallBoss)},
 			nil},
@@ -341,6 +357,7 @@ func TestLoad(t *testing.T) {
 			}
 			for _, w := range tt.want {
 				found := false
+				w = appended(t, w)
 				for _, d := range errs {
 					if strings.Contains(d.Error(), w) {
 						found = true

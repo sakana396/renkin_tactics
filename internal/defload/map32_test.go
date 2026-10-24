@@ -22,7 +22,7 @@ func TestMapDimensions(t *testing.T) {
 				smallMap(strings.Repeat(row, size[1]), boss)(t, m)
 				cat, err := defload.Load(m)
 				if size == [2]int{1, 1} {
-					want := "maps.toml: maps[3].enemies[0]: 座標 (0, 0) が maps[3].slots[0] と重なっています"
+					want := appended(t, "maps.toml: maps[N].enemies[0]: 座標 (0, 0) が maps[N].slots[0] と重なっています")
 					if err == nil || err.Error() != want || cat != nil {
 						t.Fatalf("1×1 の寸法以外の検証: %v", err)
 					}
@@ -43,15 +43,15 @@ func TestMapDimensions(t *testing.T) {
 		}
 		for _, tc := range []struct{ name, old, new, want string }{
 			{"正常", "", "", ""},
-			{"幅33", strings.Repeat(".", 32), strings.Repeat(".", 33), "maps[3].rows[1]: 行の長さ 33 は 1 以上 32 以下"},
-			{"高さ33", "rows = [", "rows = [\n  \"................................\",", "maps[3].rows: 行の数 33 は 1 以上 32 以下"},
-			{"空行", strings.Repeat(".", 32), "", "maps[3].rows[1]: 行の長さ 0 は 1 以上 32 以下"},
-			{"不揃い", strings.Repeat(".", 32), strings.Repeat(".", 31), "maps[3].rows[1]: 行の長さ 31 が、rows[0] の長さ 32 と違います"},
-			{"未知地形", "F..............................F", "F..............................X", `maps[3].rows[0]: 32 文字目の地形の文字 "X" がありません`},
-			{"枠盤外", "x = 31, y = 31", "x = 32, y = 31", "maps[3].slots[0]: 座標 (32, 31) がマップの外です"},
-			{"敵盤外", "x = 0\ny = 0", "x = -1\ny = 0", "maps[3].enemies[0]: 座標 (-1, 0) がマップの外です"},
-			{"増援盤外", "x = 31\ny = 31", "x = 31\ny = 32", "maps[3].reinforcements[0]: 座標 (31, 32) がマップの外です"},
-			{"枠壁", "x = 31, y = 31", "x = 0, y = 31", `maps[3].slots[0]: 座標 (0, 31) の地形 "wall" は通れません`},
+			{"幅33", strings.Repeat(".", 32), strings.Repeat(".", 33), "maps[N].rows[1]: 行の長さ 33 は 1 以上 32 以下"},
+			{"高さ33", "rows = [", "rows = [\n  \"................................\",", "maps[N].rows: 行の数 33 は 1 以上 32 以下"},
+			{"空行", strings.Repeat(".", 32), "", "maps[N].rows[1]: 行の長さ 0 は 1 以上 32 以下"},
+			{"不揃い", strings.Repeat(".", 32), strings.Repeat(".", 31), "maps[N].rows[1]: 行の長さ 31 が、rows[0] の長さ 32 と違います"},
+			{"未知地形", "F..............................F", "F..............................X", `maps[N].rows[0]: 32 文字目の地形の文字 "X" がありません`},
+			{"枠盤外", "x = 31, y = 31", "x = 32, y = 31", "maps[N].slots[0]: 座標 (32, 31) がマップの外です"},
+			{"敵盤外", "x = 0\ny = 0", "x = -1\ny = 0", "maps[N].enemies[0]: 座標 (-1, 0) がマップの外です"},
+			{"増援盤外", "x = 31\ny = 31", "x = 31\ny = 32", "maps[N].reinforcements[0]: 座標 (31, 32) がマップの外です"},
+			{"枠壁", "x = 31, y = 31", "x = 0, y = 31", `maps[N].slots[0]: 座標 (0, 31) の地形 "wall" は通れません`},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				m := baseFS(t)
@@ -65,7 +65,7 @@ func TestMapDimensions(t *testing.T) {
 				appendTo("maps.toml", text)(t, m)
 				cat, err := defload.Load(m)
 				if tc.want != "" {
-					if err == nil || !strings.Contains(err.Error(), tc.want) || cat != nil {
+					if err == nil || !strings.Contains(err.Error(), appended(t, tc.want)) || cat != nil {
 						t.Fatalf("期待=%s 誤り=%v", tc.want, err)
 					}
 					return
@@ -73,12 +73,12 @@ func TestMapDimensions(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				// 追加の試験用マップによって既存 3 枚の定義が変わらない。
+				// 追加の試験用マップによって本体のマップの定義が変わらない。
 				original, err := defload.Load(baseFS(t))
 				if err != nil {
 					t.Fatal(err)
 				}
-				for _, id := range []string{"ch01", "ch02", "ch03"} {
+				for _, id := range []string{"ch01", "ch02", "ch03", "ch09"} {
 					got, _ := cat.Map(id)
 					want, _ := original.Map(id)
 					if !reflect.DeepEqual(got, want) {
