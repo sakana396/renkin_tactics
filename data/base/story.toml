@@ -62,7 +62,6 @@ paragraphs = [
 
 # 9 章（DES-IT05 3.3 節、DES-CMP-09）。結末は ch09_after（反復 2 までの ch03_after の結びをここへ移した）
 
-
 # DES-CMP-09
 [[stories]]
 id = "ch04_before"

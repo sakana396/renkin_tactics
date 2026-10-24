@@ -26,7 +26,6 @@ map = "ch03"
 before = "ch03_before"
 after = "ch03_after"
 
-
 # DES-CMP-09、DES-MAP-06
 [[chapters]]
 id = "ch04"
@@ -53,6 +52,7 @@ map = "ch06"
 before = "ch06_before"
 after = "ch06_after"
 reward = [{ item = "potion", count = 2 }]
+
 # 9 章（DES-IT05 3.3 節、DES-CMP-09）。最後の章で、勝つとクリア。ch07・ch08 は #104 で ch06 との間に入れる
 [[chapters]]
 id = "ch09"

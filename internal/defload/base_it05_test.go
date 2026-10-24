@@ -40,6 +40,40 @@ func TestBaseStoryIt05(t *testing.T) {
 		}
 	})
 
+	t.Run("TC-FR-CMP-07-05 戦死しうる仲間の名前を物語に出さない", func(t *testing.T) {
+		// 初期名簿と加入者から主人公以外を求める（DES-STY-01、DES-IT02 10.8 節）。
+		members := append([]string(nil), cat.Game.Party...)
+		for _, chapter := range cat.Chapters() {
+			members = append(members, chapter.Joins...)
+		}
+		var names []string
+		for _, id := range members {
+			ch, ok := cat.Character(id)
+			if !ok || ch.Name == "" {
+				t.Fatalf("仲間 %s の名前がない", id)
+			}
+			if !ch.Lord {
+				names = append(names, ch.Name)
+			}
+		}
+		if len(names) == 0 {
+			t.Fatal("戦死しうる仲間がいない")
+		}
+		for _, id := range []string{"ch04_before", "ch04_after", "ch05_before", "ch05_after", "ch06_before", "ch06_after", "ch09_before"} {
+			story, ok := cat.Story(id)
+			if !ok {
+				t.Fatalf("物語 %s がない", id)
+			}
+			for j, p := range story.Paragraphs {
+				for _, name := range names {
+					if strings.Contains(p, name) {
+						t.Errorf("物語 %s の段落 %d に戦死しうる仲間 %s の名前がある", id, j, name)
+					}
+				}
+			}
+		}
+	})
+
 	t.Run("TC-FR-CMP-07-05 ch04〜ch06 は退く後衛・関所・山道から補給と森へつなぐ", func(t *testing.T) {
 		for _, tc := range []struct{ id, boss, after string }{
 			{"ch04", "オスカー", "関所"}, {"ch05", "ディートリヒ", "山道"}, {"ch06", "ロルフ", "荷駄"},

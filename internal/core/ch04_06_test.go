@@ -227,30 +227,97 @@ func checkCh04To06Definition(t *testing.T, m defs.MapDef) {
 	}
 	type definition struct {
 		slots          []defs.Slot
+		rows           []string
 		enemies        string
 		reinforcements []reinforcement
 		bonus          defs.Stats
 	}
 	want := map[string]definition{
 		"ch04": {
+			// 制作記録 2 章の全行。砦と正面入口を含めて照合する。
+			rows: []string{
+				"..................",
+				"..................",
+				".........T........",
+				"..................",
+				"..................",
+				"..................",
+				"..................",
+				"####..######..####",
+				"...FF...##..FF....",
+				"...FF...##..FF....",
+				"....T...##...T....",
+				"........##........",
+				"........##........",
+				"...FF...##..FF....",
+				"...FF...##..FF....",
+				"..................",
+				"..................",
+				"..................",
+			},
 			slots:          []defs.Slot{{X: 8, Y: 16}, {X: 9, Y: 16}, {X: 7, Y: 17}, {X: 8, Y: 17}, {X: 9, Y: 17}, {X: 10, Y: 17}},
 			enemies:        "soldier:4,12:charge fighter:13,12:charge archer:3,10:hold myrmidon:5,9:hold soldier:12,9:hold cavalier:14,10:hold armor:5,6:hold archer:4,4:hold fighter:12,5:hold archer:13,4:hold myrmidon:9,4:hold armor:9,2:hold",
 			reinforcements: []reinforcement{{3, "fighter", 0, 15}, {4, "soldier", 17, 14}, {6, "cavalier", 13, 1}},
 			bonus:          defs.Stats{HP: 2, Str: 1, Skl: 1, Spd: 1, Def: 1},
 		},
 		"ch05": {
+			// 制作記録 2 章の全行。砦と正面入口を含めて照合する。
+			rows: []string{
+				"^..............^",
+				"^..............^",
+				"^.......T......^",
+				"^..............^",
+				"^.F............^",
+				"^.F............^",
+				"^.F............^",
+				"##F####.########",
+				"^.FF...........^",
+				"^.FF...........^",
+				"^.F...T........^",
+				"^..............^",
+				"^..............^",
+				"^..............^",
+				"^..............^",
+				"^..............^",
+			},
 			slots:          []defs.Slot{{X: 7, Y: 12}, {X: 7, Y: 11}, {X: 6, Y: 12}, {X: 8, Y: 12}, {X: 7, Y: 13}},
 			enemies:        "soldier:7,9:hold fighter:10,10:hold armor:7,6:hold archer:8,5:hold myrmidon:6,4:hold soldier:2,5:hold archer:3,3:hold fighter:10,4:hold soldier:8,2:hold",
 			reinforcements: []reinforcement{{4, "myrmidon", 14, 12}, {6, "fighter", 1, 2}},
 			bonus:          defs.Stats{HP: 3, Str: 2, Skl: 2, Spd: 1, Def: 1},
 		},
 		"ch06": {
+			// 制作記録 2 章の全行。砦と正面入口を含めて照合する。
+			rows: []string{
+				"^^^..............^^^",
+				"^^^..............^^^",
+				"^^^.......T......^^^",
+				"^^^..............^^^",
+				"^^^..............^^^",
+				"^^^..............^^^",
+				"^^^.^^.......T^^.^^^",
+				"^^^.^^........^^.^^^",
+				"^^^..............^^^",
+				"^^^....FF...F....^^^",
+				"^^^....FF...F....^^^",
+				"^^^..............^^^",
+				"^^^.^^T.......^^.^^^",
+				"^^^.^^........^^.^^^",
+				"^^^..............^^^",
+				"^^^....FF...F....^^^",
+				"^^^....FF...F....^^^",
+				"^^^..............^^^",
+				"^^^..............^^^",
+				"^^^..............^^^",
+			},
 			slots:          []defs.Slot{{X: 9, Y: 18}, {X: 10, Y: 18}, {X: 8, Y: 19}, {X: 9, Y: 19}, {X: 10, Y: 19}, {X: 11, Y: 19}},
 			enemies:        "cavalier:11,14:charge soldier:6,15:charge archer:4,13:hold fighter:7,12:hold myrmidon:10,12:hold cavalier:14,10:hold archer:15,10:hold soldier:12,8:hold archer:5,7:hold armor:7,6:hold cavalier:13,5:hold fighter:10,4:hold archer:12,3:hold armor:10,2:hold",
 			reinforcements: []reinforcement{{3, "cavalier", 19, 17}, {4, "fighter", 0, 14}, {6, "cavalier", 18, 7}, {7, "myrmidon", 3, 1}},
 			bonus:          defs.Stats{HP: 4, Str: 2, Skl: 2, Spd: 2, Def: 2},
 		},
 	}[m.ID]
+	if !reflect.DeepEqual(m.Rows, want.rows) {
+		t.Errorf("制作記録 2 章と地形が不一致: got %q, want %q", m.Rows, want.rows)
+	}
 	if !reflect.DeepEqual(m.Slots, want.slots) {
 		t.Errorf("出撃枠 %v", m.Slots)
 	}
