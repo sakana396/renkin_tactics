@@ -73,11 +73,11 @@ func TestCampaignSaveFormat(t *testing.T) {
 				t.Fatal(err)
 			}
 			var again bytes.Buffer
-			if err = loaded.Save(&again); err != nil || again.String() != saveExample {
+			if err = loaded.Save(&again); err != nil || !strings.Contains(again.String(), `"character": "join2"`) {
 				t.Fatalf("往復: %v\n%s", err, &again)
 			}
-			// 読み込み時に加入をやり直さず、目録を保持して出撃できる。
-			if len(loaded.Roster) != 1 {
+			// 不足する joins だけを補い、保存済みの主人公を保って出撃できる（DES-SAV-04）。
+			if len(loaded.Roster) != 4 || loaded.Roster[0].Character != "hero" || loaded.Roster[0].Exp != 40 || loaded.Roster[0].Stats != (tactics.Stats{HP: 21, Str: 6, Skl: 9, Spd: 10, Def: 4, Mov: 5}) || loaded.Roster[1].Character != "join1" || loaded.Roster[2].Character != "join2" || loaded.Roster[3].Character != "friend" {
 				t.Fatal("名簿が変わった")
 			}
 			if _, _, err := loaded.StartBattle([]int{0}, 1); err != nil {
@@ -167,7 +167,7 @@ func TestCampaignSaveRoster(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if loaded.Rule != rule || loaded.Chapter != 1 || loaded.Cleared || len(loaded.Roster) != 4 || !slices.Equal(loaded.Stock, c.Stock) {
+			if loaded.Rule != rule || loaded.Chapter != 1 || loaded.Cleared || len(loaded.Roster) != 5 || !slices.Equal(loaded.Stock, c.Stock) {
 				t.Fatalf("往復後=%+v", loaded)
 			}
 			for i, m := range c.Roster {

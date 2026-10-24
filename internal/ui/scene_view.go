@@ -185,7 +185,7 @@ func (s *SceneController) View() SceneView {
 		}
 		lines("左クリック: タイトルへ", 528, StyleLabel)
 	}
-	if s.message != "" {
+	if s.message != "" && s.scene != Prepare {
 		y := 424
 		if s.scene == Deploy {
 			add(s.message, 280, 552, false, StyleBad)

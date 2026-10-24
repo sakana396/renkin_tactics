@@ -99,7 +99,7 @@ func invalidSave(path, reason string) error {
 }
 
 // LoadCampaign は版を先に読み、全規則を満たしたときだけキャンペーンを返す（DES-SAV-03）。
-// cat は検証済みの目録。加入をやり直したり、既存のキャンペーンを書き換えたりしない。
+// cat は検証済みの目録。不足する加入を補い、既存のキャンペーンは書き換えない（DES-SAV-04）。
 func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
@@ -205,6 +205,23 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 		return nil, err
 	}
 	c.sortStock()
+	// 全検証後に、章の順で不足する加入だけを追いつかせる（DES-SAV-04）。
+	// c はこの呼び出し専用の状態なので、失敗時は途中の名簿を外へ返さない。
+	if !c.Cleared {
+		for i, chapter := range chapters[:c.Chapter+1] {
+			for _, id := range chapter.Joins {
+				if seen[id] {
+					continue
+				}
+				m, err := newMember(cat, id)
+				if err != nil {
+					return nil, invalidSave(fmt.Sprintf("chapters[%d].joins", i), err.Error())
+				}
+				c.Roster = append(c.Roster, m)
+				seen[id] = true
+			}
+		}
+	}
 	return c, nil
 }
 

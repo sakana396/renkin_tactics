@@ -71,6 +71,9 @@ func TestBaseStoryIt05(t *testing.T) {
 			}
 			for j, p := range story.Paragraphs {
 				for _, name := range names {
+					if (id == "ch04_before" && name == "ティオ") || (id == "ch07_after" && name == "ハンナ") {
+						continue
+					}
 					if strings.Contains(p, name) {
 						t.Errorf("物語 %s の段落 %d に戦死しうる仲間 %s の名前がある", id, j, name)
 					}
@@ -124,6 +127,27 @@ func TestBaseStoryIt05(t *testing.T) {
 		before, _ := cat.Story("ch09_before")
 		if !strings.Contains(strings.Join(before.Paragraphs, "\n"), "ゲルハルト") {
 			t.Errorf("ch09_before にボスの名前がない")
+		}
+	})
+}
+
+// 加入の台詞は加入の場面だけに置く（DES-CMP-10、DES-STY-01）。
+func TestRecruitStory(t *testing.T) {
+	t.Run("TC-FR-CMP-07-07 加入の場面に本人の台詞がある", func(t *testing.T) {
+		cat, err := defload.Load(data.Base())
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, tc := range []struct{ id, name string }{{"ch04_before", "ティオ"}, {"ch07_after", "ハンナ"}} {
+			s, ok := cat.Story(tc.id)
+			if !ok || len(s.Paragraphs) > 6 || !strings.Contains(strings.Join(s.Paragraphs, ""), tc.name+"「") {
+				t.Fatal(tc.id, s)
+			}
+			for _, p := range s.Paragraphs {
+				if utf8.RuneCountInString(p) > 200 {
+					t.Fatal(p)
+				}
+			}
 		}
 	})
 }
