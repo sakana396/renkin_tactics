@@ -15,6 +15,12 @@ import (
 // 低めは 1 レベル少なく、伸びを成長率の 6 割にする。移動力と手持ちは変えない。
 func estimatedRoster(t *testing.T, cat *defs.Catalog, id string, low bool) *core.Campaign {
 	t.Helper()
+	return estimatedRosterWithRecruits(t, cat, id, low, false)
+}
+
+// estimatedRosterWithRecruits は、新加入者だけが控えで成長していない場合も作る（DES-CMP-10）。
+func estimatedRosterWithRecruits(t *testing.T, cat *defs.Catalog, id string, low, bench bool) *core.Campaign {
+	t.Helper()
 	c, err := core.NewCampaignAt(cat, core.Withdraw, id)
 	if err != nil {
 		t.Fatal(err)
@@ -30,10 +36,20 @@ func estimatedRoster(t *testing.T, cat *defs.Catalog, id string, low bool) *core
 		if m.Character == "rina" {
 			n--
 		}
+		// 新しい仲間は加入前の章の成長を数えない（DES-CMP-10）。
+		switch m.Character {
+		case "tio":
+			n = extra
+		case "hanna":
+			n = max(0, extra-4)
+		}
 		rate := 1.0
 		if low {
-			n--
+			n = max(0, n-1)
 			rate = 0.6
+		}
+		if bench && (m.Character == "tio" || m.Character == "hanna") {
+			n = 0
 		}
 		up := func(g int) int { return int(math.Round(float64(g*n) * rate / 100)) }
 		m.Level += n

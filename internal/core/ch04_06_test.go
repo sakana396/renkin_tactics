@@ -116,8 +116,8 @@ func TestCh04To08Deployment(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if len(c.Roster) != 6 {
-					t.Fatal("名簿は6人")
+				if len(c.Roster) != map[bool]int{true: 8, false: 7}[id == "ch08"] {
+					t.Fatal("名簿は ch04〜ch07 が7人、ch08 が8人")
 				}
 				five := map[string]bool{"ch05": true, "ch07": true, "ch08": true}[id]
 				if m, _ := cat.Map(id); len(m.Slots) != map[bool]int{true: 5, false: 6}[five] {
@@ -126,7 +126,7 @@ func TestCh04To08Deployment(t *testing.T) {
 				for _, tc := range []struct {
 					members []int
 					bad     bool
-				}{{[]int{0}, false}, {[]int{1, 2}, true}, {nil, true}, {[]int{0, 1, 2, 3, 4, 5}, five}, {[]int{0, 1, 2, 3, 4, 5, 5}, true}, {[]int{0, 1, 2, 3, 5}, false}} {
+				}{{[]int{0}, false}, {[]int{1, 2}, true}, {nil, true}, {[]int{0, 1, 2, 3, 4, 5}, five}, {[]int{0, 1, 2, 3, 4, 5, 6}, true}, {[]int{0, 1, 2, 3, 5}, false}} {
 					before := campaignSnapshot(c)
 					s, _, err := c.StartBattle(tc.members, 1)
 					if tc.bad {

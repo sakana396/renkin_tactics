@@ -63,3 +63,22 @@ level = 1
 growth = { hp = 55, str = 0, skl = 40, spd = 60, def = 30 }
 weapon = "heal_staff"
 items = [{ item = "potion", count = 1 }]
+
+# 4 章・8 章の始めに加わる（DES-CMP-10）。加入レベルによる成長は加算しない。
+[[characters]]
+id = "tio"
+name = "ティオ"
+class = "archer"
+bonus = { hp = 3, str = 3, skl = 2, spd = 1, def = 1, mov = 0 }
+level = 4
+growth = { hp = 60, str = 55, skl = 45, spd = 40, def = 20 }
+weapon = "iron_bow"
+
+[[characters]]
+id = "hanna"
+name = "ハンナ"
+class = "cleric"
+bonus = { hp = 4, str = 0, skl = 2, spd = 1, def = 4, mov = 0 }
+level = 7
+growth = { hp = 60, str = 0, skl = 40, spd = 35, def = 50 }
+weapon = "heal_staff"

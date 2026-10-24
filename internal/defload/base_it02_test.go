@@ -274,12 +274,9 @@ func TestBaseDataIt02(t *testing.T) {
 	})
 
 	t.Run("TC-FR-CMP-08-01 エルザは名簿になく、2 章の始めに加わる（レベル 2）", func(t *testing.T) {
-		// 反復 5 で足した章に加入はない（DES-IT05 3.3 節）。
+		// 反復 5 の加入を含めてもエルザは ch02 の一度だけ（DES-CMP-10）。
 		for _, c := range cat.Chapters() {
-			want := []string(nil)
-			if c.ID == "ch02" {
-				want = []string{"elsa"}
-			}
+			want := map[string][]string{"ch02": {"elsa"}, "ch04": {"tio"}, "ch08": {"hanna"}}[c.ID]
 			if !reflect.DeepEqual(c.Joins, want) {
 				t.Errorf("章 %s の加入 = %q", c.ID, c.Joins)
 			}

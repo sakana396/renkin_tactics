@@ -29,6 +29,7 @@ after = "ch03_after"
 # DES-CMP-09、DES-MAP-06
 [[chapters]]
 id = "ch04"
+joins = ["tio"]
 name = "焼け野の村"
 map = "ch04"
 before = "ch04_before"
@@ -65,6 +66,7 @@ reward = [{ item = "potion", count = 2 }]
 # DES-CMP-09、DES-MAP-06
 [[chapters]]
 id = "ch08"
+joins = ["hanna"]
 name = "黒い森"
 map = "ch08"
 before = "ch08_before"
