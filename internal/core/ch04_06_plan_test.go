@@ -9,16 +9,20 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/defs"
 )
 
-// ch04To06Roster は通しの経験を見積もった平均・低めの名簿（DES-MAP-06、制作記録 3 章）。
-// ch03 後は ch09Roster と同じ見積もり。ch04・ch05 それぞれで平均 1 レベル分を加える。
+// estimatedRoster は通しの経験を見積もった平均・低めの名簿で、章 id から始めるキャンペーンを作る（DES-MAP-06、各制作記録 3 章）。
+// ch03 の後（ch04 の開始）は、ch01〜ch03 の経験（約 1,500）を 6 人で分け、リナ以外は 3、リナは 2 レベル上がる見込み。
+// ch04 から先は、章ごとに平均 1 レベル分を加える（ch09 は ch04〜ch08 の 5 章分。E-52）。
 // 低めは 1 レベル少なく、伸びを成長率の 6 割にする。移動力と手持ちは変えない。
-func ch04To06Roster(t *testing.T, cat *defs.Catalog, id string, low bool) *core.Campaign {
+func estimatedRoster(t *testing.T, cat *defs.Catalog, id string, low bool) *core.Campaign {
 	t.Helper()
 	c, err := core.NewCampaignAt(cat, core.Withdraw, id)
 	if err != nil {
 		t.Fatal(err)
 	}
-	extra := map[string]int{"ch04": 0, "ch05": 1, "ch06": 2}[id]
+	extra, ok := map[string]int{"ch04": 0, "ch05": 1, "ch06": 2, "ch07": 3, "ch08": 4, "ch09": 5}[id]
+	if !ok {
+		t.Fatalf("見積もりのない章 %s", id)
+	}
 	for k := range c.Roster {
 		m := &c.Roster[k]
 		ch, _ := cat.Character(m.Character)

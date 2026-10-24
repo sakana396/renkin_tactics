@@ -1,7 +1,6 @@
 package core_test
 
 import (
-	"math"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core"
@@ -29,33 +28,9 @@ func ch09Plans() map[string]autoPlan {
 	}
 }
 
-// ch09Roster は、1 章から通して遊んだときの想定の名簿で ch09 から始めるキャンペーンを作る（制作記録 2 章）。
-// 平均は、ch01〜ch03 の経験の合計（約 1,500）を 6 人で分けた見込みで、レオン・ガルド・ブラン・ミラ・エルザは 3、
-// リナは 2 レベル上がり、各能力は成長率 × 上がった数（四捨五入）だけ伸びる。低めは、上がるレベルを 1 少なくし、
-// 伸びを成長率の 6 割にする。
+// ch09Roster は、ch08 の後の想定の名簿で ch09 から始めるキャンペーンを作る（制作記録 3 章、E-52）。
+// 平均はリナ以外が 8、リナが 7 レベル上がり、低めはそれより 1 少なく伸びも 6 割（estimatedRoster）。
 func ch09Roster(t *testing.T, cat *defs.Catalog, low bool) *core.Campaign {
 	t.Helper()
-	c, err := core.NewCampaignAt(cat, core.Withdraw, "ch09")
-	if err != nil {
-		t.Fatal(err)
-	}
-	gain := map[string]int{"leon": 3, "gald": 3, "bran": 3, "mira": 3, "elsa": 3, "rina": 2}
-	for k := range c.Roster {
-		m := &c.Roster[k]
-		ch, _ := cat.Character(m.Character)
-		n := gain[m.Character]
-		rate := 1.0
-		if low {
-			n--
-			rate = 0.6
-		}
-		up := func(g int) int { return int(math.Round(float64(g*n) * rate / 100)) }
-		m.Level += n
-		m.Stats.HP += up(ch.Growth.HP)
-		m.Stats.Str += up(ch.Growth.Str)
-		m.Stats.Skl += up(ch.Growth.Skl)
-		m.Stats.Spd += up(ch.Growth.Spd)
-		m.Stats.Def += up(ch.Growth.Def)
-	}
-	return c
+	return estimatedRoster(t, cat, "ch09", low)
 }

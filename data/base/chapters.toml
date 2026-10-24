@@ -53,7 +53,25 @@ before = "ch06_before"
 after = "ch06_after"
 reward = [{ item = "potion", count = 2 }]
 
-# 9 章（DES-IT05 3.3 節、DES-CMP-09）。最後の章で、勝つとクリア。ch07・ch08 は #104 で ch06 との間に入れる
+# DES-CMP-09、DES-MAP-06
+[[chapters]]
+id = "ch07"
+name = "補給の荷駄"
+map = "ch07"
+before = "ch07_before"
+after = "ch07_after"
+reward = [{ item = "potion", count = 2 }]
+
+# DES-CMP-09、DES-MAP-06
+[[chapters]]
+id = "ch08"
+name = "黒い森"
+map = "ch08"
+before = "ch08_before"
+after = "ch08_after"
+reward = [{ item = "potion", count = 2 }]
+
+# 9 章（DES-IT05 3.3 節、DES-CMP-09）。最後の章で、勝つとクリア
 [[chapters]]
 id = "ch09"
 name = "ヴァルトの門"

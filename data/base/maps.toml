@@ -394,7 +394,7 @@ x = 4
 y = 2
 
 # 9 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it05/map-ch09.md）。
-# 敵のボーナスは、ボスを除き 4/2/2/1/1（増援も同じ）
+# 敵のボーナスは、ボスを除き 6/3/3/2/3（増援も同じ）。ボスは 14/5/5/4/6。#104 で ch08 の後の名簿に合わせて強くし直した（E-52。#102 は 4/2/2/1/1・ボス 12/4/4/3/4）
 [[maps]]
 id = "ch09"
 name = "ヴァルトの門"
@@ -446,7 +446,7 @@ slots = [
 [[maps.enemies]]
 class = "armor"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 15
 y = 5
@@ -454,7 +454,7 @@ y = 5
 [[maps.enemies]]
 class = "armor"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 16
 y = 5
@@ -463,7 +463,7 @@ y = 5
 [[maps.enemies]]
 class = "archer"
 weapon = "iron_bow"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 10
 y = 1
@@ -472,7 +472,7 @@ y = 1
 [[maps.enemies]]
 class = "archer"
 weapon = "iron_bow"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 21
 y = 1
@@ -481,7 +481,7 @@ y = 1
 [[maps.enemies]]
 class = "soldier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 5
 y = 10
@@ -490,7 +490,7 @@ y = 10
 [[maps.enemies]]
 class = "soldier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 26
 y = 10
@@ -499,7 +499,7 @@ y = 10
 [[maps.enemies]]
 class = "archer"
 weapon = "iron_bow"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 7
 y = 8
@@ -508,7 +508,7 @@ y = 8
 [[maps.enemies]]
 class = "archer"
 weapon = "iron_bow"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 24
 y = 8
@@ -517,7 +517,7 @@ y = 8
 [[maps.enemies]]
 class = "myrmidon"
 weapon = "iron_sword"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 15
 y = 8
@@ -525,7 +525,7 @@ y = 8
 [[maps.enemies]]
 class = "fighter"
 weapon = "iron_axe"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 16
 y = 8
@@ -534,7 +534,7 @@ y = 8
 [[maps.enemies]]
 class = "fighter"
 weapon = "iron_axe"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 2
 y = 13
@@ -543,7 +543,7 @@ y = 13
 [[maps.enemies]]
 class = "archer"
 weapon = "iron_bow"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 7
 y = 14
@@ -552,7 +552,7 @@ y = 14
 [[maps.enemies]]
 class = "myrmidon"
 weapon = "iron_sword"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 4
 y = 16
@@ -561,7 +561,7 @@ y = 16
 [[maps.enemies]]
 class = "armor"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 9
 y = 16
@@ -570,7 +570,7 @@ y = 16
 [[maps.enemies]]
 class = "archer"
 weapon = "iron_bow"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 7
 y = 19
@@ -579,7 +579,7 @@ y = 19
 [[maps.enemies]]
 class = "soldier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 5
 y = 21
@@ -588,7 +588,7 @@ y = 21
 [[maps.enemies]]
 class = "soldier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 10
 y = 12
@@ -597,7 +597,7 @@ y = 12
 [[maps.enemies]]
 class = "cavalier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 24
 y = 17
@@ -605,7 +605,7 @@ y = 17
 [[maps.enemies]]
 class = "cavalier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 27
 y = 17
@@ -614,7 +614,7 @@ y = 17
 [[maps.enemies]]
 class = "soldier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 24
 y = 14
@@ -622,7 +622,7 @@ y = 14
 [[maps.enemies]]
 class = "soldier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 25
 y = 14
@@ -631,7 +631,7 @@ y = 14
 [[maps.enemies]]
 class = "archer"
 weapon = "iron_bow"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 24
 y = 12
@@ -640,7 +640,7 @@ y = 12
 [[maps.enemies]]
 class = "myrmidon"
 weapon = "iron_sword"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 28
 y = 13
@@ -649,7 +649,7 @@ y = 13
 [[maps.enemies]]
 class = "cavalier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 28
 y = 18
@@ -658,7 +658,7 @@ y = 18
 [[maps.enemies]]
 class = "fighter"
 weapon = "iron_axe"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 22
 y = 20
@@ -668,7 +668,7 @@ y = 20
 name = "ゲルハルト"
 class = "fighter"
 weapon = "iron_axe"
-bonus = { hp = 12, str = 4, skl = 4, spd = 3, def = 4, mov = 0 }
+bonus = { hp = 14, str = 5, skl = 5, spd = 4, def = 6, mov = 0 }
 ai = "hold"
 boss = true
 x = 15
@@ -679,7 +679,7 @@ y = 2
 turn = 3
 class = "fighter"
 weapon = "iron_axe"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 0
 y = 29
@@ -688,7 +688,7 @@ y = 29
 turn = 3
 class = "soldier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 0
 y = 30
@@ -698,7 +698,7 @@ y = 30
 turn = 5
 class = "cavalier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 31
 y = 22
@@ -707,7 +707,7 @@ y = 22
 turn = 5
 class = "cavalier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 31
 y = 23
@@ -717,7 +717,7 @@ y = 23
 turn = 7
 class = "soldier"
 weapon = "iron_lance"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 2
 y = 8
@@ -726,7 +726,7 @@ y = 8
 turn = 7
 class = "fighter"
 weapon = "iron_axe"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 29
 y = 8
@@ -736,7 +736,7 @@ y = 8
 turn = 9
 class = "myrmidon"
 weapon = "iron_sword"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 11
 y = 2
@@ -745,7 +745,7 @@ y = 2
 turn = 9
 class = "myrmidon"
 weapon = "iron_sword"
-bonus = { hp = 4, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 20
 y = 2
@@ -1213,3 +1213,411 @@ bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
 ai = "charge"
 x = 3
 y = 1
+
+# 7 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it05/map-ch07.md）。16×16・出撃 5・敵 10＋4。
+# 敵のボーナスは、ボスを除き 5/3/2/2/2（増援も同じ）。ボスは 12/5/4/3/4
+[[maps]]
+id = "ch07"
+name = "補給の荷駄"
+rows = [
+  "^^^^..........^^", # y 0
+  "^^^^..T....T..^^", # y 1
+  "^^^^..........^^", # y 2
+  "^^^^.^..........", # y 3
+  "#####^#..#^##...", # y 4
+  "#####^#..#^##.F.", # y 5
+  "#####^#..#^##F..", # y 6
+  "#####^#..#^##...", # y 7
+  "#####^#..#^##.T.", # y 8
+  "#####^#..#^##F..", # y 9
+  "#####^#..#^##...", # y 10
+  "...F............", # y 11
+  "..F.........F...", # y 12
+  "................", # y 13
+  ".F...........F..", # y 14
+  "................", # y 15
+]
+slots = [
+  { x = 7, y = 13 },
+  { x = 8, y = 13 },
+  { x = 6, y = 14 },
+  { x = 7, y = 14 },
+  { x = 8, y = 14 },
+]
+
+# 迂回の入口: 突っ込んでくる騎兵
+[[maps.enemies]]
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 14
+y = 12
+
+# 近道（谷）をふさぐ剣士
+[[maps.enemies]]
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 7
+y = 9
+
+# 西の岩棚（山）の弓兵。谷を射程 2 で狙う
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 5
+y = 7
+
+# 近道（谷）をふさぐ剣士
+[[maps.enemies]]
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 8
+y = 6
+
+# 東の岩棚（山）の弓兵。谷を射程 2 で狙う
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 10
+y = 6
+
+# 谷の出口
+[[maps.enemies]]
+class = "armor"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 8
+y = 3
+
+# 迂回の砦の上
+[[maps.enemies]]
+class = "fighter"
+weapon = "iron_axe"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 14
+y = 8
+
+# 迂回の出口
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 13
+y = 4
+
+# 荷駄の陣
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 6
+y = 1
+
+# ボス（荷駄の陣の東の砦の上）
+[[maps.enemies]]
+name = "ベルント"
+boss = true
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 12, str = 5, skl = 4, spd = 3, def = 4, mov = 0 }
+ai = "hold"
+x = 11
+y = 1
+
+# 3 ターン: 南西の背後
+[[maps.reinforcements]]
+turn = 3
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 0
+y = 13
+
+# 3 ターン: 南東の背後
+[[maps.reinforcements]]
+turn = 3
+class = "fighter"
+weapon = "iron_axe"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 15
+y = 15
+
+# 5 ターン: 迂回の北の端
+[[maps.reinforcements]]
+turn = 5
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 15
+y = 3
+
+# 6 ターン: 荷駄の陣の北西
+[[maps.reinforcements]]
+turn = 6
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 4
+y = 0
+
+# 8 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it05/map-ch08.md）。24×24・出撃 5・敵 16＋6。
+# 敵のボーナスは、ボスを除き 5/3/3/2/3（増援も同じ）。ボスは 12/5/5/3/5
+[[maps]]
+id = "ch08"
+name = "黒い森"
+rows = [
+  "FFFFFFF..........FFFFFFF", # y 0
+  "FFFFFF......T.....FFFFFF", # y 1
+  "FFFFF..............FFFFF", # y 2
+  "FFFF..F...FFFF...F..FFFF", # y 3
+  "FFF....FFFFFFFFFF....FFF", # y 4
+  "FF..FFFFFF....FFFFFF..FF", # y 5
+  "F..FFFFFFFF..FFFFFFFF..F", # y 6
+  "..FFF^FFFFF..FFFFF^FFF..", # y 7
+  ".FFFF^^FFFF..FFFF^^FFFF.", # y 8
+  "FF.....FFFF..FFFF.....FF", # y 9
+  "F.......FFF..FFF.......F", # y 10
+  "F....T..FFF..FFF..T....F", # y 11
+  "F.......FFF..FFF.......F", # y 12
+  "FF.....FFFF..FFFF.....FF", # y 13
+  "FFF.FFFFFFF..FFFFFFF.FFF", # y 14
+  "FFFFFF^FFF....FFF^FFFFFF", # y 15
+  "FFFFFFFFF......FFFFFFFFF", # y 16
+  ".FFFFFF............FFFF.", # y 17
+  "..FFF.....F..F.......FF.", # y 18
+  "...F.....FF....FF.....F.", # y 19
+  "........................", # y 20
+  "....F..............F....", # y 21
+  ".....FF..........FF.....", # y 22
+  "^^^^................^^^^", # y 23
+]
+slots = [
+  { x = 11, y = 20 },
+  { x = 12, y = 20 },
+  { x = 10, y = 21 },
+  { x = 11, y = 21 },
+  { x = 12, y = 21 },
+]
+
+# 森から突っ込んでくる
+[[maps.enemies]]
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 10
+y = 11
+
+# 森から突っ込んでくる
+[[maps.enemies]]
+class = "fighter"
+weapon = "iron_axe"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 13
+y = 10
+
+# 森の道を突っ込んでくる
+[[maps.enemies]]
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 12
+y = 7
+
+# 西の森から突っ込んでくる
+[[maps.enemies]]
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 3
+y = 14
+
+# 西の砦の上
+[[maps.enemies]]
+class = "armor"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 5
+y = 11
+
+# 西の空き地
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 3
+y = 10
+
+# 西の空き地
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 6
+y = 9
+
+# 東の砦の上
+[[maps.enemies]]
+class = "fighter"
+weapon = "iron_axe"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 18
+y = 11
+
+# 東の空き地
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 20
+y = 12
+
+# 東の空き地
+[[maps.enemies]]
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 17
+y = 9
+
+# 森の道の北の口
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 12
+y = 8
+
+# 森の道の北の口
+[[maps.enemies]]
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 11
+y = 6
+
+# 北の陣
+[[maps.enemies]]
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 8
+y = 3
+
+# 北の陣
+[[maps.enemies]]
+class = "armor"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 14
+y = 2
+
+# 北の陣
+[[maps.enemies]]
+class = "archer"
+weapon = "iron_bow"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 15
+y = 1
+
+# ボス（北の陣の砦の上）
+[[maps.enemies]]
+name = "クラウス"
+boss = true
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 12, str = 5, skl = 5, spd = 3, def = 5, mov = 0 }
+ai = "hold"
+x = 12
+y = 1
+
+# 4 ターン: 北西の端
+[[maps.reinforcements]]
+turn = 4
+class = "fighter"
+weapon = "iron_axe"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 0
+y = 7
+
+# 4 ターン: 北西の端
+[[maps.reinforcements]]
+turn = 4
+class = "soldier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 0
+y = 8
+
+# 5 ターン: 東の端
+[[maps.reinforcements]]
+turn = 5
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 23
+y = 7
+
+# 5 ターン: 東の端
+[[maps.reinforcements]]
+turn = 5
+class = "cavalier"
+weapon = "iron_lance"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 23
+y = 8
+
+# 7 ターン: 南の背後
+[[maps.reinforcements]]
+turn = 7
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 5
+y = 23
+
+# 7 ターン: 南の背後
+[[maps.reinforcements]]
+turn = 7
+class = "myrmidon"
+weapon = "iron_sword"
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 18
+y = 23
