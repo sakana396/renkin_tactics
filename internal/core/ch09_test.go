@@ -301,7 +301,7 @@ func winByForce(t *testing.T, c *core.Campaign, seed uint64) *core.Sortie {
 
 func TestCh09ChapterFlow(t *testing.T) {
 	cat := baseCatalog(t)
-	t.Run("TC-FR-CMP-01-05 途中の版の章は ch01〜03・ch09 の 4 つで、順・名前・マップ・出撃の枠・ボスが表のとおり", func(t *testing.T) {
+	t.Run("TC-FR-CMP-01-05 途中の版の章は ch01〜06・ch09 の 7 つで、順・名前・マップ・出撃の枠・ボスが表のとおり", func(t *testing.T) {
 		want := []struct {
 			id, name string
 			slots    int
@@ -310,6 +310,9 @@ func TestCh09ChapterFlow(t *testing.T) {
 			{"ch01", "国境の砦", 5, "ハーゲン"},
 			{"ch02", "灰の街道", 6, "ヴォルグ"},
 			{"ch03", "王都の奪還", 5, "グラウス"},
+			{"ch04", "焼け野の村", 6, "オスカー"},
+			{"ch05", "狭間の関所", 5, "ディートリヒ"},
+			{"ch06", "山道の突破", 6, "ロルフ"},
 			{"ch09", "ヴァルトの門", 6, "ゲルハルト"},
 		}
 		chapters := cat.Chapters()
@@ -323,6 +326,12 @@ func TestCh09ChapterFlow(t *testing.T) {
 				t.Errorf("章 %d = %+v（枠 %d）", i+1, c, len(m.Slots))
 				continue
 			}
+			if c.ID == "ch04" || c.ID == "ch05" || c.ID == "ch06" {
+				if c.Before != c.ID+"_before" || c.After != c.ID+"_after" || len(c.Joins) != 0 || !reflect.DeepEqual(c.Reward, []defs.ItemCount{{Item: "potion", Count: 2}}) {
+					t.Errorf("追加章の定義 %+v", c)
+				}
+			}
+
 			var bosses []string
 			for _, e := range m.Enemies {
 				if e.Boss {
@@ -333,12 +342,12 @@ func TestCh09ChapterFlow(t *testing.T) {
 				t.Errorf("章 %s のボス = %q", c.ID, bosses)
 			}
 		}
-		if ch := chapters[3]; ch.Before != "ch09_before" || ch.After != "ch09_after" || ch.Joins != nil || ch.Reward != nil {
+		if ch := chapters[len(chapters)-1]; ch.Before != "ch09_before" || ch.After != "ch09_after" || ch.Joins != nil || ch.Reward != nil {
 			t.Errorf("ch09 = %+v", ch)
 		}
 	})
 
-	t.Run("TC-FR-CMP-01-05 ch03 に勝つと ch09 へ、ch09 に勝つとクリア。ch03 のセーブは ch09 へ進み、クリア済みのセーブはクリアのまま", func(t *testing.T) {
+	t.Run("TC-FR-CMP-01-05 ch03 に勝つと ch04 へ、ch09 に勝つとクリア。ch03 のセーブは ch04 へ進み、クリア済みのセーブはクリアのまま", func(t *testing.T) {
 		for _, rule := range []core.Rule{core.Withdraw, core.Permadeath} {
 			c, err := core.NewCampaignAt(cat, rule, "ch03")
 			if err != nil {
@@ -350,16 +359,34 @@ func TestCh09ChapterFlow(t *testing.T) {
 				t.Fatal(err)
 			}
 			r, err := c.FinishChapter(winByForce(t, c, 3))
-			if err != nil || r.Chapter != "ch03" || r.Cleared || c.Cleared || c.Chapter != 3 || cat.Chapters()[c.Chapter].ID != "ch09" {
+			if err != nil || r.Chapter != "ch03" || r.Cleared || c.Cleared || c.Chapter != 3 || cat.Chapters()[c.Chapter].ID != "ch04" {
 				t.Fatalf("ch03 の勝利の後 = %+v, 章 %d, %v", r, c.Chapter, err)
 			}
-			// ch03 のセーブから続けると ch03 から遊び、勝つと ch09 へ進む。
+			// ch03 のセーブから続けると ch03 から遊び、勝つと ch04 へ進む。
 			loaded, err := core.LoadCampaign(cat, bytes.NewReader(ch03Save.Bytes()))
 			if err != nil || loaded.Chapter != 2 {
 				t.Fatalf("ch03 のセーブ = %+v, %v", loaded, err)
 			}
 			if _, err := loaded.FinishChapter(winByForce(t, loaded, 5)); err != nil || loaded.Chapter != 3 || loaded.Cleared {
 				t.Fatalf("ch03 のセーブから続けた後 = 章 %d, %v", loaded.Chapter, err)
+			}
+			// 挿入した章の勝利・保存を経て ch09 まで進み、報酬と加入の重複なしを確かめる。
+			for i, id := range []string{"ch04", "ch05", "ch06"} {
+				r, err = c.FinishChapter(winByForce(t, c, uint64(4+i)))
+				if err != nil || r.Chapter != id || r.Cleared || c.Cleared || c.Chapter != 4+i || len(c.Roster) != 6 {
+					t.Fatalf("%s の勝利後 = %+v, %v", id, r, err)
+				}
+				if !reflect.DeepEqual(c.Stock, []defs.ItemCount{{Item: "potion", Count: 6 + 2*i}}) {
+					t.Fatalf("報酬 = %v", c.Stock)
+				}
+				var saved bytes.Buffer
+				if err := c.Save(&saved); err != nil {
+					t.Fatal(err)
+				}
+				c, err = core.LoadCampaign(cat, &saved)
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 			r, err = c.FinishChapter(winByForce(t, c, 9))
 			if err != nil || r.Chapter != "ch09" || !r.Cleared || !c.Cleared {
