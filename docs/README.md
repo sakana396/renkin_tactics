@@ -6,12 +6,12 @@
 |---|---|---|---|
 | 計画 | プロジェクト計画書 | [00_plan/project-plan.md](00_plan/project-plan.md) | v0.1 承認済み |
 | 企画 | 要求抽出記録（ヒアリング） | [01_concept/elicitation-notes.md](01_concept/elicitation-notes.md) | 追記中 |
-| 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.5（案。仲間の総数 8 人（E-55）。v0.4 は承認（E-51）） |
+| 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.5 承認（E-57）。仲間の総数 8 人（E-55） |
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
 | 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
 | 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
-| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.6（案。仲間の総数 8 人（E-55）。v0.5 は承認（E-51）） |
-| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.9（案。UC-09 の加入の追いつき（E-55）。v0.8 は承認（E-51）） |
+| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.6 承認（E-57）。仲間の総数 8 人（E-55） |
+| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.9 承認（E-57）。UC-09 の加入の追いつき（E-55） |
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.2 承認済み |
 | 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.4 承認済み（E-40） |
 | 計画 | 反復 2 計画書 | [iterations/it02/plan.md](iterations/it02/plan.md) | v0.3 承認済み（E-32、E-33） |
@@ -32,8 +32,8 @@
 | 計画 | 反復 4 計画書 | [iterations/it04/plan.md](iterations/it04/plan.md) | v0.4（承認（E-46）） |
 | 設計 | 設計書（反復 4） | [03_design/design-it04.md](03_design/design-it04.md) | v0.4（承認（E-46）） |
 | 計画 | 反復 4 の振り返り | [iterations/it04/retrospective.md](iterations/it04/retrospective.md) | v0.2 承認（E-48） |
-| 計画 | 反復 5 計画書 | [iterations/it05/plan.md](iterations/it05/plan.md) | v0.4（案。仲間 2 人の加入（E-55）。v0.3 は承認（E-50）） |
-| 設計 | 設計書（反復 5） | [03_design/design-it05.md](03_design/design-it05.md) | v0.4（案。仲間 2 人の加入（E-55）。v0.3 は承認（E-50）） |
+| 計画 | 反復 5 計画書 | [iterations/it05/plan.md](iterations/it05/plan.md) | v0.4 承認（E-57）。仲間 2 人の加入（E-55） |
+| 設計 | 設計書（反復 5） | [03_design/design-it05.md](03_design/design-it05.md) | v0.4 承認（E-57）。仲間 2 人の加入（E-55） |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊の記録は未実施） |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は未実施） |
 | 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は未実施） |
