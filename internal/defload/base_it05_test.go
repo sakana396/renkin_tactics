@@ -9,7 +9,7 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/defload"
 )
 
-// 反復 5 の本体の物語（DES-CMP-09、DES-IT05 3.3 節）。途中の版（ch01〜ch03・ch09）の分を #102 で確かめる。
+// 反復 5 の本体の物語（DES-CMP-09、DES-IT05 3.3 節）。途中の版（ch01〜ch06・ch09）の分を確かめる。
 func TestBaseStoryIt05(t *testing.T) {
 	cat, err := defload.Load(data.Base())
 	if err != nil {
@@ -23,8 +23,8 @@ func TestBaseStoryIt05(t *testing.T) {
 	}
 
 	t.Run("TC-FR-CMP-07-05 新しい章の章前・章後の物語は 4〜6 段落・各 200 文字以下", func(t *testing.T) {
-		// 途中の版で足した章は ch09 だけ（ch04〜ch08 は #103・#104 で足し、この表に加える）。
-		for _, id := range []string{"ch09_before", "ch09_after"} {
+		// ch07・ch08 は #104 で足し、この表に加える。
+		for _, id := range []string{"ch04_before", "ch04_after", "ch05_before", "ch05_after", "ch06_before", "ch06_after", "ch09_before", "ch09_after"} {
 			s, ok := cat.Story(id)
 			if !ok {
 				t.Fatalf("物語 %s がない", id)
@@ -36,6 +36,24 @@ func TestBaseStoryIt05(t *testing.T) {
 				if p == "" || utf8.RuneCountInString(p) > 200 {
 					t.Errorf("物語 %s の段落 %d の長さ = %d", id, j, utf8.RuneCountInString(p))
 				}
+			}
+		}
+	})
+
+	t.Run("TC-FR-CMP-07-05 ch04〜ch06 は退く後衛・関所・山道から補給と森へつなぐ", func(t *testing.T) {
+		for _, tc := range []struct{ id, boss, after string }{
+			{"ch04", "オスカー", "関所"}, {"ch05", "ディートリヒ", "山道"}, {"ch06", "ロルフ", "荷駄"},
+		} {
+			before, ok := cat.Story(tc.id + "_before")
+			if !ok {
+				t.Fatalf("%s_before がない", tc.id)
+			}
+			after, ok := cat.Story(tc.id + "_after")
+			if !ok {
+				t.Fatalf("%s_after がない", tc.id)
+			}
+			if !strings.Contains(strings.Join(before.Paragraphs, ""), tc.boss) || !strings.Contains(strings.Join(after.Paragraphs, ""), tc.after) {
+				t.Errorf("%s の目的・次の章へのつながりがない", tc.id)
 			}
 		}
 	})
