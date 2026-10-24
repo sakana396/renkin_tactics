@@ -2,6 +2,7 @@ package core_test
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -133,6 +134,19 @@ func TestCh09Map(t *testing.T) {
 		if !reflect.DeepEqual(turns, []int{3, 3, 5, 5, 7, 7, 9, 9}) || len(m.Slots)+len(m.Enemies)+len(m.Reinforcements) != 40 {
 			t.Errorf("増援のターン = %v、総数 = %d", turns, len(m.Slots)+len(m.Enemies)+len(m.Reinforcements))
 		}
+		// 敵の能力のボーナス（E-52 で ch08 の後の名簿に合わせて強くし直した。#102 は 4/2/2/1/1・ボス 12/4/4/3/4）。
+		normal := defs.Stats{HP: 6, Str: 3, Skl: 3, Spd: 2, Def: 3}
+		boss := defs.Stats{HP: 14, Str: 5, Skl: 5, Spd: 4, Def: 6}
+		for _, e := range m.Enemies {
+			if want := map[bool]defs.Stats{false: normal, true: boss}[e.Boss]; e.Bonus != want {
+				t.Errorf("敵のボーナス %+v", e)
+			}
+		}
+		for _, r := range m.Reinforcements {
+			if r.Bonus != normal {
+				t.Errorf("増援のボーナス %+v", r)
+			}
+		}
 	})
 
 	t.Run("TC-FR-MAP-02-03 二つの道: 外の城壁の門は西と東だけで、どちらを閉じても本営へ着き、両方を閉じると着かない", func(t *testing.T) {
@@ -208,10 +222,11 @@ func TestCh09Autoplay(t *testing.T) {
 		low  bool
 		seed uint64
 	}{
-		{"分かれる・平均の名簿", "split", false, 1},
-		{"分かれる・低めの名簿", "split", true, 10},
-		{"東の道にまとめる・平均の名簿", "east", false, 5},
-		{"西の道にまとめる・平均の名簿", "west", false, 7},
+		// ch08 の後の想定名簿と、強くし直した敵（E-52）での seed（制作記録 5 章）。
+		{"分かれる・平均の名簿", "split", false, 8},
+		{"分かれる・低めの名簿", "split", true, 4},
+		{"東の道にまとめる・平均の名簿", "east", false, 1},
+		{"西の道にまとめる・平均の名簿", "west", false, 2},
 	} {
 		t.Run("TC-FR-MAP-04-02 "+tc.name, func(t *testing.T) {
 			c := ch09Roster(t, cat, tc.low)
@@ -301,7 +316,7 @@ func winByForce(t *testing.T, c *core.Campaign, seed uint64) *core.Sortie {
 
 func TestCh09ChapterFlow(t *testing.T) {
 	cat := baseCatalog(t)
-	t.Run("TC-FR-CMP-01-05 途中の版の章は ch01〜06・ch09 の 7 つで、順・名前・マップ・出撃の枠・ボスが表のとおり", func(t *testing.T) {
+	t.Run("TC-FR-CMP-01-05 完成の 9 章の順・名前・マップ・出撃の枠・ボスが表のとおり", func(t *testing.T) {
 		want := []struct {
 			id, name string
 			slots    int
@@ -313,6 +328,8 @@ func TestCh09ChapterFlow(t *testing.T) {
 			{"ch04", "焼け野の村", 6, "オスカー"},
 			{"ch05", "狭間の関所", 5, "ディートリヒ"},
 			{"ch06", "山道の突破", 6, "ロルフ"},
+			{"ch07", "補給の荷駄", 5, "ベルント"},
+			{"ch08", "黒い森", 5, "クラウス"},
 			{"ch09", "ヴァルトの門", 6, "ゲルハルト"},
 		}
 		chapters := cat.Chapters()
@@ -326,7 +343,7 @@ func TestCh09ChapterFlow(t *testing.T) {
 				t.Errorf("章 %d = %+v（枠 %d）", i+1, c, len(m.Slots))
 				continue
 			}
-			if c.ID == "ch04" || c.ID == "ch05" || c.ID == "ch06" {
+			if c.ID >= "ch04" && c.ID <= "ch08" {
 				if c.Before != c.ID+"_before" || c.After != c.ID+"_after" || len(c.Joins) != 0 || !reflect.DeepEqual(c.Reward, []defs.ItemCount{{Item: "potion", Count: 2}}) {
 					t.Errorf("追加章の定義 %+v", c)
 				}
@@ -371,7 +388,7 @@ func TestCh09ChapterFlow(t *testing.T) {
 				t.Fatalf("ch03 のセーブから続けた後 = 章 %d, %v", loaded.Chapter, err)
 			}
 			// 挿入した章の勝利・保存を経て ch09 まで進み、報酬と加入の重複なしを確かめる。
-			for i, id := range []string{"ch04", "ch05", "ch06"} {
+			for i, id := range []string{"ch04", "ch05", "ch06", "ch07", "ch08"} {
 				r, err = c.FinishChapter(winByForce(t, c, uint64(4+i)))
 				if err != nil || r.Chapter != id || r.Cleared || c.Cleared || c.Chapter != 4+i || len(c.Roster) != 6 {
 					t.Fatalf("%s の勝利後 = %+v, %v", id, r, err)
@@ -405,4 +422,58 @@ func TestCh09ChapterFlow(t *testing.T) {
 			}
 		}
 	})
+}
+
+// 新しく始めてから、9 章を順に勝ち、ch09 の結末の物語とクリアまで章の流れが通る（DES-CMP-09、FR-CMP-01・02・07）。
+// 勝利は主人公だけを試験用に強くして作る（winByForce）。攻略の確かめではない。
+func TestNineChapterRun(t *testing.T) {
+	cat := baseCatalog(t)
+	order := []string{"ch01", "ch02", "ch03", "ch04", "ch05", "ch06", "ch07", "ch08", "ch09"}
+	// 各章に勝った後の共有の在庫の薬（ch03 と ch09 は報酬なし）。
+	stock := []int{2, 4, 4, 6, 8, 10, 12, 14, 14}
+	for _, rule := range []core.Rule{core.Withdraw, core.Permadeath} {
+		t.Run(fmt.Sprintf("TC-FR-CMP-01-05 新しく始めて ch09 の結末とクリアまで/%v", rule), func(t *testing.T) {
+			c, err := core.NewCampaign(cat, rule)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i, id := range order {
+				ch := cat.Chapters()[c.Chapter]
+				if c.Chapter != i || ch.ID != id || c.Cleared {
+					t.Fatalf("%d 番目の章 = %s（添字 %d、クリア %v）", i+1, ch.ID, c.Chapter, c.Cleared)
+				}
+				// 章前・章後の物語が目録にある（物語 → 準備 → 戦闘 → 結果 → 章後の物語の流れ）。
+				for _, sid := range []string{ch.Before, ch.After} {
+					if s, ok := cat.Story(sid); !ok || len(s.Paragraphs) == 0 {
+						t.Fatalf("%s の物語 %q がない", id, sid)
+					}
+				}
+				if want := map[bool]int{true: 5, false: 6}[i == 0]; len(c.Roster) != want {
+					t.Fatalf("%s の名簿 %d 人", id, len(c.Roster))
+				}
+				r, err := c.FinishChapter(winByForce(t, c, uint64(11+i)))
+				if err != nil || r.Chapter != id || r.Cleared != (id == "ch09") || c.Cleared != (id == "ch09") {
+					t.Fatalf("%s の勝利の後 = %+v, %v", id, r, err)
+				}
+				if !reflect.DeepEqual(c.Stock, []defs.ItemCount{{Item: "potion", Count: stock[i]}}) {
+					t.Fatalf("%s の後の在庫 = %v", id, c.Stock)
+				}
+				// 勝利の後の保存から続ける。
+				var saved bytes.Buffer
+				if err := c.Save(&saved); err != nil {
+					t.Fatal(err)
+				}
+				if c, err = core.LoadCampaign(cat, &saved); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if !c.Cleared || c.Chapter != len(order) {
+				t.Fatalf("クリアにならない: 章 %d", c.Chapter)
+			}
+			// 最後に読む章後の物語は結末（ch09_after）。
+			if last := cat.Chapters()[len(order)-1]; last.After != "ch09_after" {
+				t.Fatalf("最後の章後の物語 = %s", last.After)
+			}
+		})
+	}
 }

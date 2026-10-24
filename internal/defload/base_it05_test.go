@@ -9,7 +9,13 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/defload"
 )
 
-// 反復 5 の本体の物語（DES-CMP-09、DES-IT05 3.3 節）。途中の版（ch01〜ch06・ch09）の分を確かめる。
+// 反復 5 の本体の物語（DES-CMP-09、DES-IT05 3.3 節）。完成の 9 章（ch04〜ch09 の新しい章）の分を確かめる。
+// newChapterStories は反復 5 で足した 6 章（ch04〜ch09）の章前・章後の物語。
+var newChapterStories = []string{
+	"ch04_before", "ch04_after", "ch05_before", "ch05_after", "ch06_before", "ch06_after",
+	"ch07_before", "ch07_after", "ch08_before", "ch08_after", "ch09_before", "ch09_after",
+}
+
 func TestBaseStoryIt05(t *testing.T) {
 	cat, err := defload.Load(data.Base())
 	if err != nil {
@@ -23,8 +29,7 @@ func TestBaseStoryIt05(t *testing.T) {
 	}
 
 	t.Run("TC-FR-CMP-07-05 新しい章の章前・章後の物語は 4〜6 段落・各 200 文字以下", func(t *testing.T) {
-		// ch07・ch08 は #104 で足し、この表に加える。
-		for _, id := range []string{"ch04_before", "ch04_after", "ch05_before", "ch05_after", "ch06_before", "ch06_after", "ch09_before", "ch09_after"} {
+		for _, id := range newChapterStories {
 			s, ok := cat.Story(id)
 			if !ok {
 				t.Fatalf("物語 %s がない", id)
@@ -59,7 +64,7 @@ func TestBaseStoryIt05(t *testing.T) {
 		if len(names) == 0 {
 			t.Fatal("戦死しうる仲間がいない")
 		}
-		for _, id := range []string{"ch04_before", "ch04_after", "ch05_before", "ch05_after", "ch06_before", "ch06_after", "ch09_before"} {
+		for _, id := range newChapterStories {
 			story, ok := cat.Story(id)
 			if !ok {
 				t.Fatalf("物語 %s がない", id)
@@ -74,9 +79,10 @@ func TestBaseStoryIt05(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-CMP-07-05 ch04〜ch06 は退く後衛・関所・山道から補給と森へつなぐ", func(t *testing.T) {
+	t.Run("TC-FR-CMP-07-05 ch04〜ch08 は退く後衛・関所・山道・荷駄・森からヴァルトの門へつなぐ", func(t *testing.T) {
 		for _, tc := range []struct{ id, boss, after string }{
 			{"ch04", "オスカー", "関所"}, {"ch05", "ディートリヒ", "山道"}, {"ch06", "ロルフ", "荷駄"},
+			{"ch07", "ベルント", "森"}, {"ch08", "クラウス", "ヴァルトの門"},
 		} {
 			before, ok := cat.Story(tc.id + "_before")
 			if !ok {

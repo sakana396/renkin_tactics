@@ -106,10 +106,10 @@ func TestCh04To06Maps(t *testing.T) {
 	}
 }
 
-// 新しい章でも主人公必須・人数上限・空き枠の規則を保つ（DES-CMP-09）。
-func TestCh04To06Deployment(t *testing.T) {
+// 新しい章でも主人公必須・人数上限・空き枠の規則を保つ（DES-CMP-09）。6 枠は ch04・ch06、5 枠は ch05・ch07・ch08。
+func TestCh04To08Deployment(t *testing.T) {
 	cat := baseCatalog(t)
-	for _, id := range []string{"ch04", "ch05", "ch06"} {
+	for _, id := range []string{"ch04", "ch05", "ch06", "ch07", "ch08"} {
 		for _, rule := range []core.Rule{core.Withdraw, core.Permadeath} {
 			t.Run(fmt.Sprintf("TC-FR-CMP-03-12 %s/%v", id, rule), func(t *testing.T) {
 				c, err := core.NewCampaignAt(cat, rule, id)
@@ -119,10 +119,14 @@ func TestCh04To06Deployment(t *testing.T) {
 				if len(c.Roster) != 6 {
 					t.Fatal("名簿は6人")
 				}
+				five := map[string]bool{"ch05": true, "ch07": true, "ch08": true}[id]
+				if m, _ := cat.Map(id); len(m.Slots) != map[bool]int{true: 5, false: 6}[five] {
+					t.Fatalf("枠の数 %d", len(m.Slots))
+				}
 				for _, tc := range []struct {
 					members []int
 					bad     bool
-				}{{[]int{0}, false}, {[]int{1, 2}, true}, {nil, true}, {[]int{0, 1, 2, 3, 4, 5}, id == "ch05"}, {[]int{0, 1, 2, 3, 4, 5, 5}, true}, {[]int{0, 1, 2, 3, 5}, false}} {
+				}{{[]int{0}, false}, {[]int{1, 2}, true}, {nil, true}, {[]int{0, 1, 2, 3, 4, 5}, five}, {[]int{0, 1, 2, 3, 4, 5, 5}, true}, {[]int{0, 1, 2, 3, 5}, false}} {
 					before := campaignSnapshot(c)
 					s, _, err := c.StartBattle(tc.members, 1)
 					if tc.bad {
@@ -166,7 +170,7 @@ func TestCh04To06Autoplay(t *testing.T) {
 		{"ch06", 0, false, 5}, {"ch06", 1, false, 12}, {"ch06", 0, true, 6}, {"ch06", 1, true, 6},
 	} {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-04 %s/作戦%d/低め%v/seed%d", tc.id, tc.plan, tc.low, tc.seed), func(t *testing.T) {
-			c := ch04To06Roster(t, cat, tc.id, tc.low)
+			c := estimatedRoster(t, cat, tc.id, tc.low)
 			slots := 6
 			if tc.id == "ch05" {
 				slots = 5
@@ -205,7 +209,7 @@ func TestCh04To06Autoplay(t *testing.T) {
 			}
 			before := append([]defs.ItemCount(nil), c.Stock...)
 			res, err := c.FinishChapter(s)
-			next := map[string]string{"ch04": "ch05", "ch05": "ch06", "ch06": "ch09"}[tc.id]
+			next := map[string]string{"ch04": "ch05", "ch05": "ch06", "ch06": "ch07"}[tc.id]
 			if err != nil || res.Chapter != tc.id || res.Cleared || c.Cleared || cat.Chapters()[c.Chapter].ID != next {
 				t.Fatalf("勝利の反映 %+v: %v", res, err)
 			}
