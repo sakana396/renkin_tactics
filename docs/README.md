@@ -20,7 +20,7 @@
 | 試験 | テスト仕様書（反復 2） | [04_test/test-spec-it02.md](04_test/test-spec-it02.md) | 骨組み。実装とともに書き足す |
 | 試験 | テスト仕様書（反復 3） | [04_test/test-spec-it03.md](04_test/test-spec-it03.md) | 骨組み。実装とともに書き足す |
 | 試験 | テスト仕様書（反復 4） | [04_test/test-spec-it04.md](04_test/test-spec-it04.md) | v0.1 骨組み。自動は未実装、手動は未実施 |
-| 試験 | テスト仕様書（反復 5） | [04_test/test-spec-it05.md](04_test/test-spec-it05.md) | v0.2 骨組み。#99・#100 の分は実装済み。ほかの自動は未実装、手動・測定は未実施 |
+| 試験 | テスト仕様書（反復 5） | [04_test/test-spec-it05.md](04_test/test-spec-it05.md) | v0.2。自動は実装済み。#98・#105 の手動結果と持ち越しは 3.10 節（E-60〜E-72） |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
@@ -34,12 +34,13 @@
 | 計画 | 反復 4 の振り返り | [iterations/it04/retrospective.md](iterations/it04/retrospective.md) | v0.2 承認（E-48） |
 | 計画 | 反復 5 計画書 | [iterations/it05/plan.md](iterations/it05/plan.md) | v0.4 承認（E-57）。仲間 2 人の加入（E-55） |
 | 設計 | 設計書（反復 5） | [03_design/design-it05.md](03_design/design-it05.md) | v0.4 承認（E-57）。仲間 2 人の加入（E-55） |
-| 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊の記録は未実施） |
-| 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は未実施） |
-| 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は未実施） |
-| 制作 | ch06 の制作記録（反復 5） | [iterations/it05/map-ch06.md](iterations/it05/map-ch06.md) | v0.1（#103。自動試遊は実施、開発者の試遊は未実施） |
-| 制作 | ch07 の制作記録（反復 5） | [iterations/it05/map-ch07.md](iterations/it05/map-ch07.md) | v0.1（#104。自動試遊は実施、開発者の試遊は未実施） |
-| 制作 | ch08 の制作記録（反復 5） | [iterations/it05/map-ch08.md](iterations/it05/map-ch08.md) | v0.1（#104。自動試遊は実施、開発者の試遊は未実施） |
+| 計画 | 反復 5 の振り返り | [iterations/it05/retrospective.md](iterations/it05/retrospective.md) | v0.2 承認（E-72） |
+| 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
+| 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
+| 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
+| 制作 | ch06 の制作記録（反復 5） | [iterations/it05/map-ch06.md](iterations/it05/map-ch06.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
+| 制作 | ch07 の制作記録（反復 5） | [iterations/it05/map-ch07.md](iterations/it05/map-ch07.md) | v0.1（#104。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
+| 制作 | ch08 の制作記録（反復 5） | [iterations/it05/map-ch08.md](iterations/it05/map-ch08.md) | v0.1（#104。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 
 ## エージェント向けのルール
 
