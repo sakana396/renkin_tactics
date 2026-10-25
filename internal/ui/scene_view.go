@@ -42,12 +42,17 @@ type SceneView struct {
 
 // wrapSceneText は 48 px の左右余白を残し、文字の単位で折り返す（DES-UI-12）。
 func wrapSceneText(s string) []string {
+	return wrapSceneTextWidth(s, ScreenWidth-96)
+}
+
+// wrapSceneTextWidth は場面の表示領域の幅で文字を折り返す（DES-UI-12、DES-UI-13）。
+func wrapSceneTextWidth(s string, width int) []string {
 	var out []string
 	for _, line := range strings.Split(s, "\n") {
 		row := ""
 		for _, r := range line {
 			next := row + string(r)
-			if textWidth(next) > ScreenWidth-96 && row != "" {
+			if textWidth(next) > width && row != "" {
 				out = append(out, row)
 				row = string(r)
 			} else {
@@ -185,7 +190,7 @@ func (s *SceneController) View() SceneView {
 		}
 		lines("左クリック: タイトルへ", 528, StyleLabel)
 	}
-	if s.message != "" {
+	if s.message != "" && s.scene != Prepare {
 		y := 424
 		if s.scene == Deploy {
 			add(s.message, 280, 552, false, StyleBad)

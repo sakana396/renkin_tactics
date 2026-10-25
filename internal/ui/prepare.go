@@ -118,10 +118,10 @@ func (s *SceneController) prepareView() SceneView {
 		if s.deployment[i] {
 			mark = "[✓]"
 		}
-		v.Rows = append(v.Rows, PrepareRow{Member: i, Rect: image.Rect(56, y, MapSize-8, y+36), Mark: image.Rect(16, y, 52, y+36), Selected: i == s.prepareMember})
-		v.Texts = append(v.Texts, SceneText{Text: mark, X: 20, Y: y + 10}, SceneText{Text: fmt.Sprintf("%s　%s　Lv %d　HP %d　手持ち %d", u.Name, u.ClassName, m.Level, m.Stats.HP, itemCount(m.Items)), X: 96, Y: y + 10})
-		v.Icons = append(v.Icons, SceneIcon{unitTile(u), 60, y + 2})
-		y += 40
+		v.Rows = append(v.Rows, PrepareRow{Member: i, Rect: image.Rect(56, y, MapSize-8, y+32), Mark: image.Rect(16, y, 52, y+32), Selected: i == s.prepareMember})
+		v.Texts = append(v.Texts, SceneText{Text: mark, X: 20, Y: y + 8}, SceneText{Text: fmt.Sprintf("%s　%s　Lv %d　HP %d　手持ち %d", u.Name, u.ClassName, m.Level, m.Stats.HP, itemCount(m.Items)), X: 96, Y: y + 8})
+		v.Icons = append(v.Icons, SceneIcon{unitTile(u), 60, y})
+		y += 36
 	}
 	y += 12
 	var stock []string
@@ -143,6 +143,16 @@ func (s *SceneController) prepareView() SceneView {
 				prefix = "在庫へ: "
 			}
 			v.Buttons = append(v.Buttons, SceneButton{prefix + it.Name, image.Rect(16+col*248, y+n*40, 252+col*248, y+n*40+36), true})
+		}
+	}
+	// 案内は品のボタンの最後から 8 px 下。品がないときは最初のボタンの位置（DES-UI-13）。
+	rows := max(len(s.campaign.Stock), len(s.campaign.Roster[s.prepareMember].Items))
+	if rows > 0 {
+		y += (rows-1)*40 + 36 + 8
+	}
+	if s.message != "" {
+		for i, line := range wrapSceneTextWidth(s.message, MapSize-48-8) {
+			v.Texts = append(v.Texts, SceneText{Text: line, X: 48, Y: y + i*20, Style: StyleBad})
 		}
 	}
 	v.Buttons = append(v.Buttons, SceneButton{"配置へ", image.Rect(360, 528, 504, 568), true})

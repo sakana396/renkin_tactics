@@ -344,7 +344,7 @@ func TestCh09ChapterFlow(t *testing.T) {
 				continue
 			}
 			if c.ID >= "ch04" && c.ID <= "ch08" {
-				if c.Before != c.ID+"_before" || c.After != c.ID+"_after" || len(c.Joins) != 0 || !reflect.DeepEqual(c.Reward, []defs.ItemCount{{Item: "potion", Count: 2}}) {
+				if c.Before != c.ID+"_before" || c.After != c.ID+"_after" || !reflect.DeepEqual(c.Joins, map[string][]string{"ch04": {"tio"}, "ch08": {"hanna"}}[c.ID]) || !reflect.DeepEqual(c.Reward, []defs.ItemCount{{Item: "potion", Count: 2}}) {
 					t.Errorf("追加章の定義 %+v", c)
 				}
 			}
@@ -390,7 +390,7 @@ func TestCh09ChapterFlow(t *testing.T) {
 			// 挿入した章の勝利・保存を経て ch09 まで進み、報酬と加入の重複なしを確かめる。
 			for i, id := range []string{"ch04", "ch05", "ch06", "ch07", "ch08"} {
 				r, err = c.FinishChapter(winByForce(t, c, uint64(4+i)))
-				if err != nil || r.Chapter != id || r.Cleared || c.Cleared || c.Chapter != 4+i || len(c.Roster) != 6 {
+				if err != nil || r.Chapter != id || r.Cleared || c.Cleared || c.Chapter != 4+i || len(c.Roster) != map[bool]int{true: 8, false: 7}[i >= 3] {
 					t.Fatalf("%s の勝利後 = %+v, %v", id, r, err)
 				}
 				if !reflect.DeepEqual(c.Stock, []defs.ItemCount{{Item: "potion", Count: 6 + 2*i}}) {
@@ -448,7 +448,7 @@ func TestNineChapterRun(t *testing.T) {
 						t.Fatalf("%s の物語 %q がない", id, sid)
 					}
 				}
-				if want := map[bool]int{true: 5, false: 6}[i == 0]; len(c.Roster) != want {
+				if want := []int{5, 6, 6, 7, 7, 7, 7, 8, 8}[i]; len(c.Roster) != want {
 					t.Fatalf("%s の名簿 %d 人", id, len(c.Roster))
 				}
 				r, err := c.FinishChapter(winByForce(t, c, uint64(11+i)))
