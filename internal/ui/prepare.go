@@ -151,7 +151,7 @@ func (s *SceneController) prepareView() SceneView {
 		y += (rows-1)*40 + 36 + 8
 	}
 	if s.message != "" {
-		for i, line := range wrapSceneText(s.message) {
+		for i, line := range wrapSceneTextWidth(s.message, MapSize-48-8) {
 			v.Texts = append(v.Texts, SceneText{Text: line, X: 48, Y: y + i*20, Style: StyleBad})
 		}
 	}

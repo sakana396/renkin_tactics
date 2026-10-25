@@ -92,6 +92,32 @@ func TestRecruitPrepare(t *testing.T) {
 			}
 		}
 	})
+	t.Run("TC-IF-01-38 長い案内は盤面の幅で折り返して配置へと重ならない", func(t *testing.T) {
+		s := recruitScenes(t, "ch08", core.Withdraw)
+		// 8 人・品 2 種類で案内の位置を下げ、従来の全画面幅では盤面をはみ出す長さを使う。
+		s.campaign.Stock = []defs.ItemCount{{Item: "potion", Count: 1}, {Item: "potion", Count: 2}}
+		s.message = "案内\n" + strings.Repeat("案内", 20)
+		v := s.View()
+		var lines []string
+		for _, tx := range v.Texts {
+			if tx.Style != StyleBad {
+				continue
+			}
+			lines = append(lines, tx.Text)
+			r := image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+16)
+			if !r.In(image.Rect(48, 0, MapSize-8, ScreenHeight)) {
+				t.Fatal("案内が盤面の幅を超えた", r)
+			}
+			for _, b := range v.Buttons {
+				if r.Overlaps(b.Rect) {
+					t.Fatal("案内がボタンと重複", r, b)
+				}
+			}
+		}
+		if len(lines) < 2 || strings.Join(lines, "") != strings.ReplaceAll(s.message, "\n", "") {
+			t.Fatal("案内の折り返し・内容", lines)
+		}
+	})
 	t.Run("TC-IF-01-38 6・7・8人と品0・1・2種類の配置とクリック", func(t *testing.T) {
 		// 検証済みの目録に試験用の薬を足し、異なる2種類の品を表示する。
 		source := fstest.MapFS{}

@@ -88,6 +88,30 @@ func TestCampaignSaveFormat(t *testing.T) {
 			t.Fatal("保存で状態が変わった")
 		}
 	})
+	t.Run("TC-FR-SYS-01-01 加入がそろった名簿は JSON が完全一致する", func(t *testing.T) {
+		for _, rule := range []core.Rule{core.Withdraw, core.Permadeath} {
+			c, err := core.NewCampaignAt(baseCatalog(t), rule, "ch09")
+			if err != nil {
+				t.Fatal(err)
+			}
+			c.Roster[1].Exp = 23
+			c.Roster[2].Alive = false
+			var before, after bytes.Buffer
+			if err := c.Save(&before); err != nil {
+				t.Fatal(err)
+			}
+			loaded, err := core.LoadCampaign(baseCatalog(t), bytes.NewReader(before.Bytes()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := loaded.Save(&after); err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(before.Bytes(), after.Bytes()) {
+				t.Fatalf("加入の追いつきがない往復で JSON が変化:\n前 %s\n後 %s", &before, &after)
+			}
+		}
+	})
 	t.Run("TC-FR-SYS-01-02 クリアと戦死と空配列", func(t *testing.T) {
 		c := saveCampaign(t)
 		c.Rule = core.Permadeath

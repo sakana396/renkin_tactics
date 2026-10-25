@@ -45,7 +45,7 @@ func TestBaseStoryIt05(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-CMP-07-05 戦死しうる仲間の名前を物語に出さない", func(t *testing.T) {
+	t.Run("TC-FR-CMP-07-05 / TC-FR-CMP-07-07 戦死しうる仲間の名前を物語に出さない", func(t *testing.T) {
 		// 初期名簿と加入者から主人公以外を求める（DES-STY-01、DES-IT02 10.8 節）。
 		members := append([]string(nil), cat.Game.Party...)
 		for _, chapter := range cat.Chapters() {
