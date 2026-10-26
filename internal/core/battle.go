@@ -70,7 +70,54 @@ func setupWithAllies(cat *defs.Catalog, m defs.MapDef, allies []tactics.UnitSetu
 		}
 		setup.Reinforcements = append(setup.Reinforcements, tactics.ReinforcementSetup{Turn: r.Turn, Unit: u})
 	}
+	k := len(m.Enemies) + len(m.Reinforcements)
+	for i, e := range m.Events {
+		me, err := convertMapEvent(cat, e, names[k:k+len(e.Enemies)])
+		if err != nil {
+			return tactics.Setup{}, fmt.Errorf("core: マップ %q の events[%d]: %w", m.ID, i, err)
+		}
+		k += len(e.Enemies)
+		setup.Events = append(setup.Events, me)
+	}
 	return setup, nil
+}
+
+// convertMapEvent は出来事 1 件の定義を tactics の形に変える（DES-MAP-07）。names は増援の敵の名前の列。
+func convertMapEvent(cat *defs.Catalog, e defs.MapEvent, names []string) (tactics.MapEventSetup, error) {
+	triggers := map[string]tactics.TriggerKind{
+		defs.TriggerEnemyMoved:    tactics.TriggerEnemyMoved,
+		defs.TriggerEnemyDefeated: tactics.TriggerEnemyDefeated,
+		defs.TriggerEnemyAttacked: tactics.TriggerEnemyAttacked,
+		defs.TriggerPlayerEntered: tactics.TriggerPlayerEntered,
+	}
+	effects := map[string]tactics.EffectKind{
+		defs.EventReinforce:   tactics.EffectReinforce,
+		defs.EventChargeGroup: tactics.EffectChargeGroup,
+	}
+	trigger, ok := triggers[e.Trigger]
+	if !ok {
+		return tactics.MapEventSetup{}, fmt.Errorf("きっかけ %q がありません", e.Trigger)
+	}
+	effect, ok := effects[e.Effect]
+	if !ok {
+		return tactics.MapEventSetup{}, fmt.Errorf("効果 %q がありません", e.Effect)
+	}
+	me := tactics.MapEventSetup{
+		ID:      e.ID,
+		Trigger: trigger,
+		Unit:    e.Unit,
+		Area:    tactics.Area{Min: tactics.Pos{X: e.Area.MinX, Y: e.Area.MinY}, Max: tactics.Pos{X: e.Area.MaxX, Y: e.Area.MaxY}},
+		Effect:  effect,
+		Group:   e.Group,
+	}
+	for j, p := range e.Enemies {
+		u, err := enemyUnit(cat, p, names[j])
+		if err != nil {
+			return tactics.MapEventSetup{}, fmt.Errorf("enemies[%d]: %w", j, err)
+		}
+		me.Enemies = append(me.Enemies, u)
+	}
+	return me, nil
 }
 
 // convertTerrain は、マップの行の文字を地形の symbol で地形に変える（DES-CORE-01、DES-DAT-02）。
@@ -189,20 +236,25 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 		Stats:     addStats(cls.Base, e.Bonus),
 		Pos:       tactics.Pos{X: e.X, Y: e.Y},
 		Weapon:    weapon,
-
-		Items: items,
-		Boss:  e.Boss,
-		AI:    ai,
+		Items:     items,
+		Boss:      e.Boss,
+		AI:        ai,
+		ID:        e.ID,
+		Group:     e.Group,
 	}, nil
 }
 
-// enemyNames は、敵（enemies の順）と増援（reinforcements の順）を通した名前の列を返す（DES-CORE-01）。
+// enemyNames は、敵（enemies の順）と増援（reinforcements の順）と出来事の増援（events の順・個体の順）を
+// 通した名前の列を返す（DES-CORE-01、DES-MAP-07）。
 //
 // 名前が指定された敵はその名前を使い、数えない。名前のない同じクラスが 2 体以上いれば「ソルジャー 1」のように、出てくる順に番号を付ける。
 func enemyNames(cat *defs.Catalog, m defs.MapDef) ([]string, error) {
 	placements := append([]defs.EnemyPlacement(nil), m.Enemies...)
 	for _, r := range m.Reinforcements {
 		placements = append(placements, r.EnemyPlacement)
+	}
+	for _, e := range m.Events {
+		placements = append(placements, e.Enemies...)
 	}
 	total := map[string]int{}
 	for _, p := range placements {
@@ -216,7 +268,9 @@ func enemyNames(cat *defs.Catalog, m defs.MapDef) ([]string, error) {
 		cls, ok := cat.Class(p.Class)
 		if !ok {
 			where := fmt.Sprintf("enemies[%d]", i)
-			if i >= len(m.Enemies) {
+			if i >= len(m.Enemies)+len(m.Reinforcements) {
+				where = "events の増援"
+			} else if i >= len(m.Enemies) {
 				where = fmt.Sprintf("reinforcements[%d]", i-len(m.Enemies))
 			}
 			return nil, fmt.Errorf("core: マップ %q の %s: クラス %q がありません", m.ID, where, p.Class)

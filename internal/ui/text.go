@@ -100,6 +100,12 @@ func EventText(e tactics.Event) string {
 			gains = "上がった能力なし"
 		}
 		return fmt.Sprintf("%s　レベル %d　%s", name(e.Unit), e.Level, gains)
+	case tactics.EventTrigger:
+		// 出来事の ID は戦闘の中で比べるだけの識別子なので、画面には出さない（DES-MAP-07）。
+		return "出来事が起きた"
+	case tactics.EventGroupCharge:
+		// 一団の名前は識別子で、表示名を持たない（DES-MAP-07）。
+		return "敵の一団が動き出した"
 	case tactics.EventWon:
 		return "ボスを倒した。勝ち！"
 	case tactics.EventLost:

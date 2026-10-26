@@ -210,6 +210,9 @@ type (
 		Boss   bool           `toml:"boss"`
 		X      int            `toml:"x"`
 		Y      int            `toml:"y"`
+		// ID は、省略と空の文字列を見分けるので、ポインタにする（DES-MAP-07）。
+		ID    *string `toml:"id"`
+		Group string  `toml:"group"`
 	}
 	rawReinforcement struct {
 		Turn   int            `toml:"turn"`
@@ -222,6 +225,25 @@ type (
 		Boss   bool           `toml:"boss"`
 		X      int            `toml:"x"`
 		Y      int            `toml:"y"`
+		ID     *string        `toml:"id"`
+		Group  string         `toml:"group"`
+	}
+	// rawArea は出来事の範囲（DES-MAP-07）。両端を含む。
+	rawArea struct {
+		MinX int `toml:"min_x"`
+		MinY int `toml:"min_y"`
+		MaxX int `toml:"max_x"`
+		MaxY int `toml:"max_y"`
+	}
+	// rawEvent は出来事 1 件（DES-MAP-07）。Area は、書いたかを見分けるのでポインタにする。
+	rawEvent struct {
+		ID      string     `toml:"id"`
+		Trigger string     `toml:"trigger"`
+		Unit    string     `toml:"unit"`
+		Area    *rawArea   `toml:"area"`
+		Effect  string     `toml:"effect"`
+		Enemies []rawEnemy `toml:"enemies"`
+		Group   string     `toml:"group"`
 	}
 	rawMap struct {
 		ID             string             `toml:"id"`
@@ -230,6 +252,7 @@ type (
 		Slots          []rawSlot          `toml:"slots"`
 		Enemies        []rawEnemy         `toml:"enemies"`
 		Reinforcements []rawReinforcement `toml:"reinforcements"`
+		Events         []rawEvent         `toml:"events"`
 	}
 	rawChapter struct {
 		ID     string         `toml:"id"`
@@ -1002,16 +1025,14 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 	}
 
 	// 敵（規則 3、4、5、6、9、11、19、22）。
-	aiKinds := []string{defs.AICharge, defs.AIHold}
 	bosses := 0
+	enemyIDs := v.enemyIDs()
+	if n := len(r.Enemies); n > maxLiveEnemies {
+		v.add(f, p+".enemies", "初めの敵が %d 体います（%d 体まで）", n, maxLiveEnemies)
+	}
 	for j, e := range r.Enemies {
 		q := fmt.Sprintf("%s.enemies[%d]", p, j)
-		ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapon: e.Weapon, Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Boss: e.Boss, X: e.X, Y: e.Y}
-		m.Enemies = append(m.Enemies, ep)
-		v.unit(ref, f, q, e.Class, e.Weapon, ep.Bonus)
-		v.noStaff(ref, q, e.Weapon)
-		v.hand(ref, f, q, e.Items, false)
-		v.oneOf(f, q+".ai", "敵の動き方", e.AI, aiKinds...)
+		m.Enemies = append(m.Enemies, v.enemy(ref, q, fmt.Sprintf("enemies[%d]", j), e, enemyIDs))
 		place(q, e.X, e.Y)
 		if e.Boss {
 			bosses++
@@ -1024,17 +1045,161 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 	// 増援（規則 3、4、5、6、9、11、12、19、22）。増援は初めの配置と重なってもよい（出現時は距離 2 以内の立てる空きマスを距離・Y・X の順で選び、候補なしなら出さず延期しない（DES-MAP-03））。
 	for j, e := range r.Reinforcements {
 		q := fmt.Sprintf("%s.reinforcements[%d]", p, j)
-		ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapon: e.Weapon, Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Boss: e.Boss, X: e.X, Y: e.Y}
-		m.Reinforcements = append(m.Reinforcements, defs.Reinforcement{Turn: e.Turn, EnemyPlacement: ep})
 		v.atLeast(f, q+".turn", e.Turn, 2)
-		v.unit(ref, f, q, e.Class, e.Weapon, ep.Bonus)
-		v.noStaff(ref, q, e.Weapon)
-		v.hand(ref, f, q, e.Items, false)
-		v.oneOf(f, q+".ai", "敵の動き方", e.AI, aiKinds...)
+		ep := v.enemy(ref, q, fmt.Sprintf("reinforcements[%d]", j), e.enemy(), enemyIDs)
+		m.Reinforcements = append(m.Reinforcements, defs.Reinforcement{Turn: e.Turn, EnemyPlacement: ep})
 		inMap(q, e.X, e.Y)
 		if e.Boss {
 			v.add(f, q+".boss", "増援はボスになれません")
 		}
 	}
+
+	// 出来事（DES-MAP-07）。
+	m.Events = v.mapEvents(ref, p, r.Events, len(grid), width(grid), inMap, enemyIDs)
 	return m
+}
+
+// enemy は敵 1 体（初めの敵・ターンの増援・出来事の増援で共通）を定義に変え、
+// 名前・ID・兵種と武器・杖・手持ち・動き方を確かめる（DES-DAT-03 規則 4〜6、11、19、22、DES-MAP-07）。
+// 座標とボスの確かめは、配置の種類ごとに呼ぶ側で行う。
+func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyIDSet) defs.EnemyPlacement {
+	const f = FileMaps
+	ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapon: e.Weapon, Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Boss: e.Boss, X: e.X, Y: e.Y, Group: e.Group}
+	ep.ID = ids.check(q, generated, e.ID, e.Group)
+	v.unit(ref, f, q, e.Class, e.Weapon, ep.Bonus)
+	v.noStaff(ref, q, e.Weapon)
+	v.hand(ref, f, q, e.Items, false)
+	v.oneOf(f, q+".ai", "敵の動き方", e.AI, defs.AICharge, defs.AIHold)
+	return ep
+}
+
+// enemy は増援の、ターンを除いた敵の欄を返す。
+func (r rawReinforcement) enemy() rawEnemy {
+	return rawEnemy{Name: r.Name, Class: r.Class, Weapon: r.Weapon, Bonus: r.Bonus, Items: r.Items, AI: r.AI, Boss: r.Boss, X: r.X, Y: r.Y, ID: r.ID, Group: r.Group}
+}
+
+// maxLiveEnemies は一度に生きている敵の上限（DES-IT06 9.3 節、E-91）。tactics の maxLiveEnemies と同じ値。
+// defload は tactics に依存しないので、ここにも置く。
+const maxLiveEnemies = 39
+
+// width は地形の行 0 の長さを返す。行がなければ 0。
+func width(grid [][]rune) int {
+	if len(grid) == 0 {
+		return 0
+	}
+	return len(grid[0])
+}
+
+// enemyIDSet はマップの中の敵の ID を集める（DES-MAP-07）。explicit は id を書いた敵だけ。
+type enemyIDSet struct {
+	v        *validator
+	seen     map[string]string
+	explicit map[string]bool
+	groups   map[string]bool
+}
+
+func (v *validator) enemyIDs() *enemyIDSet {
+	return &enemyIDSet{v: v, seen: map[string]string{}, explicit: map[string]bool{}, groups: map[string]bool{}}
+}
+
+// check は敵 1 体の ID を確かめ、一団 group を集め、定義に書く ID を返す。
+// 省いたら generated（配置の種類 ＋ 定義の添字）で重なりを確かめ、定義の ID は空のままにする
+// （出来事から参照できるのは id を書いた敵だけなので、作った ID は戦闘で使わない）。
+// 空の ID と、初めの敵・すべての増援を通した重なりを拒む。
+func (s *enemyIDSet) check(q, generated string, id *string, group string) string {
+	if group != "" {
+		s.groups[group] = true
+	}
+	got := generated
+	if id != nil {
+		if *id == "" {
+			s.v.add(FileMaps, q+".id", "ID が空です（書かないか、空でない ID を書いてください）")
+			return ""
+		}
+		got = *id
+		s.explicit[got] = true
+	}
+	if first, ok := s.seen[got]; ok {
+		s.v.add(FileMaps, q+".id", "敵の ID %q が重なっています（%s と同じ）", got, first)
+	} else {
+		s.seen[got] = q
+	}
+	if id == nil {
+		return ""
+	}
+	return got
+}
+
+// mapEvents は出来事の列を検証し、定義に変える（DES-MAP-07 の拒むもの）。
+// 出来事から参照する敵は、id を書いた敵でなければならない。参照の確かめは、すべての敵を集めたあとに行う。
+func (v *validator) mapEvents(ref refs, p string, raw []rawEvent, height, w int, inMap func(q string, x, y int) bool, enemyIDs *enemyIDSet) []defs.MapEvent {
+	const f = FileMaps
+	triggers := []string{defs.TriggerEnemyMoved, defs.TriggerEnemyDefeated, defs.TriggerEnemyAttacked, defs.TriggerPlayerEntered}
+	effects := []string{defs.EventReinforce, defs.EventChargeGroup}
+	eventIDs := v.ids(f)
+	var out []defs.MapEvent
+	// 出来事の増援の敵の ID と一団を、参照を確かめる前に集める。
+	for i, e := range raw {
+		q := fmt.Sprintf("%s.events[%d]", p, i)
+		me := defs.MapEvent{ID: e.ID, Trigger: e.Trigger, Unit: e.Unit, Effect: e.Effect, Group: e.Group}
+		for j, en := range e.Enemies {
+			qe := fmt.Sprintf("%s.enemies[%d]", q, j)
+			me.Enemies = append(me.Enemies, v.enemy(ref, qe, fmt.Sprintf("events[%d].enemies[%d]", i, j), en, enemyIDs))
+			inMap(qe, en.X, en.Y)
+			if en.Boss {
+				v.add(f, qe+".boss", "増援はボスになれません")
+			}
+		}
+		if e.Area != nil {
+			me.Area = defs.Area{MinX: e.Area.MinX, MinY: e.Area.MinY, MaxX: e.Area.MaxX, MaxY: e.Area.MaxY}
+		}
+		out = append(out, me)
+	}
+	for i, e := range raw {
+		q := fmt.Sprintf("%s.events[%d]", p, i)
+		eventIDs.check(q, e.ID)
+		if v.oneOf(f, q+".trigger", "きっかけ", e.Trigger, triggers...) {
+			if e.Trigger == defs.TriggerPlayerEntered {
+				if e.Unit != "" {
+					v.add(f, q+".unit", "player_entered に unit は書けません")
+				}
+				if e.Area == nil {
+					v.add(f, q+".area", "player_entered には area が要ります")
+				} else if a := e.Area; a.MinX > a.MaxX || a.MinY > a.MaxY {
+					v.add(f, q+".area", "範囲 (%d, %d)〜(%d, %d) の向きが逆です", a.MinX, a.MinY, a.MaxX, a.MaxY)
+				} else if a.MinX < 0 || a.MinY < 0 || a.MaxX >= w || a.MaxY >= height {
+					v.add(f, q+".area", "範囲 (%d, %d)〜(%d, %d) が盤の外です", a.MinX, a.MinY, a.MaxX, a.MaxY)
+				}
+			} else {
+				if e.Area != nil {
+					v.add(f, q+".area", "%s に area は書けません", e.Trigger)
+				}
+				if e.Unit == "" {
+					v.add(f, q+".unit", "%s には unit が要ります", e.Trigger)
+				} else if !enemyIDs.explicit[e.Unit] {
+					v.add(f, q+".unit", "敵 %q がいません（出来事から参照する敵には id を書いてください）", e.Unit)
+				}
+			}
+		}
+		if v.oneOf(f, q+".effect", "効果", e.Effect, effects...) {
+			if e.Effect == defs.EventReinforce {
+				if len(e.Enemies) == 0 {
+					v.add(f, q+".enemies", "reinforce には増援の敵が 1 体以上要ります")
+				}
+				if e.Group != "" {
+					v.add(f, q+".group", "reinforce に group は書けません")
+				}
+			} else {
+				if len(e.Enemies) != 0 {
+					v.add(f, q+".enemies", "charge_group に増援の敵は書けません")
+				}
+				if e.Group == "" {
+					v.add(f, q+".group", "charge_group には group が要ります")
+				} else if !enemyIDs.groups[e.Group] {
+					v.add(f, q+".group", "一団 %q の敵がいません", e.Group)
+				}
+			}
+		}
+	}
+	return out
 }

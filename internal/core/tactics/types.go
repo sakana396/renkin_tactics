@@ -196,6 +196,9 @@ type UnitSetup struct {
 	Lord      bool
 	Boss      bool
 	AI        AI
+	// ID・Group は敵の識別子と一団の名前（DES-MAP-07）。戦闘の中で比べるだけで、定義を引く手がかりにしない。
+	ID    string
+	Group string
 }
 
 // ReinforcementSetup は増援 1 体の入力（DES-BTL-01、DES-MAP-03）。現れるマスは Unit.Pos。
@@ -209,6 +212,8 @@ type Setup struct {
 	Terrain        [][]Terrain
 	Units          []UnitSetup
 	Reinforcements []ReinforcementSetup
+	// Events は出来事の列（DES-MAP-07）。定義の順に評価する。
+	Events []MapEventSetup
 }
 
 // Unit は戦闘の中のユニット（DES-BTL-01）。倒れたユニットは Alive が偽になり、マップから外れる。
@@ -233,6 +238,9 @@ type Unit struct {
 	AI        AI
 	Acted     bool
 	Alive     bool
+	// ID・Group は UnitSetup から写す敵の識別子と一団の名前（DES-MAP-07）。
+	ID    string
+	Group string
 }
 
 // Command は、自軍のユニット 1 体の移動と行動（DES-BTL-01、DES-BTL-04）。
@@ -254,6 +262,16 @@ func (u Unit) clone() Unit {
 		u.Items = append([]ItemStack(nil), u.Items...)
 	}
 	return u
+}
+
+// clone は UnitSetup のスライスの欄（特効の分類・武器と武器の列の特効・手持ち）を深く写し、入力から独立させる（DES-RWD-01）。
+// ターンの増援と出来事の増援の定義を写すときに使う。UnitSetup にスライスの欄を足したら、ここでも写す。
+func (us UnitSetup) clone() UnitSetup {
+	us.Items = append([]ItemStack(nil), us.Items...)
+	us.Tags = append([]string(nil), us.Tags...)
+	us.Weapon = us.Weapon.clone()
+	us.Weapons = cloneWeapons(us.Weapons)
+	return us
 }
 
 // clone は特効の分類も独立させる（DES-RWD-01）。

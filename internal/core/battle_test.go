@@ -345,11 +345,13 @@ func smallCatalogParty(party []string, edit func(m *defs.MapDef, chars *[]defs.C
 			{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 18, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
 			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5, Lck: 2, Mag: 0, Res: 1}},
 			{ID: "fighter", Name: "ファイター", WeaponType: "axe", Base: defs.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
+			{ID: "armor_knight", Name: "アーマー", WeaponType: "lance", Tags: []string{"armor"}, Base: defs.Stats{HP: 22, Str: 6, Skl: 3, Spd: 2, Def: 9, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
 		},
 		[]defs.WeaponDef{
 			{ID: "iron_sword", Name: "鉄の剣", Type: "sword", Weight: 4, Strikes: 1, DamageType: "physical", Might: 5, Hit: 90, MinRange: 1, MaxRange: 1},
 			{ID: "iron_lance", Name: "鉄の槍", Type: "lance", Weight: 5, Strikes: 1, DamageType: "physical", Might: 7, Hit: 80, MinRange: 1, MaxRange: 1},
 			{ID: "iron_axe", Name: "鉄の斧", Type: "axe", Weight: 7, Strikes: 1, DamageType: "physical", Might: 8, Hit: 70, MinRange: 1, MaxRange: 1},
+			{ID: "horse_lance", Name: "騎兵の槍", Type: "lance", Crit: 10, Weight: 6, Strikes: 2, DamageType: "physical", EffectiveTags: []string{"mounted"}, Might: 6, Hit: 75, MinRange: 1, MaxRange: 1},
 			{ID: "gun", Name: "銃", Type: "gun", Might: 9, Hit: 90, MinRange: 1, MaxRange: 3},
 		},
 		[]defs.ItemDef{{ID: "potion", Name: "回復薬", Heal: 10}},

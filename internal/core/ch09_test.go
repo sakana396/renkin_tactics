@@ -229,6 +229,10 @@ func TestCh09Autoplay(t *testing.T) {
 		{"西の道にまとめる・平均の名簿", "west", false, 2},
 	} {
 		t.Run("TC-FR-MAP-04-02 "+tc.name, func(t *testing.T) {
+			// IT06 で一時停止（TST-IT06 3.2 節）。#133 で置き換える。
+			if tc.plan == "split" {
+				pauseIT06(t, "#133")
+			}
 			c := ch09Roster(t, cat, tc.low)
 			s, ids, err := autoCampaignBattle(c, tc.seed, 6)
 			if err != nil {

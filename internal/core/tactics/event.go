@@ -31,6 +31,10 @@ const (
 	// EventLevelUp はレベルが上がったこと。Unit、Level（上がったあとのレベル）、
 	// Gains（上がった能力が 1、ほかは 0。移動は 0）を持つ（DES-GRW-03）。
 	EventLevelUp
+	// EventTrigger は出来事のきっかけが成り立ったこと。MapEvent（出来事の ID）を持つ（DES-MAP-07）。
+	EventTrigger
+	// EventGroupCharge は一団が突撃に変わったこと。MapEvent、Group を持つ（DES-MAP-07）。
+	EventGroupCharge
 )
 
 // Event は起きたこと 1 つ（DES-EVT-01）。Kind ごとに決まった項目だけが意味を持つ。
@@ -51,6 +55,9 @@ type Event struct {
 	Level  int
 	Gains  Stats
 	Units  []Unit
+	// MapEvent・Group は EventTrigger・EventGroupCharge の出来事の ID と一団の名前（DES-MAP-07）。
+	MapEvent string
+	Group    string
 }
 
 // emit は、今の状態の写しを付けて出来事を events に足す（DES-EVT-01）。

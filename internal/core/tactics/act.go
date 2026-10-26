@@ -52,6 +52,8 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 	case Heal:
 		events = b.healWithStaff(events, cmd.Unit, cmd.Target)
 	}
+	// 移動・攻撃・戦死・経験・成長・勝敗を済ませたあとで、出来事を評価する（DES-MAP-07）。
+	events = b.evaluateMapEvents(events, events)
 
 	b.finishHistory(record)
 	if b.Result != Ongoing {
@@ -161,12 +163,13 @@ func (b *Battle) continuePhaseBefore(events []Event, before *battleSnapshot) []E
 			snapshot = b.snapshot()
 		}
 		record := b.beginHistoryBefore(historyEntry{Kind: historyEndPhase, Unit: -1, Target: -1, Automatic: automatic}, snapshot)
-		// 敵軍の番の始め: PhaseStart → 増援 → 砦の回復。
+		// 敵軍の番の始め: PhaseStart → ターンの増援 → 予約した出来事の増援 → 砦の回復（DES-IT06 9.3 節）。
 		b.Phase = Enemy
 		events = b.emit(events, Event{Kind: EventPhaseStart, Side: Enemy, Turn: b.Turn})
 		// この番に現れた増援は動かないので、増援を置く前の数だけ回す。
 		n := len(b.units)
 		events = b.placeReinforcements(events)
+		events = b.placeEventReinforcements(events)
 		events = b.healOnForts(events, Enemy)
 
 		b.progress = phaseProgress{stage: enemyAction, enemyCount: n}
@@ -188,6 +191,8 @@ func (b *Battle) continuePhaseBefore(events []Event, before *battleSnapshot) []E
 				} else {
 					events = b.actEnemy(events, i)
 				}
+				// 敵 1 体の行動を済ませたあとで、出来事を評価する（DES-MAP-07）。
+				events = b.evaluateMapEvents(events, events[eventStart:])
 				// 敵の選択は従来どおり一度だけ実行し、出来事から一覧の要約を得る。
 				for _, e := range events[eventStart:] {
 					if e.Kind == EventMove {
@@ -222,20 +227,14 @@ func (b *Battle) continuePhaseBefore(events []Event, before *battleSnapshot) []E
 
 // placeReinforcements は、このターンの増援を、増援の定義の順に置く（DES-MAP-03）。
 // 元のマスから距離 2 以内の立てる空きマスを距離・Y・X の順で選ぶ。候補がなければ出さず、延期しない。
+// 出すと生きている敵が上限を超える個体も出さず、延期しない（DES-IT06 9.3 節）。
 // 現れた増援はユニットの列の終わりに足し、Reinforce を出す。
 func (b *Battle) placeReinforcements(events []Event) []Event {
 	for _, r := range b.reinforcements {
 		if r.Turn != b.Turn {
 			continue
 		}
-		pos, ok := b.reinforcementPosition(r.Unit.Pos)
-		if !ok {
-			continue
-		}
-		u := newUnit(r.Unit)
-		u.Pos = pos
-		b.units = append(b.units, u)
-		events = b.emit(events, Event{Kind: EventReinforce, Unit: len(b.units) - 1, To: pos})
+		events = b.spawnEnemy(events, r.Unit)
 	}
 	return events
 }
