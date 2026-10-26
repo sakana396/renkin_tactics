@@ -61,17 +61,19 @@ eq('hit69 hit boundary',70+67 < 2*69,True)
 eq('zero critical pavise',0*3//2,0)
 
 # 攻撃順: 各機会を武器の撃数へ展開する。
+# 反撃する側（D）は、武器の撃数によらず各機会 1 回（E-89。Q-DES06-02）。
 def order(a_as,d_as,a_strikes,d_strikes,counter=True):
     turns=['A']+(['D'] if counter else [])
     if a_as-d_as>=4: turns+=['A']
     elif d_as-a_as>=4 and counter: turns+=['D']
-    return [u for u in turns for _ in range(a_strikes if u=='A' else d_strikes)]
+    return [u for u in turns for _ in range(a_strikes if u=='A' else 1)]
 eq('B1 order',order(12,4,1,1),['A','D','A'])
 eq('B5 order',order(2,2,2,1),['A','A','D'])
 eq('B3 order (distance 2, no counter)',order(6,2,1,1,counter=False),['A','A'])
 eq('brave attacker followup',order(8,4,2,1),list('AADAA'))
-eq('brave defender followup',order(4,8,1,2),list('ADDDD'))
-eq('both brave',order(8,4,2,2),list('AADDAA'))
+eq('brave defender followup (counter 1)',order(4,8,1,2),list('ADD'))
+eq('both brave (counter 1)',order(8,4,2,2),list('AADAA'))
+eq('max strikes A/D',(order(8,4,2,2).count('A'),order(4,8,2,2).count('D')),(4,2))
 
 # 回復 H1、経験 G1〜G5、移行能力例、再移動 C1。
 eq('H1 rina',10+min(10+0,24-10),20)
@@ -221,13 +223,25 @@ for who in ['レオン','ガルド','エルザ','ブラン','ミラ','ティオ'
     eq(who+' slots',int(row[3])+int(row[4]),5)
 leon_candidates=['鉄の剣','アーマーキラー','キルソード','雷の剣']
 eq('leon max weapons',int(next(line for line in design_text.splitlines() if line.startswith('| レオン | 剣 |')).split('|')[4]),len(leon_candidates))
-eq('joins order','`ch02.joins = ["elsa", "noel"]`' in design_text,True)
-# ch02 の出撃枠 6、初めの名簿 5 人 ＋ 加入の 1 人目に出撃の印が付く。
-ch02=next(m for m in read_toml('maps.toml')['maps'] if m['id']=='ch02')
+eq('joins order (E-89)','`ch02.joins = ["noel", "elsa"]`' in design_text,True)
+# 出撃枠は全章 +1（E-90）。13 章の表の「今の枠」「今の敵の数」を data から照合し、新しい枠 = 今 + 1。
+maps={m['id']:m for m in read_toml('maps.toml')['maps']}
+chapters_data=read_toml('chapters.toml')['chapters']
 party=read_toml('game.toml')['party']
-eq('ch02 slots',len(ch02['slots']),6)
-eq('ch02 initial marks (elsa first)',(party+['elsa','noel'])[:6][-1],'elsa')
-eq('ch02 initial marks (noel first)',(party+['noel','elsa'])[:6][-1],'noel')
+roster=list(party); tbd11_total=41
+for ch in chapters_data:
+    # data にはまだノエルがいないので、ch02 の joins は設計どおり ["noel", "elsa"] として数える。
+    joins=['noel','elsa'] if ch['id']=='ch02' else ch.get('joins',[])
+    roster+=[j for j in joins if j not in roster]
+    row=next([x.strip() for x in line.strip('|').split('|')] for line in design_text.splitlines() if line.startswith('| '+ch['id']+' | ') and len(line.split('|'))==7)
+    m=maps[ch['map']]; enemies=len(m['enemies'])+len(m.get('reinforcements',[]))
+    eq(ch['id']+' slots now',int(row[1]),len(m['slots']))
+    eq(ch['id']+' slots +1',int(row[2]),len(m['slots'])+1)
+    eq(ch['id']+' enemies now',int(row[4]),enemies)
+    eq(ch['id']+' roster size',int(row[3]),len(roster))
+    if ch['id'] in ('ch01','ch02'): eq(ch['id']+' everyone deploys',len(roster)<=int(row[2]),True)
+    eq(ch['id']+' total within TBD-11',int(row[2])+enemies<=tbd11_total,True)
+eq('ch09 total 41',7+34,41)
 # 窓の寸法・地図縮尺。
 eq('layout width',512+320,832)
 eq('layout height',512+64,576)
@@ -237,4 +251,4 @@ eq('minimap16',128//16,8)
 eq('minimap x centered',(512+(320-128)//2, 512+(320-128)//2+127),(608,735))
 eq('minimap y (title 16, bottom 8)',(360+16,360+16+127,511-(360+16+127)),(376,503,8))
 eq('story paragraphs after adding',5+1,6)
-print(f'成功: {checks} 項目。B1〜B7・H1・G1〜G5・L1・C1、F1〜F12、既存の仲間とノエルの武器の重さ、今の 9 章の bonus の範囲、報酬と 5 枠の表、ch02 の加入の順、ミニマップの位置、表の列・リンクを検算した。')
+print(f'成功: {checks} 項目。B1〜B7・H1・G1〜G5・L1・C1、F1〜F12、既存の仲間とノエルの武器の重さ、今の 9 章の bonus の範囲、報酬と 5 枠の表、ch02 の加入の順、全章の出撃枠 +1 と名簿・敵の数、勇者の斧の反撃 1 回、ミニマップの位置、表の列・リンクを検算した。')
