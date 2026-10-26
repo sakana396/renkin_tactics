@@ -34,16 +34,18 @@ var (
 
 // Campaign は章の進行と名簿・在庫を持つ。目録はセーブに含めない（DES-CMP-01）。
 type Campaign struct {
-	Rule    Rule
-	Chapter int
-	Cleared bool
-	Roster  []Member
-	Stock   []defs.ItemCount
-	cat     *defs.Catalog
+	Rule         Rule
+	Chapter      int
+	Cleared      bool
+	Roster       []Member
+	StockWeapons []WeaponCount // 武器の在庫（DES-SAV-05）。
+	Stock        []defs.ItemCount
+	cat          *defs.Catalog
 }
 
 // Member は章をまたいで残る仲間の状態。Stats.HP は最大 HP（DES-CMP-01）。
 type Member struct {
+	Weapons   []string // 章をまたぐ武器の ID の列（DES-SAV-05）。
 	Character string
 	Level     int
 	Exp       int
@@ -150,7 +152,7 @@ func newMember(cat *defs.Catalog, id string) (Member, error) {
 	if !ok {
 		return Member{}, fmt.Errorf("core: キャラ %q のクラス %q がありません", id, ch.Class)
 	}
-	return Member{Character: id, Level: ch.Level, Stats: addStats(cls.Base, ch.Bonus), Items: append([]defs.ItemCount(nil), ch.Items...), Alive: true}, nil
+	return Member{Weapons: []string{ch.Weapon}, Character: id, Level: ch.Level, Stats: addStats(cls.Base, ch.Bonus), Items: append([]defs.ItemCount(nil), ch.Items...), Alive: true}, nil
 }
 
 // enterChapter はまだ名簿にいない加入者を定義順に足す。戦死者も再加入しない（DES-CMP-03）。
@@ -339,6 +341,15 @@ func (c *Campaign) deploymentSetup(members, slots []int) (tactics.Setup, []Membe
 		if err != nil {
 			return tactics.Setup{}, nil, err
 		}
+
+		if len(member.Weapons) > 0 {
+			u.Weapon, err = convertWeapon(c.cat, member.Weapons[0])
+			if err != nil {
+				return tactics.Setup{}, nil, err
+			}
+		}
+
+		member.Weapons = append([]string(nil), member.Weapons...)
 		u.Level = member.Level
 		u.Exp = member.Exp
 		u.Stats = member.Stats
@@ -408,4 +419,10 @@ func (c *Campaign) FinishChapter(s *Sortie) (ChapterResult, error) {
 // statsDifference は章の前後の能力の差を求める（DES-CMP-06）。
 func statsDifference(after, before tactics.Stats) tactics.Stats {
 	return tactics.Stats{HP: after.HP - before.HP, Str: after.Str - before.Str, Skl: after.Skl - before.Skl, Spd: after.Spd - before.Spd, Def: after.Def - before.Def, Mov: after.Mov - before.Mov}
+}
+
+// WeaponCount は共有在庫の武器の本数（DES-SAV-05）。
+type WeaponCount struct {
+	Weapon string
+	Count  int
 }

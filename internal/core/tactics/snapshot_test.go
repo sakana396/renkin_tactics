@@ -10,7 +10,7 @@ import (
 func snapshotBattle(t *testing.T) *Battle {
 	t.Helper()
 	weapon := Weapon{Name: "剣", Type: Sword, MinRange: 1, MaxRange: 1, Hit: 70, Might: 2}
-	player := UnitSetup{Name: "主人公", Side: Player, Lord: true, Stats: Stats{HP: 100, Str: 5, Skl: 5, Spd: 10, Def: 5, Mov: 2}, Pos: Pos{0, 0}, Weapon: weapon, Level: 1, Exp: 99, Growth: Growth{50, 50, 50, 50, 50}, Items: []ItemStack{{Item: Item{Name: "薬", Heal: 10}, Count: 2}}}
+	player := UnitSetup{Name: "主人公", Side: Player, Lord: true, Stats: Stats{HP: 100, Str: 5, Skl: 5, Spd: 10, Def: 5, Mov: 2}, Pos: Pos{0, 0}, Weapon: weapon, Level: 1, Exp: 99, Growth: Growth{50, 50, 50, 50, 50, 0, 0, 0}, Items: []ItemStack{{Item: Item{Name: "薬", Heal: 10}, Count: 2}}}
 	ally := player
 	ally.Name = "味方"
 	ally.Lord = false

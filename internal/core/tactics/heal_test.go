@@ -192,7 +192,7 @@ func TestHeal(t *testing.T) {
 	t.Run("TC-FR-BTL-03-12 / TC-FR-UNT-04-13 使用回数の計算例 2・4（15 回使い切ると ErrNoUses。回復の経験は 150 まで）", func(t *testing.T) {
 		b := healBattle(t, nil)
 		// 10 回目の回復でレベルが上がり、成長の乱数を 5 つだけ引く。
-		done := rolls(t, b, 99, 99, 99, 99, 99)
+		done := rolls(t, b, 99, 99, 99, 99, 99, 99, 99, 99)
 		for i := 1; i <= 15; i++ {
 			b.SetHP(1, 12)
 			if _, err := b.Act(healCmd(0, pos(2, 1), 1)); err != nil {
@@ -296,7 +296,7 @@ func TestStaffNoCounter(t *testing.T) {
 			r := rina(2, 1, 1, 0)
 			r.Stats.Spd = 8 // ファイター（速さ 4）より 4 速い
 			b := mustNew(t, arena(r, fighter(3, 1), farBoss(6, 0), leon3(0, 6, 0, 0)))
-			done := rolls(t, b, 0, 0)
+			done := rolls(t, b, 0, 0, 99)
 			events := enemyAttacks(t, b, 1, 0)
 			done()
 			assertEqual(t, "Strike", strikes(events), []strike{{Unit: 1, Target: 0, Hit: true, Amount: 13}})
@@ -307,7 +307,7 @@ func TestStaffNoCounter(t *testing.T) {
 			f := fighter(3, 1)
 			f.Stats.Spd = 10
 			b := mustNew(t, arena(rina(2, 1, 1, 0), f, farBoss(6, 0), leon3(0, 6, 0, 0)))
-			done := rolls(t, b, 0, 0, 99, 99)
+			done := rolls(t, b, 0, 0, 99, 99, 99)
 			events := enemyAttacks(t, b, 1, 0)
 			done()
 			assertEqual(t, "Strike", strikes(events), []strike{
@@ -401,7 +401,7 @@ func TestHealExp(t *testing.T) {
 	t.Run("TC-FR-UNT-04-11 計算例 7（回復で経験 10。レベルが上がれば成長の乱数だけを引く）", func(t *testing.T) {
 		b := mustNew(t, arena(rina(2, 1, 1, 95), leon3(3, 1, 0, 0), farBoss(6, 0), reserve()))
 		b.SetHP(1, 12)
-		done := rolls(t, b, 10, 0, 50, 59, 40)
+		done := rolls(t, b, 10, 0, 50, 59, 40, 99, 99, 99)
 		events := mustAct(t, b, healCmd(0, pos(2, 1), 1))
 		done()
 		assertEqual(t, "出来事", kinds(events), []tactics.EventKind{tactics.EventHeal, tactics.EventExp, tactics.EventLevelUp})

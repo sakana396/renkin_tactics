@@ -36,8 +36,8 @@ func TestRecruitDefinitions(t *testing.T) {
 			stats                   tactics.Stats
 			growth                  defs.Growth
 		}{
-			{"tio", "ティオ", "archer", "iron_bow", 4, tactics.Stats{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5}, defs.Growth{HP: 60, Str: 55, Skl: 45, Spd: 40, Def: 20}},
-			{"hanna", "ハンナ", "cleric", "heal_staff", 7, tactics.Stats{HP: 20, Str: 0, Skl: 4, Spd: 7, Def: 6, Mov: 5}, defs.Growth{HP: 60, Str: 0, Skl: 40, Spd: 35, Def: 50}},
+			{"tio", "ティオ", "archer", "iron_bow", 4, tactics.Stats{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Mag: 0, Res: 1}, defs.Growth{HP: 60, Str: 55, Skl: 45, Spd: 40, Def: 20, Lck: 35, Mag: 5, Res: 15}},
+			{"hanna", "ハンナ", "cleric", "heal_staff", 7, tactics.Stats{HP: 20, Str: 0, Skl: 4, Spd: 7, Def: 6, Mov: 5, Lck: 6, Mag: 3, Res: 7}, defs.Growth{HP: 60, Str: 0, Skl: 40, Spd: 35, Def: 50, Lck: 45, Mag: 40, Res: 50}},
 		} {
 			ch, ok := cat.Character(tc.id)
 			if !ok || ch.Name != tc.name || ch.Class != tc.class || ch.Weapon != tc.weapon || ch.Growth != tc.growth || ch.Skill != "" || ch.Lord || len(ch.Items) != 0 {
@@ -132,7 +132,7 @@ func TestRecruitLoad(t *testing.T) {
 					if len(got.Roster) != want || !reflect.DeepEqual(got.Roster[:6], c.Roster) || got.Rule != rule || got.Chapter != c.Chapter || got.Cleared != c.Cleared || !reflect.DeepEqual(got.Stock, c.Stock) {
 						t.Fatalf("読み込み %+v", got)
 					}
-					for i, st := range []tactics.Stats{{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5}, {HP: 20, Skl: 4, Spd: 7, Def: 6, Mov: 5}} {
+					for i, st := range []tactics.Stats{{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Mag: 0, Res: 1}, {HP: 20, Skl: 4, Spd: 7, Def: 6, Mov: 5, Lck: 6, Mag: 3, Res: 7}} {
 						if 6+i < want {
 							m := got.Roster[6+i]
 							if m.Stats != st || m.Level != []int{4, 7}[i] || m.Exp != 0 || !m.Alive || len(m.Items) != 0 {
@@ -208,12 +208,12 @@ func TestRecruitEstimatedRoster(t *testing.T) {
 			level [2]int
 			stats [2]tactics.Stats
 		}{
-			{"ch04", [2]int{4, 4}, [2]tactics.Stats{{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5}, {HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5}}},
-			{"ch05", [2]int{5, 4}, [2]tactics.Stats{{HP: 21, Str: 9, Skl: 9, Spd: 7, Def: 4, Mov: 5}, {HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5}}},
-			{"ch06", [2]int{6, 5}, [2]tactics.Stats{{HP: 21, Str: 9, Skl: 10, Spd: 8, Def: 4, Mov: 5}, {HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5}}},
-			{"ch07", [2]int{7, 6}, [2]tactics.Stats{{HP: 22, Str: 10, Skl: 10, Spd: 8, Def: 5, Mov: 5}, {HP: 21, Str: 9, Skl: 10, Spd: 7, Def: 4, Mov: 5}}},
-			{"ch08", [2]int{8, 7}, [2]tactics.Stats{{HP: 22, Str: 10, Skl: 11, Spd: 9, Def: 5, Mov: 5}, {HP: 21, Str: 9, Skl: 10, Spd: 8, Def: 4, Mov: 5}}},
-			{"ch09", [2]int{9, 8}, [2]tactics.Stats{{HP: 23, Str: 11, Skl: 11, Spd: 9, Def: 5, Mov: 5}, {HP: 21, Str: 9, Skl: 10, Spd: 8, Def: 4, Mov: 5}}},
+			{"ch04", [2]int{4, 4}, [2]tactics.Stats{{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Mag: 0, Res: 1}, {HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Mag: 0, Res: 1}}},
+			{"ch05", [2]int{5, 4}, [2]tactics.Stats{{HP: 21, Str: 9, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Res: 1}, {HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Mag: 0, Res: 1}}},
+			{"ch06", [2]int{6, 5}, [2]tactics.Stats{{HP: 21, Str: 9, Skl: 10, Spd: 8, Def: 4, Mov: 5, Lck: 4, Res: 1}, {HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Mag: 0, Res: 1}}},
+			{"ch07", [2]int{7, 6}, [2]tactics.Stats{{HP: 22, Str: 10, Skl: 10, Spd: 8, Def: 5, Mov: 5, Lck: 4, Res: 1}, {HP: 21, Str: 9, Skl: 10, Spd: 7, Def: 4, Mov: 5, Lck: 4, Res: 1}}},
+			{"ch08", [2]int{8, 7}, [2]tactics.Stats{{HP: 22, Str: 10, Skl: 11, Spd: 9, Def: 5, Mov: 5, Lck: 4, Res: 1}, {HP: 21, Str: 9, Skl: 10, Spd: 8, Def: 4, Mov: 5, Lck: 4, Res: 1}}},
+			{"ch09", [2]int{9, 8}, [2]tactics.Stats{{HP: 23, Str: 11, Skl: 11, Spd: 9, Def: 5, Mov: 5, Lck: 4, Res: 1}, {HP: 21, Str: 9, Skl: 10, Spd: 8, Def: 4, Mov: 5, Lck: 4, Res: 1}}},
 		} {
 			for k, low := range []bool{false, true} {
 				grew := estimatedRosterWithRecruits(t, cat, tc.id, low, false)
@@ -221,12 +221,12 @@ func TestRecruitEstimatedRoster(t *testing.T) {
 				if m := grew.Roster[6]; m.Level != tc.level[k] || m.Stats != tc.stats[k] || m.Exp != 0 {
 					t.Fatal(tc.id, low, m)
 				}
-				if m := bench.Roster[6]; m.Level != 4 || m.Stats != (tactics.Stats{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5}) || m.Exp != 0 {
+				if m := bench.Roster[6]; m.Level != 4 || m.Stats != (tactics.Stats{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Mag: 0, Res: 1}) || m.Exp != 0 {
 					t.Fatal(m)
 				}
 				if tc.id >= "ch08" {
 					level := 7
-					st := tactics.Stats{HP: 20, Skl: 4, Spd: 7, Def: 6, Mov: 5}
+					st := tactics.Stats{HP: 20, Skl: 4, Spd: 7, Def: 6, Mov: 5, Lck: 6, Mag: 3, Res: 7}
 					if tc.id == "ch09" && !low {
 						level = 8
 						st.HP = 21
@@ -235,7 +235,7 @@ func TestRecruitEstimatedRoster(t *testing.T) {
 					if m := grew.Roster[7]; m.Level != level || m.Stats != st || m.Exp != 0 {
 						t.Fatal(m)
 					}
-					if m := bench.Roster[7]; m.Level != 7 || m.Stats != (tactics.Stats{HP: 20, Skl: 4, Spd: 7, Def: 6, Mov: 5}) || m.Exp != 0 {
+					if m := bench.Roster[7]; m.Level != 7 || m.Stats != (tactics.Stats{HP: 20, Skl: 4, Spd: 7, Def: 6, Mov: 5, Lck: 6, Mag: 3, Res: 7}) || m.Exp != 0 {
 						t.Fatal(m)
 					}
 				}

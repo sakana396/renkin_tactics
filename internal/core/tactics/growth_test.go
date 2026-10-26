@@ -101,28 +101,28 @@ func enemyAttacks(t *testing.T, b *tactics.Battle, enemy, target int) []tactics.
 	return events
 }
 
-// example2 は計算例 2: ミラ（Lv 1、経験 90）が、2 マス先の HP 1 のソルジャーを倒す。成長の乱数は (12, 75, 40, 44, 90)。
+// example2 は計算例 2: ミラ（Lv 1、経験 90）が、2 マス先の HP 1 のソルジャーを倒す。成長の乱数は (12, 75, 40, 44, 90, 99, 99, 99)。
 //
 //	0: ミラ (1, 1)、1: ソルジャー (3, 1)、2: ボス (6, 0)、3: レオン（主人公。Lv 0）(0, 6)
 func example2(t *testing.T) (*tactics.Battle, []tactics.Event) {
 	t.Helper()
 	b := mustNew(t, arena(mira3(1, 1, 1, 90), soldier(3, 1), farBoss(6, 0), leon(0, 6)))
 	b.SetHP(1, 1)
-	done := rolls(t, b, 0, 0, 12, 75, 40, 44, 90)
+	done := rolls(t, b, 0, 0, 99, 12, 75, 40, 44, 90, 99, 99, 99)
 	events := mustAct(t, b, attackCmd(b, 0, 1))
 	done()
 	return b, events
 }
 
 // example4 は計算例 4: レオン（Lv 3、経験 99）が、隣のソルジャーを攻撃し、1 撃も当てずに生き残る。
-// 成長の乱数は (99, 0, 65, 69, 20)。
+// 成長の乱数は (99, 0, 65, 69, 20, 99, 99, 99)。
 //
 //	0: レオン (2, 1)、1: ソルジャー (3, 1)、2: ボス (6, 0)、3: 控え (6, 6)
 func example4(t *testing.T) (*tactics.Battle, []tactics.Event) {
 	t.Helper()
 	b := mustNew(t, arena(leon3(2, 1, 3, 99), soldier(3, 1), farBoss(6, 0), reserve()))
 	// 1 撃目・反撃・追撃はすべて外れ。
-	done := rolls(t, b, 99, 99, 99, 99, 99, 99, 99, 0, 65, 69, 20)
+	done := rolls(t, b, 99, 99, 99, 99, 99, 99, 99, 0, 65, 69, 20, 99, 99, 99)
 	events := mustAct(t, b, attackCmd(b, 0, 1))
 	done()
 	return b, events
@@ -133,7 +133,7 @@ func TestExp(t *testing.T) {
 	t.Run("TC-FR-UNT-04-01 計算例 1（当てて倒さなければ経験 10。成長の乱数は引かない）", func(t *testing.T) {
 		b := mustNew(t, arena(leon3(2, 1, 1, 0), soldier(3, 1), farBoss(6, 0), reserve()))
 		// 1 撃目は当たり、反撃と追撃は外れ。成長の乱数を引けば、引き過ぎで止まる。
-		done := rolls(t, b, 0, 0, 99, 99, 99, 99)
+		done := rolls(t, b, 0, 0, 99, 99, 99, 99, 99)
 		events := mustAct(t, b, attackCmd(b, 0, 1))
 		done()
 		assertEqual(t, "出来事", kinds(events), []tactics.EventKind{
@@ -153,12 +153,12 @@ func TestExp(t *testing.T) {
 			want    int
 			wantDie bool
 		}{
-			{"1 撃目で倒す", 1, 4, []int{0, 0}, 30, true},
-			{"当てて倒さない", 0, 4, []int{0, 0, 99, 99, 99, 99}, 10, false},
-			{"ダメージ 0 で当たる", 0, 99, []int{0, 0, 99, 99, 99, 99}, 10, false},
+			{"1 撃目で倒す", 1, 4, []int{0, 0, 99}, 30, true},
+			{"当てて倒さない", 0, 4, []int{0, 0, 99, 99, 99, 99, 99}, 10, false},
+			{"ダメージ 0 で当たる", 0, 99, []int{0, 0, 99, 99, 99, 99, 99}, 10, false},
 			{"すべて外れる", 0, 4, []int{99, 99, 99, 99, 99, 99}, 1, false},
-			{"自分はすべて外れ、相手の反撃だけ当たる", 0, 4, []int{99, 99, 0, 0, 99, 99}, 1, false},
-			{"1 撃目が外れ、追撃で倒す", 1, 4, []int{99, 99, 99, 99, 0, 0}, 30, true},
+			{"自分はすべて外れ、相手の反撃だけ当たる", 0, 4, []int{99, 99, 0, 0, 99, 99, 99}, 1, false},
+			{"1 撃目が外れ、追撃で倒す", 1, 4, []int{99, 99, 99, 99, 0, 0, 99}, 30, true},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				foe := soldier(3, 1)
@@ -205,7 +205,7 @@ func TestExp(t *testing.T) {
 		t.Run("自軍が攻撃されて倒れる", func(t *testing.T) {
 			b := mustNew(t, arena(mira3(2, 1, 1, 50), fighter(3, 1), farBoss(6, 0), leon(0, 6)))
 			b.SetHP(0, 1)
-			done := rolls(t, b, 0, 0)
+			done := rolls(t, b, 0, 0, 99)
 			events := enemyAttacks(t, b, 1, 0)
 			done()
 			check(t, b, events, 0, 1, 50)
@@ -213,7 +213,7 @@ func TestExp(t *testing.T) {
 		t.Run("Lv 0 の自軍が倒す", func(t *testing.T) {
 			b := mustNew(t, arena(leon(2, 1), soldier(3, 1), farBoss(6, 0), reserve()))
 			b.SetHP(1, 1)
-			done := rolls(t, b, 0, 0)
+			done := rolls(t, b, 0, 0, 99)
 			events := mustAct(t, b, attackCmd(b, 0, 1))
 			done()
 			check(t, b, events, 0, 0, 0)
@@ -236,7 +236,7 @@ func TestExp(t *testing.T) {
 		t.Run("主人公が攻撃されて倒れる", func(t *testing.T) {
 			b := mustNew(t, arena(leon3(2, 1, 1, 50), fighter(3, 1), farBoss(6, 0)))
 			b.SetHP(0, 1)
-			done := rolls(t, b, 0, 0)
+			done := rolls(t, b, 0, 0, 99)
 			events := enemyAttacks(t, b, 1, 0)
 			done()
 			check(t, b, events, 0, 1, 50)
@@ -260,7 +260,7 @@ func TestExp(t *testing.T) {
 	t.Run("TC-FR-UNT-04-06 計算例 5（Lv 20 になったら経験を 0 にし、以後は経験を得ない）", func(t *testing.T) {
 		b := mustNew(t, arena(leon3(2, 1, 19, 95), soldier(3, 1), farBoss(6, 0), reserve()))
 		// 1 撃目は当たり、反撃と追撃は外れ。そのあと成長の乱数 5 つ。
-		done := rolls(t, b, 0, 0, 99, 99, 99, 99, 99, 99, 99, 99, 99)
+		done := rolls(t, b, 0, 0, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99)
 		events := mustAct(t, b, attackCmd(b, 0, 1))
 		done()
 		assertEqual(t, "Exp", exps(events), []expEvent{{Unit: 0, Amount: 10}})
@@ -271,7 +271,7 @@ func TestExp(t *testing.T) {
 		// Lv 20 のユニットが倒しても、経験を得ず、成長の乱数も引かない。
 		b = mustNew(t, arena(leon3(2, 1, 20, 0), soldier(3, 1), farBoss(6, 0), reserve()))
 		b.SetHP(1, 1)
-		done = rolls(t, b, 0, 0)
+		done = rolls(t, b, 0, 0, 99)
 		events = mustAct(t, b, attackCmd(b, 0, 1))
 		done()
 		assertEqual(t, "Lv 20 の出来事", kinds(events), []tactics.EventKind{tactics.EventStrike, tactics.EventFall})
@@ -283,7 +283,7 @@ func TestExp(t *testing.T) {
 		// 0: ブラン (2, 2)、1: 剣士 (3, 2)、2: ボス (6, 0)、3: レオン（Lv 0）(0, 6)
 		b := mustNew(t, arena(bran3(2, 2, 1, 80), myrmidon(3, 2), farBoss(6, 0), leon(0, 6)))
 		b.SetHP(1, 10)
-		done := rolls(t, b, 20, 30, 50, 75, 10, 30, 5)
+		done := rolls(t, b, 20, 30, 99, 50, 75, 10, 30, 5, 99, 99, 99)
 		events := mustAct(t, b, attackCmd(b, 0, 1))
 		done()
 		assertEqual(t, "出来事", kinds(events), []tactics.EventKind{
@@ -301,7 +301,7 @@ func TestExp(t *testing.T) {
 	t.Run("TC-FR-UNT-04-08 ボスを倒した 1 撃でも、経験とレベルアップのあとに勝ちを出す", func(t *testing.T) {
 		b := mustNew(t, arena(leon3(5, 0, 1, 90), farBoss(6, 0), reserve()))
 		b.SetHP(1, 1)
-		done := rolls(t, b, 0, 0, 99, 99, 99, 99, 99)
+		done := rolls(t, b, 0, 0, 99, 99, 99, 99, 99, 99, 99, 99, 99)
 		events := mustAct(t, b, attackCmd(b, 0, 1))
 		done()
 		assertEqual(t, "出来事", kinds(events), []tactics.EventKind{
@@ -395,7 +395,7 @@ func TestGrowth(t *testing.T) {
 				b := mustNew(t, arena(u, soldier(3, 1), farBoss(6, 0), reserve()))
 				// 1 撃目・反撃・追撃はすべて外れ。そのあと成長の乱数がちょうど 5 つ。
 				r := tc.roll
-				done := rolls(t, b, 99, 99, 99, 99, 99, 99, r, r, r, r, r)
+				done := rolls(t, b, 99, 99, 99, 99, 99, 99, r, r, r, r, r, 99, 99, 99)
 				events := mustAct(t, b, attackCmd(b, 0, 1))
 				done()
 				assertEqual(t, "LevelUp", levelUps(events), []levelUp{{Unit: 0, Level: 2, Gains: tc.gains}})
@@ -410,7 +410,7 @@ func TestGrowth(t *testing.T) {
 		u := leveled(leon3(2, 1, 1, 99), 1, 99, tactics.Growth{HP: 100})
 		b := mustNew(t, arena(u, soldier(3, 1), farBoss(6, 0), reserve()))
 		b.SetHP(0, 10)
-		done := rolls(t, b, 99, 99, 99, 99, 99, 99, 0, 0, 0, 0, 0)
+		done := rolls(t, b, 99, 99, 99, 99, 99, 99, 0, 0, 0, 0, 0, 99, 99, 99)
 		mustAct(t, b, attackCmd(b, 0, 1))
 		done()
 		got := b.Units()[0]
@@ -425,10 +425,10 @@ func TestGrowthDeterminism(t *testing.T) {
 		shield.Skill = skillPavise
 		b := mustNew(t, arena(leon3(2, 1, 1, 99), shield, farBoss(6, 0), reserve()))
 		done := rolls(t, b,
-			0, 0, 50, // 1 撃目: 当たり。大盾は 50 < 30 でないので出ない
+			0, 0, 99, 50, // 1 撃目: 当たり。大盾は 50 < 30 でないので出ない
 			99, 99, // 反撃: 外れ
-			0, 0, 10, // 追撃: 当たり。大盾は 10 < 30 で出る
-			0, 99, 0, 99, 0, // 成長: HP ○、力 ×、技 ○、速さ ×、守備 ○
+			0, 0, 99, 10, // 追撃: 当たり。大盾は 10 < 30 で出る
+			0, 99, 0, 99, 0, 99, 99, 99, // 成長: HP ○、力 ×、技 ○、速さ ×、守備 ○
 		)
 		events := mustAct(t, b, attackCmd(b, 0, 1))
 		done()

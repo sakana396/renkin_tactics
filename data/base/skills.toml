@@ -20,7 +20,7 @@ chance = 30
 id = "wrath"
 name = "怒り"
 effect = "wrath"
-multiplier = 3
+chance = 50
 
 [[skills]]
 id = "snipe"

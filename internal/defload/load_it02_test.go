@@ -2,6 +2,7 @@ package defload_test
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -14,6 +15,11 @@ import (
 const (
 	staffWeapon = `[[weapons]]
 id = "heal_staff"
+crit = 0
+weight = 0
+strikes = 1
+damage_type = "physical"
+effective_tags = []
 name = "癒やしの杖"
 type = "staff"
 heal = 10
@@ -73,7 +79,7 @@ func TestLoadIt02(t *testing.T) {
 		{"TC-FR-SYS-04-27 回復量・使用回数が 1 の杖、杖のクラスとキャラは通る",
 			[]edit{
 				replace("weapons.toml", staffWeapon, strings.Replace(strings.Replace(staffWeapon, "heal = 10", "heal = 1", 1), "uses = 15", "uses = 1", 1)),
-				replace("characters.toml", "level = 1\ngrowth = { hp = 55, str = 0, skl = 40, spd = 60, def = 30 }\n", ""),
+				replace("characters.toml", "level = 1\ngrowth = { hp = 55, str = 0, skl = 40, spd = 60, def = 30, lck = 45, mag = 50, res = 45 }\n", ""),
 			},
 			nil},
 		// 規則 22
@@ -116,7 +122,7 @@ func TestLoadIt02(t *testing.T) {
 				replace("characters.toml", "level = 2", "level = 0"),
 				replace("characters.toml", `skill = "inspire"`, "skill = \"inspire\"\nlevel = 21"),
 				replace("characters.toml", "growth = { hp = 55, str = 40", "growth = { hp = -1, str = 40"),
-				replace("characters.toml", "spd = 30, def = 15 }", "spd = 30, def = 101 }"),
+				replace("characters.toml", "spd = 30, def = 15, lck = 25, mag = 0, res = 10 }", "spd = 30, def = 101 }"),
 			},
 			[]string{
 				"characters.toml: characters[4].level: 1 以上 20 以下にしてください（0）",
@@ -129,7 +135,7 @@ func TestLoadIt02(t *testing.T) {
 				replace("characters.toml", "level = 2", "level = 20"),
 				replace("characters.toml", `skill = "inspire"`, "skill = \"inspire\"\nlevel = 1"),
 				replace("characters.toml", "growth = { hp = 55, str = 40", "growth = { hp = 0, str = 40"),
-				replace("characters.toml", "spd = 30, def = 15 }", "spd = 30, def = 100 }"),
+				replace("characters.toml", "spd = 30, def = 15, lck = 25, mag = 0, res = 10 }", "spd = 30, def = 100 }"),
 			},
 			nil},
 		// 規則 17
@@ -193,7 +199,7 @@ func TestLoadIt02(t *testing.T) {
 				replace("maps.toml", "slots = [\n  { x = 1, y = 14 },", "allies = [{ character = \"leon\", x = 1, y = 14 }]\nslots = [\n  { x = 1, y = 14 },"),
 				replace("chapters.toml", `reward = [{ item = "potion", count = 2 }]`, `rewards = [{ item = "potion", count = 2 }]`),
 				replace("story.toml", "id = \"ch01_before\"\nparagraphs", "id = \"ch01_before\"\nparagraph = \"\"\nparagraphs"),
-				replace("characters.toml", "spd = 70, def = 20 }", "spd = 70, def = 20, mov = 10 }"),
+				replace("characters.toml", "spd = 70, def = 20, lck = 40, mag = 20, res = 20 }", "spd = 70, def = 20, mov = 10 }"),
 			},
 			[]string{
 				"game.toml: start_map: 知らないキーです",
@@ -249,13 +255,13 @@ func TestLoadIt02(t *testing.T) {
 func TestLoadStaff(t *testing.T) {
 	t.Run("TC-FR-SYS-04-27 杖は種類 staff・回復量・使用回数を持ち、杖でない武器の回復量・使用回数は 0", func(t *testing.T) {
 		m := baseFS(t)
-		replace("characters.toml", "level = 1\ngrowth = { hp = 55, str = 0, skl = 40, spd = 60, def = 30 }\n", "")(t, m)
+		replace("characters.toml", "level = 1\ngrowth = { hp = 55, str = 0, skl = 40, spd = 60, def = 30, lck = 45, mag = 50, res = 45 }\n", "")(t, m)
 		cat, err := defload.Load(m)
 		if err != nil {
 			t.Fatalf("誤りがある:\n%v", err)
 		}
-		want := defs.WeaponDef{ID: "heal_staff", Name: "癒やしの杖", Type: defs.WeaponStaff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 15}
-		if got, ok := cat.Weapon("heal_staff"); !ok || got != want {
+		want := defs.WeaponDef{ID: "heal_staff", Name: "癒やしの杖", Type: defs.WeaponStaff, Strikes: 1, DamageType: "physical", MinRange: 1, MaxRange: 1, Heal: 10, Uses: 15}
+		if got, ok := cat.Weapon("heal_staff"); !ok || !reflect.DeepEqual(got, want) {
 			t.Errorf("杖 = %+v, %v", got, ok)
 		}
 		if got, _ := cat.Weapon("iron_sword"); got.Heal != 0 || got.Uses != 0 {

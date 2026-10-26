@@ -15,7 +15,7 @@ import (
 func campaignCatalog() *defs.Catalog {
 	return defs.NewCatalog(defs.GameDef{Party: []string{"hero", "friend", "bench"}, Stock: []defs.ItemCount{{Item: "z", Count: 2}, {Item: "a", Count: 1}}},
 		[]defs.TerrainDef{{ID: "plain", Name: "平地", Symbol: ".", Cost: 1}},
-		[]defs.ClassDef{{ID: "hero", Name: "主人公", Base: defs.Stats{HP: 20, Str: 20, Skl: 100, Spd: 5, Def: 10, Mov: 5}}, {ID: "weak", Name: "兵", Base: defs.Stats{HP: 10, Str: 20, Skl: 100, Spd: 5, Mov: 5}}},
+		[]defs.ClassDef{{ID: "hero", Name: "主人公", WeaponType: "sword", Base: defs.Stats{HP: 20, Str: 20, Skl: 100, Spd: 5, Def: 10, Mov: 5}}, {ID: "weak", Name: "兵", WeaponType: "sword", Base: defs.Stats{HP: 10, Str: 20, Skl: 100, Spd: 5, Mov: 5}}},
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}},
 		[]defs.ItemDef{{ID: "a", Name: "同じ薬", Heal: 10}, {ID: "z", Name: "同じ薬", Heal: 10}}, nil,
 		[]defs.CharacterDef{

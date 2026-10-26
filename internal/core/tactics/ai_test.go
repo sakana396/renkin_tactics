@@ -65,7 +65,7 @@ func TestEnemyChoice(t *testing.T) {
 			fall    bool
 		}{
 			// HP 5: 5 × 1 ≧ 5 で倒せる。比べ方 2（450 < 630）と 4（添字 1 > 0）では主人公を選ぶはずの組。
-			{"HP 5 なら倒せる味方を狙う", 5, []int{0, 0}, move{2, pos(3, 3), pos(4, 3)},
+			{"HP 5 なら倒せる味方を狙う", 5, []int{0, 0, 99}, move{2, pos(3, 3), pos(4, 3)},
 				[]strike{{Unit: 2, Target: 1, Hit: true, Amount: 5}}, true},
 			// HP 6: 倒せないので、比べ方 2 で主人公（7 × 90 = 630 > 5 × 90 = 450）。
 			{"HP 6 なら倒せないので主人公を狙う", 6, []int{99, 99, 99, 99}, move{2, pos(3, 3), pos(2, 3)},
@@ -193,7 +193,7 @@ func TestEnemyChoice(t *testing.T) {
 		bs.Skill = tactics.Skill{Name: "鼓舞", Effect: tactics.Inspire, Range: 2, Hit: 10, Avoid: 10}
 		b := mustNew(t, plain7(lord(3, 3, 2), enemy("敵", 3, 5, 3), bs))
 		// 敵の 1 撃は命中率 100 なので (99, 99) でも当たる。主人公の反撃は命中率 100 − 20 = 80 で外れる。
-		done := rolls(t, b, 99, 99, 99, 99)
+		done := rolls(t, b, 99, 99, 99, 99, 99)
 		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "鼓舞: Move", moves(events), []move{{1, pos(3, 5), pos(4, 3)}})
@@ -206,7 +206,7 @@ func TestEnemyChoice(t *testing.T) {
 		ar.Stats.Mov = 0
 		ar.Skill = skillSnipe
 		b = mustNew(t, plain7(lord(3, 3, 2), ar, boss(6, 0)))
-		done = rolls(t, b, 99, 99)
+		done = rolls(t, b, 99, 99, 99)
 		events = mustEndPhase(t, b)
 		done()
 		assertEqual(t, "狙撃: 出来事", kinds(events), []tactics.EventKind{
@@ -398,7 +398,7 @@ func TestEnemyHold(t *testing.T) {
 		p1 := ally("味方", 5, 3, 2)
 		b := mustNew(t, plain7(lord(0, 0, 2), p1, boss(0, 6), enemy("敵 A", 5, 4, 0), enemy("敵 B", 6, 1, 2)))
 		b.SetHP(1, 7)
-		done := rolls(t, b, 0, 0)
+		done := rolls(t, b, 0, 0, 99)
 		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "出来事", kinds(events), []tactics.EventKind{

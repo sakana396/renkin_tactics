@@ -5,48 +5,48 @@
 id = "lord"
 name = "ロード"
 weapon_type = "sword"
-base = { hp = 18, str = 5, skl = 7, spd = 8, def = 4, mov = 5 }
+base = { hp = 18, str = 5, skl = 7, spd = 8, def = 4, mov = 5, lck = 6, mag = 2, res = 2 }
 
 [[classes]]
 id = "armor"
 name = "アーマー"
 weapon_type = "lance"
-base = { hp = 22, str = 6, skl = 3, spd = 2, def = 9, mov = 4 }
+base = { hp = 22, str = 6, skl = 3, spd = 2, def = 9, mov = 4, lck = 2, mag = 0, res = 0 }
 
 [[classes]]
 id = "fighter"
 name = "ファイター"
 weapon_type = "axe"
-base = { hp = 24, str = 7, skl = 4, spd = 4, def = 3, mov = 5 }
+base = { hp = 24, str = 7, skl = 4, spd = 4, def = 3, mov = 5, lck = 2, mag = 0, res = 0 }
 
 [[classes]]
 id = "archer"
 name = "アーチャー"
 weapon_type = "bow"
-base = { hp = 17, str = 5, skl = 7, spd = 6, def = 3, mov = 5 }
+base = { hp = 17, str = 5, skl = 7, spd = 6, def = 3, mov = 5, lck = 4, mag = 0, res = 1 }
 
 [[classes]]
 id = "soldier"
 name = "ソルジャー"
 weapon_type = "lance"
-base = { hp = 18, str = 5, skl = 4, spd = 4, def = 4, mov = 5 }
+base = { hp = 18, str = 5, skl = 4, spd = 4, def = 4, mov = 5, lck = 2, mag = 0, res = 1 }
 
 [[classes]]
 id = "myrmidon"
 name = "剣士"
 weapon_type = "sword"
-base = { hp = 17, str = 4, skl = 8, spd = 9, def = 2, mov = 5 }
+base = { hp = 17, str = 4, skl = 8, spd = 9, def = 2, mov = 5, lck = 4, mag = 1, res = 1 }
 
 # 反復 2 で足した（設計書（反復 2）10.1 節）。自軍（エルザ）と敵が使う
 [[classes]]
 id = "cavalier"
 name = "騎兵"
 weapon_type = "lance"
-base = { hp = 20, str = 6, skl = 5, spd = 6, def = 5, mov = 7 }
+base = { hp = 20, str = 6, skl = 5, spd = 6, def = 5, mov = 7, lck = 3, mag = 0, res = 1 }
 
 # 僧侶（設計書（反復 2）10.1 節）。自軍の回復役
 [[classes]]
 id = "cleric"
 name = "僧侶"
 weapon_type = "staff"
-base = { hp = 16, str = 0, skl = 2, spd = 6, def = 2, mov = 5 }
+base = { hp = 16, str = 0, skl = 2, spd = 6, def = 2, mov = 5, lck = 6, mag = 0, res = 5 }

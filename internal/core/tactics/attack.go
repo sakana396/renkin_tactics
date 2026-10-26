@@ -5,6 +5,9 @@ package tactics
 // doubleSpeed は追撃に要る速さの差（DES-BTL-05）。
 const doubleSpeed = 4
 
+// criticalMultiplier は通常必殺の倍率（DES-BTL-09）。
+const criticalMultiplier = 3
+
 // triangle は、攻撃する側の武器 a と守る側の武器 d の相性 t を返す（DES-BTL-05）。
 // 剣は斧に、斧は槍に、槍は剣に有利。有利なら +1、不利なら −1、それ以外（弓を含む）は 0。
 func triangle(a, d WeaponType) int {
@@ -61,7 +64,15 @@ func (b *Battle) strikeValues(s, r int, still bool) (damage, rate int) {
 	t := triangle(su.Weapon.Type, ru.Weapon.Type)
 	tr := b.TerrainAt(ru.Pos)
 
-	damage = max(0, su.Stats.Str+su.Weapon.Might+t-(ru.Stats.Def+tr.Def))
+	might := su.Weapon.Might
+	if effective(su.Weapon, ru.Tags) {
+		might *= 3
+	}
+	power, defense := su.Stats.Str, ru.Stats.Def
+	if su.Weapon.DamageType == Magical {
+		power, defense = su.Stats.Mag, ru.Stats.Res
+	}
+	damage = max(0, power+might+t-defense-tr.Def)
 
 	sHit, _, _ := b.inspired(s)
 	_, rAvoid, _ := b.inspired(r)
@@ -69,7 +80,7 @@ func (b *Battle) strikeValues(s, r int, still bool) (damage, rate int) {
 	if b.sniping(s, still) {
 		hit += su.Skill.Hit
 	}
-	avoid := ru.Stats.Spd*2 + tr.Avoid + rAvoid
+	avoid := attackSpeed(ru)*2 + tr.Avoid + rAvoid
 	rate = min(100, max(0, hit-avoid))
 	return damage, rate
 }
@@ -89,14 +100,24 @@ func (b *Battle) strikeOrder(a, d int) []int {
 	if counter {
 		order = append(order, d)
 	}
-	diff := b.units[a].Stats.Spd - b.units[d].Stats.Spd
+	diff := attackSpeed(b.units[a]) - attackSpeed(b.units[d])
 	switch {
 	case diff >= doubleSpeed:
 		order = append(order, a)
 	case -diff >= doubleSpeed && counter:
 		order = append(order, d)
 	}
-	return order
+	expanded := make([]int, 0, 5)
+	for _, s := range order {
+		n := 1
+		if s == a {
+			n = max(1, b.units[a].Weapon.Strikes)
+		}
+		for range n {
+			expanded = append(expanded, s)
+		}
+	}
+	return expanded
 }
 
 // attack は、a が d を攻撃する流れを進め、出来事を足す（DES-BTL-06）。
@@ -126,8 +147,8 @@ func (b *Battle) attack(events []Event, a, d int, still bool) []Event {
 // strike は、s が r に 1 撃を行う（DES-BTL-06）。
 //
 // 乱数を引く順番（DES-RNG-01）: 乱数を 2 つ引き、和が 命中率 × 2 より小さければ当たる。
-// 当たって、r が大盾を持っていれば、乱数を 1 つ引き、Chance より小さければ大盾が出る。
-// 必殺（怒り）は Multiplier 倍、大盾は半分（切り捨て）。両方なら倍にしてから半分にする（DES-BTL-05）。
+// 当たれば必殺の乱数を 1 つ引き、そのあと r が大盾を持っていれば大盾の乱数を引く。
+// 必殺は 3 倍、大盾はそのあと半分にして切り捨てる（DES-BTL-09）。
 // HP は 0 で止め、0 になったら倒れる。当たったかを合わせて返す。
 func (b *Battle) strike(events []Event, s, r int, still bool) ([]Event, bool) {
 	damage, rate := b.strikeValues(s, r, still)
@@ -135,10 +156,10 @@ func (b *Battle) strike(events []Event, s, r int, still bool) ([]Event, bool) {
 	r2 := b.roll()
 	e := Event{Kind: EventStrike, Unit: s, Target: r, Hit: r1+r2 < rate*2}
 	if e.Hit {
-		su, ru := &b.units[s], &b.units[r]
-		if wrathful(*su) {
-			e.Crit = true
-			damage *= su.Skill.Multiplier
+		ru := &b.units[r]
+		e.Crit = b.roll() < critRate(b.units[s], *ru)
+		if e.Crit {
+			damage *= criticalMultiplier
 		}
 		if ru.Skill.Effect == Pavise && b.roll() < ru.Skill.Chance {
 			e.Pavise = true
@@ -217,12 +238,16 @@ type ForecastSide struct {
 	Damage int
 	// HitRate は命中率（鼓舞・狙撃を入れる）。
 	HitRate int
-	// Count は攻撃の回数（反撃できなければ 0、追撃すれば 2）。
+	// Count は攻撃の回数（攻撃側は最大 4、反撃側は最大 2）。
 	Count int
-	// Crit は怒りの条件を満たしているか（攻撃の始めの HP で判定する）。
-	Crit bool
+	// 必殺率・攻撃の速さ・特効（DES-BTL-09）。
+	CritRate    int
+	AttackSpeed int
+	Effective   bool
+	// Strikes は攻撃する側の 1 機会の回数（DES-BTL-09）。
+	Strikes int
 	// Skills は効くスキル（鼓舞は持ち主のスキル、ほかは自分のスキル）。
-	// 鼓舞（味方の添字の順）、狙撃、怒り（Crit のとき）、大盾（相手の攻撃の回数が 1 以上のとき）の順。
+	// 鼓舞（味方の添字の順）、狙撃、怒り（HP の条件付き）、大盾（相手の攻撃の回数が 1 以上のとき）の順。
 	Skills []Skill
 }
 
@@ -273,20 +298,46 @@ func (b *Battle) forecastSide(i, o int, still bool, count, oppCount int) Forecas
 	if b.sniping(i, still) {
 		skills = append(skills, u.Skill)
 	}
-	crit := wrathful(u)
-	if crit {
+	if u.Skill.Effect == Wrath {
 		skills = append(skills, u.Skill)
 	}
 	if u.Skill.Effect == Pavise && oppCount > 0 {
 		skills = append(skills, u.Skill)
 	}
 	return ForecastSide{
-		Name:    u.Name,
-		HP:      u.HP,
-		Damage:  damage,
-		HitRate: rate,
-		Count:   count,
-		Crit:    crit,
-		Skills:  skills,
+		Name:        u.Name,
+		HP:          u.HP,
+		Damage:      damage,
+		HitRate:     rate,
+		Count:       count,
+		CritRate:    critRate(u, b.units[o]),
+		AttackSpeed: attackSpeed(u),
+		Effective:   effective(u.Weapon, b.units[o].Tags),
+		Strikes:     max(1, u.Weapon.Strikes),
+		Skills:      skills,
 	}
+}
+
+// attackSpeed は武器の重さを力で支えた攻撃の速さ（DES-BTL-09）。
+func attackSpeed(u Unit) int { return max(0, u.Stats.Spd-max(0, u.Weapon.Weight-u.Stats.Str)) }
+
+// effective は一致する分類が複数あっても 1 回だけ特効を適用する（DES-BTL-09）。
+func effective(w Weapon, tags []string) bool {
+	for _, a := range w.EffectiveTags {
+		for _, d := range tags {
+			if a == d {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// critRate は怒りを足してから上限と下限を適用する（DES-BTL-09）。
+func critRate(a, d Unit) int {
+	bonus := 0
+	if wrathful(a) {
+		bonus = a.Skill.Chance
+	}
+	return min(100, max(0, a.Stats.Skl/2+a.Weapon.Crit+bonus-d.Stats.Lck))
 }

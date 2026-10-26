@@ -124,22 +124,31 @@ type (
 		Skl int `toml:"skl"`
 		Spd int `toml:"spd"`
 		Def int `toml:"def"`
+		Lck int `toml:"lck"`
+		Mag int `toml:"mag"`
+		Res int `toml:"res"`
 		Mov int `toml:"mov"`
 	}
 	rawClass struct {
 		ID         string   `toml:"id"`
 		Name       string   `toml:"name"`
 		WeaponType string   `toml:"weapon_type"`
+		Tags       []string `toml:"tags"`
 		Base       rawStats `toml:"base"`
 	}
 	rawWeapon struct {
-		ID       string `toml:"id"`
-		Name     string `toml:"name"`
-		Type     string `toml:"type"`
-		Might    int    `toml:"might"`
-		Hit      int    `toml:"hit"`
-		MinRange int    `toml:"min_range"`
-		MaxRange int    `toml:"max_range"`
+		ID            string   `toml:"id"`
+		Name          string   `toml:"name"`
+		Type          string   `toml:"type"`
+		Crit          int      `toml:"crit"`
+		Weight        int      `toml:"weight"`
+		Strikes       *int     `toml:"strikes"`
+		DamageType    string   `toml:"damage_type"`
+		EffectiveTags []string `toml:"effective_tags"`
+		Might         int      `toml:"might"`
+		Hit           int      `toml:"hit"`
+		MinRange      int      `toml:"min_range"`
+		MaxRange      int      `toml:"max_range"`
 		// Heal・Uses は、キーを書いたかどうかで規則 21 を確かめるので、ポインタにする。
 		Heal *int `toml:"heal"`
 		Uses *int `toml:"uses"`
@@ -169,6 +178,9 @@ type (
 		Skl int `toml:"skl"`
 		Spd int `toml:"spd"`
 		Def int `toml:"def"`
+		Lck int `toml:"lck"`
+		Mag int `toml:"mag"`
+		Res int `toml:"res"`
 	}
 	rawCharacter struct {
 		ID    string   `toml:"id"`
@@ -483,7 +495,7 @@ func (s *ids) check(path, id string) {
 }
 
 func toStats(s rawStats) defs.Stats {
-	return defs.Stats{HP: s.HP, Str: s.Str, Skl: s.Skl, Spd: s.Spd, Def: s.Def, Mov: s.Mov}
+	return defs.Stats{HP: s.HP, Str: s.Str, Skl: s.Skl, Spd: s.Spd, Def: s.Def, Mov: s.Mov, Lck: s.Lck, Mag: s.Mag, Res: s.Res}
 }
 
 func toItems(raw []rawItemCount) []defs.ItemCount {
@@ -512,6 +524,7 @@ func (v *validator) stats(file, path string, base, bonus defs.Stats) {
 		{"spd", base.Spd, bonus.Spd, 0},
 		{"def", base.Def, bonus.Def, 0},
 		{"mov", base.Mov, bonus.Mov, 0},
+		{"lck", base.Lck, bonus.Lck, 0}, {"mag", base.Mag, bonus.Mag, 0}, {"res", base.Res, bonus.Res, 0},
 	}
 	for _, f := range fields {
 		if sum := f.base + f.bonus; sum < f.min {
@@ -546,7 +559,7 @@ type refs struct {
 
 // build は定義を検証し、目録を作る（DES-DAT-03 規則 2〜22。反復 2 で変更）。
 func (v *validator) build(rd rawData) *defs.Catalog {
-	weaponTypes := []string{defs.WeaponSword, defs.WeaponLance, defs.WeaponAxe, defs.WeaponBow, defs.WeaponStaff}
+	weaponTypes := []string{defs.WeaponSword, defs.WeaponLance, defs.WeaponAxe, defs.WeaponBow, defs.WeaponStaff, defs.WeaponMagic}
 	ref := refs{
 		bySymbol:   map[string]defs.TerrainDef{},
 		classByID:  map[string]defs.ClassDef{},
@@ -588,7 +601,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		p := fmt.Sprintf("classes[%d]", i)
 		cid.check(p, r.ID)
 		v.oneOf(FileClasses, p+".weapon_type", "武器の種類", r.WeaponType, weaponTypes...)
-		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponType: r.WeaponType, Base: toStats(r.Base)}
+		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponType: r.WeaponType, Base: toStats(r.Base), Tags: append([]string(nil), r.Tags...)}
 		classes[i] = c
 		if _, ok := ref.classByID[r.ID]; !ok {
 			ref.classByID[r.ID] = c
@@ -609,6 +622,27 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 			v.add(FileWeapons, p+".max_range", "最大の射程 %d は最小の射程 %d 以上にしてください", r.MaxRange, r.MinRange)
 		}
 		w := defs.WeaponDef{ID: r.ID, Name: r.Name, Type: r.Type, Might: r.Might, Hit: r.Hit, MinRange: r.MinRange, MaxRange: r.MaxRange}
+
+		w.Crit, w.Weight = r.Crit, r.Weight
+		w.Strikes = 1
+		if r.Strikes != nil {
+			w.Strikes = *r.Strikes
+		}
+		w.DamageType = r.DamageType
+		if w.DamageType == "" {
+			w.DamageType = "physical"
+		}
+		w.EffectiveTags = append([]string(nil), r.EffectiveTags...)
+		v.between(FileWeapons, p+".crit", w.Crit, 0, 100)
+		v.atLeast(FileWeapons, p+".weight", w.Weight, 0)
+		v.between(FileWeapons, p+".strikes", w.Strikes, 1, 2)
+		v.oneOf(FileWeapons, p+".damage_type", "攻撃の区分", w.DamageType, "physical", "magic")
+		for j, tag := range w.EffectiveTags {
+			v.oneOf(FileWeapons, fmt.Sprintf("%s.effective_tags[%d]", p, j), "特効の分類", tag, "armor", "mounted")
+		}
+		if w.Type == defs.WeaponStaff && (w.Crit != 0 || w.Strikes != 1 || len(w.EffectiveTags) > 0) {
+			v.add(FileWeapons, p, "杖には必殺・特効・2 回攻撃を付けられません")
+		}
 		v.staff(p, r, &w)
 		weapons[i] = w
 		if _, ok := ref.weaponByID[r.ID]; !ok {
@@ -639,7 +673,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		v.atLeast(FileSkills, p+".avoid", r.Avoid, 0)
 		v.between(FileSkills, p+".chance", r.Chance, 0, 100)
 		if r.Effect == defs.EffectWrath {
-			v.atLeast(FileSkills, p+".multiplier", r.Multiplier, 1)
+			v.between(FileSkills, p+".multiplier", r.Multiplier, 0, 0)
 		} else {
 			v.atLeast(FileSkills, p+".multiplier", r.Multiplier, 0)
 		}
@@ -658,7 +692,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 			level = *r.Level
 			v.between(FileCharacters, p+".level", level, 1, maxLevel)
 		}
-		g := defs.Growth{HP: r.Growth.HP, Str: r.Growth.Str, Skl: r.Growth.Skl, Spd: r.Growth.Spd, Def: r.Growth.Def}
+		g := defs.Growth{HP: r.Growth.HP, Str: r.Growth.Str, Skl: r.Growth.Skl, Spd: r.Growth.Spd, Def: r.Growth.Def, Lck: r.Growth.Lck, Mag: r.Growth.Mag, Res: r.Growth.Res}
 		v.growth(p+".growth", g)
 		ch := defs.CharacterDef{ID: r.ID, Name: r.Name, Class: r.Class, Bonus: toStats(r.Bonus), Level: level, Growth: g, Weapon: r.Weapon, Items: toItems(r.Items), Skill: r.Skill, Lord: r.Lord}
 		v.unit(ref, FileCharacters, p, r.Class, r.Weapon, ch.Bonus)
@@ -802,7 +836,7 @@ func (v *validator) growth(path string, g defs.Growth) {
 	for _, f := range []struct {
 		key string
 		val int
-	}{{"hp", g.HP}, {"str", g.Str}, {"skl", g.Skl}, {"spd", g.Spd}, {"def", g.Def}} {
+	}{{"hp", g.HP}, {"str", g.Str}, {"skl", g.Skl}, {"spd", g.Spd}, {"def", g.Def}, {"lck", g.Lck}, {"mag", g.Mag}, {"res", g.Res}} {
 		v.between(FileCharacters, path+"."+f.key, f.val, 0, 100)
 	}
 }

@@ -57,7 +57,7 @@ func TestRewindAction(t *testing.T) {
 	})
 	t.Run("TC-FR-BTL-10-02 成長で増えた HP と能力を戻す", func(t *testing.T) {
 		b := snapshotBattle(t)
-		b.units[0].Growth = Growth{100, 100, 100, 100, 100}
+		b.units[0].Growth = Growth{100, 100, 100, 100, 100, 0, 0, 0}
 		b.units[2].Stats.Str = 0
 		b.units[2].Weapon.Might = 0
 		b.units[0].Weapon.Hit = 1000

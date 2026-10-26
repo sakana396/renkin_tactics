@@ -34,29 +34,29 @@ func TestBaseData(t *testing.T) {
 			t.Errorf("地形 = %+v", got)
 		}
 		classes := []defs.ClassDef{
-			{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 18, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5}},
-			{ID: "armor", Name: "アーマー", WeaponType: "lance", Base: defs.Stats{HP: 22, Str: 6, Skl: 3, Spd: 2, Def: 9, Mov: 4}},
-			{ID: "fighter", Name: "ファイター", WeaponType: "axe", Base: defs.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5}},
-			{ID: "archer", Name: "アーチャー", WeaponType: "bow", Base: defs.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5}},
-			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5}},
-			{ID: "myrmidon", Name: "剣士", WeaponType: "sword", Base: defs.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5}},
-			{ID: "cavalier", Name: "騎兵", WeaponType: "lance", Base: defs.Stats{HP: 20, Str: 6, Skl: 5, Spd: 6, Def: 5, Mov: 7}},
-			{ID: "cleric", Name: "僧侶", WeaponType: "staff", Base: defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5}},
+			{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 18, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
+			{ID: "armor", Name: "アーマー", WeaponType: "lance", Base: defs.Stats{HP: 22, Str: 6, Skl: 3, Spd: 2, Def: 9, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
+			{ID: "fighter", Name: "ファイター", WeaponType: "axe", Base: defs.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
+			{ID: "archer", Name: "アーチャー", WeaponType: "bow", Base: defs.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}},
+			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5, Lck: 2, Mag: 0, Res: 1}},
+			{ID: "myrmidon", Name: "剣士", WeaponType: "sword", Base: defs.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5, Lck: 4, Mag: 1, Res: 1}},
+			{ID: "cavalier", Name: "騎兵", WeaponType: "lance", Base: defs.Stats{HP: 20, Str: 6, Skl: 5, Spd: 6, Def: 5, Mov: 7, Lck: 3, Mag: 0, Res: 1}},
+			{ID: "cleric", Name: "僧侶", WeaponType: "staff", Base: defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}},
 		}
 		for _, want := range classes {
-			if got, ok := cat.Class(want.ID); !ok || got != want {
+			if got, ok := cat.Class(want.ID); !ok || !reflect.DeepEqual(got, want) {
 				t.Errorf("クラス %s = %+v, %v", want.ID, got, ok)
 			}
 		}
 		weapons := []defs.WeaponDef{
-			{ID: "iron_sword", Name: "鉄の剣", Type: "sword", Might: 5, Hit: 90, MinRange: 1, MaxRange: 1},
-			{ID: "iron_lance", Name: "鉄の槍", Type: "lance", Might: 7, Hit: 80, MinRange: 1, MaxRange: 1},
-			{ID: "iron_axe", Name: "鉄の斧", Type: "axe", Might: 8, Hit: 70, MinRange: 1, MaxRange: 1},
-			{ID: "iron_bow", Name: "鉄の弓", Type: "bow", Might: 6, Hit: 85, MinRange: 2, MaxRange: 2},
-			{ID: "heal_staff", Name: "癒やしの杖", Type: "staff", Heal: 10, Uses: 15, MinRange: 1, MaxRange: 1},
+			{ID: "iron_sword", Name: "鉄の剣", Type: "sword", Weight: 4, Strikes: 1, DamageType: "physical", Might: 5, Hit: 90, MinRange: 1, MaxRange: 1},
+			{ID: "iron_lance", Name: "鉄の槍", Type: "lance", Weight: 5, Strikes: 1, DamageType: "physical", Might: 7, Hit: 80, MinRange: 1, MaxRange: 1},
+			{ID: "iron_axe", Name: "鉄の斧", Type: "axe", Weight: 7, Strikes: 1, DamageType: "physical", Might: 8, Hit: 70, MinRange: 1, MaxRange: 1},
+			{ID: "iron_bow", Name: "鉄の弓", Type: "bow", Weight: 5, Strikes: 1, DamageType: "physical", Might: 6, Hit: 85, MinRange: 2, MaxRange: 2},
+			{ID: "heal_staff", Name: "癒やしの杖", Type: "staff", Weight: 0, Strikes: 1, DamageType: "physical", Heal: 10, Uses: 15, MinRange: 1, MaxRange: 1},
 		}
 		for _, want := range weapons {
-			if got, ok := cat.Weapon(want.ID); !ok || got != want {
+			if got, ok := cat.Weapon(want.ID); !ok || !reflect.DeepEqual(got, want) {
 				t.Errorf("武器 %s = %+v, %v", want.ID, got, ok)
 			}
 		}
@@ -66,11 +66,11 @@ func TestBaseData(t *testing.T) {
 		skills := []defs.SkillDef{
 			{ID: "inspire", Name: "鼓舞", Effect: "inspire", Range: 2, Hit: 10, Avoid: 10},
 			{ID: "pavise", Name: "大盾", Effect: "pavise", Chance: 30},
-			{ID: "wrath", Name: "怒り", Effect: "wrath", Multiplier: 3},
+			{ID: "wrath", Name: "怒り", Effect: "wrath", Chance: 50},
 			{ID: "snipe", Name: "狙撃", Effect: "snipe", Hit: 20},
 		}
 		for _, want := range skills {
-			if got, ok := cat.Skill(want.ID); !ok || got != want {
+			if got, ok := cat.Skill(want.ID); !ok || !reflect.DeepEqual(got, want) {
 				t.Errorf("スキル %s = %+v, %v", want.ID, got, ok)
 			}
 		}
@@ -79,12 +79,12 @@ func TestBaseData(t *testing.T) {
 			def   defs.CharacterDef
 			stats defs.Stats
 		}{
-			{defs.CharacterDef{ID: "leon", Name: "レオン", Class: "lord", Bonus: defs.Stats{HP: 1, Str: 2, Skl: 4, Spd: 4}, Level: 1, Growth: defs.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20}, Weapon: "iron_sword", Items: []defs.ItemCount{{Item: "potion", Count: 2}}, Skill: "inspire", Lord: true}, defs.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5}},
-			{defs.CharacterDef{ID: "gald", Name: "ガルド", Class: "armor", Bonus: defs.Stats{HP: 2, Skl: -2, Def: 2}, Level: 1, Growth: defs.Growth{HP: 85, Str: 40, Skl: 20, Spd: 10, Def: 70}, Weapon: "iron_lance", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "pavise"}, defs.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4}},
-			{defs.CharacterDef{ID: "bran", Name: "ブラン", Class: "fighter", Bonus: defs.Stats{HP: -2, Str: 4, Skl: 1, Spd: 1, Def: -1}, Level: 1, Growth: defs.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15}, Weapon: "iron_axe", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "wrath"}, defs.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5}},
-			{defs.CharacterDef{ID: "mira", Name: "ミラ", Class: "archer", Bonus: defs.Stats{Skl: 2, Spd: 1}, Level: 1, Growth: defs.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20}, Weapon: "iron_bow", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "snipe"}, defs.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5}},
-			{defs.CharacterDef{ID: "elsa", Name: "エルザ", Class: "cavalier", Bonus: defs.Stats{HP: 1, Str: 1, Skl: 1, Spd: 1}, Level: 2, Growth: defs.Growth{HP: 65, Str: 45, Skl: 40, Spd: 40, Def: 35}, Weapon: "iron_lance", Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 21, Str: 7, Skl: 6, Spd: 7, Def: 5, Mov: 7}},
-			{defs.CharacterDef{ID: "rina", Name: "リナ", Class: "cleric", Level: 1, Growth: defs.Growth{HP: 55, Str: 0, Skl: 40, Spd: 60, Def: 30}, Weapon: "heal_staff", Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5}},
+			{defs.CharacterDef{ID: "leon", Name: "レオン", Class: "lord", Bonus: defs.Stats{HP: 1, Str: 2, Skl: 4, Spd: 4}, Level: 1, Growth: defs.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20, Lck: 40, Mag: 20, Res: 20}, Weapon: "iron_sword", Items: []defs.ItemCount{{Item: "potion", Count: 2}}, Skill: "inspire", Lord: true}, defs.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
+			{defs.CharacterDef{ID: "gald", Name: "ガルド", Class: "armor", Bonus: defs.Stats{HP: 2, Skl: -2, Def: 2}, Level: 1, Growth: defs.Growth{HP: 85, Str: 40, Skl: 20, Spd: 10, Def: 70, Lck: 20, Mag: 0, Res: 10}, Weapon: "iron_lance", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "pavise"}, defs.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
+			{defs.CharacterDef{ID: "bran", Name: "ブラン", Class: "fighter", Bonus: defs.Stats{HP: -2, Str: 4, Skl: 1, Spd: 1, Def: -1}, Level: 1, Growth: defs.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15, Lck: 25, Mag: 0, Res: 10}, Weapon: "iron_axe", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "wrath"}, defs.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
+			{defs.CharacterDef{ID: "mira", Name: "ミラ", Class: "archer", Bonus: defs.Stats{Skl: 2, Spd: 1}, Level: 1, Growth: defs.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20, Lck: 35, Mag: 5, Res: 15}, Weapon: "iron_bow", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "snipe"}, defs.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}},
+			{defs.CharacterDef{ID: "elsa", Name: "エルザ", Class: "cavalier", Bonus: defs.Stats{HP: 1, Str: 1, Skl: 1, Spd: 1}, Level: 2, Growth: defs.Growth{HP: 65, Str: 45, Skl: 40, Spd: 40, Def: 35, Lck: 30, Mag: 5, Res: 20}, Weapon: "iron_lance", Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 21, Str: 7, Skl: 6, Spd: 7, Def: 5, Mov: 7, Lck: 3, Mag: 0, Res: 1}},
+			{defs.CharacterDef{ID: "rina", Name: "リナ", Class: "cleric", Level: 1, Growth: defs.Growth{HP: 55, Str: 0, Skl: 40, Spd: 60, Def: 30, Lck: 45, Mag: 50, Res: 45}, Weapon: "heal_staff", Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}},
 		}
 		for _, want := range chars {
 			got, ok := cat.Character(want.def.ID)
@@ -126,7 +126,7 @@ func TestBaseData(t *testing.T) {
 		// ボスの能力は 26/8/7/6/7/5（10.4 節）。
 		boss := m.Enemies[7]
 		soldier, _ := cat.Class(boss.Class)
-		if s := addStats(soldier.Base, boss.Bonus); s != (defs.Stats{HP: 26, Str: 8, Skl: 7, Spd: 6, Def: 7, Mov: 5}) {
+		if s := addStats(soldier.Base, boss.Bonus); s != (defs.Stats{HP: 26, Str: 8, Skl: 7, Spd: 6, Def: 7, Mov: 5, Lck: 2, Res: 1}) {
 			t.Errorf("ボスの能力 = %+v", s)
 		}
 		reinf := []defs.Reinforcement{
@@ -218,5 +218,5 @@ func TestBaseData(t *testing.T) {
 }
 
 func addStats(a, b defs.Stats) defs.Stats {
-	return defs.Stats{HP: a.HP + b.HP, Str: a.Str + b.Str, Skl: a.Skl + b.Skl, Spd: a.Spd + b.Spd, Def: a.Def + b.Def, Mov: a.Mov + b.Mov}
+	return defs.Stats{HP: a.HP + b.HP, Str: a.Str + b.Str, Skl: a.Skl + b.Skl, Spd: a.Spd + b.Spd, Def: a.Def + b.Def, Mov: a.Mov + b.Mov, Lck: a.Lck + b.Lck, Mag: a.Mag + b.Mag, Res: a.Res + b.Res}
 }

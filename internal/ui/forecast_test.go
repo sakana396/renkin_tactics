@@ -189,7 +189,7 @@ func TestForecastVisual(t *testing.T) {
 			{"守る側の追撃で攻撃する側が倒れる", side(14, 1, 1), side(20, 7, 2), 0, 19, [2]string{"14 → 0", "20 → 19"}},
 			{"反撃で倒れれば追撃しない（追撃は反撃のあと）", side(9, 5, 2), side(18, 9, 1), 0, 13, [2]string{"9 → 0", "18 → 13"}},
 			{"ダメージ 0 なら減らない", side(20, 0, 1), side(20, 0, 1), 20, 20, [2]string{"20 → 20", "20 → 20"}},
-			{"必殺（Crit）があっても 3 倍にしない", tactics.ForecastSide{HP: 20, Damage: 4, HitRate: 50, Count: 1, Crit: true}, tactics.ForecastSide{HP: 10, Damage: 3, HitRate: 50, Count: 1, Crit: true}, 17, 6, [2]string{"20 → 17", "10 → 6"}},
+			{"必殺（Crit）があっても 3 倍にしない", tactics.ForecastSide{HP: 20, Damage: 4, HitRate: 50, Count: 1, CritRate: 50}, tactics.ForecastSide{HP: 10, Damage: 3, HitRate: 50, Count: 1, CritRate: 50}, 17, 6, [2]string{"20 → 17", "10 → 6"}},
 		} {
 			f := tactics.Forecast{Attacker: tc.a, Defender: tc.d}
 			a, d := ForecastAfter(f)
@@ -271,7 +271,8 @@ func TestForecastVisual(t *testing.T) {
 			{"ダメージ", "8", "―"},
 			{"命中率", "94%", "―"},
 			{"回数", "×1", "反撃なし"},
-			{"必殺", "―", "―"},
+			{"必殺", "4%", "―"},
+			{"速さ/特効", "9 / ―", "6 / ―"},
 			{"スキル", "―", "―"},
 		}
 		if got := c.Panel(tactics.Pos{X: 3, Y: 3}, true).Forecast; !reflect.DeepEqual(got, want) {
@@ -279,10 +280,10 @@ func TestForecastVisual(t *testing.T) {
 		}
 		// 攻撃する側の回数が 0 になることはないが、表は側ごとに同じ規則で作る。
 		rows := ForecastRows(tactics.Forecast{
-			Attacker: tactics.ForecastSide{Name: "A", HP: 10, Damage: 3, HitRate: 70, Count: 0, Crit: true},
+			Attacker: tactics.ForecastSide{Name: "A", HP: 10, Damage: 3, HitRate: 70, Count: 0, CritRate: 50},
 			Defender: tactics.ForecastSide{Name: "D", HP: 10, Damage: 4, HitRate: 60, Count: 1},
 		}, false, false)
-		for i, w := range []ForecastRow{{"ダメージ", "―", "4"}, {"命中率", "―", "60%"}, {"回数", "反撃なし", "×1"}, {"必殺", "―", "―"}} {
+		for i, w := range []ForecastRow{{"ダメージ", "―", "4"}, {"命中率", "―", "60%"}, {"回数", "反撃なし", "×1"}, {"必殺", "―", "0%"}} {
 			if rows[i+2] != w {
 				t.Errorf("回数 0 の攻撃する側: %q、%q のはず", rows[i+2], w)
 			}
@@ -356,12 +357,12 @@ func TestForecastVisual(t *testing.T) {
 		f, err := c.Battle().Forecast(tactics.Command{Unit: 1, To: dest, Action: tactics.Attack, Target: tg})
 		// 3.5 節: ブランは攻撃力 8 ＋ 8 − 1 = 15、ダメージ 15 − 2 = 13・1 回、必殺の条件を満たす（当たれば 39）。
 		// 剣士は攻撃力 4 ＋ 5 ＋ 1 = 10、ダメージ 10 − 3 = 7、速さの差 4 で 2 回。
-		if err != nil || !f.Attacker.Crit || f.Attacker.Damage != 13 || f.Attacker.Count != 1 || f.Defender.Damage != 7 || f.Defender.Count != 2 {
+		if err != nil || !(f.Attacker.CritRate > 0) || f.Attacker.Damage != 13 || f.Attacker.Count != 1 || f.Defender.Damage != 7 || f.Defender.Count != 2 {
 			t.Fatalf("前提: 予測 %+v, %v", f, err)
 		}
 		// 剣士 17 − 13 = 4、ブラン 13 − 7 = 6、剣士の追撃で 6 − 7 → 0。必殺を数えると剣士 17 → 0「撃破」、ブラン 13 → 13 になる。
 		p := c.Panel(tactics.Pos{X: 5, Y: 2}, true)
-		if p.Forecast[1] != (ForecastRow{"HP", "13 → 0", "17 → 4"}) || p.Forecast[5] != (ForecastRow{"必殺", "あり", "―"}) {
+		if p.Forecast[1] != (ForecastRow{"HP", "13 → 0", "17 → 4"}) || p.Forecast[5] != (ForecastRow{"必殺", "52%", "4%"}) {
 			t.Errorf("HP・必殺の行 = %q、%q", p.Forecast[1], p.Forecast[5])
 		}
 		v := p.View()

@@ -148,15 +148,17 @@ func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, 
 	return tactics.UnitSetup{
 		Name:      ch.Name,
 		ClassName: cls.Name,
+		Tags:      append([]string(nil), cls.Tags...),
 		Side:      tactics.Player,
 		Stats:     addStats(cls.Base, ch.Bonus),
 		Level:     ch.Level,
-		Growth:    tactics.Growth{HP: ch.Growth.HP, Str: ch.Growth.Str, Skl: ch.Growth.Skl, Spd: ch.Growth.Spd, Def: ch.Growth.Def},
+		Growth:    tactics.Growth{HP: ch.Growth.HP, Str: ch.Growth.Str, Skl: ch.Growth.Skl, Spd: ch.Growth.Spd, Def: ch.Growth.Def, Lck: ch.Growth.Lck, Mag: ch.Growth.Mag, Res: ch.Growth.Res},
 		Pos:       tactics.Pos{X: slot.X, Y: slot.Y},
 		Weapon:    weapon,
-		Items:     items,
-		Skill:     skill,
-		Lord:      ch.Lord,
+
+		Items: items,
+		Skill: skill,
+		Lord:  ch.Lord,
 	}, nil
 }
 
@@ -182,13 +184,15 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 	return tactics.UnitSetup{
 		Name:      name,
 		ClassName: cls.Name,
+		Tags:      append([]string(nil), cls.Tags...),
 		Side:      tactics.Enemy,
 		Stats:     addStats(cls.Base, e.Bonus),
 		Pos:       tactics.Pos{X: e.X, Y: e.Y},
 		Weapon:    weapon,
-		Items:     items,
-		Boss:      e.Boss,
-		AI:        ai,
+
+		Items: items,
+		Boss:  e.Boss,
+		AI:    ai,
 	}, nil
 }
 
@@ -239,6 +243,7 @@ func addStats(base, bonus defs.Stats) tactics.Stats {
 		Spd: base.Spd + bonus.Spd,
 		Def: base.Def + bonus.Def,
 		Mov: base.Mov + bonus.Mov,
+		Lck: base.Lck + bonus.Lck, Mag: base.Mag + bonus.Mag, Res: base.Res + bonus.Res,
 	}
 }
 
@@ -259,13 +264,20 @@ func convertWeapon(cat *defs.Catalog, id string) (tactics.Weapon, error) {
 		typ = tactics.Axe
 	case defs.WeaponBow:
 		typ = tactics.Bow
+	case defs.WeaponMagic:
+		typ = tactics.Magic
 	case defs.WeaponStaff:
 		typ = tactics.Staff
 	default:
 		return tactics.Weapon{}, fmt.Errorf("武器 %q の種類 %q は使えません", id, w.Type)
 	}
+	damageType := tactics.Physical
+	if w.DamageType == "magic" {
+		damageType = tactics.Magical
+	}
 	return tactics.Weapon{
-		Name:     w.Name,
+		Name: w.Name,
+		Crit: w.Crit, Weight: w.Weight, Strikes: w.Strikes, DamageType: damageType, EffectiveTags: append([]string(nil), w.EffectiveTags...),
 		Type:     typ,
 		Might:    w.Might,
 		Hit:      w.Hit,

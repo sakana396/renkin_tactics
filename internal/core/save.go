@@ -19,16 +19,43 @@ var (
 )
 
 // saveData とその内側の型は、ゲームの型から独立した保存形式（DES-SAV-01）。
+type saveDataV1 struct {
+	Version int            `json:"version"`
+	Rule    string         `json:"rule"`
+	Chapter string         `json:"chapter"`
+	Cleared bool           `json:"cleared"`
+	Roster  []saveMemberV1 `json:"roster"`
+	Stock   []saveItem     `json:"stock"`
+}
+type saveMemberV1 struct {
+	Character string      `json:"character"`
+	Level     int         `json:"level"`
+	Exp       int         `json:"exp"`
+	Stats     saveStatsV1 `json:"stats"`
+	Items     []saveItem  `json:"items"`
+	Alive     bool        `json:"alive"`
+}
+type saveStatsV1 struct {
+	HP  int `json:"hp"`
+	Str int `json:"str"`
+	Skl int `json:"skl"`
+	Spd int `json:"spd"`
+	Def int `json:"def"`
+	Mov int `json:"mov"`
+}
+
 type saveData struct {
-	Version int          `json:"version"`
-	Rule    string       `json:"rule"`
-	Chapter string       `json:"chapter"`
-	Cleared bool         `json:"cleared"`
-	Roster  []saveMember `json:"roster"`
-	Stock   []saveItem   `json:"stock"`
+	Version      int               `json:"version"`
+	Rule         string            `json:"rule"`
+	Chapter      string            `json:"chapter"`
+	Cleared      bool              `json:"cleared"`
+	Roster       []saveMember      `json:"roster"`
+	Stock        []saveItem        `json:"stock"`
+	StockWeapons []saveWeaponCount `json:"stock_weapons"`
 }
 type saveMember struct {
 	Character string     `json:"character"`
+	Weapons   []string   `json:"weapons"`
 	Level     int        `json:"level"`
 	Exp       int        `json:"exp"`
 	Stats     saveStats  `json:"stats"`
@@ -41,6 +68,9 @@ type saveStats struct {
 	Skl int `json:"skl"`
 	Spd int `json:"spd"`
 	Def int `json:"def"`
+	Lck int `json:"lck"`
+	Mag int `json:"mag"`
+	Res int `json:"res"`
 	Mov int `json:"mov"`
 }
 type saveItem struct {
@@ -59,7 +89,7 @@ func saveItems(items []defs.ItemCount) []saveItem {
 
 // Save は章の状態を空白 2 つの JSON に書く。状態を変更しない（DES-SAV-01）。
 func (c *Campaign) Save(w io.Writer) error {
-	d := saveData{Version: 1, Rule: "withdraw", Cleared: c.Cleared, Roster: make([]saveMember, len(c.Roster)), Stock: saveItems(c.Stock)}
+	d := saveData{Version: 2, Rule: "withdraw", Cleared: c.Cleared, Roster: make([]saveMember, len(c.Roster)), Stock: saveItems(c.Stock)}
 	switch c.Rule {
 	case Withdraw:
 	case Permadeath:
@@ -75,8 +105,18 @@ func (c *Campaign) Save(w io.Writer) error {
 		d.Chapter = chapters[c.Chapter].ID
 	}
 	for i, m := range c.Roster {
-		d.Roster[i] = saveMember{Character: m.Character, Level: m.Level, Exp: m.Exp, Stats: saveStats(m.Stats), Items: saveItems(m.Items), Alive: m.Alive}
+		weapons := m.Weapons
+		if len(weapons) == 0 {
+			ch, _ := c.cat.Character(m.Character)
+			weapons = []string{ch.Weapon}
+		}
+		d.Roster[i] = saveMember{Character: m.Character, Level: m.Level, Exp: m.Exp, Stats: saveStats(m.Stats), Weapons: append([]string{}, weapons...), Items: saveItems(m.Items), Alive: m.Alive}
 	}
+	d.StockWeapons = make([]saveWeaponCount, len(c.StockWeapons))
+	for i, w := range c.StockWeapons {
+		d.StockWeapons[i] = saveWeaponCount{Weapon: w.Weapon, Count: w.Count}
+	}
+	sort.Slice(d.StockWeapons, func(i, j int) bool { return d.StockWeapons[i].Weapon < d.StockWeapons[j].Weapon })
 	sort.Slice(d.Stock, func(i, j int) bool { return d.Stock[i].Item < d.Stock[j].Item })
 	data, err := json.MarshalIndent(d, "", "  ")
 	if err != nil {
@@ -114,14 +154,41 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 	if header.Version == nil {
 		return nil, invalidSave("version", "版がないか数ではありません")
 	}
-	if *header.Version != 1 {
-		return nil, fmt.Errorf("%w: version: %d（対応する版は 1）", ErrSaveVersion, *header.Version)
+	if *header.Version != 1 && *header.Version != 2 {
+		return nil, fmt.Errorf("%w: version: %d（対応する版は 1・2）", ErrSaveVersion, *header.Version)
 	}
+
 	var d saveData
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
-	if err := dec.Decode(&d); err != nil {
-		return nil, invalidSave("json", err.Error())
+	if *header.Version == 1 {
+		var old saveDataV1
+		if err := dec.Decode(&old); err != nil {
+			return nil, invalidSave("json", err.Error())
+		}
+		d = saveData{Version: 1, Rule: old.Rule, Chapter: old.Chapter, Cleared: old.Cleared, Stock: old.Stock}
+		for _, m := range old.Roster {
+			d.Roster = append(d.Roster, saveMember{Character: m.Character, Level: m.Level, Exp: m.Exp, Stats: saveStats{HP: m.Stats.HP, Str: m.Stats.Str, Skl: m.Stats.Skl, Spd: m.Stats.Spd, Def: m.Stats.Def, Mov: m.Stats.Mov}, Items: m.Items, Alive: m.Alive})
+		}
+	} else {
+		if err := dec.Decode(&d); err != nil {
+			return nil, invalidSave("json", err.Error())
+		}
+		var required struct {
+			Roster []struct {
+				Stats map[string]*int `json:"stats"`
+			} `json:"roster"`
+		}
+		if err := json.Unmarshal(data, &required); err != nil {
+			return nil, invalidSave("json", err.Error())
+		}
+		for i, m := range required.Roster {
+			for _, key := range []string{"hp", "str", "skl", "spd", "def", "mov", "lck", "mag", "res"} {
+				if m.Stats[key] == nil {
+					return nil, invalidSave(fmt.Sprintf("roster[%d].stats.%s", i, key), "能力がありません")
+				}
+			}
+		}
 	}
 	c := &Campaign{cat: cat, Cleared: d.Cleared}
 	switch d.Rule {
@@ -186,7 +253,7 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 		for _, s := range []struct {
 			name       string
 			value, min int
-		}{{"hp", m.Stats.HP, 1}, {"str", m.Stats.Str, 0}, {"skl", m.Stats.Skl, 0}, {"spd", m.Stats.Spd, 0}, {"def", m.Stats.Def, 0}, {"mov", m.Stats.Mov, 0}} {
+		}{{"hp", m.Stats.HP, 1}, {"str", m.Stats.Str, 0}, {"skl", m.Stats.Skl, 0}, {"spd", m.Stats.Spd, 0}, {"def", m.Stats.Def, 0}, {"mov", m.Stats.Mov, 0}, {"lck", m.Stats.Lck, 0}, {"mag", m.Stats.Mag, 0}, {"res", m.Stats.Res, 0}} {
 			if s.value < s.min {
 				return nil, invalidSave(path+".stats."+s.name, "能力が下限より小さい値です")
 			}
@@ -198,11 +265,63 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 		if err != nil {
 			return nil, err
 		}
-		c.Roster[i] = Member{Character: m.Character, Level: m.Level, Exp: m.Exp, Stats: tactics.Stats(m.Stats), Items: items, Alive: m.Alive}
+		ch, _ := cat.Character(m.Character)
+		if d.Version == 1 {
+			cls, _ := cat.Class(ch.Class)
+			levels := max(0, m.Level-ch.Level)
+			m.Stats.Lck = cls.Base.Lck + ch.Bonus.Lck + levels*ch.Growth.Lck/100
+			m.Stats.Mag = cls.Base.Mag + ch.Bonus.Mag + levels*ch.Growth.Mag/100
+			m.Stats.Res = cls.Base.Res + ch.Bonus.Res + levels*ch.Growth.Res/100
+			m.Weapons = []string{ch.Weapon}
+		}
+		if len(m.Weapons) == 0 || len(m.Weapons) > 5 {
+			return nil, invalidSave(fmt.Sprintf("roster[%d].weapons", i), "武器は 1〜5 本必要です")
+		}
+		cls, _ := cat.Class(ch.Class)
+		for j, id := range m.Weapons {
+			w, ok := cat.Weapon(id)
+			if !ok || w.Type != cls.WeaponType {
+				return nil, invalidSave(fmt.Sprintf("roster[%d].weapons[%d]", i, j), "持てない武器です")
+			}
+		}
+		remaining := 5 - len(m.Weapons)
+		for j := range items {
+			keep := min(remaining, items[j].Count)
+			overflow := items[j].Count - keep
+			items[j].Count = keep
+			remaining -= keep
+			if overflow > 0 {
+				if d.Version == 2 {
+					return nil, invalidSave(fmt.Sprintf("roster[%d].items", i), "手持ちの合計は 5 以下です")
+				}
+				c.Stock = changeItem(c.Stock, items[j].Item, overflow)
+			}
+		}
+		kept := items[:0]
+		for _, it := range items {
+			if it.Count > 0 {
+				kept = append(kept, it)
+			}
+		}
+		items = kept
+		c.Roster[i] = Member{Weapons: append([]string(nil), m.Weapons...), Character: m.Character, Level: m.Level, Exp: m.Exp, Stats: tactics.Stats(m.Stats), Items: items, Alive: m.Alive}
 	}
-	c.Stock, err = loadItems(cat, d.Stock, "stock", false)
+	stock, loadErr := loadItems(cat, d.Stock, "stock", false)
+	err = loadErr
+	for _, it := range stock {
+		c.Stock = changeItem(c.Stock, it.Item, it.Count)
+	}
 	if err != nil {
 		return nil, err
+	}
+
+	seenWeapons := map[string]bool{}
+	for i, w := range d.StockWeapons {
+		if _, ok := cat.Weapon(w.Weapon); !ok || w.Count < 1 || seenWeapons[w.Weapon] {
+			return nil, invalidSave(fmt.Sprintf("stock_weapons[%d]", i), "武器の在庫が正しくありません")
+		}
+		seenWeapons[w.Weapon] = true
+		c.StockWeapons = append(c.StockWeapons, WeaponCount{Weapon: w.Weapon, Count: w.Count})
 	}
 	c.sortStock()
 	// 全検証後に、章の順で不足する加入だけを追いつかせる（DES-SAV-04）。
@@ -251,4 +370,10 @@ func loadItems(cat *defs.Catalog, items []saveItem, path string, hand bool) ([]d
 		out = append(out, defs.ItemCount{Item: v.Item, Count: v.Count})
 	}
 	return out, nil
+}
+
+// saveWeaponCount は版 2 の武器在庫（DES-SAV-05）。
+type saveWeaponCount struct {
+	Weapon string `json:"weapon"`
+	Count  int    `json:"count"`
 }

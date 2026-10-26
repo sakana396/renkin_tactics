@@ -92,7 +92,7 @@ func TestTitleScenes(t *testing.T) {
 		}
 	})
 	t.Run("TC-FR-SYS-02-02 読めないセーブも上書き確認する", func(t *testing.T) {
-		for i, data := range []string{`{"version":2}`, `{"version":1,"rule":"bad"}`} {
+		for i, data := range []string{`{"version":3}`, `{"version":1,"rule":"bad"}`} {
 			m := &memoryStore{exists: true, data: []byte(data)}
 			s := newScenes(t, m)
 			reason := []error{core.ErrSaveVersion, core.ErrInvalidSave}[i]

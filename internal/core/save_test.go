@@ -46,6 +46,43 @@ const saveExample = `{
   "stock": []
 }
 `
+const saveExampleV2 = `{
+  "version": 2,
+  "rule": "withdraw",
+  "chapter": "c2",
+  "cleared": false,
+  "roster": [
+    {
+      "character": "hero",
+      "weapons": [
+        "s"
+      ],
+      "level": 2,
+      "exp": 40,
+      "stats": {
+        "hp": 21,
+        "str": 6,
+        "skl": 9,
+        "spd": 10,
+        "def": 4,
+        "lck": 0,
+        "mag": 0,
+        "res": 0,
+        "mov": 5
+      },
+      "items": [
+        {
+          "item": "a",
+          "count": 2
+        }
+      ],
+      "alive": true
+    }
+  ],
+  "stock": [],
+  "stock_weapons": []
+}
+`
 
 func saveCampaign(t *testing.T) *core.Campaign {
 	t.Helper()
@@ -65,7 +102,7 @@ func TestCampaignSaveFormat(t *testing.T) {
 			if err := c.Save(&b); err != nil {
 				t.Fatal(err)
 			}
-			if b.String() != saveExample {
+			if b.String() != saveExampleV2 {
 				t.Fatalf("JSON が仕様と違う:\n%s", &b)
 			}
 			loaded, err := core.LoadCampaign(campaignCatalog(), &b)
@@ -231,7 +268,7 @@ func TestCampaignLoadValidation(t *testing.T) {
 		{"版なし", `"version": 1,`, "", "version", false},
 		{"版文字列", `"version": 1`, `"version": "1"`, "version", false},
 		{"版null", `"version": 1`, `"version": null`, "version", false},
-		{"未来版と未知キー", `"version": 1`, `"version": 2, "future": 1`, "version", true},
+		{"未来版と未知キー", `"version": 1`, `"version": 3, "future": 1`, "version", true},
 		{"過去版", `"version": 1`, `"version": 0`, "version", true},
 		{"未知キー", `"version": 1`, `"version": 1, "future": 1`, "future", false},
 		{"能力の未知キー", `"hp": 21`, `"hp": 21, "future": 1`, "future", false},

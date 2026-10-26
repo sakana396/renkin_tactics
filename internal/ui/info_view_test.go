@@ -234,7 +234,7 @@ func TestInfoView(t *testing.T) {
 		target(t, c, tactics.Pos{X: 2, Y: 2}, tactics.Pos{X: 3, Y: 2})
 		// スキルと手持ちのあるガルドにカーソルを合わせる。
 		p := c.Panel(tactics.Pos{X: 2, Y: 2}, true)
-		if len(p.Forecast) != 8 || p.Unit == nil || p.Unit.Name != "ガルド" {
+		if len(p.Forecast) != 9 || p.Unit == nil || p.Unit.Name != "ガルド" {
 			t.Fatalf("前提: 予測 %d 行、ユニット %+v", len(p.Forecast), p.Unit)
 		}
 		// レベル・経験を含め、同じ8行の表で帯なし・撃破・危険を調べる（DES-UI-16）。
@@ -273,8 +273,8 @@ func TestInfoView(t *testing.T) {
 			}
 			// 予測（見出し・武器の絵 32 px・表 8 行・空き 1 行）の下 y = 8 + 16 + 32 + 128 + 16 = 200 から並べる（帯ありはさらに 44 px 下）。
 			pic := portraitOf(t, v)
-			if pic.Y != 200+shift || forecastBottom(8)+lineHeight+shift != pic.Y {
-				t.Errorf("ユニットの絵の y = %d、予測の表の下 %d のはず", pic.Y, 200+shift)
+			if pic.Y != 216+shift || forecastBottom(9)+lineHeight+shift != pic.Y {
+				t.Errorf("ユニットの絵の y = %d、予測の表の下 %d のはず", pic.Y, 216+shift)
 			}
 			for _, tx := range v.Texts {
 				scale := 1
