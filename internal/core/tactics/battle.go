@@ -16,6 +16,9 @@ type Battle struct {
 	terrain        [][]Terrain
 	units          []Unit
 	reinforcements []ReinforcementSetup
+	// mapEvents は出来事の定義（New が入力から独立させ、戦闘中に変えない）。mapState はその状態（DES-MAP-07）。
+	mapEvents []MapEventSetup
+	mapState  eventState
 
 	// rng は戦闘が持つシード付きの乱数（DES-RNG-01）。
 	rng *rand.Rand
@@ -57,6 +60,8 @@ func New(setup Setup, seed uint64) (*Battle, []Event, error) {
 		r.Unit.Items = append([]ItemStack(nil), r.Unit.Items...)
 		b.reinforcements = append(b.reinforcements, r)
 	}
+	b.mapEvents = cloneMapEvents(setup.Events)
+	b.mapState = eventState{fired: make([]bool, len(b.mapEvents))}
 	return b, b.startPlayerPhase(nil), nil
 }
 
@@ -80,6 +85,8 @@ func newUnit(us UnitSetup) Unit {
 		Boss:      us.Boss,
 		AI:        us.AI,
 		Alive:     true,
+		ID:        us.ID,
+		Group:     us.Group,
 	}
 	if u.Weapon.Type == Staff {
 		u.Weapon.Uses = u.Weapon.MaxUses
@@ -147,6 +154,10 @@ func validateSetup(s Setup) error {
 	if bosses != 1 {
 		return bad("ボスが %d 体います（ちょうど 1 体）", bosses)
 	}
+	// 規則 9: 初めの敵は生きている敵の上限まで（DES-IT06 9.3 節）。
+	if err := validateEnemyCap(s); err != nil {
+		return err
+	}
 
 	for i, r := range s.Reinforcements {
 		where := fmt.Sprintf("reinforcements[%d]", i)
@@ -170,7 +181,8 @@ func validateSetup(s Setup) error {
 			return bad("%s: %v", where, err)
 		}
 	}
-	return nil
+	// 規則 10: 出来事の定義（DES-MAP-07）。
+	return validateMapEvents(s, passable, width, height)
 }
 
 // validateUnit はユニット 1 体の規則 4・6・7・8 を確かめる（DES-BTL-01、DES-GRW-03、DES-HEL-01）。

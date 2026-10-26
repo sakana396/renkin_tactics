@@ -30,7 +30,7 @@ func NewBoardView(setup Setup) (BoardView, error) {
 // BoardView は現在の戦闘から独立した参照値を返す（DES-RWD-05）。
 func (b *Battle) BoardView() BoardView {
 	v := newBoardView(b.terrain, b.units, b.Turn, b.Phase, b.Result, b.NeedsResume())
-	v.reinforcementHints = reinforcementHints(v.Width(), v.Height(), b.Turn, b.Result, b.progress, b.reinforcements)
+	v.reinforcementHints = reinforcementHints(v.Width(), v.Height(), b.Turn, b.Result, b.progress, b.reinforcements, reservedOrigins(b.mapEvents, b.mapState))
 	return v
 }
 
@@ -46,7 +46,7 @@ func (b *Battle) PreviewRewind(id uint64) (BoardView, error) {
 		}
 		s := h.before
 		v := newBoardView(s.terrain, s.units, s.Turn, s.Phase, s.Result, s.Result == Ongoing && s.progress.stage != playerInput)
-		v.reinforcementHints = reinforcementHints(v.Width(), v.Height(), s.Turn, s.Result, s.progress, s.reinforcements)
+		v.reinforcementHints = reinforcementHints(v.Width(), v.Height(), s.Turn, s.Result, s.progress, s.reinforcements, reservedOrigins(s.mapEvents, s.mapState))
 		return v, nil
 	}
 	return BoardView{}, fmt.Errorf("%w: 履歴 ID %d は実行済みの戻り先にありません", ErrInvalidRewind, id)
