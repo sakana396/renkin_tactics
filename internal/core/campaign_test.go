@@ -12,19 +12,24 @@ import (
 )
 
 // campaignCatalog は計算を固定できる 3 章の目録。成長率 100 なら 5 能力が必ず各 1 伸びる。
-func campaignCatalog() *defs.Catalog {
+// edit を渡すと、目録を作る前にキャラの定義を書き換える。
+func campaignCatalog(edit ...func(chars []defs.CharacterDef)) *defs.Catalog {
+	chars := []defs.CharacterDef{
+		{ID: "hero", Name: "主人公", Class: "hero", Weapon: "s", Level: 1, Lord: true, Growth: defs.Growth{HP: 100, Str: 100, Skl: 100, Spd: 100, Def: 100}, Items: []defs.ItemCount{{Item: "z", Count: 2}}},
+		{ID: "friend", Name: "仲間", Class: "weak", Weapon: "s", Level: 2, Items: []defs.ItemCount{{Item: "a", Count: 1}}},
+		{ID: "bench", Name: "控え", Class: "weak", Weapon: "s", Level: 3},
+		{ID: "join1", Name: "加入1", Class: "weak", Weapon: "s", Level: 4, Items: []defs.ItemCount{{Item: "z", Count: 1}}},
+		{ID: "join2", Name: "加入2", Class: "weak", Weapon: "s", Level: 5},
+	}
+	for _, e := range edit {
+		e(chars)
+	}
 	return defs.NewCatalog(defs.GameDef{Party: []string{"hero", "friend", "bench"}, Stock: []defs.ItemCount{{Item: "z", Count: 2}, {Item: "a", Count: 1}}},
 		[]defs.TerrainDef{{ID: "plain", Name: "平地", Symbol: ".", Cost: 1}},
 		[]defs.ClassDef{{ID: "hero", Name: "主人公", WeaponType: "sword", Base: defs.Stats{HP: 20, Str: 20, Skl: 100, Spd: 5, Def: 10, Mov: 5}}, {ID: "weak", Name: "兵", WeaponType: "sword", Base: defs.Stats{HP: 10, Str: 20, Skl: 100, Spd: 5, Mov: 5}}},
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}},
 		[]defs.ItemDef{{ID: "a", Name: "同じ薬", Heal: 10}, {ID: "z", Name: "同じ薬", Heal: 10}}, nil,
-		[]defs.CharacterDef{
-			{ID: "hero", Name: "主人公", Class: "hero", Weapon: "s", Level: 1, Lord: true, Growth: defs.Growth{HP: 100, Str: 100, Skl: 100, Spd: 100, Def: 100}, Items: []defs.ItemCount{{Item: "z", Count: 2}}},
-			{ID: "friend", Name: "仲間", Class: "weak", Weapon: "s", Level: 2, Items: []defs.ItemCount{{Item: "a", Count: 1}}},
-			{ID: "bench", Name: "控え", Class: "weak", Weapon: "s", Level: 3},
-			{ID: "join1", Name: "加入1", Class: "weak", Weapon: "s", Level: 4, Items: []defs.ItemCount{{Item: "z", Count: 1}}},
-			{ID: "join2", Name: "加入2", Class: "weak", Weapon: "s", Level: 5},
-		}, []defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Class: "weak", Weapon: "s", AI: "hold", Boss: true, X: 2, Y: 0}}}},
+		chars, []defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Class: "weak", Weapon: "s", AI: "hold", Boss: true, X: 2, Y: 0}}}},
 		[]defs.ChapterDef{{ID: "c1", Map: "m", Joins: []string{"join1"}, Reward: []defs.ItemCount{{Item: "a", Count: 2}}}, {ID: "c2", Map: "m", Joins: []string{"join2", "friend"}, Reward: []defs.ItemCount{{Item: "z", Count: 2}}}, {ID: "c3", Map: "m"}}, nil)
 }
 
@@ -257,6 +262,31 @@ func win(t *testing.T, s *core.Sortie) {
 	}
 }
 func TestCampaignFinish(t *testing.T) {
+	t.Run("TC-FR-UNT-05-05 章の結果の伸びに幸運・魔力・魔防を含める", func(t *testing.T) {
+		// REV-069 F-02: FinishChapter の Gains も 8 つの成長を数える。
+		cat := campaignCatalog(func(chars []defs.CharacterDef) {
+			chars[0].Growth = defs.Growth{HP: 100, Str: 100, Skl: 100, Spd: 100, Def: 100, Lck: 100, Mag: 100, Res: 100}
+		})
+		c, err := core.NewCampaign(cat, core.Withdraw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.Roster[0].Exp = 80
+		before := c.Roster[0].Stats
+		s := sortie(t, c, 0)
+		win(t, s)
+		r, err := c.FinishChapter(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := tactics.Stats{HP: 1, Str: 1, Skl: 1, Spd: 1, Def: 1, Lck: 1, Mag: 1, Res: 1}
+		if len(r.Members) != 1 || r.Members[0].LevelAfter != 2 || r.Members[0].Gains != want {
+			t.Fatalf("結果 %+v", r.Members)
+		}
+		if after := c.Roster[0].Stats; after.Lck != before.Lck+1 || after.Mag != before.Mag+1 || after.Res != before.Res+1 {
+			t.Fatalf("名簿の能力 %+v → %+v", before, after)
+		}
+	})
 	t.Run("TC-FR-CMP-01-02 / TC-FR-CMP-02-01 / TC-FR-CMP-08-02 / TC-FR-CMP-10-01 / TC-FR-ITM-03-03", func(t *testing.T) {
 		c := newCampaign(t, core.Withdraw)
 		c.Roster[0].Exp = 80

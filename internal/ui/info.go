@@ -173,7 +173,8 @@ func (p Panel) View() InfoView {
 		y += lineHeight
 	}
 	if len(p.Forecast) > 0 {
-		y = v.addForecast(p, x, y) + lineHeight
+		// 予測の表は速さと特効を分けて 10 行になったので、表のあとの空き行を省いて情報欄の高さを保つ（REV-069 F-03）。
+		y = v.addForecast(p, x, y)
 	}
 	if p.Unit != nil {
 		y = v.addUnit(*p.Unit, x, y)
@@ -353,7 +354,7 @@ func TerrainLines(t tactics.Terrain) []string {
 
 // ForecastRows は、予測を表の行にする（DES-BTL-07、DES-UI-07、FR-BTL-08、UC-03）。
 // 名前（ボスなら ★）、HP（今 → すべて当たったときの後。ForecastAfter）、ダメージ（1 撃あたり）、命中率、攻撃の回数、必殺、
-// 必殺率・速さ/特効・効くスキルを並べる。回数は攻撃側最大4回、反撃側最大2回（DES-UI-26）。
+// 必殺率・速さ（重さで落ちた分）・特効（効く威力）・効くスキルを並べる。回数は攻撃側最大4回、反撃側最大2回（DES-UI-26）。
 //
 // 回数0の側では、ダメージ・命中率・必殺率を「―」にして怒りを出さない（DES-UI-26）。
 func ForecastRows(f tactics.Forecast, attackerBoss, defenderBoss bool) []ForecastRow {
@@ -366,7 +367,8 @@ func ForecastRows(f tactics.Forecast, attackerBoss, defenderBoss bool) []Forecas
 		{"命中率", hitRateText(a), hitRateText(d)},
 		{"回数", countText(a.Count), countText(d.Count)},
 		{"必殺", critText(a), critText(d)},
-		{"速さ/特効", fmt.Sprintf("%d / %s", a.AttackSpeed, effectiveText(a.Effective)), fmt.Sprintf("%d / %s", d.AttackSpeed, effectiveText(d.Effective))},
+		{"速さ", speedText(a), speedText(d)},
+		{"特効", effectiveText(a), effectiveText(d)},
 	}
 	as, ds := forecastSkills(a), forecastSkills(d)
 	n := max(len(as), len(ds), 1)
@@ -647,10 +649,18 @@ func (c *Controller) healForecast() (tactics.HealForecast, bool) {
 	return f, err == nil
 }
 
-// effectiveText は予測での特効の有無（DES-UI-26）。
-func effectiveText(e bool) string {
-	if e {
-		return "あり"
+// speedText は予測での攻撃の速さと、武器の重さで落ちた分（DES-UI-26、DES-IT06 12.2 節）。例:「11（重さ −1）」。
+func speedText(s tactics.ForecastSide) string {
+	if s.WeightLoss > 0 {
+		return fmt.Sprintf("%d（重さ −%d）", s.AttackSpeed, s.WeightLoss)
+	}
+	return fmt.Sprintf("%d", s.AttackSpeed)
+}
+
+// effectiveText は予測での特効と、効く威力（DES-UI-26、DES-IT06 12.2 節）。例:「威力 12」。効かなければ「―」。
+func effectiveText(s tactics.ForecastSide) string {
+	if s.Effective {
+		return fmt.Sprintf("威力 %d", s.EffectiveMight)
 	}
 	return "―"
 }

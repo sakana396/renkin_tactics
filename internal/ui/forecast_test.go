@@ -272,7 +272,8 @@ func TestForecastVisual(t *testing.T) {
 			{"命中率", "94%", "―"},
 			{"回数", "×1", "反撃なし"},
 			{"必殺", "4%", "―"},
-			{"速さ/特効", "9 / ―", "6 / ―"},
+			{"速さ", "9", "6"},
+			{"特効", "―", "―"},
 			{"スキル", "―", "―"},
 		}
 		if got := c.Panel(tactics.Pos{X: 3, Y: 3}, true).Forecast; !reflect.DeepEqual(got, want) {

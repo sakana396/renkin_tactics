@@ -1,7 +1,9 @@
 package tactics
 
 import (
+	"errors"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -131,12 +133,36 @@ func TestIT06OrderAndRolls(t *testing.T) {
 func TestIT06ValidationAndGrowth(t *testing.T) {
 	t.Run("TC-FR-SYS-04-42", func(t *testing.T) {
 		base := UnitSetup{Stats: Stats{HP: 1}, Weapon: Weapon{MinRange: 1, MaxRange: 1}}
-		for _, change := range []func(*UnitSetup){func(u *UnitSetup) { u.Stats.Lck = -1 }, func(u *UnitSetup) { u.Stats.Mag = -1 }, func(u *UnitSetup) { u.Stats.Res = -1 }, func(u *UnitSetup) { u.Growth.Lck = 101 }, func(u *UnitSetup) { u.Growth.Mag = -1 }, func(u *UnitSetup) { u.Growth.Res = 101 }, func(u *UnitSetup) { u.Weapon.Crit = 101 }, func(u *UnitSetup) { u.Weapon.Weight = -1 }, func(u *UnitSetup) { u.Weapon.Strikes = 3 }, func(u *UnitSetup) { u.Skill = Skill{Effect: Wrath, Multiplier: 3} }} {
+		for _, change := range []func(*UnitSetup){func(u *UnitSetup) { u.Stats.Lck = -1 }, func(u *UnitSetup) { u.Stats.Mag = -1 }, func(u *UnitSetup) { u.Stats.Res = -1 }, func(u *UnitSetup) { u.Growth.Lck = 101 }, func(u *UnitSetup) { u.Growth.Mag = -1 }, func(u *UnitSetup) { u.Growth.Res = 101 }, func(u *UnitSetup) { u.Weapon.Crit = 101 }, func(u *UnitSetup) { u.Weapon.Weight = -1 }, func(u *UnitSetup) { u.Weapon.Strikes = 3 }, func(u *UnitSetup) { u.Skill = Skill{Effect: Wrath, Multiplier: 3} },
+			// REV-069 F-04・F-05: 種類 Magic は魔法の攻撃だけ、分類は armor・mounted だけで重ならない、武器の列も同じ規則。
+			func(u *UnitSetup) { u.Weapon.Type = Magic },
+			func(u *UnitSetup) { u.Weapon.EffectiveTags = []string{"armor", "armor"} },
+			func(u *UnitSetup) { u.Weapon.EffectiveTags = []string{"flying"} },
+			func(u *UnitSetup) { u.Tags = []string{"mounted", "mounted"} },
+			func(u *UnitSetup) { u.Tags = []string{"flying"} },
+			func(u *UnitSetup) { u.Weapons = []Weapon{{Crit: 101, MinRange: 1, MaxRange: 1}} },
+			func(u *UnitSetup) { u.Weapons = []Weapon{{Type: Magic, MinRange: 1, MaxRange: 2}} },
+			func(u *UnitSetup) { u.Weapons = []Weapon{{Type: Magic + 1, MinRange: 1, MaxRange: 1}} }} {
 			u := base
 			change(&u)
 			if validateUnit(u) == nil {
 				t.Fatalf("不正入力を受理: %+v", u)
 			}
+		}
+	})
+	t.Run("TC-FR-SYS-04-42 正しい分類・魔法の武器は受理し、New は武器の列の誤りを拒む", func(t *testing.T) {
+		ok := UnitSetup{Stats: Stats{HP: 1}, Tags: []string{"armor", "mounted"},
+			Weapon:  Weapon{Type: Magic, DamageType: Magical, MinRange: 1, MaxRange: 2, EffectiveTags: []string{"armor", "mounted"}},
+			Weapons: []Weapon{{Type: Sword, DamageType: Magical, MinRange: 1, MaxRange: 1}}}
+		if err := validateUnit(ok); err != nil {
+			t.Fatalf("正しい入力を拒んだ: %v", err)
+		}
+		terrain := [][]Terrain{{{Cost: 1}, {Cost: 1}}}
+		lord := UnitSetup{Side: Player, Lord: true, Stats: Stats{HP: 10}, Weapon: Weapon{MinRange: 1, MaxRange: 1}}
+		boss := UnitSetup{Side: Enemy, Boss: true, Pos: Pos{X: 1}, Stats: Stats{HP: 10}, Weapon: Weapon{MinRange: 1, MaxRange: 1}}
+		boss.Weapons = []Weapon{{Weight: -1, MinRange: 1, MaxRange: 1}}
+		if b, events, err := New(Setup{Terrain: terrain, Units: []UnitSetup{lord, boss}}, 1); !errors.Is(err, ErrInvalidSetup) || b != nil || events != nil || !strings.Contains(err.Error(), "weapons[0]") {
+			t.Fatalf("武器の列の誤りを受理: %v", err)
 		}
 	})
 	t.Run("TC-FR-UNT-05-05", func(t *testing.T) {
@@ -223,6 +249,77 @@ func TestIT06GrowthApplied(t *testing.T) {
 		}
 		if effective(Weapon{EffectiveTags: []string{"armor"}}, []string{"mounted"}) {
 			t.Fatal("特効の対象外")
+		}
+	})
+}
+
+// 勇者の斧（2 回攻撃）と追撃が重なる盤面で、予測と実際の攻撃が一致する（DES-BTL-09、DES-IT06 4.3・4.4 節、REV-069 F-06）。
+func TestIT06BraveAxeForecastMatchesAct(t *testing.T) {
+	newBrave := func(t *testing.T) *Battle {
+		t.Helper()
+		// A: 攻撃の速さ 12 − (9 − 8) = 11。D: 5。差 6 で A が追撃し、斧は槍に有利（+1）。
+		a := UnitSetup{Name: "A", Side: Player, Lord: true, Stats: Stats{HP: 60, Str: 8, Skl: 10, Spd: 12, Def: 5, Lck: 10, Mov: 1},
+			Weapon: Weapon{Name: "勇者の斧", Type: Axe, Might: 9, Hit: 100, Crit: 5, Weight: 9, Strikes: 2, MinRange: 1, MaxRange: 1}}
+		d := UnitSetup{Name: "D", Side: Enemy, Boss: true, AI: Hold, Pos: Pos{X: 1}, Stats: Stats{HP: 80, Str: 8, Skl: 4, Spd: 5, Def: 6, Lck: 2},
+			Weapon: Weapon{Name: "槍", Type: Lance, Might: 6, Hit: 100, Weight: 5, MinRange: 1, MaxRange: 1}}
+		b, _, err := New(Setup{Terrain: [][]Terrain{{{Name: "平地", Cost: 1}, {Name: "平地", Cost: 1}}}, Units: []UnitSetup{a, d}}, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// 乱数 50: 命中率 51 以上なら当たり、必殺率 50 以下なら必殺は出ない。
+		b.roll = func() int { return 50 }
+		return b
+	}
+	cmd := Command{Unit: 0, To: Pos{}, Action: Attack, Target: 1}
+	t.Run("TC-FR-BTL-06-08 / TC-FR-BTL-08-25 勇者の斧と追撃の予測（4 / 1 回）と実際の撃の順 A,A,D,A,A", func(t *testing.T) {
+		b := newBrave(t)
+		f, err := b.Forecast(cmd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// ダメージ: A は 8 + 9 + 1 − 6 = 12、D は 8 + 6 − 1 − 5 = 8。必殺率: A は 10/2 + 5 − 2 = 8、D は 4/2 − 10 → 0。
+		if f.Attacker.Count != 4 || f.Defender.Count != 1 || f.Attacker.Damage != 12 || f.Defender.Damage != 8 ||
+			f.Attacker.CritRate != 8 || f.Defender.CritRate != 0 || f.Attacker.Strikes != 2 {
+			t.Fatalf("予測 %+v / %+v", f.Attacker, f.Defender)
+		}
+		// 重さで落ちた速さ（REV-069 F-03）。
+		if f.Attacker.AttackSpeed != 11 || f.Attacker.WeightLoss != 1 || f.Defender.AttackSpeed != 5 || f.Defender.WeightLoss != 0 {
+			t.Fatalf("速さ %+v / %+v", f.Attacker, f.Defender)
+		}
+		events, err := b.Act(cmd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var order []int
+		var amounts []int
+		// 自軍が 1 体なので行動のあと敵軍の番に進む。比べるのは、この攻撃（最初の番の始まりより前）の撃だけ。
+		for _, e := range events {
+			if e.Kind == EventPhaseStart {
+				break
+			}
+			if e.Kind == EventStrike {
+				order = append(order, e.Unit)
+				amounts = append(amounts, e.Amount)
+				if !e.Hit || e.Crit {
+					t.Fatalf("撃 %+v", e)
+				}
+			}
+		}
+		if !reflect.DeepEqual(order, []int{0, 0, 1, 0, 0}) || !reflect.DeepEqual(amounts, []int{12, 12, 8, 12, 12}) {
+			t.Fatalf("撃の順 %v、ダメージ %v", order, amounts)
+		}
+	})
+	t.Run("TC-FR-BTL-08-25 予測に特効の効く威力を出す", func(t *testing.T) {
+		b := newBrave(t)
+		b.units[0].Weapon.EffectiveTags = []string{"armor"}
+		b.units[1].Tags = []string{"armor"}
+		f, err := b.Forecast(cmd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// 威力 9 の 3 倍 = 27。ダメージは 8 + 27 + 1 − 6 = 30。守る側は特効なし。
+		if !f.Attacker.Effective || f.Attacker.EffectiveMight != 27 || f.Attacker.Damage != 30 || f.Defender.Effective || f.Defender.EffectiveMight != 0 {
+			t.Fatalf("特効 %+v / %+v", f.Attacker, f.Defender)
 		}
 	})
 }

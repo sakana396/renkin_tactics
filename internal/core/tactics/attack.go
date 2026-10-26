@@ -244,6 +244,10 @@ type ForecastSide struct {
 	CritRate    int
 	AttackSpeed int
 	Effective   bool
+	// WeightLoss は武器の重さで落ちた速さ（速さ − 攻撃の速さ）。EffectiveMight は特効が効くときの威力（3 倍）で、
+	// 効かなければ 0（DES-IT06 12.2 節、UC-03）。
+	WeightLoss     int
+	EffectiveMight int
 	// Strikes は攻撃する側の 1 機会の回数（DES-BTL-09）。
 	Strikes int
 	// Skills は効くスキル（鼓舞は持ち主のスキル、ほかは自分のスキル）。
@@ -304,17 +308,24 @@ func (b *Battle) forecastSide(i, o int, still bool, count, oppCount int) Forecas
 	if u.Skill.Effect == Pavise && oppCount > 0 {
 		skills = append(skills, u.Skill)
 	}
+	eff := effective(u.Weapon, b.units[o].Tags)
+	effMight := 0
+	if eff {
+		effMight = u.Weapon.Might * 3
+	}
 	return ForecastSide{
-		Name:        u.Name,
-		HP:          u.HP,
-		Damage:      damage,
-		HitRate:     rate,
-		Count:       count,
-		CritRate:    critRate(u, b.units[o]),
-		AttackSpeed: attackSpeed(u),
-		Effective:   effective(u.Weapon, b.units[o].Tags),
-		Strikes:     max(1, u.Weapon.Strikes),
-		Skills:      skills,
+		WeightLoss:     u.Stats.Spd - attackSpeed(u),
+		EffectiveMight: effMight,
+		Name:           u.Name,
+		HP:             u.HP,
+		Damage:         damage,
+		HitRate:        rate,
+		Count:          count,
+		CritRate:       critRate(u, b.units[o]),
+		AttackSpeed:    attackSpeed(u),
+		Effective:      eff,
+		Strikes:        max(1, u.Weapon.Strikes),
+		Skills:         skills,
 	}
 }
 

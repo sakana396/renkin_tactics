@@ -229,15 +229,15 @@ func TestInfoView(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-UNT-09-12 予測の表（8 行）と並べても、情報欄（幅 320 px、高さ 576 px）に収まる", func(t *testing.T) {
+	t.Run("TC-FR-UNT-09-12 予測の表（10 行）と並べても、情報欄（幅 320 px、高さ 576 px）に収まる", func(t *testing.T) {
 		c := newIdleWith(t, example4Setup)
 		target(t, c, tactics.Pos{X: 2, Y: 2}, tactics.Pos{X: 3, Y: 2})
 		// スキルと手持ちのあるガルドにカーソルを合わせる。
 		p := c.Panel(tactics.Pos{X: 2, Y: 2}, true)
-		if len(p.Forecast) != 9 || p.Unit == nil || p.Unit.Name != "ガルド" {
+		if len(p.Forecast) != 10 || p.Unit == nil || p.Unit.Name != "ガルド" {
 			t.Fatalf("前提: 予測 %d 行、ユニット %+v", len(p.Forecast), p.Unit)
 		}
-		// レベル・経験を含め、同じ8行の表で帯なし・撃破・危険を調べる（DES-UI-16）。
+		// レベル・経験を含め、同じ10行の表で帯なし・撃破・危険を調べる（DES-UI-16）。
 		p.Unit.Level, p.Unit.Exp = 2, 40
 		for _, emphasis := range []ForecastEmphasis{ForecastNormal, ForecastDefeat, ForecastDanger} {
 			p.Emphasis = emphasis
@@ -271,9 +271,9 @@ func TestInfoView(t *testing.T) {
 			if v.Bottom > ScreenHeight {
 				t.Errorf("一番下 = %d、%d を超える", v.Bottom, ScreenHeight)
 			}
-			// 予測（見出し・武器の絵 32 px・表 8 行・空き 1 行）の下 y = 8 + 16 + 32 + 128 + 16 = 200 から並べる（帯ありはさらに 44 px 下）。
+			// 予測（見出し・武器の絵 32 px・表 10 行。空き行なし）の下 y = 8 + 16 + 32 + 160 = 216 から並べる（帯ありはさらに 44 px 下）。
 			pic := portraitOf(t, v)
-			if pic.Y != 216+shift || forecastBottom(9)+lineHeight+shift != pic.Y {
+			if pic.Y != 216+shift || forecastBottom(10)+shift != pic.Y {
 				t.Errorf("ユニットの絵の y = %d、予測の表の下 %d のはず", pic.Y, 216+shift)
 			}
 			for _, tx := range v.Texts {

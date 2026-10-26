@@ -517,6 +517,19 @@ func (s *ids) check(path, id string) {
 	s.seen[id] = path
 }
 
+// tags は兵種の分類・武器の特効の分類が armor・mounted のどれかで、重ならないことを確かめる（DES-IT06 5.2 節、DES-DAT-04）。
+func (v *validator) tags(file, path, what string, tags []string) {
+	seen := map[string]bool{}
+	for j, tag := range tags {
+		q := fmt.Sprintf("%s[%d]", path, j)
+		v.oneOf(file, q, what, tag, "armor", "mounted")
+		if seen[tag] {
+			v.add(file, q, "%s %q が重なっています", what, tag)
+		}
+		seen[tag] = true
+	}
+}
+
 func toStats(s rawStats) defs.Stats {
 	return defs.Stats{HP: s.HP, Str: s.Str, Skl: s.Skl, Spd: s.Spd, Def: s.Def, Mov: s.Mov, Lck: s.Lck, Mag: s.Mag, Res: s.Res}
 }
@@ -625,6 +638,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		cid.check(p, r.ID)
 		v.oneOf(FileClasses, p+".weapon_type", "武器の種類", r.WeaponType, weaponTypes...)
 		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponType: r.WeaponType, Base: toStats(r.Base), Tags: append([]string(nil), r.Tags...)}
+		v.tags(FileClasses, p+".tags", "兵種の分類", c.Tags)
 		classes[i] = c
 		if _, ok := ref.classByID[r.ID]; !ok {
 			ref.classByID[r.ID] = c
@@ -660,8 +674,9 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		v.atLeast(FileWeapons, p+".weight", w.Weight, 0)
 		v.between(FileWeapons, p+".strikes", w.Strikes, 1, 2)
 		v.oneOf(FileWeapons, p+".damage_type", "攻撃の区分", w.DamageType, "physical", "magic")
-		for j, tag := range w.EffectiveTags {
-			v.oneOf(FileWeapons, fmt.Sprintf("%s.effective_tags[%d]", p, j), "特効の分類", tag, "armor", "mounted")
+		v.tags(FileWeapons, p+".effective_tags", "特効の分類", w.EffectiveTags)
+		if w.Type == defs.WeaponMagic && w.DamageType != "magic" {
+			v.add(FileWeapons, p+".damage_type", "種類 magic の武器は魔法の攻撃（magic）だけです")
 		}
 		if w.Type == defs.WeaponStaff && (w.Crit != 0 || w.Strikes != 1 || len(w.EffectiveTags) > 0) {
 			v.add(FileWeapons, p, "杖には必殺・特効・2 回攻撃を付けられません")

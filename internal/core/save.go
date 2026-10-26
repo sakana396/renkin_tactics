@@ -284,33 +284,9 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 				return nil, invalidSave(fmt.Sprintf("roster[%d].weapons[%d]", i, j), "持てない武器です")
 			}
 		}
-		remaining := 5 - len(m.Weapons)
-		for j := range items {
-			keep := min(remaining, items[j].Count)
-			overflow := items[j].Count - keep
-			items[j].Count = keep
-			remaining -= keep
-			if overflow > 0 {
-				if d.Version == 2 {
-					return nil, invalidSave(fmt.Sprintf("roster[%d].items", i), "手持ちの合計は 5 以下です")
-				}
-				c.Stock = changeItem(c.Stock, items[j].Item, overflow)
-			}
-		}
-		kept := items[:0]
-		for _, it := range items {
-			if it.Count > 0 {
-				kept = append(kept, it)
-			}
-		}
-		items = kept
 		c.Roster[i] = Member{Weapons: append([]string(nil), m.Weapons...), Character: m.Character, Level: m.Level, Exp: m.Exp, Stats: tactics.Stats(m.Stats), Items: items, Alive: m.Alive}
 	}
-	stock, loadErr := loadItems(cat, d.Stock, "stock", false)
-	err = loadErr
-	for _, it := range stock {
-		c.Stock = changeItem(c.Stock, it.Item, it.Count)
-	}
+	c.Stock, err = loadItems(cat, d.Stock, "stock", false)
 	if err != nil {
 		return nil, err
 	}

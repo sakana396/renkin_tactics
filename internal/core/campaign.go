@@ -418,7 +418,8 @@ func (c *Campaign) FinishChapter(s *Sortie) (ChapterResult, error) {
 
 // statsDifference は章の前後の能力の差を求める（DES-CMP-06）。
 func statsDifference(after, before tactics.Stats) tactics.Stats {
-	return tactics.Stats{HP: after.HP - before.HP, Str: after.Str - before.Str, Skl: after.Skl - before.Skl, Spd: after.Spd - before.Spd, Def: after.Def - before.Def, Mov: after.Mov - before.Mov}
+	return tactics.Stats{HP: after.HP - before.HP, Str: after.Str - before.Str, Skl: after.Skl - before.Skl, Spd: after.Spd - before.Spd, Def: after.Def - before.Def, Mov: after.Mov - before.Mov,
+		Lck: after.Lck - before.Lck, Mag: after.Mag - before.Mag, Res: after.Res - before.Res}
 }
 
 // WeaponCount は共有在庫の武器の本数（DES-SAV-05）。

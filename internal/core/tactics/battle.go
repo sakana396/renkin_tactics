@@ -217,6 +217,18 @@ func validateUnit(u UnitSetup) error {
 	if err := validateWeapon(u.Weapon); err != nil {
 		return err
 	}
+	// 武器の列の各要素も同じ規則で確かめる（DES-ITM-02、DES-BTL-09）。
+	for k, w := range u.Weapons {
+		if w.Type < Sword || w.Type > Magic {
+			return fmt.Errorf("weapons[%d]: 武器の種類 %d が正しくありません", k, w.Type)
+		}
+		if err := validateWeapon(w); err != nil {
+			return fmt.Errorf("weapons[%d]: %w", k, err)
+		}
+	}
+	if err := validateTags("兵種の分類", u.Tags); err != nil {
+		return err
+	}
 	if err := validateStaff(u); err != nil {
 		return err
 	}
@@ -332,6 +344,25 @@ func validateWeapon(w Weapon) error {
 	}
 	if w.Type == Staff && (w.Crit != 0 || w.Strikes > 1 || len(w.EffectiveTags) > 0) {
 		return fmt.Errorf("杖には必殺・特効・2 回攻撃を付けられません")
+	}
+	// 種類 Magic の武器は魔法の攻撃だけ（DES-IT06 5.1 節）。
+	if w.Type == Magic && w.DamageType != Magical {
+		return fmt.Errorf("種類 Magic の武器は魔法の攻撃だけです")
+	}
+	return validateTags("特効の分類", w.EffectiveTags)
+}
+
+// validateTags は分類が armor・mounted のどれかで、重ならないことを確かめる（DES-IT06 5.2 節）。
+func validateTags(what string, tags []string) error {
+	seen := map[string]bool{}
+	for _, tag := range tags {
+		if tag != "armor" && tag != "mounted" {
+			return fmt.Errorf("%s %q は使えません", what, tag)
+		}
+		if seen[tag] {
+			return fmt.Errorf("%s %q が重なっています", what, tag)
+		}
+		seen[tag] = true
 	}
 	return nil
 }
