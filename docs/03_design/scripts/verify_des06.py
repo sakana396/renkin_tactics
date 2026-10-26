@@ -207,7 +207,7 @@ for path in [ROOT/'docs/03_design/design-it06.md',ROOT/'docs/03_design/formulas.
             eq(f'{path.name} link {target}',(path.parent/target.split('#')[0]).exists(),True)
 text=(ROOT/'docs/03_design/design-it06.md').read_text()
 questions=re.findall(r'^\| (Q-DES06-\d+) \|',text,re.M)
-eq('question IDs',questions,[f'Q-DES06-{i:02d}' for i in range(1,13)])
+eq('question IDs',questions,[f'Q-DES06-{i:02d}' for i in range(1,14)])
 # 表の新しい行: ノエル、ch08 の報酬、5 枠の表、加入の順。
 noel=table_row('ノエル（錬金術師）')
 eq('noel stats = alchemist base (3.2 / 3.3)',noel[2],table_row('alchemist（新）')[1])
@@ -228,7 +228,7 @@ eq('joins order (E-89)','`ch02.joins = ["noel", "elsa"]`' in design_text,True)
 maps={m['id']:m for m in read_toml('maps.toml')['maps']}
 chapters_data=read_toml('chapters.toml')['chapters']
 party=read_toml('game.toml')['party']
-roster=list(party); tbd11_total=41
+roster=list(party); max_live_enemies=39
 for ch in chapters_data:
     # data にはまだノエルがいないので、ch02 の joins は設計どおり ["noel", "elsa"] として数える。
     joins=['noel','elsa'] if ch['id']=='ch02' else ch.get('joins',[])
@@ -240,8 +240,8 @@ for ch in chapters_data:
     eq(ch['id']+' enemies now',int(row[4]),enemies)
     eq(ch['id']+' roster size',int(row[3]),len(roster))
     if ch['id'] in ('ch01','ch02'): eq(ch['id']+' everyone deploys',len(roster)<=int(row[2]),True)
-    eq(ch['id']+' total within TBD-11',int(row[2])+enemies<=tbd11_total,True)
-eq('ch09 total 41',7+34,41)
+    eq(ch['id']+' initial enemies <= 39 (E-91)',len(m['enemies'])<=max_live_enemies,True)
+eq('TBD-11 46 = 7 + 39 (E-91)',7+max_live_enemies,46)
 # 窓の寸法・地図縮尺。
 eq('layout width',512+320,832)
 eq('layout height',512+64,576)
