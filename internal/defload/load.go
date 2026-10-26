@@ -991,7 +991,6 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 	}
 
 	// 敵（規則 3、4、5、6、9、11、19、22）。
-	aiKinds := []string{defs.AICharge, defs.AIHold}
 	bosses := 0
 	enemyIDs := v.enemyIDs()
 	if n := len(r.Enemies); n > maxLiveEnemies {
@@ -999,13 +998,7 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 	}
 	for j, e := range r.Enemies {
 		q := fmt.Sprintf("%s.enemies[%d]", p, j)
-		ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapon: e.Weapon, Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Boss: e.Boss, X: e.X, Y: e.Y, Group: e.Group}
-		ep.ID = enemyIDs.check(q, fmt.Sprintf("enemies[%d]", j), e.ID, e.Group)
-		m.Enemies = append(m.Enemies, ep)
-		v.unit(ref, f, q, e.Class, e.Weapon, ep.Bonus)
-		v.noStaff(ref, q, e.Weapon)
-		v.hand(ref, f, q, e.Items, false)
-		v.oneOf(f, q+".ai", "敵の動き方", e.AI, aiKinds...)
+		m.Enemies = append(m.Enemies, v.enemy(ref, q, fmt.Sprintf("enemies[%d]", j), e, enemyIDs))
 		place(q, e.X, e.Y)
 		if e.Boss {
 			bosses++
@@ -1018,14 +1011,9 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 	// 増援（規則 3、4、5、6、9、11、12、19、22）。増援は初めの配置と重なってもよい（出現時は距離 2 以内の立てる空きマスを距離・Y・X の順で選び、候補なしなら出さず延期しない（DES-MAP-03））。
 	for j, e := range r.Reinforcements {
 		q := fmt.Sprintf("%s.reinforcements[%d]", p, j)
-		ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapon: e.Weapon, Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Boss: e.Boss, X: e.X, Y: e.Y, Group: e.Group}
-		ep.ID = enemyIDs.check(q, fmt.Sprintf("reinforcements[%d]", j), e.ID, e.Group)
-		m.Reinforcements = append(m.Reinforcements, defs.Reinforcement{Turn: e.Turn, EnemyPlacement: ep})
 		v.atLeast(f, q+".turn", e.Turn, 2)
-		v.unit(ref, f, q, e.Class, e.Weapon, ep.Bonus)
-		v.noStaff(ref, q, e.Weapon)
-		v.hand(ref, f, q, e.Items, false)
-		v.oneOf(f, q+".ai", "敵の動き方", e.AI, aiKinds...)
+		ep := v.enemy(ref, q, fmt.Sprintf("reinforcements[%d]", j), e.enemy(), enemyIDs)
+		m.Reinforcements = append(m.Reinforcements, defs.Reinforcement{Turn: e.Turn, EnemyPlacement: ep})
 		inMap(q, e.X, e.Y)
 		if e.Boss {
 			v.add(f, q+".boss", "増援はボスになれません")
@@ -1035,6 +1023,25 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 	// 出来事（DES-MAP-07）。
 	m.Events = v.mapEvents(ref, p, r.Events, len(grid), width(grid), inMap, enemyIDs)
 	return m
+}
+
+// enemy は敵 1 体（初めの敵・ターンの増援・出来事の増援で共通）を定義に変え、
+// 名前・ID・兵種と武器・杖・手持ち・動き方を確かめる（DES-DAT-03 規則 4〜6、11、19、22、DES-MAP-07）。
+// 座標とボスの確かめは、配置の種類ごとに呼ぶ側で行う。
+func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyIDSet) defs.EnemyPlacement {
+	const f = FileMaps
+	ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapon: e.Weapon, Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Boss: e.Boss, X: e.X, Y: e.Y, Group: e.Group}
+	ep.ID = ids.check(q, generated, e.ID, e.Group)
+	v.unit(ref, f, q, e.Class, e.Weapon, ep.Bonus)
+	v.noStaff(ref, q, e.Weapon)
+	v.hand(ref, f, q, e.Items, false)
+	v.oneOf(f, q+".ai", "敵の動き方", e.AI, defs.AICharge, defs.AIHold)
+	return ep
+}
+
+// enemy は増援の、ターンを除いた敵の欄を返す。
+func (r rawReinforcement) enemy() rawEnemy {
+	return rawEnemy{Name: r.Name, Class: r.Class, Weapon: r.Weapon, Bonus: r.Bonus, Items: r.Items, AI: r.AI, Boss: r.Boss, X: r.X, Y: r.Y, ID: r.ID, Group: r.Group}
 }
 
 // maxLiveEnemies は一度に生きている敵の上限（DES-IT06 9.3 節、E-91）。tactics の maxLiveEnemies と同じ値。
@@ -1093,7 +1100,6 @@ func (s *enemyIDSet) check(q, generated string, id *string, group string) string
 // 出来事から参照する敵は、id を書いた敵でなければならない。参照の確かめは、すべての敵を集めたあとに行う。
 func (v *validator) mapEvents(ref refs, p string, raw []rawEvent, height, w int, inMap func(q string, x, y int) bool, enemyIDs *enemyIDSet) []defs.MapEvent {
 	const f = FileMaps
-	aiKinds := []string{defs.AICharge, defs.AIHold}
 	triggers := []string{defs.TriggerEnemyMoved, defs.TriggerEnemyDefeated, defs.TriggerEnemyAttacked, defs.TriggerPlayerEntered}
 	effects := []string{defs.EventReinforce, defs.EventChargeGroup}
 	eventIDs := v.ids(f)
@@ -1104,13 +1110,7 @@ func (v *validator) mapEvents(ref refs, p string, raw []rawEvent, height, w int,
 		me := defs.MapEvent{ID: e.ID, Trigger: e.Trigger, Unit: e.Unit, Effect: e.Effect, Group: e.Group}
 		for j, en := range e.Enemies {
 			qe := fmt.Sprintf("%s.enemies[%d]", q, j)
-			ep := defs.EnemyPlacement{Name: v.enemyName(qe, en.Name), Class: en.Class, Weapon: en.Weapon, Bonus: toStats(en.Bonus), Items: toItems(en.Items), AI: en.AI, Boss: en.Boss, X: en.X, Y: en.Y, Group: en.Group}
-			ep.ID = enemyIDs.check(qe, fmt.Sprintf("events[%d].enemies[%d]", i, j), en.ID, en.Group)
-			me.Enemies = append(me.Enemies, ep)
-			v.unit(ref, f, qe, en.Class, en.Weapon, ep.Bonus)
-			v.noStaff(ref, qe, en.Weapon)
-			v.hand(ref, f, qe, en.Items, false)
-			v.oneOf(f, qe+".ai", "敵の動き方", en.AI, aiKinds...)
+			me.Enemies = append(me.Enemies, v.enemy(ref, qe, fmt.Sprintf("events[%d].enemies[%d]", i, j), en, enemyIDs))
 			inMap(qe, en.X, en.Y)
 			if en.Boss {
 				v.add(f, qe+".boss", "増援はボスになれません")

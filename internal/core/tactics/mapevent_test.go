@@ -226,6 +226,19 @@ func TestMapEventTriggers(t *testing.T) {
 			{name: "動いた", event: reinforceEvent("e1", tactics.TriggerEnemyMoved, "guard", 7, 0), roll: 99,
 				edit: func(s *tactics.Setup) { s.Units[3].AI = tactics.Charge; s.Units[3].Stats.Mov = 1 },
 				run:  func(t *testing.T, b *tactics.Battle) []tactics.Event { return mustEndPhase(t, b) }, fired: true, phase: tactics.Enemy},
+			{name: "指定していない敵だけが動いても起きない", event: reinforceEvent("e1", tactics.TriggerEnemyMoved, "guard", 7, 0), roll: 99,
+				edit: func(s *tactics.Setup) {
+					other := foe("歩兵", 4, 3)
+					other.ID = "other"
+					s.Units = append(s.Units, other)
+				},
+				run: func(t *testing.T, b *tactics.Battle) []tactics.Event {
+					events := mustEndPhase(t, b)
+					if indexOf(events, tactics.EventMove) < 0 {
+						t.Fatalf("指定していない敵が動いていない: %v", kinds(events))
+					}
+					return events
+				}, fired: false},
 			{name: "待機は動いていない", event: reinforceEvent("e1", tactics.TriggerEnemyMoved, "guard", 7, 0), roll: 99,
 				run: func(t *testing.T, b *tactics.Battle) []tactics.Event { return mustEndPhase(t, b) }, fired: false},
 			{name: "倒れた", event: reinforceEvent("e1", tactics.TriggerEnemyDefeated, "guard", 7, 0), roll: 0,
