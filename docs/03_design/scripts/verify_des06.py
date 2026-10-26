@@ -242,6 +242,11 @@ for ch in chapters_data:
     if ch['id'] in ('ch01','ch02'): eq(ch['id']+' everyone deploys',len(roster)<=int(row[2]),True)
     eq(ch['id']+' initial enemies <= 39 (E-91)',len(m['enemies'])<=max_live_enemies,True)
 eq('TBD-11 46 = 7 + 39 (E-91)',7+max_live_enemies,46)
+# 6.2 節の例は今の報酬の回復薬の個数に合わせる（再レビュー G-06）。
+potion_rewards={ch['id']:[r['count'] for r in ch.get('reward',[]) if r.get('item')=='potion'] for ch in chapters_data}
+eq('ch01 potion reward',potion_rewards['ch01'],[2])
+eq('6.2 example potion count','{item = "potion", count = 2}]`（ch01）' in design_text,True)
+eq('chapters without reward',sorted(k for k,v in potion_rewards.items() if not v),['ch03','ch09'])
 # 窓の寸法・地図縮尺。
 eq('layout width',512+320,832)
 eq('layout height',512+64,576)
