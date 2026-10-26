@@ -6,12 +6,12 @@
 |---|---|---|---|
 | 計画 | プロジェクト計画書 | [00_plan/project-plan.md](00_plan/project-plan.md) | v0.1 承認済み |
 | 企画 | 要求抽出記録（ヒアリング） | [01_concept/elicitation-notes.md](01_concept/elicitation-notes.md) | 追記中 |
-| 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.5 承認（E-57）。仲間の総数 8 人（E-55） |
+| 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.6 承認（E-94、#119）。錬金術師・魔道士、仲間 9 人、出撃枠 +1 |
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
 | 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
 | 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
-| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.6 承認（E-57）。仲間の総数 8 人（E-55） |
-| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.9 承認（E-57）。UC-09 の加入の追いつき（E-55） |
+| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.7 承認（E-94、#119）。IT06 の能力・武器・再移動・出来事、同時 46 体 |
+| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.10 承認（E-94、#119）。武器選択・再移動・出来事の増援・配置・巻き戻し |
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.2 承認済み |
 | 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.4 承認済み（E-40） |
 | 計画 | 反復 2 計画書 | [iterations/it02/plan.md](iterations/it02/plan.md) | v0.3 承認済み（E-32、E-33） |
@@ -21,6 +21,7 @@
 | 試験 | テスト仕様書（反復 3） | [04_test/test-spec-it03.md](04_test/test-spec-it03.md) | 骨組み。実装とともに書き足す |
 | 試験 | テスト仕様書（反復 4） | [04_test/test-spec-it04.md](04_test/test-spec-it04.md) | v0.1 骨組み。自動は未実装、手動は未実施 |
 | 試験 | テスト仕様書（反復 5） | [04_test/test-spec-it05.md](04_test/test-spec-it05.md) | v0.2。自動は実装済み。#98・#105 の手動結果と持ち越しは 3.10 節（E-60〜E-72） |
+| 試験 | テスト仕様書（反復 6） | [04_test/test-spec-it06.md](04_test/test-spec-it06.md) | v0.1 骨組み（#119）。DES-IT06 15 章の観点とケース ID。自動は未実装、手動・測定は未実施 |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
