@@ -31,19 +31,25 @@ func (v BoardView) ReinforcementHints() []ReinforcementHint {
 	return append([]ReinforcementHint(nil), v.reinforcementHints...)
 }
 
-// reinforcementHints は自軍開始後から敵軍開始前までの定義だけを領域にする（DES-RNF-01）。
+// reinforcementHints は自軍開始後から敵軍開始前までのターンの増援の定義と、
+// 予約してからまだ出していない出来事の増援 reserved（元のマス）を領域にする（DES-RNF-01、DES-IT06 9.3 節）。
 // 地形・占有に依存せず、同一矩形の重複を除き、左上 Y・X、右下 Y・X の順に並べる。
-func reinforcementHints(width, height, turn int, result Result, progress phaseProgress, definitions []ReinforcementSetup) []ReinforcementHint {
-	if width < 1 || height < 1 || result != Ongoing || (progress.stage != playerInput && progress.stage != enemyStart) {
+func reinforcementHints(width, height, turn int, result Result, progress phaseProgress, definitions []ReinforcementSetup, reserved []Pos) []ReinforcementHint {
+	if width < 1 || height < 1 || result != Ongoing {
 		return nil
 	}
+	var origins []Pos
+	if progress.stage == playerInput || progress.stage == enemyStart {
+		for _, r := range definitions {
+			if r.Turn == turn {
+				origins = append(origins, r.Unit.Pos)
+			}
+		}
+	}
+	origins = append(origins, reserved...)
 	var hints []ReinforcementHint
 	seen := make(map[ReinforcementHint]bool)
-	for _, r := range definitions {
-		if r.Turn != turn {
-			continue
-		}
-		p := r.Unit.Pos
+	for _, p := range origins {
 		h := ReinforcementHint{
 			Min: Pos{max(0, p.X-reinforcementRadius) / 4 * 4, max(0, p.Y-reinforcementRadius) / 4 * 4},
 			Max: Pos{min(width-1, (min(width-1, p.X+reinforcementRadius)/4+1)*4-1), min(height-1, (min(height-1, p.Y+reinforcementRadius)/4+1)*4-1)},

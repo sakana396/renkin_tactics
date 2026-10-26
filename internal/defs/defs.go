@@ -25,6 +25,16 @@ const (
 	AIHold   = "hold"
 )
 
+// 出来事のきっかけと効果（DES-MAP-07）。
+const (
+	TriggerEnemyMoved    = "enemy_moved"
+	TriggerEnemyDefeated = "enemy_defeated"
+	TriggerEnemyAttacked = "enemy_attacked"
+	TriggerPlayerEntered = "player_entered"
+	EventReinforce       = "reinforce"
+	EventChargeGroup     = "charge_group"
+)
+
 // GameDef はゲーム全体の定義（DES-DAT-01。反復 2 で変更）。
 // Party は初めの名簿（キャラの ID の並び）、Stock は初めの共有の在庫（空でもよい）。
 type GameDef struct {
@@ -142,6 +152,28 @@ type EnemyPlacement struct {
 	Boss   bool
 	X      int
 	Y      int
+	// ID はマップの中で、初めの敵・すべての増援を通して重ならない敵の ID（DES-MAP-07）。
+	// 省いた敵は空。defload は「配置の種類 ＋ 定義の添字」で重なりだけを確かめる。出来事から参照できるのは id を書いた敵だけ。
+	// Group は一団の名前（空なら一団に入らない）。
+	ID    string
+	Group string
+}
+
+// Area は出来事の範囲。両端を含む盤の中の長方形（DES-MAP-07）。
+type Area struct {
+	MinX, MinY, MaxX, MaxY int
+}
+
+// MapEvent は出来事 1 件の定義（DES-MAP-07）。きっかけ 1 つ・効果 1 つで、1 回だけ起こる。
+// Unit は敵のきっかけの敵の ID、Area は player_entered の範囲。Enemies は reinforce の増援、Group は charge_group の一団。
+type MapEvent struct {
+	ID      string
+	Trigger string
+	Unit    string
+	Area    Area
+	Effect  string
+	Enemies []EnemyPlacement
+	Group   string
 }
 
 // Reinforcement は増援（DES-DAT-01）。Turn のターンの始めに現れる。
@@ -159,6 +191,7 @@ type MapDef struct {
 	Slots          []Slot
 	Enemies        []EnemyPlacement
 	Reinforcements []Reinforcement
+	Events         []MapEvent
 }
 
 // ChapterDef は章 1 つの定義（DES-DAT-01 の反復 2 の変更）。
