@@ -1,5 +1,5 @@
 # スキル（DES-DAT-02、設計書 3.7 節）
-# effect は inspire・pavise・wrath・snipe のどれか。働き方はコードで決め、数値をここに書く
+# effect は inspire・pavise・wrath・snipe・canto のどれか。働き方はコードで決め、数値をここに書く
 # 効果の種類ごとに使わない数値は書かない（0 になる）
 
 [[skills]]
@@ -27,3 +27,9 @@ id = "snipe"
 name = "狙撃"
 effect = "snipe"
 hit = 20
+
+# 再移動（DES-IT06 8.1 節）。兵種のスキルとして classes.toml の skills に書く。数値はない
+[[skills]]
+id = "canto"
+name = "再移動"
+effect = "canto"

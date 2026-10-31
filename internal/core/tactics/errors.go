@@ -38,6 +38,10 @@ var (
 	ErrCannotHeal = errors.New("tactics: 杖を持っていないので回復できません")
 	// ErrNoUses は、杖の使用回数が残っていないことを表す（DES-HEL-01、E-33）。
 	ErrNoUses = errors.New("tactics: 杖の使用回数が残っていません")
+	// ErrCantoPending は、再移動を待っている間に、ほかのユニットの行動や番の終わりを求めたことを表す（DES-BTL-10）。
+	ErrCantoPending = errors.New("tactics: 再移動を待っています（再移動するか、その場で終えてください）")
+	// ErrNoCantoPending は、待っている再移動がないのに CantoMove・CantoEnd を求めたことを表す（DES-BTL-10）。
+	ErrNoCantoPending = errors.New("tactics: 待っている再移動がありません")
 	// ErrInvalidSetup は、Setup が正しくないことを表す（New だけ）。
 	ErrInvalidSetup = errors.New("tactics: 戦闘の入力が正しくありません")
 )

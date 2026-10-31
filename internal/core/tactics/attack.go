@@ -34,13 +34,14 @@ func inRange(w Weapon, d int) bool {
 func (b *Battle) inspired(i int) (hit, avoid int, skills []Skill) {
 	u := b.units[i]
 	for j, o := range b.units {
-		if j == i || !o.Alive || o.Side != u.Side || o.Skill.Effect != Inspire {
+		sk, ok := o.skill(Inspire)
+		if j == i || !o.Alive || o.Side != u.Side || !ok {
 			continue
 		}
-		if distance(o.Pos, u.Pos) <= o.Skill.Range {
-			hit += o.Skill.Hit
-			avoid += o.Skill.Avoid
-			skills = append(skills, o.Skill)
+		if distance(o.Pos, u.Pos) <= sk.Range {
+			hit += sk.Hit
+			avoid += sk.Avoid
+			skills = append(skills, sk)
 		}
 	}
 	return hit, avoid, skills
@@ -49,12 +50,14 @@ func (b *Battle) inspired(i int) (hit, avoid int, skills []Skill) {
 // sniping は、ユニット s の攻撃に狙撃が効くかを返す（DES-SKL-01）。
 // still は、s が自分から攻撃していて、移動せずに攻撃したか。反撃では偽を渡す。
 func (b *Battle) sniping(s int, still bool) bool {
-	return still && b.units[s].Skill.Effect == Snipe
+	_, ok := b.units[s].skill(Snipe)
+	return still && ok
 }
 
 // wrathful は、ユニットが怒りの条件（HP が最大 HP の半分（切り捨て）以下）を満たすかを返す（DES-SKL-01）。
 func wrathful(u Unit) bool {
-	return u.Skill.Effect == Wrath && u.HP <= u.Stats.HP/2
+	_, ok := u.skill(Wrath)
+	return ok && u.HP <= u.Stats.HP/2
 }
 
 // strikeValues は、s が r を 1 撃するときのダメージ（必殺と大盾を入れない）と命中率を返す（DES-BTL-05）。
@@ -78,7 +81,8 @@ func (b *Battle) strikeValues(s, r int, still bool) (damage, rate int) {
 	_, rAvoid, _ := b.inspired(r)
 	hit := su.Stats.Skl*2 + su.Weapon.Hit + 15*t + sHit
 	if b.sniping(s, still) {
-		hit += su.Skill.Hit
+		sk, _ := su.skill(Snipe)
+		hit += sk.Hit
 	}
 	avoid := attackSpeed(ru)*2 + tr.Avoid + rAvoid
 	rate = min(100, max(0, hit-avoid))
@@ -161,7 +165,7 @@ func (b *Battle) strike(events []Event, s, r int, still bool) ([]Event, bool) {
 		if e.Crit {
 			damage *= criticalMultiplier
 		}
-		if ru.Skill.Effect == Pavise && b.roll() < ru.Skill.Chance {
+		if sk, ok := ru.skill(Pavise); ok && b.roll() < sk.Chance {
 			e.Pavise = true
 			damage /= 2
 		}
@@ -299,14 +303,14 @@ func (b *Battle) forecastSide(i, o int, still bool, count, oppCount int) Forecas
 	u := b.units[i]
 	damage, rate := b.strikeValues(i, o, still)
 	_, _, skills := b.inspired(i)
-	if b.sniping(i, still) {
-		skills = append(skills, u.Skill)
+	if sk, ok := u.skill(Snipe); ok && b.sniping(i, still) {
+		skills = append(skills, sk)
 	}
-	if u.Skill.Effect == Wrath {
-		skills = append(skills, u.Skill)
+	if sk, ok := u.skill(Wrath); ok {
+		skills = append(skills, sk)
 	}
-	if u.Skill.Effect == Pavise && oppCount > 0 {
-		skills = append(skills, u.Skill)
+	if sk, ok := u.skill(Pavise); ok && oppCount > 0 {
+		skills = append(skills, sk)
 	}
 	eff := effective(u.Weapon, b.units[o].Tags)
 	effMight := 0
@@ -347,8 +351,8 @@ func effective(w Weapon, tags []string) bool {
 // critRate は怒りを足してから上限と下限を適用する（DES-BTL-09）。
 func critRate(a, d Unit) int {
 	bonus := 0
-	if wrathful(a) {
-		bonus = a.Skill.Chance
+	if sk, _ := a.skill(Wrath); wrathful(a) {
+		bonus = sk.Chance
 	}
 	return min(100, max(0, a.Stats.Skl/2+a.Weapon.Crit+bonus-d.Stats.Lck))
 }

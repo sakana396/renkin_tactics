@@ -596,7 +596,7 @@ func TestForecast(t *testing.T) {
 	}{
 		{"Wait は ErrInvalidAction", nil, tactics.Command{Unit: 0, To: pos(2, 3), Action: tactics.Wait, Target: 1}, tactics.ErrInvalidAction},
 		{"UseItem は ErrInvalidAction", nil, tactics.Command{Unit: 0, To: pos(2, 3), Action: tactics.UseItem}, tactics.ErrInvalidAction},
-		{"範囲外の Action は ErrInvalidAction", nil, tactics.Command{Unit: 0, To: pos(2, 3), Action: tactics.Action(4), Target: 1}, tactics.ErrInvalidAction},
+		{"範囲外の Action は ErrInvalidAction", nil, tactics.Command{Unit: 0, To: pos(2, 3), Action: tactics.Action(6), Target: 1}, tactics.ErrInvalidAction},
 		{"Attack でないことが戦闘の終わりより先", func(b *tactics.Battle) { b.Result = tactics.Won },
 			tactics.Command{Unit: 0, To: pos(2, 3), Action: tactics.Wait, Target: 1}, tactics.ErrInvalidAction},
 		{"ErrBattleOver", func(b *tactics.Battle) { b.Result = tactics.Lost },
