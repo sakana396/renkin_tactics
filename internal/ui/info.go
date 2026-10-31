@@ -318,13 +318,15 @@ func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
 		return y + lineHeight
 	}
 	names := make([]string, len(skills))
-	descs := make([]string, len(skills))
 	for i, sk := range skills {
-		names[i], descs[i] = sk.Name, skillDescription(sk)
+		names[i] = sk.Name
 	}
 	v.text(x+skillNameX, y, strings.Join(names, "、"), StyleSkill)
-	y += lineHeight
-	v.text(x, y, "　"+strings.Join(descs, "／"), StylePlain)
+	// 説明はスキルごとに 1 行にし、情報欄の幅に収める（REV-073 F-01）。
+	for _, sk := range skills {
+		y += lineHeight
+		v.text(x, y, "　"+skillDescription(sk), StylePlain)
+	}
 	return y + lineHeight
 }
 

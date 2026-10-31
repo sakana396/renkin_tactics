@@ -20,8 +20,8 @@ func cantoController(t *testing.T, lordActed bool) *Controller {
 			{Name: "レオン", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Mov: 1}, Pos: tactics.Pos{X: 0, Y: 5}, Weapon: testSword, Lord: true},
 			{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Mov: 5}, Pos: tactics.Pos{X: 0, Y: 0}, Weapon: testLance,
 				ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}}},
-			{Name: "ソルジャー", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 2, Y: 0}, Weapon: testLance, AI: tactics.Hold},
-			{Name: "ボス", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 5, Y: 5}, Weapon: testSword, Boss: true, AI: tactics.Hold},
+			{Name: "ソルジャー", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 2, Y: 0}, Weapon: testLance, AI: tactics.Hold},
+			{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 5, Y: 5}, Weapon: testSword, Boss: true, AI: tactics.Hold},
 		}}
 	})
 	if lordActed {
@@ -138,7 +138,7 @@ func TestCantoUI(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-IF-01-40 情報欄にキャラのスキルと兵種のスキルを並べる", func(t *testing.T) {
+	t.Run("TC-IF-01-40 情報欄にキャラのスキルと兵種のスキルを並べ、説明はスキルごとに欄の幅に収める", func(t *testing.T) {
 		canto := tactics.Skill{Name: "再移動", Effect: tactics.Canto}
 		wrath := tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}
 		for _, tc := range []struct {
@@ -148,7 +148,7 @@ func TestCantoUI(t *testing.T) {
 			names, desc string
 		}{
 			{"兵種のスキルだけ", tactics.Skill{}, []tactics.Skill{canto}, "再移動", "　攻撃・回復・道具のあと、残りの移動で動ける"},
-			{"キャラと兵種", wrath, []tactics.Skill{canto}, "怒り、再移動", "　HP 半分以下で必殺 ＋50／攻撃・回復・道具のあと、残りの移動で動ける"},
+			{"キャラと兵種", wrath, []tactics.Skill{canto}, "怒り、再移動", "　HP 半分以下で必殺 ＋50\n　攻撃・回復・道具のあと、残りの移動で動ける"},
 			{"なし", tactics.Skill{}, nil, "なし", ""},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
@@ -161,6 +161,12 @@ func TestCantoUI(t *testing.T) {
 				all := strings.Join(texts, "\n")
 				if !strings.Contains(all, "スキル:\n"+tc.names) || (tc.desc != "" && !strings.Contains(all, tc.desc)) {
 					t.Errorf("情報欄に %q・%q がない:\n%s", tc.names, tc.desc, all)
+				}
+				// どの文も情報欄（左右の余白 8 を除く）の幅に収まる（REV-073 F-01）。
+				for _, x := range v.Texts {
+					if x.X < MapSize+8 || x.X+textWidth(x.Text) > ScreenWidth-8 {
+						t.Errorf("%q（x %d・幅 %d）が情報欄 %d〜%d からはみ出す", x.Text, x.X, textWidth(x.Text), MapSize+8, ScreenWidth-8)
+					}
 				}
 			})
 		}
