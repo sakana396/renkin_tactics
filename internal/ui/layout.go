@@ -14,6 +14,8 @@ const (
 	MapSize = 16 * CellSize
 	// InfoWidth は右の情報欄の幅（px）。
 	InfoWidth = 320
+	// InfoHeight は右の情報欄の高さ（px）。その下の y = 360〜511 はミニマップだけに使う（DES-UI-28）。
+	InfoHeight = 360
 	// GuideHeight は下の案内欄の高さ（px）。
 	GuideHeight = 64
 	// ScreenWidth と ScreenHeight は窓の大きさ（px）。

@@ -38,6 +38,8 @@ type SceneView struct {
 	Rows    []PrepareRow
 	Info    *InfoView
 	Deploy  *DeployView
+	// Minimap は配置のミニマップ（DES-UI-28）。ほかの場面では nil。
+	Minimap *MinimapView
 }
 
 // wrapSceneText は 48 px の左右余白を残し、文字の単位で折り返す（DES-UI-12）。
@@ -218,6 +220,10 @@ func (s *SceneController) Click(x, y int) {
 		return
 	}
 	if s.scene == Deploy {
+		// 入力の判定はミニマップ → 情報欄 → ボタン → 盤面の順（DES-UI-28）。
+		if s.deployMinimapClick(x, y) || s.infoTabClick(x, y) {
+			return
+		}
 		for i, b := range s.View().Buttons {
 			if image.Pt(x, y).In(b.Rect) && b.Enabled {
 				s.Choose(i)
@@ -231,6 +237,9 @@ func (s *SceneController) Click(x, y int) {
 	}
 	v := s.View()
 	if s.scene == Prepare {
+		if s.infoTabClick(x, y) {
+			return
+		}
 		for _, r := range v.Rows {
 			if image.Pt(x, y).In(r.Mark) {
 				s.toggleDeployment(r.Member)
@@ -253,4 +262,23 @@ func (s *SceneController) Click(x, y int) {
 		return
 	}
 	s.Advance()
+}
+
+// infoTabClick は準備と配置の情報欄のページの印のクリックを受ける（DES-UI-28）。印を出しているときだけ受け、表示だけを変える。
+func (s *SceneController) infoTabClick(x, y int) bool {
+	if v := s.View(); v.Info == nil || len(v.Info.Tabs) == 0 {
+		return false
+	}
+	page, ok := HitInfoTab(x, y)
+	if ok {
+		s.infoPage = page
+	}
+	return ok
+}
+
+// ToggleInfoPage は準備と配置での Tab キーの処理（DES-UI-28）。表示だけを変える。
+func (s *SceneController) ToggleInfoPage() {
+	if s.scene == Prepare || s.scene == Deploy {
+		s.infoPage = s.infoPage.next()
+	}
 }

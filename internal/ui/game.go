@@ -80,7 +80,10 @@ func (g *Game) Update() error {
 			if cancel {
 				c.Cancel()
 			} else if left && wheel == 0 {
-				c.RewindClick(ebiten.CursorPosition())
+				// 入力の判定はミニマップ → 右欄 → 盤面の順（DES-UI-28）。
+				if x, y := ebiten.CursorPosition(); !c.MinimapClick(x, y) {
+					c.RewindClick(x, y)
+				}
 			} else if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 				c.rewindKey("Enter")
 			} else if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
@@ -109,6 +112,9 @@ func (g *Game) Update() error {
 			if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
 				s.ToggleDeployDanger()
 			}
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyTab) {
+			s.ToggleInfoPage()
 		}
 		if cancel {
 			s.Cancel()
@@ -143,6 +149,9 @@ func (g *Game) Update() error {
 			if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
 				c.ToggleDanger()
 			}
+			if inpututil.IsKeyJustPressed(ebiten.KeyTab) {
+				c.ToggleInfoPage()
+			}
 			c.SetFastForward(ebiten.IsKeyPressed(ebiten.KeySpace) || ebiten.IsKeyPressed(ebiten.KeyEnter))
 			c.Tick()
 		}
@@ -154,8 +163,12 @@ func (g *Game) Update() error {
 }
 
 // leftClick は左クリックを、ボタンか盤面のマスの操作に読み替える（DES-UI-02）。
+// 判定はミニマップ → 情報欄 → 盤面の順（DES-UI-28）。
 func (g *Game) leftClick(x, y int) {
 	c := g.ctrl
+	if c.MinimapClick(x, y) || c.InfoClick(x, y) {
+		return
+	}
 	if labels := c.MenuLabels(); len(labels) > 0 {
 		_, dest, _ := c.Selection()
 		if i := HitMenu(c.Camera().MenuRects(dest, len(labels)), x, y); i >= 0 {
@@ -210,6 +223,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawOver(board)
 	cx, cy := ebiten.CursorPosition()
 	g.drawInfo(screen, cx, cy)
+	g.drawMinimap(screen, g.ctrl.Minimap())
 	g.drawGuide(screen)
 	g.drawHintText(screen, hint)
 	g.drawRewind(screen)
@@ -479,10 +493,8 @@ func (g *Game) drawOver(dst *ebiten.Image) {
 // (cx, cy) はカーソルの画面の座標で、マスは CellAt で引く。
 func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 	vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
-	p := g.ctrl.Panel(g.ctrl.Camera().CellAt(cx, cy))
-	// 予測・ユニット・地形は、位置を決めた InfoView のとおりに描く（DES-UI-06、DES-UI-07）。
-	v := p.View()
-	g.drawInfoView(dst, v)
+	// 予測・ユニット・地形・ページの印は、位置を決めた InfoView のとおりに描く（DES-UI-06、DES-UI-07、DES-UI-28）。
+	g.drawInfoView(dst, g.ctrl.InfoView(cx, cy))
 	g.label(dst, cameraGuide, rewindLeft, cameraGuideY, muted)
 }
 
@@ -509,6 +521,82 @@ func (g *Game) drawInfoView(dst *ebiten.Image, v InfoView) {
 			g.scaledLabel(dst, t.Text, t.X, t.Y, 2, infoStyleColor(t.Style))
 			continue
 		}
+		g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
+	}
+	// ページの印は選んでいるものを塗り、右に Tab キーの案内を出す（DES-UI-28）。
+	for _, tab := range v.Tabs {
+		r := tab.Rect
+		fill := menuColor
+		if tab.Selected {
+			fill = playerBase
+		}
+		vector.DrawFilledRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), fill, false)
+		vector.StrokeRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), 1, menuBorder, false)
+		g.label(dst, tab.Label, r.Min.X+(r.Dx()-textWidth(tab.Label))/2, r.Min.Y+(r.Dy()-lineHeight)/2, white)
+	}
+	if len(v.Tabs) > 0 {
+		t := InfoTabGuide()
+		g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
+	}
+}
+
+// minimapTerrainColor はミニマップの地形の塗り（DES-UI-28）。
+func minimapTerrainColor(t MinimapTerrain) color.Color {
+	switch t {
+	case MinimapForest:
+		return color.NRGBA{40, 110, 50, 255}
+	case MinimapMountain:
+		return color.NRGBA{140, 110, 80, 255}
+	case MinimapFort:
+		return color.NRGBA{170, 170, 160, 255}
+	case MinimapWall:
+		return color.NRGBA{60, 60, 70, 255}
+	}
+	return color.NRGBA{100, 160, 80, 255}
+}
+
+// drawMinimap は右下の欄にミニマップを描く（DES-UI-28）。地形 → 予兆 → ユニット → 表示範囲の白い枠の順に重ね、
+// 余白に本体の枠・見出し・凡例を置く。
+func (g *Game) drawMinimap(dst *ebiten.Image, v MinimapView) {
+	r := MinimapRect()
+	vector.DrawFilledRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), bgColor, false)
+	fill := func(r image.Rectangle, clr color.Color) {
+		vector.DrawFilledRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), clr, false)
+	}
+	stroke := func(r image.Rectangle, clr color.Color) {
+		vector.StrokeRect(dst, float32(r.Min.X)+0.5, float32(r.Min.Y)+0.5, float32(r.Dx())-1, float32(r.Dy())-1, 1, clr, false)
+	}
+	if v.Available {
+		stroke(v.Layout.Area.Inset(-1), menuBorder)
+		for _, c := range v.Cells {
+			fill(c.Rect, minimapTerrainColor(c.Terrain))
+		}
+		for _, h := range v.Hints {
+			stroke(h, hintColor)
+		}
+		for _, u := range v.Units {
+			clr := playerBase
+			if u.Side == tactics.Enemy {
+				clr = enemyBase
+			}
+			fill(u.Rect, clr)
+		}
+		stroke(v.View, white)
+	}
+	for _, l := range v.Legend {
+		switch l.Mark {
+		case MarkPlayer:
+			fill(l.Swatch, playerBase)
+		case MarkEnemy:
+			fill(l.Swatch, enemyBase)
+		case MarkView:
+			stroke(l.Swatch, white)
+		case MarkHint:
+			stroke(l.Swatch, hintColor)
+		}
+		g.label(dst, l.Text.Text, l.Text.X, l.Text.Y, infoStyleColor(l.Text.Style))
+	}
+	for _, t := range v.Texts {
 		g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
 	}
 }
@@ -599,6 +687,9 @@ func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
 	if v.Info != nil {
 		vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
 		g.drawInfoView(dst, *v.Info)
+	}
+	if v.Minimap != nil {
+		g.drawMinimap(dst, *v.Minimap)
 	}
 	for _, r := range v.Rows {
 		if r.Selected {
@@ -717,6 +808,7 @@ func (g *Game) drawRewindPreview(dst *ebiten.Image) {
 	}
 	vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
 	g.drawSceneView(dst, g.ctrl.RewindView())
+	g.drawMinimap(dst, g.ctrl.Minimap())
 }
 
 // cameraKeys はフレーム数だけで矢印のリピートを決める（DES-UI-25）。

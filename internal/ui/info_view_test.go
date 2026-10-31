@@ -67,6 +67,8 @@ func TestInfoView(t *testing.T) {
 		}
 	}
 	view := func(u tactics.Unit) InfoView { return Panel{Unit: &u}.View() }
+	// equip は「装備・スキル」のページ（DES-UI-28）。
+	equip := func(u tactics.Unit) InfoView { return Panel{Unit: &u, Page: PageEquip}.View() }
 
 	t.Run("TC-FR-UNT-09-07 力・技・速さ・守備の棒は値 × 6 px で、120 px で止める。移動は棒にしない", func(t *testing.T) {
 		for _, tc := range []struct{ value, want int }{{0, 0}, {1, 6}, {6, 36}, {19, 114}, {20, 120}, {25, 120}} {
@@ -154,7 +156,7 @@ func TestInfoView(t *testing.T) {
 	})
 
 	t.Run("TC-FR-UNT-09-10 スキルの名前を黄で 1 行に出し、次の行に効果の文を出す。スキルがなければ「なし」だけ", func(t *testing.T) {
-		v := view(leon())
+		v := equip(leon())
 		name := textOf(t, v, "鼓舞")
 		label := textOf(t, v, "スキル:")
 		desc := textOf(t, v, "　距離 2 以内の味方の命中 +10・回避 +10")
@@ -166,7 +168,7 @@ func TestInfoView(t *testing.T) {
 		}
 		u := leon()
 		u.Skill = tactics.Skill{}
-		v = view(u)
+		v = equip(u)
 		none := textOf(t, v, "なし")
 		if none.Style != StylePlain || none.Y != textOf(t, v, "スキル:").Y {
 			t.Errorf("スキルなし = %+v", none)
@@ -204,9 +206,9 @@ func TestInfoView(t *testing.T) {
 			// 武器の絵は、武器の名前の行の左に 32 px で描く。
 			u := leon()
 			u.Weapon.Type = tc.typ
-			v := view(u)
+			v := equip(u)
 			w := textOf(t, v, "武器: 鉄の剣（"+weaponTypeName(tc.typ)+"）")
-			if len(v.Icons) != 2 || v.Icons[1].Tile != tc.want || v.Icons[1].Size != 32 || v.Icons[1].Y != w.Y || v.Icons[1].X+v.Icons[1].Size > w.X {
+			if len(v.Icons) != 1 || v.Icons[0].Tile != tc.want || v.Icons[0].Size != 32 || v.Icons[0].Y != w.Y || v.Icons[0].X+v.Icons[0].Size > w.X {
 				t.Errorf("%v の武器の絵 = %+v、文 %+v の左に 32 px のはず", tc.typ, v.Icons, w)
 			}
 		}
@@ -224,28 +226,23 @@ func TestInfoView(t *testing.T) {
 		if _, ok := weaponTile(u.Weapon.Type); ok {
 			t.Errorf("知らない種類に絵がある")
 		}
-		if v := view(u); len(v.Icons) != 1 {
-			t.Errorf("知らない種類の絵 = %+v、ユニットの絵だけのはず", v.Icons)
+		if v := equip(u); len(v.Icons) != 0 {
+			t.Errorf("知らない種類の絵 = %+v、装備・スキルのページに絵はないはず", v.Icons)
 		}
 	})
 
-	t.Run("TC-FR-UNT-09-12 予測の表（10 行）と並べても、情報欄（幅 320 px、高さ 576 px）に収まる", func(t *testing.T) {
+	t.Run("TC-FR-UNT-09-12 予測の表（10 行）は情報欄（幅 320 px、高さ 360 px）に収まり、予測の間はユニットを出さない", func(t *testing.T) {
 		c := newIdleWith(t, example4Setup)
 		target(t, c, tactics.Pos{X: 2, Y: 2}, tactics.Pos{X: 3, Y: 2})
 		// スキルと手持ちのあるガルドにカーソルを合わせる。
-		p := c.Panel(tactics.Pos{X: 2, Y: 2}, true)
+		p := c.panel(tactics.Pos{X: 2, Y: 2}, true)
 		if len(p.Forecast) != 10 || p.Unit == nil || p.Unit.Name != "ガルド" {
 			t.Fatalf("前提: 予測 %d 行、ユニット %+v", len(p.Forecast), p.Unit)
 		}
-		// レベル・経験を含め、同じ10行の表で帯なし・撃破・危険を調べる（DES-UI-16）。
+		// 帯なし・撃破・危険の同じ 10 行の表を調べる（DES-UI-07）。
 		p.Unit.Level, p.Unit.Exp = 2, 40
-		for _, emphasis := range []ForecastEmphasis{ForecastNormal, ForecastDefeat, ForecastDanger} {
-			p.Emphasis = emphasis
-			shift := 0
-			if emphasis != ForecastNormal {
-				shift = 44
-			}
-			v := p.View()
+		check := func(v InfoView) {
+			t.Helper()
 			for _, b := range c.RewindView().Buttons {
 				if !b.Rect.In(image.Rect(0, MapSize, MapSize, ScreenHeight)) {
 					t.Fatal("巻き戻しボタンが案内欄の外にある", b)
@@ -267,33 +264,69 @@ func TestInfoView(t *testing.T) {
 					}
 				}
 			}
-			textOf(t, v, "Lv 2　経験 40")
-			if v.Bottom > ScreenHeight {
-				t.Errorf("一番下 = %d、%d を超える", v.Bottom, ScreenHeight)
-			}
-			// 予測（見出し・武器の絵 32 px・表 10 行。空き行なし）の下 y = 8 + 16 + 32 + 160 = 216 から並べる（帯ありはさらに 44 px 下）。
-			pic := portraitOf(t, v)
-			if pic.Y != 216+shift || forecastBottom(10)+shift != pic.Y {
-				t.Errorf("ユニットの絵の y = %d、予測の表の下 %d のはず", pic.Y, 216+shift)
+			// 文・棒・絵・ページの印は、右上の情報欄（x 512〜832、y 360 まで）に収め、右下のミニマップと重ねない（DES-UI-28）。
+			area := image.Rect(MapSize, 0, ScreenWidth, InfoHeight)
+			if v.Bottom > InfoHeight {
+				t.Errorf("一番下 = %d、%d を超える", v.Bottom, InfoHeight)
 			}
 			for _, tx := range v.Texts {
 				scale := 1
 				if tx.Big {
 					scale = 2
 				}
-				if tx.X < MapSize || tx.X+scale*textWidth(tx.Text) > ScreenWidth || tx.Y+scale*lineHeight > ScreenHeight {
+				if !image.Rect(tx.X, tx.Y, tx.X+scale*textWidth(tx.Text), tx.Y+scale*lineHeight).In(area) {
 					t.Errorf("文 %q（%d, %d）が情報欄からはみ出す", tx.Text, tx.X, tx.Y)
 				}
 			}
 			for _, b := range v.Bars {
-				if b.X < MapSize || b.X+max(b.Fill, b.Frame) > ScreenWidth || b.Y+barHeight > ScreenHeight {
+				if !image.Rect(b.X, b.Y, b.X+max(b.Fill, b.Frame), b.Y+barHeight).In(area) {
 					t.Errorf("棒 %+v が情報欄からはみ出す", b)
 				}
 			}
 			for _, ic := range v.Icons {
-				if ic.X < MapSize || ic.X+ic.Size > ScreenWidth || ic.Y+ic.Size > ScreenHeight {
+				if !image.Rect(ic.X, ic.Y, ic.X+ic.Size, ic.Y+ic.Size).In(area) {
 					t.Errorf("絵 %+v が情報欄からはみ出す", ic)
 				}
+			}
+			for _, tab := range v.Tabs {
+				if !tab.Rect.In(area) || tab.Rect.Min.Y < v.Bottom {
+					t.Errorf("ページの印 %+v が情報欄の外か、中身（一番下 %d）と重なる", tab, v.Bottom)
+				}
+			}
+		}
+		for _, emphasis := range []ForecastEmphasis{ForecastNormal, ForecastDefeat, ForecastDanger} {
+			p.Emphasis = emphasis
+			shift := 0
+			if emphasis != ForecastNormal {
+				shift = 44
+			}
+			v := p.View()
+			check(v)
+			// 予測（見出し・武器の絵 32 px・表 10 行）の下 y = 8 + 16 + 32 + 160 = 216（帯ありはさらに 44 px 下）が一番下。
+			// 予測を開いている間は、ユニットの絵・名前・地形とページの印を出さない（DES-IT06 12.2 節）。
+			if v.Bottom != 216+shift || forecastBottom(10)+shift != v.Bottom {
+				t.Errorf("一番下 = %d、予測の表の下 %d のはず", v.Bottom, 216+shift)
+			}
+			for _, ic := range v.Icons {
+				if ic.Size == PortraitSize {
+					t.Errorf("予測と一緒にユニットの絵 %+v", ic)
+				}
+			}
+			if len(v.Tabs) != 0 {
+				t.Errorf("予測と一緒にページの印 %+v", v.Tabs)
+			}
+		}
+		// 予測を閉じたガルド（Lv 2・経験 40）は、どちらのページでも情報欄に収まる。レベルは「能力」のページの名前・クラスの下。
+		q := Panel{Unit: p.Unit, Terrain: p.Terrain, Tabs: true}
+		for _, page := range []InfoPage{PageStats, PageEquip} {
+			q.Page = page
+			v := q.View()
+			check(v)
+			if len(v.Tabs) != 2 {
+				t.Errorf("ページ %d の印 = %+v", page, v.Tabs)
+			}
+			if page == PageStats {
+				textOf(t, v, "Lv 2　経験 40")
 			}
 		}
 	})

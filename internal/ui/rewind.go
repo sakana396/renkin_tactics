@@ -168,15 +168,26 @@ func fitRewind(s string, width int) string {
 }
 
 // 右欄の一覧・確認の配置（DES-UI-21）。盤面の右 x=512〜832 だけを使い、左右に 8 px の余白を置く。
+// 一覧・詳細・理由・気配の案内は右上の情報欄（y < 360）に収め、右下のミニマップ（y = 360〜511）と重ねない。
+// 「戻る」「決定」などのボタンは今までどおり下の行（y = 520〜560）に置く（DES-UI-28）。
 const (
-	rewindLeft   = MapSize + 8
-	rewindWidth  = InfoWidth - 16
-	rewindRight  = rewindLeft + rewindWidth
-	rewindRowTop = 60
-	rewindRowH   = 28
+	rewindLeft    = MapSize + 8
+	rewindWidth   = InfoWidth - 16
+	rewindRight   = rewindLeft + rewindWidth
+	rewindTitleY  = 4
+	rewindSubY    = 22
+	rewindRowTop  = 40
+	rewindRowH    = 22
+	rewindRowText = 3
+	// rewindPageY は「前」「次」のボタン、rewindDetailY は一覧の詳細の上端。
+	rewindPageY   = rewindRowTop + 8*rewindRowH + 4
+	rewindDetailY = rewindPageY + 24
 	// rewindDetailLines は一覧の詳細に出す行の数、rewindConfirmLines は確認に出す行の数。
-	rewindDetailLines  = 5
-	rewindConfirmLines = 18
+	rewindDetailLines  = 3
+	rewindConfirmLines = 15
+	// rewindGuideY は操作の案内（確認では残り回数）、rewindReasonY は理由の 2 行（確認ではホイールの案内）の上端。
+	rewindGuideY  = rewindDetailY + rewindDetailLines*lineHeight + 2
+	rewindReasonY = rewindGuideY + lineHeight
 )
 
 // wrapWidth は文を width px で文字の単位で折り返す（DES-UI-21）。
@@ -238,7 +249,7 @@ func (c *Controller) RewindView() SceneView {
 	h := c.battle.History()
 	n := c.battle.RewindsLeft()
 	ok := c.previewOK()
-	add(fmt.Sprintf("巻き戻し 残り %d/10", n), rewindLeft, 8, StyleTitle)
+	add(fmt.Sprintf("巻き戻し 残り %d/10", n), rewindLeft, rewindTitleY, StyleTitle)
 	left := image.Rect(rewindLeft, 520, rewindLeft+144, 560)
 	right := image.Rect(rewindRight-144, 520, rewindRight, 560)
 	detail := c.rewindDetail()
@@ -247,43 +258,43 @@ func (c *Controller) RewindView() SceneView {
 		v.Texts = append(v.Texts, hv.Text)
 	}
 	if c.rewind.confirm {
-		add("確認（左の盤面に戻ります）", rewindLeft, 34, StylePlain)
+		add("確認（左の盤面に戻ります）", rewindLeft, rewindSubY, StylePlain)
 		for i, t := range detail[min(len(detail), c.rewind.detailOffset):] {
 			if i >= rewindConfirmLines {
 				break
 			}
-			add(t.Text, rewindLeft, rewindRowTop+i*20, t.Style)
+			add(t.Text, rewindLeft, rewindRowTop+i*lineHeight, t.Style)
 		}
-		add(fmt.Sprintf("残り %d → %d", n, n-1), rewindLeft, 436, StylePlain)
-		add("ホイール: 全文を読む", rewindLeft, 456, StyleLabel)
+		add(fmt.Sprintf("残り %d → %d", n, n-1), rewindLeft, rewindGuideY, StylePlain)
+		add("ホイール: 全文を読む", rewindLeft, rewindReasonY, StyleLabel)
 		button("やめる", left, true)
 		button("戻す", right, n > 0 && ok && c.rewindAllowed())
 		return v
 	}
-	add("選んだ行動の「前」に戻る", rewindLeft, 34, StylePlain)
+	add("選んだ行動の「前」に戻る", rewindLeft, rewindSubY, StylePlain)
 	start := max(0, c.rewind.selected/8*8)
 	for i := start; i < min(len(h), start+8); i++ {
 		r := image.Rect(rewindLeft, rewindRowTop+(i-start)*rewindRowH, rewindRight, rewindRowTop+(i-start+1)*rewindRowH)
 		v.Rows = append(v.Rows, PrepareRow{Rect: r, Selected: i == c.rewind.selected})
-		add(fitRewind(c.rewindLabel(h[i]), rewindWidth-16), rewindLeft+8, r.Min.Y+6, rewindStyle(h[i]))
+		add(fitRewind(c.rewindLabel(h[i]), rewindWidth-16), rewindLeft+8, r.Min.Y+rewindRowText, rewindStyle(h[i]))
 	}
 	if len(h) == 0 {
-		add("戻せる行動がありません", rewindLeft+8, rewindRowTop+6, StylePlain)
+		add("戻せる行動がありません", rewindLeft+8, rewindRowTop+rewindRowText, StylePlain)
 	}
-	button("前", image.Rect(rewindLeft, 292, rewindLeft+80, 320), start > 0)
-	button("次", image.Rect(rewindLeft+88, 292, rewindLeft+168, 320), start+8 < len(h))
+	button("前", image.Rect(rewindLeft, rewindPageY, rewindLeft+80, rewindPageY+20), start > 0)
+	button("次", image.Rect(rewindLeft+88, rewindPageY, rewindLeft+168, rewindPageY+20), start+8 < len(h))
 	for i, t := range detail[min(len(detail), c.rewind.detailOffset):] {
 		if i >= rewindDetailLines {
 			break
 		}
-		add(t.Text, rewindLeft, 328+i*20, t.Style)
+		add(t.Text, rewindLeft, rewindDetailY+i*lineHeight, t.Style)
 	}
-	add("右欄ホイール: 詳細／盤面: 移動", rewindLeft, 436, StyleLabel)
+	add("右欄ホイール: 詳細／盤面: 移動", rewindLeft, rewindGuideY, StyleLabel)
 	for i, line := range c.rewindReasons()[min(c.rewind.reasonOffset, len(c.rewindReasons())):] {
 		if i >= 2 {
 			break
 		}
-		add(line, rewindLeft, 456+i*20, StyleBad)
+		add(line, rewindLeft, rewindReasonY+i*lineHeight, StyleBad)
 	}
 	button("戻る", left, true)
 	button("決定", right, n > 0 && ok && c.rewindAllowed())
