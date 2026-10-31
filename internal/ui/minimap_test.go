@@ -505,6 +505,16 @@ func checkInfoArea(t *testing.T, step string, v InfoView) {
 	if v.Bottom > InfoHeight {
 		t.Errorf("%s: 一番下 %d", step, v.Bottom)
 	}
+	// 同じ行の文どうしは 4 px 以上あけ、くっつけない（「残り 15/15重さ 0」のようにしない）。
+	for i, a := range v.Texts {
+		ra := rectOfText(a.X, a.Y, a.Text, a.Big)
+		for _, b := range v.Texts[i+1:] {
+			rb := rectOfText(b.X, b.Y, b.Text, b.Big)
+			if a.Y == b.Y && image.Rect(ra.Min.X-4, ra.Min.Y, ra.Max.X+4, ra.Max.Y).Overlaps(rb) {
+				t.Errorf("%s: 同じ行の文 %q %v と %q %v がくっつく", step, a.Text, ra, b.Text, rb)
+			}
+		}
+	}
 	for _, tab := range v.Tabs {
 		if !tab.Rect.In(area) || tab.Rect.Min.Y < v.Bottom || textWidth(tab.Label)+8 > tab.Rect.Dx() {
 			t.Errorf("%s: ページの印 %+v（中身の一番下 %d）", step, tab, v.Bottom)
@@ -668,9 +678,16 @@ func TestInfoPagesLayout(t *testing.T) {
 				t.Errorf("杖の %q の位置 (%d, %d)", s, tx.X, tx.Y)
 			}
 		}
+		checkInfoArea(t, "杖", v)
 		for _, tx := range v.Texts {
-			if strings.HasPrefix(tx.Text, "必殺") || strings.Contains(tx.Text, "×") && !strings.HasPrefix(tx.Text, "手持ち") {
-				t.Errorf("杖に必殺・回数 %q", tx.Text)
+			if strings.HasPrefix(tx.Text, "必殺") || strings.HasPrefix(tx.Text, "重さ") || strings.Contains(tx.Text, "×") && !strings.HasPrefix(tx.Text, "手持ち") {
+				t.Errorf("杖に必殺・回数・重さ %q", tx.Text)
+			}
+		}
+		// 一番長い値でも、3 つ目の桁と右の桁は 8 px 以上あく。
+		for _, s := range []string{"残り 15/15", "射程 1〜3", "命中 100"} {
+			if weaponCols[2]+textWidth(s)+8 > weaponSideX {
+				t.Errorf("%q が右の桁とくっつく（%d + %d + 8 > %d）", s, weaponCols[2], textWidth(s), weaponSideX)
 			}
 		}
 		// 値の桁どうし、右の桁は重ならない。
@@ -681,6 +698,52 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 		if weaponCols[2]+textWidth("残り 15/15") > weaponSideX || weaponCols[2]+textWidth("射程 1〜3") > weaponSideX {
 			t.Error("3 つ目の桁が右の桁と重なる")
+		}
+	})
+
+	t.Run("TC-FR-MAP-06-07 カーソルが情報欄の上にあるときは、選んでいるユニットか直前に盤面で見ていたマスを出し続ける", func(t *testing.T) {
+		c := newIdleWith(t, example1Setup)
+		g := &Game{ctrl: c}
+		r := InfoTabRects()[1]
+		tx, ty := r.Min.X+2, r.Min.Y+2
+		// 何も見ていなければ空。
+		if v := c.InfoView(tx, ty); len(v.Texts) != 0 || len(v.Tabs) != 2 {
+			t.Errorf("まだ盤面を見ていない: %q", rows(v))
+		}
+		// レオン (2, 3) を見てから印へ動かすと、レオンを出し続け、印のクリックで「装備・スキル」に変わる。
+		x, y := cellCenter(tactics.Pos{X: 2, Y: 3})
+		c.SetCursor(x, y)
+		c.SetCursor(tx, ty)
+		if got := rows(c.InfoView(tx, ty)); len(got) == 0 || got[0] != "レオン" {
+			t.Errorf("印の上: %q", got)
+		}
+		g.leftClick(tx, ty)
+		if got := strings.Join(rows(c.InfoView(tx, ty)), "\n"); c.infoPage != PageEquip || !strings.Contains(got, "武器: 鉄の剣（剣）") || c.State() != Idle {
+			t.Errorf("切り替えたあと: ページ %d、状態 %v、%q", c.infoPage, c.State(), got)
+		}
+		// 選んでいるユニットがいれば、直前に見ていた別のユニットより優先する。
+		c.infoPage = PageStats
+		c.Click(tactics.Pos{X: 2, Y: 3})
+		x, y = cellCenter(tactics.Pos{X: 3, Y: 3})
+		c.SetCursor(x, y)
+		c.SetCursor(tx, ty)
+		if got := rows(c.InfoView(tx, ty)); c.State() != Selected || len(got) == 0 || got[0] != "レオン" {
+			t.Errorf("選んでいるとき: 状態 %v、%q", c.State(), got)
+		}
+		// 盤面の上では、今までどおりカーソルの下のマスを出す。
+		if got := rows(c.InfoView(x, y)); len(got) == 0 || got[0] != "ソルジャー 3　★ボス" {
+			t.Errorf("盤面の上: %q", got)
+		}
+		// ミニマップの上や窓の外では出し続けない。
+		if v := c.InfoView(650, 400); len(v.Texts) != 0 {
+			t.Errorf("ミニマップの上: %q", rows(v))
+		}
+		// 選んでいなければ直前のマスに戻る。空きマスなら地形だけ。
+		c.Cancel()
+		x, y = cellCenter(tactics.Pos{X: 0, Y: 0})
+		c.SetCursor(x, y)
+		if got := rows(c.InfoView(tx, ty)); len(got) == 0 || got[0] != "地形: 平地" {
+			t.Errorf("空きマスのあと: %q", got)
 		}
 	})
 

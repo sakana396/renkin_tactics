@@ -148,8 +148,26 @@ func (c *Controller) panel(cursor tactics.Pos, onMap bool) Panel {
 }
 
 // InfoView は、カーソルの画面の座標 (x, y) での情報欄の描くものを返す（DES-UI-01、DES-UI-28）。
+// カーソルが情報欄の上にあるときは、ページの印をクリックして中身を切り替えられるよう、
+// 選んでいるユニットがいればそのマス、いなければ直前に盤面で見ていたマスの情報を出し続ける（DES-IT06 12.2 節）。
 func (c *Controller) InfoView(x, y int) InfoView {
-	return c.panel(c.Camera().CellAt(x, y)).View()
+	cell, onMap := c.Camera().CellAt(x, y)
+	if !onMap && image.Pt(x, y).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
+		cell, onMap = c.infoCell()
+	}
+	return c.panel(cell, onMap).View()
+}
+
+// infoCell は、カーソルが情報欄の上にあるときに情報を出すマスを返す（DES-UI-28）。
+// 選んでいるユニット（移動先を選んだあとは移動先）を優先し、いなければ直前に盤面で見ていたマス。どちらもなければ ok が偽。
+func (c *Controller) infoCell() (tactics.Pos, bool) {
+	switch c.state {
+	case Selected, Moved, Targeting, HealTargeting, ItemMenu, WeaponMenu, StaffMenu, Canto:
+		if units := c.Units(); c.unit >= 0 && c.unit < len(units) && units[c.unit].Alive {
+			return units[c.unit].Pos, true
+		}
+	}
+	return c.lastCell, c.lastCellOK
 }
 
 // ToggleInfoPage は Tab キーで情報欄のページを切り替える（DES-UI-28）。表示だけを変える。
@@ -190,7 +208,7 @@ const (
 	// weaponTextX は、武器の絵の右に並べる文の位置。
 	weaponTextX = WeaponIconSize + 4
 	// weaponSideX は武器の必殺・重さを置く右の桁（DES-UI-28）。
-	weaponSideX = 220
+	weaponSideX = 232
 	// skillNameX はスキルの名前の位置（「スキル:」の右）。
 	skillNameX = 48
 	// barX は能力の棒の左端。
@@ -421,7 +439,7 @@ func (v *InfoView) addEquip(u tactics.Unit, x, y int) int {
 
 	// 武器の行は、種類の絵を左に置き、右の 1 行目に名前と種類、2 行目に 3 つの値を決まった桁（weaponCols）に並べる。
 	// 攻撃の武器は「威力」「命中」「射程」、杖は「回復」「射程」「残り」を同じ桁に置く。右の桁（weaponSideX）には、
-	// 攻撃の武器なら 1 行目に必殺（2 回攻撃なら「×2」を添える。回数 1 の「×1」は予測と同じく省く）、どちらも 2 行目に重さを出す。
+	// 攻撃の武器なら 1 行目に必殺（2 回攻撃なら「×2」を添える。回数 1 の「×1」は予測と同じく省く）、2 行目に重さを出す。
 	// 杖には必殺と攻撃の回数を出さない（開発者の確認（2026-11-01）で直した）。
 	w := u.EquippedWeapon()
 	if t, ok := weaponTile(w.Type); ok {
@@ -430,6 +448,7 @@ func (v *InfoView) addEquip(u tactics.Unit, x, y int) int {
 	v.text(x+weaponTextX, y, fmt.Sprintf("武器: %s（%s）", w.Name, weaponTypeName(w.Type)), StylePlain)
 	cols := []string{fmt.Sprintf("威力 %d", w.Might), fmt.Sprintf("命中 %d", w.Hit), "射程 " + rangeText(w)}
 	if w.Type == tactics.Staff {
+		// 杖の重さは使わないので出さない。
 		cols = []string{fmt.Sprintf("回復 %d", w.Heal), "射程 " + rangeText(w), fmt.Sprintf("残り %d/%d", w.Uses, w.MaxUses)}
 	} else {
 		crit := fmt.Sprintf("必殺 %d", w.Crit)
@@ -441,7 +460,9 @@ func (v *InfoView) addEquip(u tactics.Unit, x, y int) int {
 	for i, c := range cols {
 		v.text(x+weaponCols[i], y+lineHeight, c, StylePlain)
 	}
-	v.text(x+weaponSideX, y+lineHeight, fmt.Sprintf("重さ %d", w.Weight), StylePlain)
+	if w.Type != tactics.Staff {
+		v.text(x+weaponSideX, y+lineHeight, fmt.Sprintf("重さ %d", w.Weight), StylePlain)
+	}
 	y += WeaponIconSize
 
 	v.text(x, y, "手持ち: "+itemsText(u.Items), StylePlain)
