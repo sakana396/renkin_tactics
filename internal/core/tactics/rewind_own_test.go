@@ -44,7 +44,7 @@ func TestRewindOwn(t *testing.T) {
 			b.units[1].HP = 40
 			cmd := Command{Unit: 0, To: Pos{1, 0}, Action: action, Target: 2}
 			if action == Heal {
-				b.units[0].Weapon = Weapon{Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 3, MaxUses: 3}
+				b.units[0].setWeapon(Weapon{Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 3, MaxUses: 3})
 				cmd.To = Pos{0, 0}
 				cmd.Target = 1
 			}

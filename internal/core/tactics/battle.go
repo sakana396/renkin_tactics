@@ -21,6 +21,7 @@ type Battle struct {
 	mapState     eventState
 	groupEntered map[string]bool
 	groupPlan    map[int]Pos
+	groupDanger  map[int]map[Pos]bool
 	// canto は待っている再移動（DES-BTL-10）。
 	canto cantoState
 
@@ -71,37 +72,73 @@ func New(setup Setup, seed uint64) (*Battle, []Event, error) {
 }
 
 // newUnit は UnitSetup から、HP が最大の生きているユニットを作る。
-// 杖の使用回数は満タン（Uses = MaxUses）にする。Setup の Uses は見ない（DES-HEL-01、E-33）。
+// 武器 1 本の古い入力は武器の列に直す（DES-ITM-02）。呼ぶ前に validateUnit で確かめておく。
+// 杖の使用回数は、持っている杖をすべて満タン（Uses = MaxUses）にする。Setup の Uses は見ない（DES-HEL-01、E-33、DES-IT06 6.2 節）。
 func newUnit(us UnitSetup) Unit {
+	us, _ = normalizeUnit(us)
 	u := Unit{
-		Name:         us.Name,
-		ClassName:    us.ClassName,
-		StaffHealCap: us.StaffHealCap,
-		Tags:         us.Tags,
-		Weapons:      us.Weapons,
-		Side:         us.Side,
-		Stats:        us.Stats,
-		Level:        us.Level,
-		Exp:          us.Exp,
-		Growth:       us.Growth,
-		HP:           us.Stats.HP,
-		Pos:          us.Pos,
-		Weapon:       us.Weapon,
-		Items:        us.Items,
-		Skill:        us.Skill,
-		ClassSkills:  us.ClassSkills,
-		Lord:         us.Lord,
-		Boss:         us.Boss,
-		AI:           us.AI,
-		Approach:     us.Approach,
-		Alive:        true,
-		ID:           us.ID,
-		Group:        us.Group,
+		Name:               us.Name,
+		ClassName:          us.ClassName,
+		StaffHealCap:       us.StaffHealCap,
+		Tags:               us.Tags,
+		Weapons:            us.Weapons,
+		Equipped:           us.Equipped,
+		AllowedWeaponTypes: us.AllowedWeaponTypes,
+		Side:               us.Side,
+		Stats:              us.Stats,
+		Level:              us.Level,
+		Exp:                us.Exp,
+		Growth:             us.Growth,
+		HP:                 us.Stats.HP,
+		Pos:                us.Pos,
+		Items:              us.Items,
+		Skill:              us.Skill,
+		ClassSkills:        us.ClassSkills,
+		Lord:               us.Lord,
+		Boss:               us.Boss,
+		AI:                 us.AI,
+		Approach:           us.Approach,
+		Alive:              true,
+		ID:                 us.ID,
+		Group:              us.Group,
 	}
-	if u.Weapon.Type == Staff {
-		u.Weapon.Uses = u.Weapon.MaxUses
+	u = u.clone()
+	for k := range u.Weapons {
+		if u.Weapons[k].Type == Staff {
+			u.Weapons[k].Uses = u.Weapons[k].MaxUses
+		}
 	}
-	return u.clone()
+	return u
+}
+
+// maxHand は手持ちの枠の数。武器の本数と道具の個数の合計がこれ以下（DES-ITM-02）。
+const maxHand = 5
+
+// weaponGiven は、武器 1 本の古い入力の欄 Weapon が指定されているか（ゼロ値でないか）を返す（DES-ITM-02）。
+func weaponGiven(w Weapon) bool {
+	return w.ID != "" || w.Name != "" || w.Type != Sword || w.Crit != 0 || w.Weight != 0 || w.Strikes != 0 || w.DamageType != Physical ||
+		len(w.EffectiveTags) > 0 || w.Might != 0 || w.Hit != 0 || w.MinRange != 0 || w.MaxRange != 0 || w.Heal != 0 || w.Uses != 0 || w.MaxUses != 0
+}
+
+// normalizeUnit は武器 1 本の古い入力を武器の列に直した写しを返す（DES-ITM-02、DES-IT06 6.1 節）。
+// Weapon と Weapons の両方を指定した入力と、武器が 1 本もない入力は誤りにする。
+// Weapon で渡して持てる種類を省いたときだけ、その 1 本の種類を持てる種類にする。
+func normalizeUnit(us UnitSetup) (UnitSetup, error) {
+	us = us.clone()
+	given := weaponGiven(us.Weapon)
+	switch {
+	case given && len(us.Weapons) > 0:
+		return us, fmt.Errorf("Weapon と Weapons の両方は指定できません")
+	case given:
+		us.Weapons = []Weapon{us.Weapon}
+		if len(us.AllowedWeaponTypes) == 0 {
+			us.AllowedWeaponTypes = []WeaponType{us.Weapon.Type}
+		}
+	case len(us.Weapons) == 0:
+		return us, fmt.Errorf("武器が 1 本もありません")
+	}
+	us.Weapon = Weapon{}
+	return us, nil
 }
 
 // validateSetup は Setup の規則 1〜8 を確かめる（DES-BTL-01）。最初に見つかった誤りを返す。
@@ -197,6 +234,12 @@ func validateSetup(s Setup) error {
 
 // validateUnit はユニット 1 体の規則 4・6・7・8 を確かめる（DES-BTL-01、DES-GRW-03、DES-HEL-01）。
 func validateUnit(u UnitSetup) error {
+	// 武器 1 本の古い入力の誤りは、今までどおり位置を付けずに返す。
+	legacy := len(u.Weapons) == 0
+	u, err := normalizeUnit(u)
+	if err != nil {
+		return err
+	}
 	// 規則 4: 能力。
 	st := u.Stats
 	if st.HP < 1 {
@@ -205,11 +248,11 @@ func validateUnit(u UnitSetup) error {
 	if st.Str < 0 || st.Skl < 0 || st.Spd < 0 || st.Def < 0 || st.Mov < 0 || st.Lck < 0 || st.Mag < 0 || st.Res < 0 {
 		return fmt.Errorf("能力 %+v に負の値があります", st)
 	}
-	// 規則 4: 武器の射程は 1 ≦ 最小 ≦ 最大。
-	if w := u.Weapon; w.MinRange < 1 || w.MinRange > w.MaxRange {
-		return fmt.Errorf("武器の射程 %d〜%d は 1 ≦ 最小 ≦ 最大でなければなりません", w.MinRange, w.MaxRange)
+	if len(u.Weapons) > maxHand {
+		return fmt.Errorf("武器 %d 本は手持ちの枠 %d を超えます", len(u.Weapons), maxHand)
 	}
-	// 規則 4: アイテムの数と回復量は 1 以上。
+	// 規則 4: アイテムの数と回復量は 1 以上。武器の本数と道具の個数の合計は 5 枠まで（DES-ITM-02）。
+	slots := len(u.Weapons)
 	for k, it := range u.Items {
 		if it.Count < 1 {
 			return fmt.Errorf("items[%d]: 数 %d は 1 以上でなければなりません", k, it.Count)
@@ -217,27 +260,44 @@ func validateUnit(u UnitSetup) error {
 		if it.Item.Heal < 1 {
 			return fmt.Errorf("items[%d]: 回復量 %d は 1 以上でなければなりません", k, it.Item.Heal)
 		}
-	}
-	// 規則 6・8: 定数の型の値。武器の種類は Sword〜Staff のどれか。
-	if u.Weapon.Type < Sword || u.Weapon.Type > Magic {
-		return fmt.Errorf("武器の種類 %d が正しくありません", u.Weapon.Type)
-	}
-	if err := validateWeapon(u.Weapon); err != nil {
-		return err
-	}
-	// 武器の列の各要素も同じ規則で確かめる（DES-ITM-02、DES-BTL-09）。
-	for k, w := range u.Weapons {
-		if w.Type < Sword || w.Type > Magic {
-			return fmt.Errorf("weapons[%d]: 武器の種類 %d が正しくありません", k, w.Type)
+		// 減らして比べ、大きな個数でも足し算があふれないようにする。
+		if it.Count > maxHand-slots {
+			return fmt.Errorf("手持ちの枠（武器 %d 本 ＋ 道具の個数）が %d を超えます", len(u.Weapons), maxHand)
 		}
-		if err := validateWeapon(w); err != nil {
+		slots += it.Count
+	}
+	// 兵種の杖の回復量の上限は 0 以上（DES-IT06 7.1 節）。
+	if u.StaffHealCap < 0 {
+		return fmt.Errorf("杖の回復量の上限 %d は 0 以上でなければなりません", u.StaffHealCap)
+	}
+	// 持てる武器の種類（DES-ITM-02）。種類は Sword〜Magic のどれかで、重ならない。
+	if len(u.AllowedWeaponTypes) == 0 {
+		return fmt.Errorf("持てる武器の種類がありません")
+	}
+	allowed := map[WeaponType]bool{}
+	for _, t := range u.AllowedWeaponTypes {
+		if t < Sword || t > Magic || allowed[t] {
+			return fmt.Errorf("持てる武器の種類 %v が正しくないか重なっています", u.AllowedWeaponTypes)
+		}
+		allowed[t] = true
+	}
+	// 装備の添字は武器の列の中（DES-ITM-02）。
+	if u.Equipped < 0 || u.Equipped >= len(u.Weapons) {
+		return fmt.Errorf("装備の添字 %d が武器の列（%d 本）の外です", u.Equipped, len(u.Weapons))
+	}
+	// 武器の列の各要素を確かめる（規則 4・6・8、DES-ITM-02、DES-BTL-09）。
+	for k, w := range u.Weapons {
+		if err := validateWeaponOf(u, w); err != nil {
+			if legacy {
+				return err
+			}
 			return fmt.Errorf("weapons[%d]: %w", k, err)
+		}
+		if !allowed[w.Type] {
+			return fmt.Errorf("weapons[%d]: 武器の種類 %d は持てる種類にありません", k, w.Type)
 		}
 	}
 	if err := validateTags("兵種の分類", u.Tags); err != nil {
-		return err
-	}
-	if err := validateStaff(u); err != nil {
 		return err
 	}
 	if u.Skill.Effect < NoSkill || u.Skill.Effect > Canto {
@@ -284,14 +344,20 @@ func validateSkill(sk Skill) error {
 	return nil
 }
 
-// validateStaff はユニット 1 体の規則 8（杖）を確かめる（DES-HEL-01）。
+// validateWeaponOf は武器 1 本の規則 4・6・8 を確かめる（DES-BTL-01、DES-HEL-01、DES-BTL-09）。
+// 射程は 1 ≦ 最小 ≦ 最大、種類は Sword〜Magic のどれか。
 // 杖は Heal と MaxUses が 1 以上（Uses は New で MaxUses にするので見ない）。杖でない武器は Heal・Uses・MaxUses が 0。
-// 敵（増援を含む）の武器は杖でない。兵種の杖の回復量の上限は 0 以上（DES-IT06 7.1 節）。
-func validateStaff(u UnitSetup) error {
-	if u.StaffHealCap < 0 {
-		return fmt.Errorf("杖の回復量の上限 %d は 0 以上でなければなりません", u.StaffHealCap)
+// 敵（増援を含む）の武器は杖でない。
+func validateWeaponOf(u UnitSetup, w Weapon) error {
+	if w.MinRange < 1 || w.MinRange > w.MaxRange {
+		return fmt.Errorf("武器の射程 %d〜%d は 1 ≦ 最小 ≦ 最大でなければなりません", w.MinRange, w.MaxRange)
 	}
-	w := u.Weapon
+	if w.Type < Sword || w.Type > Magic {
+		return fmt.Errorf("武器の種類 %d が正しくありません", w.Type)
+	}
+	if err := validateWeapon(w); err != nil {
+		return err
+	}
 	if w.Type != Staff {
 		if w.Heal != 0 || w.Uses != 0 || w.MaxUses != 0 {
 			return fmt.Errorf("杖でない武器の回復量 %d・使用回数 %d・最大 %d は 0 でなければなりません", w.Heal, w.Uses, w.MaxUses)

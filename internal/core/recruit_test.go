@@ -40,7 +40,7 @@ func TestRecruitDefinitions(t *testing.T) {
 			{"hanna", "ハンナ", "cleric", "heal_staff", 7, tactics.Stats{HP: 20, Str: 0, Skl: 4, Spd: 7, Def: 6, Mov: 5, Lck: 6, Mag: 3, Res: 7}, defs.Growth{HP: 60, Str: 0, Skl: 40, Spd: 35, Def: 50, Lck: 45, Mag: 40, Res: 50}},
 		} {
 			ch, ok := cat.Character(tc.id)
-			if !ok || ch.Name != tc.name || ch.Class != tc.class || ch.Weapon != tc.weapon || ch.Growth != tc.growth || ch.Skill != "" || ch.Lord || len(ch.Items) != 0 {
+			if !ok || ch.Name != tc.name || ch.Class != tc.class || len(ch.Weapons) != 1 || ch.Weapons[0] != tc.weapon || ch.Growth != tc.growth || ch.Skill != "" || ch.Lord || len(ch.Items) != 0 {
 				t.Errorf("定義 %s=%+v", tc.id, ch)
 			}
 			found := false

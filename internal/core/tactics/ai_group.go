@@ -2,13 +2,17 @@ package tactics
 
 import (
 	"container/heap"
+	"sort"
 	"strconv"
 )
 
 // planEnemyGroups は敵軍の番の始めに一団の集まる先と突入を決める（DES-AI-02）。
 // 増援・回復後の盤面を基準にし、行動中は計画を変えない。
 func (b *Battle) planEnemyGroups(count int) {
-	b.groupPlan = make(map[int]Pos)
+	if b.groupPlan == nil {
+		b.groupPlan = make(map[int]Pos)
+	}
+	b.groupDanger = make(map[int]map[Pos]bool)
 	groups := make(map[string][]int)
 	for i := 0; i < count; i++ {
 		u := b.units[i]
@@ -28,7 +32,15 @@ func (b *Battle) planEnemyGroups(count int) {
 		}
 	}
 	near := b.closeness()
-	for key, members := range groups {
+	keys := make([]string, 0, len(groups))
+	for key := range groups {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool { return groups[keys[i]][0] < groups[keys[j]][0] })
+	threats := b.playerThreats(playerReach)
+	assigned := make(map[Pos]bool)
+	for _, key := range keys {
+		members := groups[key]
 		active := b.mapState.charged[b.units[members[0]].Group]
 		for _, i := range members {
 			if b.units[i].AI == Charge {
@@ -44,22 +56,55 @@ func (b *Battle) planEnemyGroups(count int) {
 		for _, i := range members {
 			b.units[i].AI = Charge
 		}
-		groupDanger := make(map[Pos]bool)
+		// 集合を始めた一団の割り当ては、危険範囲が消えても保つ。
+		planned := false
 		for _, i := range members {
-			for p := range b.dangerFor(i, playerReach) {
-				groupDanger[p] = true
+			if _, ok := b.groupPlan[i]; ok {
+				planned = true
 			}
 		}
-		if len(groupDanger) == 0 {
+		for _, i := range members {
+			b.groupDanger[i] = b.dangerFor(i, playerReach, threats)
+		}
+		if planned {
+			allReady := true
+			for _, i := range members {
+				goal, ok := b.groupPlan[i]
+				if !ok || b.units[i].Pos != goal {
+					allReady = false
+				}
+				if ok {
+					assigned[goal] = true
+				}
+			}
+			if allReady {
+				b.groupEntered[key] = true
+				for _, i := range members {
+					delete(b.groupPlan, i)
+				}
+			}
+			continue
+		}
+		anyDanger := false
+		for _, i := range members {
+			if len(b.groupDanger[i]) != 0 {
+				anyDanger = true
+			}
+		}
+		if !anyDanger {
 			b.groupEntered[key] = true
 			continue
 		}
 
-		assigned := make(map[Pos]bool)
 		allReady := true
 		for _, i := range members {
 			u := b.units[i]
-			danger := groupDanger
+			danger := b.groupDanger[i]
+			if len(danger) == 0 {
+				b.groupPlan[i] = u.Pos
+				assigned[u.Pos] = true
+				continue
+			}
 			path := b.terrainDistances(u.Pos, false)
 			var goal Pos
 			found := false
@@ -167,61 +212,56 @@ func (b *Battle) groupKey(group string, at Pos) string {
 	return group + ":" + strconv.Itoa(first.X) + ":" + strconv.Itoa(first.Y)
 }
 
-// dangerFor は、その敵に割に合わない自軍の次の移動と攻撃の範囲を返す（DES-AI-02）。
-func (b *Battle) dangerFor(enemy int, reach map[int]map[Pos]int) map[Pos]bool {
-	out := make(map[Pos]bool)
-	target := b.units[enemy]
+// playerThreats は盤面ごとに自軍の移動と武器射程の和を一度だけ作る（DES-AI-02、DES-IT06 10.4 節）。
+func (b *Battle) playerThreats(reach map[int]map[Pos]int) map[int]map[Pos]bool {
+	out := make(map[int]map[Pos]bool, len(reach))
 	for i, places := range reach {
-		player := b.units[i]
-		weapons := attackWeapons(player)
-		found, unfavorable := false, false
-		var best candidate
-		bestWeapon := 0
+		threat := make(map[Pos]bool)
 		for p := range places {
-			for weaponIndex, weapon := range weapons {
-				if !inRange(weapon, distance(p, target.Pos)) {
-					continue
-				}
-				sim := *b
-				sim.units = append([]Unit(nil), b.units...)
-				sim.units[i].Weapon = weapon
-				f := sim.forecast(i, enemy, p)
-				dealt := f.Attacker.Damage * f.Attacker.Count
-				value := dealt * f.Attacker.HitRate
-				reply := 0
-				for _, counter := range attackWeapons(target) {
-					if !inRange(counter, distance(target.Pos, p)) {
-						continue
-					}
-					sim.units[enemy].Weapon = counter
-					answer := sim.forecast(i, enemy, p)
-					counterValue := answer.Defender.Damage * answer.Defender.HitRate * answer.Defender.Count
-					if counterValue > reply {
-						reply = counterValue
-					}
-				}
-				c := candidate{to: p, target: enemy, kill: dealt >= target.HP, gain: value, risk: reply}
-				if !found || c.better(best) || (!best.better(c) && weaponIndex < bestWeapon) {
-					best, bestWeapon, found = c, weaponIndex, true
-					unfavorable = dealt >= target.HP || value >= reply
-				}
-			}
-		}
-		if !unfavorable {
-			continue
-		}
-		for p := range places {
-			for y := range b.terrain {
-				for x := range b.terrain[y] {
-					at := Pos{x, y}
-					for _, weapon := range weapons {
-						if inRange(weapon, distance(p, at)) {
-							out[at] = true
-							break
+			for _, w := range attackWeapons(b.units[i]) {
+				for dy := -w.MaxRange; dy <= w.MaxRange; dy++ {
+					for dx := -w.MaxRange; dx <= w.MaxRange; dx++ {
+						at := Pos{p.X + dx, p.Y + dy}
+						if b.inMap(at) && inRange(w, abs(dx)+abs(dy)) {
+							threat[at] = true
 						}
 					}
 				}
 			}
+		}
+		out[i] = threat
+	}
+	return out
+}
+
+// dangerFor は敵ごとの割に合わない自軍の攻撃範囲を返す（DES-AI-02）。
+func (b *Battle) dangerFor(enemy int, reach map[int]map[Pos]int, threats map[int]map[Pos]bool) map[Pos]bool {
+	out := make(map[Pos]bool)
+	target := b.units[enemy]
+	for i, places := range reach {
+		player := b.units[i]
+		found := false
+		var best candidate
+		for p := range places {
+			for wi, w := range player.Weapons {
+				if w.Type == Staff || !inRange(w, distance(p, target.Pos)) {
+					continue
+				}
+				f := b.forecast(i, enemy, p, wi)
+				dealt := f.Attacker.Damage * f.Attacker.Count
+				value := dealt * f.Attacker.HitRate
+				reply := f.Defender.Damage * f.Defender.HitRate * f.Defender.Count
+				c := candidate{to: p, target: enemy, weapon: wi, kill: dealt >= target.HP, gain: value, risk: reply}
+				if !found || c.better(best) {
+					best, found = c, true
+				}
+			}
+		}
+		if !found || (!best.kill && best.gain < best.risk) {
+			continue
+		}
+		for at := range threats[i] {
+			out[at] = true
 		}
 	}
 	return out
@@ -262,7 +302,7 @@ func (b *Battle) terrainDistances(from Pos, reverse bool) map[Pos]int {
 
 // groupMove は集まる先へ、この番に届く安全なマスまで進む（DES-AI-02）。
 func (b *Battle) groupMove(unit int, reach map[Pos]int, goal Pos) (Pos, bool) {
-	danger := b.dangerFor(unit, b.playerReach())
+	danger := b.groupDanger[unit]
 	toGoal := b.terrainDistances(goal, true)
 	var best Pos
 	bestRemain, bestCost := unreachable, unreachable
@@ -331,14 +371,8 @@ func (b *Battle) enemyRetreat(unit, remaining int) (Pos, bool) {
 	return best, found
 }
 
-// attackWeapons は手持ちの攻撃用武器を返す（DES-AI-02）。空の列だけは従来の武器を使う。
+// attackWeapons は手持ちの攻撃用武器を返す（DES-AI-02）。
 func attackWeapons(u Unit) []Weapon {
-	if len(u.Weapons) == 0 {
-		if u.Weapon.Type == Staff {
-			return nil
-		}
-		return []Weapon{u.Weapon}
-	}
 	out := make([]Weapon, 0, len(u.Weapons))
 	for _, w := range u.Weapons {
 		if w.Type != Staff {

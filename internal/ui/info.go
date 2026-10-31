@@ -51,7 +51,8 @@ func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 	if f, ok := c.attackForecast(); ok {
 		// 相手は Targets から選んでいるので、ふつうは誤りにならない。誤りなら予測を出さない。
 		p.Forecast = ForecastRows(f, units[c.unit].Boss, units[c.target].Boss)
-		p.ForecastWeapons = [2]tactics.WeaponType{units[c.unit].Weapon.Type, units[c.target].Weapon.Type}
+		// 攻撃する側は選んだ武器、守る側は装備している武器（DES-ITM-02）。
+		p.ForecastWeapons = [2]tactics.WeaponType{units[c.unit].Weapons[c.weapon].Type, units[c.target].EquippedWeapon().Type}
 		a, d := ForecastAfter(f)
 		p.ForecastAfter = [2]int{a, d}
 		p.Emphasis = forecastEmphasis(f)
@@ -293,7 +294,7 @@ func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
 	y += lineHeight + blockGap
 
 	// 武器の行は、種類の絵を左に置き、右に名前と威力・命中・射程の 2 行を並べる。
-	w := u.Weapon
+	w := u.EquippedWeapon()
 	if t, ok := weaponTile(w.Type); ok {
 		v.Icons = append(v.Icons, InfoIcon{X: x, Y: y, Size: WeaponIconSize, Tile: t})
 	}
@@ -309,6 +310,11 @@ func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
 
 	v.text(x, y, "手持ち: "+itemsText(u.Items), StylePlain)
 	y += lineHeight
+	// 装備のほかに持っている武器を、武器の列の順に出す（DES-UI-26、DES-IT06 12.2 節）。1 本だけなら出さない。
+	if others := otherWeapons(u); others != "" {
+		v.text(x, y, "ほかの武器: "+others, StylePlain)
+		y += lineHeight
+	}
 
 	// スキルは名前を黄で 1 行に出し、次の行に効果の文を出す。キャラのスキルのあとに兵種のスキルを並べる（DES-IT06 12.2 節）。
 	v.text(x, y, "スキル:", StyleLabel)
@@ -496,7 +502,8 @@ func (c *Controller) attackForecast() (tactics.Forecast, bool) {
 	if c.state != Targeting || c.target < 0 {
 		return tactics.Forecast{}, false
 	}
-	f, err := c.battle.Forecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Attack, Target: c.target})
+	w := c.weapon
+	f, err := c.battle.Forecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Attack, Target: c.target, Weapon: &w})
 	return f, err == nil
 }
 
@@ -630,6 +637,17 @@ func rangeText(w tactics.Weapon) string {
 	return fmt.Sprintf("%d〜%d", w.MinRange, w.MaxRange)
 }
 
+// otherWeapons は、装備していない武器の名前を武器の列の順に並べる（DES-ITM-02）。なければ空。
+func otherWeapons(u tactics.Unit) string {
+	var names []string
+	for k, w := range u.Weapons {
+		if k != u.Equipped {
+			names = append(names, w.Name)
+		}
+	}
+	return strings.Join(names, "、")
+}
+
 // itemsText は手持ちの名前と数を並べる。なければ「なし」。
 func itemsText(items []tactics.ItemStack) string {
 	if len(items) == 0 {
@@ -664,7 +682,8 @@ func (c *Controller) healForecast() (tactics.HealForecast, bool) {
 	if c.state != HealTargeting || c.target < 0 {
 		return tactics.HealForecast{}, false
 	}
-	f, err := c.battle.HealForecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Heal, Target: c.target})
+	w := c.weapon
+	f, err := c.battle.HealForecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Heal, Target: c.target, Weapon: &w})
 	return f, err == nil
 }
 

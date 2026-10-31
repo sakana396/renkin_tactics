@@ -74,25 +74,58 @@ func (b BoardView) reachableWithin(unit, mov int) map[Pos]int {
 	return best
 }
 
-// AttackRange は、ユニット unit が from から武器で攻撃できるマスを返す（DES-BTL-01）。
-// from からのマンハッタン距離が武器の射程（最小〜最大）に入るマップの中のマスを、y、x の小さい順に返す。
+// AttackRange は、ユニット unit が from から武器で攻撃できるマスを返す（DES-BTL-01、DES-ITM-02）。
+// 手持ちの攻撃の武器（杖を除く）すべての射程を合わせ、from からのマンハッタン距離がどれかの射程に入るマップの中のマスを、
+// y、x の小さい順に返す。攻撃の武器を持たない（杖だけの）ユニットは、杖の射程を合わせて返す。
 // unit が存在しないか倒れていれば nil を返す（Reachable と同じ）。
 func (b *Battle) AttackRange(unit int, from Pos) []Pos {
 	return (BoardView{terrain: b.terrain, units: b.units}).AttackRange(unit, from)
 }
 
-// AttackRange は Battle と共通の最小〜最大射程で y・x 順の攻撃マスを返す（DES-RWD-05、DES-BTL-03、DES-DEP-02）。
+// WeaponRange は、ユニット unit が from から武器の列の weapon 番目で届くマスを、y、x の小さい順に返す（DES-ITM-02）。
+// unit が存在しないか倒れているか、weapon が列の外なら nil を返す。
+func (b *Battle) WeaponRange(unit int, from Pos, weapon int) []Pos {
+	return (BoardView{terrain: b.terrain, units: b.units}).WeaponRange(unit, from, weapon)
+}
+
+// AttackRange は Battle と共通の、攻撃の武器の射程を合わせた y・x 順の攻撃マスを返す（DES-RWD-05、DES-BTL-03、DES-DEP-02、DES-ITM-02）。
 func (b BoardView) AttackRange(unit int, from Pos) []Pos {
 	if !b.validUnit(unit) || !b.units[unit].Alive {
 		return nil
 	}
-	w := b.units[unit].Weapon
+	ws := b.units[unit].Weapons
+	var attack []Weapon
+	for _, w := range ws {
+		if w.Type != Staff {
+			attack = append(attack, w)
+		}
+	}
+	if len(attack) == 0 {
+		attack = ws
+	}
+	return rangeCells(b.Width(), b.Height(), from, attack)
+}
+
+// WeaponRange は Battle と共通の、選んだ武器 1 本の y・x 順の届くマスを返す（DES-ITM-02）。
+func (b BoardView) WeaponRange(unit int, from Pos, weapon int) []Pos {
+	if !b.validUnit(unit) || !b.units[unit].Alive || weapon < 0 || weapon >= len(b.units[unit].Weapons) {
+		return nil
+	}
+	return rangeCells(b.Width(), b.Height(), from, b.units[unit].Weapons[weapon:weapon+1])
+}
+
+// rangeCells は、from からの距離が ws のどれかの射程に入るマスを y・x の小さい順に返す。
+func rangeCells(width, height int, from Pos, ws []Weapon) []Pos {
 	var out []Pos
-	for y := 0; y < b.Height(); y++ {
-		for x := 0; x < b.Width(); x++ {
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
 			p := Pos{x, y}
-			if d := distance(from, p); d >= w.MinRange && d <= w.MaxRange {
-				out = append(out, p)
+			d := distance(from, p)
+			for _, w := range ws {
+				if inRange(w, d) {
+					out = append(out, p)
+					break
+				}
 			}
 		}
 	}

@@ -43,8 +43,8 @@ func TestStaffConversion(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				want := tactics.Weapon{Name: "癒やしの杖", Type: tactics.Staff, Strikes: 1, Heal: tc.heal, MaxUses: tc.uses, MinRange: 1, MaxRange: 1}
-				if got := setup.Units[4].Weapon; !reflect.DeepEqual(got, want) {
+				want := tactics.Weapon{ID: "heal_staff", Name: "癒やしの杖", Type: tactics.Staff, Strikes: 1, Heal: tc.heal, MaxUses: tc.uses, MinRange: 1, MaxRange: 1}
+				if got := setup.Units[4].Weapons; len(got) != 1 || !reflect.DeepEqual(got[0], want) {
 					t.Errorf("入力の杖 = %+v、期待 %+v", got, want)
 				}
 				b, _, err := core.NewBattle(cat, "ch01", 1)
@@ -52,7 +52,7 @@ func TestStaffConversion(t *testing.T) {
 					t.Fatal(err)
 				}
 				want.Uses = tc.uses
-				if got := b.Units()[4].Weapon; !reflect.DeepEqual(got, want) {
+				if got := b.Units()[4].EquippedWeapon(); !reflect.DeepEqual(got, want) {
 					t.Errorf("開始時の杖 = %+v、期待 %+v", got, want)
 				}
 			})

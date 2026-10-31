@@ -25,7 +25,7 @@ var (
 	ErrCleared           = errors.New("core: キャンペーンはクリア済みです")
 	ErrInvalidMember     = errors.New("core: 名簿にいないか戦死している仲間です")
 	ErrNoStock           = errors.New("core: 在庫にアイテムがありません")
-	ErrHandFull          = errors.New("core: 手持ちの上限は 5 個です")
+	ErrHandFull          = errors.New("core: 手持ちの上限は 5 枠です（武器の本数と道具の個数の合計）")
 	ErrNoHandItem        = errors.New("core: 手持ちにアイテムがありません")
 	ErrInvalidDeployment = errors.New("core: 出撃の選び方が正しくありません")
 	ErrInvalidSortie     = errors.New("core: この章の未反映の出撃ではありません")
@@ -152,7 +152,7 @@ func newMember(cat *defs.Catalog, id string) (Member, error) {
 	if !ok {
 		return Member{}, fmt.Errorf("core: キャラ %q のクラス %q がありません", id, ch.Class)
 	}
-	return Member{Weapons: []string{ch.Weapon}, Character: id, Level: ch.Level, Stats: addStats(cls.Base, ch.Bonus), Items: append([]defs.ItemCount(nil), ch.Items...), Alive: true}, nil
+	return Member{Weapons: append([]string(nil), ch.Weapons...), Character: id, Level: ch.Level, Stats: addStats(cls.Base, ch.Bonus), Items: append([]defs.ItemCount(nil), ch.Items...), Alive: true}, nil
 }
 
 // enterChapter はまだ名簿にいない加入者を定義順に足す。戦死者も再加入しない（DES-CMP-03）。
@@ -182,6 +182,7 @@ func (c *Campaign) enterChapter() error {
 }
 
 // TakeItem は在庫の 1 個を生存している仲間へ渡す（DES-CMP-04、DES-CMP-08）。
+// 手持ちは武器の本数と道具の個数の合計で 5 枠まで（DES-ITM-02）。
 func (c *Campaign) TakeItem(member int, item string) error {
 	if err := c.prepareMember(member); err != nil {
 		return err
@@ -189,17 +190,25 @@ func (c *Campaign) TakeItem(member int, item string) error {
 	if itemCount(c.Stock, item) < 1 {
 		return ErrNoStock
 	}
-	total := 0
-	for _, ic := range c.Roster[member].Items {
-		total += ic.Count
-	}
-	if total >= 5 {
+	if handSlots(c.Roster[member]) >= maxHand {
 		return ErrHandFull
 	}
 	c.Roster[member].Items = changeItem(c.Roster[member].Items, item, 1)
 	c.Stock = changeItem(c.Stock, item, -1)
 	c.sortStock()
 	return nil
+}
+
+// maxHand は手持ちの枠の数（DES-ITM-02）。武器 1 本・道具 1 個を 1 枠と数え、武器と道具で分け合う。
+const maxHand = 5
+
+// handSlots は仲間の手持ちの枠の使用数（武器の本数 ＋ 道具の個数）を返す（DES-ITM-02、DES-IT06 6.1 節）。
+func handSlots(m Member) int {
+	n := len(m.Weapons)
+	for _, ic := range m.Items {
+		n += ic.Count
+	}
+	return n
 }
 
 // StoreItem は生存している仲間の手持ち 1 個を在庫に戻す（DES-CMP-04、DES-CMP-08）。
@@ -341,13 +350,16 @@ func (c *Campaign) deploymentSetup(members, slots []int) (tactics.Setup, []Membe
 		if err != nil {
 			return tactics.Setup{}, nil, err
 		}
-
-		if len(member.Weapons) > 0 {
-			u.Weapon, err = convertWeapon(c.cat, member.Weapons[0])
-			if err != nil {
-				return tactics.Setup{}, nil, err
-			}
+		// 名簿の武器の列をそのまま渡し、先頭を初めの装備にする（DES-ITM-02、DES-IT06 6.2 節）。
+		// 出撃のときにも武器が 1 本以上あることを確かめる（杖だけの僧侶はよい）。
+		if len(member.Weapons) == 0 {
+			return tactics.Setup{}, nil, fmt.Errorf("%w: 名簿の添字 %d の仲間に武器がありません", ErrInvalidDeployment, index)
 		}
+		u.Weapons, err = convertWeapons(c.cat, member.Weapons)
+		if err != nil {
+			return tactics.Setup{}, nil, err
+		}
+		u.Equipped = 0
 
 		member.Weapons = append([]string(nil), member.Weapons...)
 		u.Level = member.Level
@@ -393,6 +405,12 @@ func (c *Campaign) FinishChapter(s *Sortie) (ChapterResult, error) {
 		member.Exp = u.Exp
 		member.Stats = u.Stats
 		member.Alive = !dead
+		// 出撃した仲間の武器の列を最後の戦闘から戻す。戦闘の中では列は変わらず、最後に使った武器（装備）は持ち越さない（DES-ITM-02、DES-IT06 6.2 節）。
+		// 杖の回数も名簿に残さない。戦死した仲間の武器も、今までどおり自動では回収しない。
+		member.Weapons = make([]string, len(u.Weapons))
+		for k, w := range u.Weapons {
+			member.Weapons[k] = w.ID
+		}
 		member.Items = nil
 		if !dead {
 			for _, ic := range u.Items {

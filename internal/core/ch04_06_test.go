@@ -192,11 +192,7 @@ func TestCh04To06Autoplay(t *testing.T) {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-04 %s/作戦%d/低め%v/seed%d", tc.id, tc.plan, tc.low, tc.seed), func(t *testing.T) {
 			// IT06 で一時停止（TST-IT06 3.2・3.3 節）。ch04 は #131、ch06 は #132 で置き換える。
 			switch {
-			case tc.id == "ch04" && tc.plan == 0 && !tc.low && tc.seed == 9:
-				pauseIT06(t, "#131")
-			case tc.id == "ch04" && tc.plan == 0 && tc.low && tc.seed == 1:
-				pauseIT06Level(t, "#131")
-			case tc.id == "ch06" && tc.low && tc.seed == 6:
+			case tc.id == "ch06" && tc.plan == 1 && tc.low && tc.seed == 6:
 				pauseIT06(t, "#132")
 			case tc.id == "ch06" && tc.plan == 1 && !tc.low && tc.seed == 12:
 				pauseIT06EnemyAI(t, "#132")
@@ -368,7 +364,7 @@ func checkCh04To06Definition(t *testing.T, m defs.MapDef) {
 			b.Spd++
 			b.Def += 2
 		}
-		if e.Bonus != b || e.Weapon != weapons[e.Class] {
+		if e.Bonus != b || len(e.Weapons) != 1 || e.Weapons[0] != weapons[e.Class] {
 			t.Errorf("敵の能力・武器 %+v", e)
 		}
 	}

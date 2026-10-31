@@ -55,8 +55,8 @@ func TestNewBattlePartySlots(t *testing.T) {
 	t.Run("TC-FR-SYS-03-10 主人公は名簿のどこにいても枠の 1 番目に置き、枠より多い名簿は枠の数で切る", func(t *testing.T) {
 		chars := func(m *defs.MapDef, c *[]defs.CharacterDef) {
 			*c = append(*c,
-				defs.CharacterDef{ID: "a", Name: "エー", Class: "fighter", Weapon: "iron_axe"},
-				defs.CharacterDef{ID: "b", Name: "ビー", Class: "fighter", Weapon: "iron_axe"},
+				defs.CharacterDef{ID: "a", Name: "エー", Class: "fighter", Weapons: []string{"iron_axe"}},
+				defs.CharacterDef{ID: "b", Name: "ビー", Class: "fighter", Weapons: []string{"iron_axe"}},
 			)
 			m.Rows = []string{"...", ".森.", "..."}
 		}
@@ -113,8 +113,8 @@ func TestCavalier(t *testing.T) {
 				continue
 			}
 			cavaliers++
-			if u.Weapon.Type != tactics.Lance || u.Stats.Mov != 7 {
-				t.Errorf("%s の武器の種類 %v、移動 %d", u.Name, u.Weapon.Type, u.Stats.Mov)
+			if u.EquippedWeapon().Type != tactics.Lance || u.Stats.Mov != 7 {
+				t.Errorf("%s の武器の種類 %v、移動 %d", u.Name, u.EquippedWeapon().Type, u.Stats.Mov)
 			}
 		}
 		// 初めの敵の騎兵は、ボスのヴォルグを含めて 2 体（10.5 節）。

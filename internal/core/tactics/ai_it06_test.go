@@ -141,7 +141,7 @@ func TestEnemyGroupIt06(t *testing.T) {
 			t.Fatal("別の領域の仲間を待った")
 		}
 	})
-	t.Run("TC-FR-BTL-07-21 安全なマスが足りなければ後衛は待つ", func(t *testing.T) {
+	t.Run("TC-FR-BTL-07-21 危険域で逃げ場がなければ後衛は攻撃する", func(t *testing.T) {
 		p := lord(0, 1, 0)
 		p.Stats.Str = 20
 		front := enemy("前衛", 2, 1, 2)
@@ -154,10 +154,77 @@ func TestEnemyGroupIt06(t *testing.T) {
 		if b.Units()[1].Pos != pos(2, 1) || b.Units()[2].Pos != pos(1, 1) {
 			t.Fatalf("安全な範囲 = %v / %v", b.Units()[1].Pos, b.Units()[2].Pos)
 		}
+		attacked := false
 		for _, e := range events {
 			if e.Kind == tactics.EventStrike && e.Unit == 2 {
-				t.Fatalf("後衛が攻撃した: %v", kinds(events))
+				attacked = true
 			}
+		}
+		if !attacked {
+			t.Fatalf("逃げ場がない後衛が攻撃しなかった: %v", kinds(events))
+		}
+	})
+	t.Run("TC-FR-BTL-07-21 遠い一団は先頭だけで入らない", func(t *testing.T) {
+		p := lord(1, 1, 2)
+		p.Stats.Str = 20
+		p.Weapon.MaxRange = 2
+		front, rear := enemy("前衛", 4, 1, 4), enemy("後衛", 5, 1, 0)
+		front.Group, rear.Group = "g", "g"
+		front.Approach, rear.Approach = tactics.GroupApproach, tactics.GroupApproach
+		b := mustNew(t, tactics.Setup{Terrain: grid("..........", "..........", ".........."), Units: []tactics.UnitSetup{p, front, rear, boss(9, 1)}})
+		for turn := 1; turn <= 2; turn++ {
+			events := mustEndPhase(t, b)
+			for _, e := range events {
+				if e.Kind == tactics.EventStrike && (e.Unit == 1 || e.Unit == 2) {
+					t.Fatalf("%d 番目に先頭だけで攻撃: %v", turn, kinds(events))
+				}
+			}
+		}
+	})
+
+	t.Run("TC-FR-BTL-07-21 先頭到着後に危険域が空でも後衛を待つ", func(t *testing.T) {
+		p := lord(1, 1, 2)
+		p.Stats.Str = 20
+		p.Weapon.MaxRange = 2
+		front, rear := enemy("前衛", 4, 1, 4), enemy("後衛", 5, 1, 0)
+		front.Group, rear.Group = "g", "g"
+		front.Approach, rear.Approach = tactics.GroupApproach, tactics.GroupApproach
+		b := mustNew(t, tactics.Setup{Terrain: grid("..........", "..........", ".........."), Units: []tactics.UnitSetup{p, front, rear, boss(9, 1)}})
+		mustEndPhase(t, b)
+		frontAt := b.Units()[1].Pos
+		if _, err := b.Act(tactics.Command{Unit: 0, To: pos(0, 1), Action: tactics.Wait}); err != nil {
+			t.Fatal(err)
+		}
+		events := mustEndPhase(t, b)
+		for _, ev := range events {
+			if ev.Kind == tactics.EventStrike && (ev.Unit == 1 || ev.Unit == 2) {
+				t.Fatalf("後衛の到着前に攻撃した: %v", kinds(events))
+			}
+		}
+		if b.Units()[1].Pos != frontAt {
+			t.Fatalf("先頭が割り当てを離れた: %v", b.Units()[1].Pos)
+		}
+	})
+
+	t.Run("TC-FR-BTL-07-21 / TC-FR-BTL-10-33 集合中の巻き戻しと再実行", func(t *testing.T) {
+		p := lord(1, 1, 1)
+		p.Stats.Str = 20
+		front, rear := enemy("前衛", 3, 1, 2), enemy("後衛", 5, 1, 2)
+		front.Group, rear.Group = "g", "g"
+		front.Approach, rear.Approach = tactics.GroupApproach, tactics.GroupApproach
+		b := mustNew(t, tactics.Setup{Terrain: grid("#######", ".......", "#######"), Units: []tactics.UnitSetup{p, front, rear, boss(6, 1)}})
+		first := mustEndPhase(t, b)
+		before := b.Units()
+		h := b.History()
+		if len(h) == 0 {
+			t.Fatal("巻き戻し先がない")
+		}
+		if err := b.Rewind(h[0].ID); err != nil {
+			t.Fatal(err)
+		}
+		second := mustEndPhase(t, b)
+		if !reflect.DeepEqual(first, second) || !reflect.DeepEqual(before, b.Units()) {
+			t.Fatal("集合中の巻き戻しで結果が変わった")
 		}
 	})
 }
@@ -287,6 +354,26 @@ func TestEnemyCantoIt06(t *testing.T) {
 			t.Fatalf("戦死後にも移動した: %d 回", n)
 		}
 	})
+	t.Run("TC-FR-BTL-07-22 敵の攻撃で主人公が倒れたら下がらない", func(t *testing.T) {
+		s := setup()
+		s.Units[1].Stats.Str = 30
+		s.Units[1].Weapon.Hit = 100
+		s.Units = append(s.Units, ally("後方", 0, 1, 0))
+		b := mustNew(t, s)
+		events := mustEndPhase(t, b)
+		if b.Result != tactics.Lost {
+			t.Fatalf("結果 = %v", b.Result)
+		}
+		n := 0
+		for _, m := range moves(events) {
+			if m.Unit == 1 {
+				n++
+			}
+		}
+		if n != 1 {
+			t.Fatalf("勝敗決定後に再移動した: %d 回", n)
+		}
+	})
 }
 
 func TestEnemyApproachIt06(t *testing.T) {
@@ -298,6 +385,27 @@ func TestEnemyApproachIt06(t *testing.T) {
 			t.Fatalf("敵 = %+v", got)
 		}
 	})
+	t.Run("TC-FR-BTL-07-20 同点なら武器の列の先頭を使って装備する", func(t *testing.T) {
+		p := lord(1, 1, 0)
+		e := enemy("敵", 3, 1, 1)
+		w := e.Weapon
+		e.Weapon = tactics.Weapon{}
+		e.Weapons = []tactics.Weapon{w, w}
+		e.Equipped = 1
+		e.AllowedWeaponTypes = []tactics.WeaponType{tactics.Sword}
+		b := mustNew(t, tactics.Setup{Terrain: grid("#####", ".....", "#####"), Units: []tactics.UnitSetup{p, e, boss(4, 1)}})
+		events := mustEndPhase(t, b)
+		attacked := false
+		for _, ev := range events {
+			if ev.Kind == tactics.EventStrike && ev.Unit == 1 {
+				attacked = true
+			}
+		}
+		if !attacked || b.Units()[1].Equipped != 0 {
+			t.Fatalf("同点の武器選択・装備 = %v / %d", attacked, b.Units()[1].Equipped)
+		}
+	})
+
 	t.Run("TC-FR-BTL-07-21 一団の名前が必要", func(t *testing.T) {
 		s := plain7(lord(1, 3, 0), enemy("敵", 4, 3, 1), boss(6, 0))
 		s.Units[1].Approach = tactics.GroupApproach
@@ -317,7 +425,7 @@ func BenchmarkEnemyPhase46(b *testing.B) {
 	}
 	s := tactics.Setup{Terrain: grid(rows...)}
 	for i := 0; i < 7; i++ {
-		u := ally("自軍", 2, i+2, 3)
+		u := ally("自軍", 2, i+2, 7)
 		if i == 0 {
 			u.Lord = true
 		}
@@ -328,9 +436,14 @@ func BenchmarkEnemyPhase46(b *testing.B) {
 		if i == 38 {
 			u.Boss = true
 		}
-		if i < 20 {
+		u.ClassSkills = []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}}
+		if i < 38 {
 			u.Group, u.Approach = "advance", tactics.GroupApproach
 		}
+		u.Weapons = []tactics.Weapon{u.Weapon, {Name: "長槍", Type: tactics.Lance, Might: 4, Hit: 85, MinRange: 1, MaxRange: 2}, {Name: "弓", Type: tactics.Bow, Might: 4, Hit: 80, MinRange: 2, MaxRange: 2}, {Name: "強い剣", Type: tactics.Sword, Might: 8, Hit: 70, MinRange: 1, MaxRange: 1}, {Name: "遠い弓", Type: tactics.Bow, Might: 3, Hit: 70, MinRange: 2, MaxRange: 3}}
+		u.Weapon = tactics.Weapon{}
+		u.Items = nil
+		u.AllowedWeaponTypes = []tactics.WeaponType{tactics.Sword, tactics.Lance, tactics.Bow}
 		s.Units = append(s.Units, u)
 	}
 	b.ResetTimer()

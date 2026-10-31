@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 )
@@ -39,6 +40,38 @@ const guideCantoWait = "再移動を終えるまで、ほかのユニットの�
 // itemLabel はアイテムの一覧に出す文を返す（DES-UI-02）。
 func itemLabel(s tactics.ItemStack) string {
 	return fmt.Sprintf("%s ×%d（回復 %d）", s.Item.Name, s.Count, s.Item.Heal)
+}
+
+// weaponDetail は武器・杖の詳しい欄の 1 行（DES-UI-26、DES-IT06 12.1 節）。
+// 名前・物理／魔法・威力・命中・必殺・重さ・射程・特効の対象。杖は回復量・射程・残りの回数。
+func weaponDetail(w tactics.Weapon) string {
+	if w.Type == tactics.Staff {
+		return fmt.Sprintf("%s　回復 %d　射程 %s　残り %d/%d", w.Name, w.Heal, rangeText(w), w.Uses, w.MaxUses)
+	}
+	kind := "物理"
+	if w.DamageType == tactics.Magical {
+		kind = "魔法"
+	}
+	eff := "なし"
+	if len(w.EffectiveTags) > 0 {
+		eff = strings.Join(w.EffectiveTags, "・")
+	}
+	return fmt.Sprintf("%s　%s　威力 %d　命中 %d　必殺 %d　重さ %d　射程 %s　特効 %s", w.Name, kind, w.Might, w.Hit, w.Crit, w.Weight, rangeText(w), eff)
+}
+
+// staffsEmpty は、杖を持ち、そのすべての回数が残っていないかを返す（DES-UI-18）。
+func staffsEmpty(u tactics.Unit) bool {
+	has := false
+	for _, w := range u.Weapons {
+		if w.Type != tactics.Staff {
+			continue
+		}
+		if w.Uses > 0 {
+			return false
+		}
+		has = true
+	}
+	return has
 }
 
 // BandText は番の帯に出す文を返す（DES-UI-03）。PhaseStart でなければ空。
@@ -164,6 +197,16 @@ func (c *Controller) Guide() []string {
 		lines = append(lines, guideDanger)
 	case ItemMenu:
 		lines = append(lines, "左クリック: 使うアイテムを選ぶ　右クリック・Esc: 戻る", guideDanger)
+	case WeaponMenu, StaffMenu:
+		what := "攻撃に使う武器"
+		if c.state == StaffMenu {
+			what = "回復に使う杖"
+		}
+		lines = append(lines, fmt.Sprintf("左クリック: %sを選ぶ　右クリック・Esc: 戻る", what))
+		// 詳しい欄: カーソルの下の行の武器の値（DES-IT06 12.1 節）。
+		if w := c.hoveredWeapon(); w >= 0 {
+			lines = append(lines, weaponDetail(b.Units()[c.unit].Weapons[w]))
+		}
 	case Canto:
 		// 攻撃を決める前の取り消しと分け、結果が出たあとの Esc は再移動を終えることだと伝える（DES-IT06 12.3 節）。
 		rest := 0
@@ -182,7 +225,7 @@ func (c *Controller) Guide() []string {
 		lines = append(lines, fmt.Sprintf("%s　左クリック: 次へ", ResultText(b.Result)))
 	}
 	// 杖を使い切った理由を、回復が一覧にないときも伝える（DES-UI-18）。
-	if c.state == Moved && b.Units()[c.unit].Weapon.Type == tactics.Staff && b.Units()[c.unit].Weapon.Uses == 0 && c.message == "" {
+	if c.state == Moved && staffsEmpty(b.Units()[c.unit]) && c.message == "" {
 		lines = append(lines, tactics.ErrNoUses.Error())
 	}
 	if c.message != "" {

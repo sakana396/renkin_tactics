@@ -40,6 +40,7 @@ type battleSnapshot struct {
 	canto          cantoState
 	groupEntered   map[string]bool
 	groupPlan      map[int]Pos
+	groupDanger    map[int]map[Pos]bool
 	rngState       []byte
 	eventCount     int
 }
@@ -51,7 +52,7 @@ func (b *Battle) snapshot() battleSnapshot {
 	return battleSnapshot{
 		Turn: b.Turn, Phase: b.Phase, Result: b.Result,
 		units: b.Units(), terrain: b.terrain, reinforcements: b.reinforcements,
-		progress: b.progress, mapEvents: b.mapEvents, mapState: b.mapState.clone(), canto: b.canto, groupEntered: cloneGroupEntered(b.groupEntered), groupPlan: cloneGroupPlan(b.groupPlan), rngState: append([]byte(nil), data...), eventCount: b.eventCount,
+		progress: b.progress, mapEvents: b.mapEvents, mapState: b.mapState.clone(), canto: b.canto, groupEntered: cloneGroupEntered(b.groupEntered), groupPlan: cloneGroupPlan(b.groupPlan), groupDanger: cloneGroupDanger(b.groupDanger), rngState: append([]byte(nil), data...), eventCount: b.eventCount,
 	}
 }
 
@@ -74,6 +75,7 @@ func (b *Battle) restore(s battleSnapshot) error {
 	b.mapEvents, b.mapState = s.mapEvents, s.mapState.clone()
 	b.canto = s.canto
 	b.groupEntered, b.groupPlan = cloneGroupEntered(s.groupEntered), cloneGroupPlan(s.groupPlan)
+	b.groupDanger = cloneGroupDanger(s.groupDanger)
 	b.pcg = pcg
 	b.rng = rand.New(pcg)
 	b.roll = func() int { return b.rng.IntN(100) }
@@ -92,6 +94,17 @@ func cloneGroupPlan(in map[int]Pos) map[int]Pos {
 	out := make(map[int]Pos, len(in))
 	for k, v := range in {
 		out[k] = v
+	}
+	return out
+}
+
+func cloneGroupDanger(in map[int]map[Pos]bool) map[int]map[Pos]bool {
+	out := make(map[int]map[Pos]bool, len(in))
+	for i, danger := range in {
+		out[i] = make(map[Pos]bool, len(danger))
+		for p, v := range danger {
+			out[i][p] = v
+		}
 	}
 	return out
 }

@@ -191,12 +191,14 @@ type (
 		Class string   `toml:"class"`
 		Bonus rawStats `toml:"bonus"`
 		// Level は、省略（1）と 0（誤り）を見分けるので、ポインタにする（規則 16）。
-		Level  *int           `toml:"level"`
-		Growth rawGrowth      `toml:"growth"`
-		Weapon string         `toml:"weapon"`
-		Items  []rawItemCount `toml:"items"`
-		Skill  string         `toml:"skill"`
-		Lord   bool           `toml:"lord"`
+		Level  *int      `toml:"level"`
+		Growth rawGrowth `toml:"growth"`
+		Weapon string    `toml:"weapon"`
+		// Weapons は武器の列（DES-ITM-02）。古い weapon と両方は書けない。
+		Weapons []string       `toml:"weapons"`
+		Items   []rawItemCount `toml:"items"`
+		Skill   string         `toml:"skill"`
+		Lord    bool           `toml:"lord"`
 	}
 	rawSlot struct {
 		X int `toml:"x"`
@@ -209,10 +211,11 @@ type (
 		Name     *string        `toml:"name"`
 		Class    string         `toml:"class"`
 		Weapon   string         `toml:"weapon"`
+		Weapons  []string       `toml:"weapons"`
 		Bonus    rawStats       `toml:"bonus"`
 		Items    []rawItemCount `toml:"items"`
-		AI       string         `toml:"ai"`
 		Approach string         `toml:"approach"`
+		AI       string         `toml:"ai"`
 		Boss     bool           `toml:"boss"`
 		X        int            `toml:"x"`
 		Y        int            `toml:"y"`
@@ -226,10 +229,11 @@ type (
 		Name     *string        `toml:"name"`
 		Class    string         `toml:"class"`
 		Weapon   string         `toml:"weapon"`
+		Weapons  []string       `toml:"weapons"`
 		Bonus    rawStats       `toml:"bonus"`
 		Items    []rawItemCount `toml:"items"`
-		AI       string         `toml:"ai"`
 		Approach string         `toml:"approach"`
+		AI       string         `toml:"ai"`
 		Boss     bool           `toml:"boss"`
 		X        int            `toml:"x"`
 		Y        int            `toml:"y"`
@@ -762,9 +766,10 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		}
 		g := defs.Growth{HP: r.Growth.HP, Str: r.Growth.Str, Skl: r.Growth.Skl, Spd: r.Growth.Spd, Def: r.Growth.Def, Lck: r.Growth.Lck, Mag: r.Growth.Mag, Res: r.Growth.Res}
 		v.growth(p+".growth", g)
-		ch := defs.CharacterDef{ID: r.ID, Name: r.Name, Class: r.Class, Bonus: toStats(r.Bonus), Level: level, Growth: g, Weapon: r.Weapon, Items: toItems(r.Items), Skill: r.Skill, Lord: r.Lord}
-		v.unit(ref, FileCharacters, p, r.Class, r.Weapon, ch.Bonus)
-		v.hand(ref, FileCharacters, p, r.Items, true)
+		weapons := v.weaponList(FileCharacters, p, r.Weapon, r.Weapons)
+		ch := defs.CharacterDef{ID: r.ID, Name: r.Name, Class: r.Class, Bonus: toStats(r.Bonus), Level: level, Growth: g, Weapons: weaponIDs(weapons), Items: toItems(r.Items), Skill: r.Skill, Lord: r.Lord}
+		v.unit(ref, FileCharacters, p, r.Class, weapons, ch.Bonus)
+		v.hand(ref, FileCharacters, p, r.Items, true, len(weapons))
 		if r.Skill != "" && !ref.skillIDs[r.Skill] {
 			v.add(FileCharacters, p+".skill", "スキル %q がありません", r.Skill)
 		}
@@ -909,26 +914,65 @@ func (v *validator) growth(path string, g defs.Growth) {
 	}
 }
 
-// unit は、クラスと武器の参照、武器の種類、能力を確かめる（DES-DAT-03 規則 3、5、6）。
-func (v *validator) unit(ref refs, file, path, class, weapon string, bonus defs.Stats) {
+// weaponRef は武器の ID と、誤りを示すときの位置（DES-ITM-02）。
+type weaponRef struct {
+	id, path string
+}
+
+// weaponList は、古い weapon と新しい weapons を武器の列に直す（DES-ITM-02、DES-IT06 6.2 節）。
+// 両方を書いたら拒む。weapon だけなら 1 本の列にし、位置は今までどおり path.weapon にする。
+// どちらもなければ、weapon の参照の誤りとして v.unit が知らせる（空の ID を 1 本だけ持つ）。
+func (v *validator) weaponList(file, path, weapon string, weapons []string) []weaponRef {
+	if weapon != "" && len(weapons) > 0 {
+		v.add(file, path+".weapons", "weapon と weapons の両方は書けません")
+		return nil
+	}
+	if len(weapons) == 0 {
+		return []weaponRef{{id: weapon, path: path + ".weapon"}}
+	}
+	out := make([]weaponRef, len(weapons))
+	for k, id := range weapons {
+		out[k] = weaponRef{id: id, path: fmt.Sprintf("%s.weapons[%d]", path, k)}
+	}
+	return out
+}
+
+// weaponIDs は武器の列の ID を順に返す。
+func weaponIDs(ws []weaponRef) []string {
+	if len(ws) == 0 {
+		return nil
+	}
+	out := make([]string, len(ws))
+	for k, w := range ws {
+		out[k] = w.id
+	}
+	return out
+}
+
+// unit は、クラスと武器の参照、武器の種類、能力を確かめる（DES-DAT-03 規則 3、5、6、DES-ITM-02）。
+// 武器の列のすべてが、クラスの持てる種類であること。
+func (v *validator) unit(ref refs, file, path, class string, weapons []weaponRef, bonus defs.Stats) {
 	c, okC := ref.classByID[class]
 	if !okC {
 		v.add(file, path+".class", "クラス %q がありません", class)
 	} else {
 		v.stats(file, path+".bonus", c.Base, bonus)
 	}
-	w, okW := ref.weaponByID[weapon]
-	if !okW {
-		v.add(file, path+".weapon", "武器 %q がありません", weapon)
-	}
-	if okC && okW && c.WeaponType != w.Type {
-		v.add(file, path+".weapon", "武器 %q の種類 %s が、クラス %q の武器の種類 %s と違います", weapon, w.Type, class, c.WeaponType)
+	for _, wr := range weapons {
+		w, okW := ref.weaponByID[wr.id]
+		if !okW {
+			v.add(file, wr.path, "武器 %q がありません", wr.id)
+		}
+		if okC && okW && c.WeaponType != w.Type {
+			v.add(file, wr.path, "武器 %q の種類 %s が、クラス %q の武器の種類 %s と違います", wr.id, w.Type, class, c.WeaponType)
+		}
 	}
 }
 
 // hand は手持ちのアイテムの参照と数を確かめる（DES-DAT-03 規則 3、6）。
 // limit が真（キャラの手持ち）なら、数の合計が上限以下であることも確かめる（規則 17）。
-func (v *validator) hand(ref refs, file, path string, list []rawItemCount, limit bool) {
+// 道具の数が上限以下でも、武器の本数 weapons と合わせて 5 枠を超えれば拒む（DES-ITM-02。敵も同じ）。
+func (v *validator) hand(ref refs, file, path string, list []rawItemCount, limit bool, weapons int) {
 	total := 0
 	for j, it := range list {
 		q := fmt.Sprintf("%s.items[%d]", path, j)
@@ -938,8 +982,11 @@ func (v *validator) hand(ref refs, file, path string, list []rawItemCount, limit
 		v.atLeast(file, q+".count", it.Count, 1)
 		total += it.Count
 	}
-	if limit && total > maxHand {
+	switch {
+	case limit && total > maxHand:
 		v.add(file, path+".items", "手持ちの数の合計 %d は %d 以下にしてください", total, maxHand)
+	case total+weapons > maxHand:
+		v.add(file, path+".items", "手持ちの枠の合計 %d（武器 %d 本 ＋ 道具 %d 個）は %d 以下にしてください", total+weapons, weapons, total, maxHand)
 	}
 }
 
@@ -1003,10 +1050,12 @@ func (v *validator) enemyName(q string, name *string) string {
 	return *name
 }
 
-// noStaff は、敵の武器が杖でないことを確かめる（DES-DAT-03 規則 22）。
-func (v *validator) noStaff(ref refs, q, weapon string) {
-	if w, ok := ref.weaponByID[weapon]; ok && w.Type == defs.WeaponStaff {
-		v.add(FileMaps, q+".weapon", "敵は杖 %q を持てません", weapon)
+// noStaff は、敵の武器の列のどれも杖でないことを確かめる（DES-DAT-03 規則 22、DES-ITM-02）。
+func (v *validator) noStaff(ref refs, weapons []weaponRef) {
+	for _, wr := range weapons {
+		if w, ok := ref.weaponByID[wr.id]; ok && w.Type == defs.WeaponStaff {
+			v.add(FileMaps, wr.path, "敵は杖 %q を持てません", wr.id)
+		}
 	}
 }
 
@@ -1134,7 +1183,8 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 // 座標とボスの確かめは、配置の種類ごとに呼ぶ側で行う。
 func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyIDSet) defs.EnemyPlacement {
 	const f = FileMaps
-	ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapon: e.Weapon, Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Approach: e.Approach, Boss: e.Boss, X: e.X, Y: e.Y, Group: e.Group}
+	weapons := v.weaponList(f, q, e.Weapon, e.Weapons)
+	ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapons: weaponIDs(weapons), Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Approach: e.Approach, Boss: e.Boss, X: e.X, Y: e.Y, Group: e.Group}
 	// level の省略は 1 と読む。0 と 21 以上は拒む（DES-IT06 7.3 節）。
 	ep.Level = 1
 	if e.Level != nil {
@@ -1142,9 +1192,9 @@ func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyI
 	}
 	v.between(FileMaps, q+".level", ep.Level, 1, maxLevel)
 	ep.ID = ids.check(q, generated, e.ID, e.Group)
-	v.unit(ref, f, q, e.Class, e.Weapon, ep.Bonus)
-	v.noStaff(ref, q, e.Weapon)
-	v.hand(ref, f, q, e.Items, false)
+	v.unit(ref, f, q, e.Class, weapons, ep.Bonus)
+	v.noStaff(ref, weapons)
+	v.hand(ref, f, q, e.Items, false, len(weapons))
 	v.oneOf(f, q+".ai", "敵の動き方", e.AI, defs.AICharge, defs.AIHold)
 	if ep.Approach != "" {
 		v.oneOf(f, q+".approach", "敵の寄り方", ep.Approach, defs.ApproachDirect, defs.ApproachGroup)
@@ -1157,7 +1207,7 @@ func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyI
 
 // enemy は増援の、ターンを除いた敵の欄を返す。
 func (r rawReinforcement) enemy() rawEnemy {
-	return rawEnemy{Level: r.Level, Name: r.Name, Class: r.Class, Weapon: r.Weapon, Bonus: r.Bonus, Items: r.Items, AI: r.AI, Approach: r.Approach, Boss: r.Boss, X: r.X, Y: r.Y, ID: r.ID, Group: r.Group}
+	return rawEnemy{Level: r.Level, Name: r.Name, Class: r.Class, Weapon: r.Weapon, Weapons: r.Weapons, Bonus: r.Bonus, Items: r.Items, AI: r.AI, Approach: r.Approach, Boss: r.Boss, X: r.X, Y: r.Y, ID: r.ID, Group: r.Group}
 }
 
 // maxLiveEnemies は一度に生きている敵の上限（DES-IT06 9.3 節、E-91）。tactics の maxLiveEnemies と同じ値。

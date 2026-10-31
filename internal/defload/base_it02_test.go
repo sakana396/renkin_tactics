@@ -101,7 +101,7 @@ func TestBaseDataIt02(t *testing.T) {
 				if e.boss {
 					b = tt.bossBonus
 				}
-				want = append(want, defs.EnemyPlacement{Name: e.name, Class: e.class, Weapon: e.weapon, Bonus: b, AI: e.ai, Boss: e.boss, Level: e.level, X: e.x, Y: e.y})
+				want = append(want, defs.EnemyPlacement{Name: e.name, Class: e.class, Weapons: []string{e.weapon}, Bonus: b, AI: e.ai, Boss: e.boss, Level: e.level, X: e.x, Y: e.y})
 			}
 			if !reflect.DeepEqual(m.Enemies, want) {
 				t.Errorf("%s の敵 =\n%+v\nwant\n%+v", tt.id, m.Enemies, want)
@@ -112,7 +112,7 @@ func TestBaseDataIt02(t *testing.T) {
 			}
 			var wantR []defs.Reinforcement
 			for _, r := range tt.reinf {
-				wantR = append(wantR, defs.Reinforcement{Turn: r.turn, EnemyPlacement: defs.EnemyPlacement{Class: r.class, Weapon: r.weapn, Bonus: tt.bonus, AI: "charge", Level: r.level, X: r.x, Y: r.y}})
+				wantR = append(wantR, defs.Reinforcement{Turn: r.turn, EnemyPlacement: defs.EnemyPlacement{Class: r.class, Weapons: []string{r.weapn}, Bonus: tt.bonus, AI: "charge", Level: r.level, X: r.x, Y: r.y}})
 			}
 			if !reflect.DeepEqual(m.Reinforcements, wantR) {
 				t.Errorf("%s の増援 =\n%+v\nwant\n%+v", tt.id, m.Reinforcements, wantR)

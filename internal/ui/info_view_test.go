@@ -62,7 +62,7 @@ func TestInfoView(t *testing.T) {
 	leon := func() tactics.Unit {
 		return tactics.Unit{
 			Name: "レオン", ClassName: "ロード", Side: tactics.Player, Lord: true, Alive: true,
-			Stats: leonStats, HP: 20, Weapon: ironSword, Skill: inspire,
+			Stats: leonStats, HP: 20, Weapons: []tactics.Weapon{ironSword}, Skill: inspire,
 			Items: []tactics.ItemStack{{Item: potion, Count: 2}},
 		}
 	}
@@ -135,7 +135,7 @@ func TestInfoView(t *testing.T) {
 			t.Errorf("HP の行 y = %d が絵と重なる", hp.Y)
 		}
 		// 敵は盤面と同じ敵のタイル、ボスはボスのタイル。
-		enemy := tactics.Unit{Name: "ソルジャー", Side: tactics.Enemy, Stats: soldierSts, HP: 18, Weapon: ironLance}
+		enemy := tactics.Unit{Name: "ソルジャー", Side: tactics.Enemy, Stats: soldierSts, HP: 18, Weapons: []tactics.Weapon{ironLance}}
 		if got := view(enemy).Icons[0].Tile; got != unitTile(enemy) || got != assets.EnemyLance {
 			t.Errorf("敵の絵 = %+v", got)
 		}
@@ -203,7 +203,7 @@ func TestInfoView(t *testing.T) {
 			}
 			// 武器の絵は、武器の名前の行の左に 32 px で描く。
 			u := leon()
-			u.Weapon.Type = tc.typ
+			u.Weapons[0].Type = tc.typ
 			v := view(u)
 			w := textOf(t, v, "武器: 鉄の剣（"+weaponTypeName(tc.typ)+"）")
 			if len(v.Icons) != 2 || v.Icons[1].Tile != tc.want || v.Icons[1].Size != 32 || v.Icons[1].Y != w.Y || v.Icons[1].X+v.Icons[1].Size > w.X {
@@ -220,8 +220,8 @@ func TestInfoView(t *testing.T) {
 		}
 		// 知らない種類なら武器の絵を描かない（文は出す）。
 		u := leon()
-		u.Weapon.Type = tactics.WeaponType(99)
-		if _, ok := weaponTile(u.Weapon.Type); ok {
+		u.Weapons[0].Type = tactics.WeaponType(99)
+		if _, ok := weaponTile(u.EquippedWeapon().Type); ok {
 			t.Errorf("知らない種類に絵がある")
 		}
 		if v := view(u); len(v.Icons) != 1 {
