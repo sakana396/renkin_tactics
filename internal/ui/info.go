@@ -30,7 +30,76 @@ type Panel struct {
 	Unit *tactics.Unit
 	// Terrain は、カーソルのあるマスの地形（FR-UNT-09、FR-MAP-01）。カーソルが盤面の外なら nil。
 	Terrain *tactics.Terrain
+	// Page はユニットの情報のページ（DES-UI-26、DES-UI-28）。Tabs が真なら、ページの切り替えの印を出す。
+	Page InfoPage
+	Tabs bool
 }
+
+// InfoPage は情報欄のユニットのページ（DES-IT06 12.2 節、DES-UI-28）。ページの切り替えは表示だけで、選択や状態を変えない。
+type InfoPage int
+
+const (
+	// PageStats は「能力」のページ（絵・名前・クラス・レベル・HP・能力・移動）。
+	PageStats InfoPage = iota
+	// PageEquip は「装備・スキル」のページ（武器・手持ち・スキル）。
+	PageEquip
+)
+
+// InfoTab はページを切り替える印の 1 つ（DES-UI-28）。描画とクリックで同じ範囲を使う。
+type InfoTab struct {
+	Rect     image.Rectangle
+	Label    string
+	Page     InfoPage
+	Selected bool
+}
+
+// 情報欄の下端のページの印の配置（DES-UI-28）。情報欄（y < 360）の中の下端に置き、ミニマップと重ねない。
+const (
+	infoTabTop    = InfoHeight - 24
+	infoTabHeight = 20
+	// infoTabsBottom は、ページの中身を置いてよい一番下の y（印の上端）。
+	infoTabsBottom = infoTabTop
+)
+
+// InfoTabRects はページの印の範囲を、ページの順に返す（DES-UI-28）。
+func InfoTabRects() []image.Rectangle {
+	x := MapSize + infoMargin
+	return []image.Rectangle{
+		image.Rect(x, infoTabTop, x+80, infoTabTop+infoTabHeight),
+		image.Rect(x+84, infoTabTop, x+204, infoTabTop+infoTabHeight),
+	}
+}
+
+// infoTabs はページの印を返す（DES-UI-28）。
+func infoTabs(page InfoPage) []InfoTab {
+	rects := InfoTabRects()
+	tabs := []InfoTab{
+		{Rect: rects[0], Label: "能力", Page: PageStats},
+		{Rect: rects[1], Label: "装備・スキル", Page: PageEquip},
+	}
+	for i := range tabs {
+		tabs[i].Selected = tabs[i].Page == page
+	}
+	return tabs
+}
+
+// InfoTabGuide はページの印の右に出す Tab キーの案内（DES-UI-28）。印と一緒に描く。
+func InfoTabGuide() InfoText {
+	return InfoText{X: InfoTabRects()[1].Max.X + 8, Y: infoTabTop + 2, Text: "Tab: 切替", Style: StyleLabel}
+}
+
+// HitInfoTab は、画面の座標がページの印のどれかにあればそのページを返す（DES-UI-28）。
+func HitInfoTab(x, y int) (InfoPage, bool) {
+	for i, r := range InfoTabRects() {
+		if image.Pt(x, y).In(r) {
+			return InfoPage(i), true
+		}
+	}
+	return 0, false
+}
+
+// next は次のページを返す（Tab キー。DES-UI-28）。
+func (p InfoPage) next() InfoPage { return (p + 1) % 2 }
 
 // ForecastRow は予測の表の 1 行（DES-BTL-07）。項目の名前、攻撃する側の値、守る側の値を並べる。
 type ForecastRow struct {
@@ -68,6 +137,45 @@ func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 	t := c.battle.TerrainAt(cursor)
 	p.Terrain = &t
 	return p
+}
+
+// panel は、今のカーソルとページで情報欄の中身を作る（DES-UI-01、DES-UI-28）。戦闘の情報欄には、いつもページの印を出す。
+func (c *Controller) panel(cursor tactics.Pos, onMap bool) Panel {
+	p := c.Panel(cursor, onMap)
+	p.Page, p.Tabs = c.infoPage, true
+	return p
+}
+
+// InfoView は、カーソルの画面の座標 (x, y) での情報欄の描くものを返す（DES-UI-01、DES-UI-28）。
+func (c *Controller) InfoView(x, y int) InfoView {
+	return c.panel(c.Camera().CellAt(x, y)).View()
+}
+
+// ToggleInfoPage は Tab キーで情報欄のページを切り替える（DES-UI-28）。表示だけを変える。
+// ページの印を出していないとき（攻撃の予測・巻き戻しの一覧）は切り替えない（REV-071 F-01）。勝敗が決まった Over でも受ける。
+func (c *Controller) ToggleInfoPage() {
+	if c.rewind.open {
+		return
+	}
+	if _, ok := c.attackForecast(); ok {
+		return
+	}
+	c.infoPage = c.infoPage.next()
+}
+
+// InfoClick は情報欄のページの印のクリックを受ける（DES-UI-28）。印を出していないとき（予測・巻き戻しの一覧）は受けない。
+func (c *Controller) InfoClick(x, y int) bool {
+	if c.rewind.open {
+		return false
+	}
+	if _, ok := c.attackForecast(); ok {
+		return false
+	}
+	page, ok := HitInfoTab(x, y)
+	if ok {
+		c.infoPage = page
+	}
+	return ok
 }
 
 // 情報欄の見せ方（DES-UI-06）の大きさと位置（px）。x は情報欄の左端（余白 infoMargin の内側）から数える。
@@ -150,7 +258,9 @@ type InfoView struct {
 	Texts  []InfoText
 	Bars   []InfoBar
 	Icons  []InfoIcon
-	// Bottom は描くものの一番下の y（画面の座標）。
+	// Tabs はページの印（DES-UI-28）。予測を出しているときと、印を求めないときは空。
+	Tabs []InfoTab
+	// Bottom は描くものの一番下の y（画面の座標）。ページの印は含めない。
 	Bottom int
 }
 
@@ -173,14 +283,21 @@ func (p Panel) View() InfoView {
 		y += lineHeight
 	}
 	if len(p.Forecast) > 0 {
-		// 予測の表は速さと特効を分けて 10 行になったので、表のあとの空き行を省いて情報欄の高さを保つ（REV-069 F-03）。
-		y = v.addForecast(p, x, y)
+		// 予測を開いている間は、予測の表示を優先し、ユニットと地形とページの印は出さない（DES-IT06 12.2 節、DES-UI-28）。
+		// 情報欄は 320×360 で、予測（帯ありで y = 260 まで）とユニットの情報を並べると収まらないため。
+		v.Bottom = v.addForecast(p, x, y)
+		return v
+	}
+	if p.Tabs {
+		v.Tabs = infoTabs(p.Page)
 	}
 	if p.Unit != nil {
-		y = v.addUnit(*p.Unit, x, y)
-		if len(p.Forecast) == 0 {
-			y += lineHeight
+		if p.Page == PageEquip {
+			y = v.addEquip(*p.Unit, x, y)
+		} else {
+			y = v.addStats(*p.Unit, x, y)
 		}
+		y += lineHeight
 	}
 	if p.Terrain != nil {
 		for _, s := range TerrainLines(*p.Terrain) {
@@ -249,9 +366,9 @@ func (v *InfoView) text(x, y int, s string, st InfoStyle) {
 	v.Texts = append(v.Texts, InfoText{X: x, Y: y, Text: s, Style: st})
 }
 
-// addUnit は、ユニットの絵・名前・クラス・HP と能力の棒・移動・武器・手持ち・スキルを (x, y) から並べ、
-// 使った一番下の y を返す。自軍のレベルと経験は名前・クラスの下に置く（FR-UNT-09、DES-UI-06、DES-UI-16）。
-func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
+// addStats は「能力」のページ。ユニットの絵・名前・クラス・HP と能力の棒・移動を (x, y) から並べ、
+// 使った一番下の y を返す。自軍のレベルと経験は名前・クラスの下に置く（FR-UNT-09、DES-UI-06、DES-UI-16、DES-UI-28）。
+func (v *InfoView) addStats(u tactics.Unit, x, y int) int {
 	// 名前の横に、盤面と同じタイルを 4 倍で描く。レベルがある自軍は絵の横に3行で並べる。
 	v.Icons = append(v.Icons, InfoIcon{X: x, Y: y, Size: PortraitSize, Tile: unitTile(u)})
 	lines := 2
@@ -290,6 +407,13 @@ func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
 		y += lineHeight
 	}
 	v.text(x, y, fmt.Sprintf("移動 %d", s.Mov), StylePlain)
+	return y + lineHeight
+}
+
+// addEquip は「装備・スキル」のページ。名前の下に武器・手持ち・スキルを (x, y) から並べ、使った一番下の y を返す
+// （FR-UNT-09、DES-UI-06、DES-UI-28）。
+func (v *InfoView) addEquip(u tactics.Unit, x, y int) int {
+	v.text(x, y, unitName(u), StyleTitle)
 	y += lineHeight + blockGap
 
 	// 武器の行は、種類の絵を左に置き、右に名前と威力・命中・射程の 2 行を並べる。

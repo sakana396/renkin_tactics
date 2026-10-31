@@ -85,6 +85,9 @@ type Controller struct {
 
 	// hints は通常の盤面に出す増援の予兆領域。再生の完了後と巻き戻しの成功後だけ取り直す（DES-UI-24）。
 	hints []tactics.ReinforcementHint
+
+	// infoPage は情報欄のユニットのページ（DES-UI-28）。表示だけに使う。
+	infoPage InfoPage
 }
 
 // NewController は、newBattle で戦闘を作り、初めの出来事の再生から始める（DES-UI-02、DES-UI-04）。

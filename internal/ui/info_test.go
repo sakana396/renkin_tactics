@@ -2,6 +2,7 @@ package ui
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
@@ -113,11 +114,18 @@ func rows(v InfoView) []string {
 	return out
 }
 
-// panelRows は、情報欄の中身の文の行を返す。
+// panelRows は、情報欄の中身の文の行を返す。ページは p.Page（既定は「能力」）。
 func panelRows(p Panel) []string { return rows(p.View()) }
+
+// equipRows は、情報欄の「装備・スキル」のページの文の行を返す（DES-UI-28）。
+func equipRows(p Panel) []string {
+	p.Page = PageEquip
+	return rows(p.View())
+}
 
 // 情報欄（DES-UI-01、DES-UI-06、FR-UNT-09、UC-04）を確かめる。
 func TestInfoPanel(t *testing.T) {
+	// 情報欄は「能力」「装備・スキル」の 2 ページに分け、どちらのページにもカーソルのあるマスの地形を出す（DES-IT06 12.2 節、DES-UI-28）。
 	leonLines := []string{
 		"レオン",
 		"クラス: ロード",
@@ -127,6 +135,11 @@ func TestInfoPanel(t *testing.T) {
 		"速さ 9 魔防 0",
 		"守備 4",
 		"移動 5",
+		"地形: 平地",
+		"回避 0　守備 0　回復 0%",
+	}
+	leonEquip := []string{
+		"レオン",
 		"武器: 鉄の剣（剣）",
 		"威力 5　命中 90　射程 1",
 		"必殺 0 ×1", "重さ 0",
@@ -141,13 +154,22 @@ func TestInfoPanel(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
 		p := c.Panel(tactics.Pos{X: 2, Y: 3}, true)
 		if got := panelRows(p); !reflect.DeepEqual(got, leonLines) {
-			t.Errorf("行 = %q\nのはず %q", got, leonLines)
+			t.Errorf("能力のページ = %q\nのはず %q", got, leonLines)
 		}
-		// ユニットと地形の間は 1 行あける（地形の行は、スキルの効果の行の 2 行下から）。
-		v := p.View()
-		desc, terrain := textOf(t, v, leonLines[12]), textOf(t, v, "地形: 平地")
-		if terrain.Y < desc.Y+2*lineHeight {
-			t.Errorf("地形の行の y = %d、スキルの効果の行 %d + %d 以上のはず", terrain.Y, desc.Y, 2*lineHeight)
+		if got := equipRows(p); !reflect.DeepEqual(got, leonEquip) {
+			t.Errorf("装備・スキルのページ = %q\nのはず %q", got, leonEquip)
+		}
+		// ユニットと地形の間は 1 行あける（地形の行は、移動の行・スキルの効果の行の 2 行下から）。
+		for _, tc := range []struct {
+			page InfoPage
+			last string
+		}{{PageStats, "移動 5"}, {PageEquip, leonEquip[7]}} {
+			p.Page = tc.page
+			v := p.View()
+			desc, terrain := textOf(t, v, tc.last), textOf(t, v, "地形: 平地")
+			if terrain.Y < desc.Y+2*lineHeight {
+				t.Errorf("ページ %d の地形の行の y = %d、%q の行 %d + %d 以上のはず", tc.page, terrain.Y, tc.last, desc.Y, 2*lineHeight)
+			}
 		}
 		if p.Forecast != nil {
 			t.Errorf("Idle で予測が出ている: %v", p.Forecast)
@@ -169,6 +191,11 @@ func TestInfoPanel(t *testing.T) {
 			"速さ 4 魔防 0",
 			"守備 4",
 			"移動 5",
+			"地形: 森",
+			"回避 20　守備 1　回復 0%",
+		}
+		equip := []string{
+			"ソルジャー 3　★ボス",
 			"武器: 鉄の槍（槍）",
 			"威力 7　命中 80　射程 1",
 			"必殺 0 ×1", "重さ 0",
@@ -177,8 +204,12 @@ func TestInfoPanel(t *testing.T) {
 			"地形: 森",
 			"回避 20　守備 1　回復 0%",
 		}
-		if got := panelRows(c.Panel(tactics.Pos{X: 3, Y: 3}, true)); !reflect.DeepEqual(got, want) {
-			t.Errorf("行 = %q\nのはず %q", got, want)
+		p := c.Panel(tactics.Pos{X: 3, Y: 3}, true)
+		if got := panelRows(p); !reflect.DeepEqual(got, want) {
+			t.Errorf("能力のページ = %q\nのはず %q", got, want)
+		}
+		if got := equipRows(p); !reflect.DeepEqual(got, equip) {
+			t.Errorf("装備・スキルのページ = %q\nのはず %q", got, equip)
 		}
 	})
 
@@ -199,6 +230,9 @@ func TestInfoPanel(t *testing.T) {
 			"守備 3",
 
 			"移動 5",
+		}
+		equip := []string{
+			"ミラ",
 			"武器: 長弓（弓）",
 			"威力 6　命中 85　射程 2〜3",
 			"必殺 0 ×1", "重さ 0",
@@ -206,9 +240,12 @@ func TestInfoPanel(t *testing.T) {
 			"スキル: 狙撃",
 			"　移動せずに攻撃すると命中 +20",
 		}
-		unitRows := func(u tactics.Unit) []string { return panelRows(Panel{Unit: &u}) }
-		if got := unitRows(u); !reflect.DeepEqual(got, want) {
-			t.Errorf("行 = %q\nのはず %q", got, want)
+		if got := panelRows(Panel{Unit: &u}); !reflect.DeepEqual(got, want) {
+			t.Errorf("能力のページ = %q\nのはず %q", got, want)
+		}
+		unitRows := func(u tactics.Unit) []string { return equipRows(Panel{Unit: &u}) }
+		if got := unitRows(u); !reflect.DeepEqual(got, equip) {
+			t.Errorf("装備・スキルのページ = %q\nのはず %q", got, equip)
 		}
 		descs := map[string]tactics.Skill{
 			"　攻撃を受けると 30% でダメージ半分": pavise,
@@ -222,7 +259,7 @@ func TestInfoPanel(t *testing.T) {
 		}
 		for typ, name := range map[tactics.WeaponType]string{tactics.Sword: "剣", tactics.Lance: "槍", tactics.Axe: "斧", tactics.Bow: "弓"} {
 			u.Weapon.Type = typ
-			if got := unitRows(u)[8]; got != "武器: 長弓（"+name+"）" {
+			if got := unitRows(u)[1]; got != "武器: 長弓（"+name+"）" {
 				t.Errorf("武器の種類 %v = %q", typ, got)
 			}
 		}
@@ -324,10 +361,16 @@ func TestForecastPanel(t *testing.T) {
 		if !reflect.DeepEqual(p.Forecast, want) {
 			t.Errorf("予測 = %q\nのはず %q", p.Forecast, want)
 		}
-		// 予測の下には、カーソルのあるユニット（相手）の情報も出す。
+		// 予測を開いている間は予測の表示を優先し、カーソルのあるユニット（相手）の情報とページの印は出さない（DES-IT06 12.2 節、DES-UI-28）。
+		p.Tabs = true
 		v := p.View()
-		if name := textOf(t, v, "ソルジャー 3　★ボス"); name.Style != StyleTitle || name.Y < forecastBottom(len(want)) {
-			t.Errorf("相手の名前 = %+v、予測の表の下 %d より下のはず", name, forecastBottom(len(want)))
+		for _, tx := range v.Texts {
+			if tx.Text == "ソルジャー 3　★ボス" || strings.HasPrefix(tx.Text, "地形") {
+				t.Errorf("予測と一緒に出した文 %+v", tx)
+			}
+		}
+		if len(v.Tabs) != 0 || v.Bottom != forecastBottom(len(want)) {
+			t.Errorf("ページの印 %+v、一番下 %d（予測の表の下 %d のはず）", v.Tabs, v.Bottom, forecastBottom(len(want)))
 		}
 	})
 

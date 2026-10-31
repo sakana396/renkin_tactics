@@ -193,7 +193,7 @@ func (s *SceneController) prepareUnit(i int) tactics.Unit {
 // prepareInfo は戦闘の情報欄と同じ部品で能力・装備を表示する（DES-UI-13）。
 func (s *SceneController) prepareInfo() InfoView {
 	u := s.prepareUnit(s.prepareMember)
-	return (Panel{Unit: &u}).View()
+	return (Panel{Unit: &u, Page: s.infoPage, Tabs: true}).View()
 }
 
 func itemCount(items []defs.ItemCount) int {
