@@ -185,6 +185,7 @@ type Growth struct {
 // 武器は Weapons（武器の列）と Equipped（初めの装備の添字）で渡す（DES-ITM-02）。AllowedWeaponTypes は兵種が持てる武器の種類。
 // Weapon は武器 1 本の古い入力のための互換の入口で、Weapons が空のときだけ Weapons の 1 本に直す。
 // 両方を指定したら New が拒む。Weapon で渡して AllowedWeaponTypes を省いたときだけ、その 1 本の種類を持てる種類にする。
+// 敵の Level は 1〜20 で、Exp と Growth は 0（DES-IT06 7.3 節）。
 type UnitSetup struct {
 	Name               string
 	Tags               []string // 兵種の特効分類（DES-DAT-04）。
@@ -192,18 +193,20 @@ type UnitSetup struct {
 	Equipped           int      // 装備している武器の添字（DES-ITM-02）。
 	AllowedWeaponTypes []WeaponType
 	ClassName          string
-	Side               Side
-	Stats              Stats
-	Level              int
-	Exp                int
-	Growth             Growth
-	Pos                Pos
-	Weapon             Weapon
-	Items              []ItemStack
-	Skill              Skill
-	Lord               bool
-	Boss               bool
-	AI                 AI
+	// StaffHealCap は兵種の杖の回復量の上限。0 なら上限なし（DES-HEL-01、DES-IT06 7.1 節）。
+	StaffHealCap int
+	Side         Side
+	Stats        Stats
+	Level        int
+	Exp          int
+	Growth       Growth
+	Pos          Pos
+	Weapon       Weapon
+	Items        []ItemStack
+	Skill        Skill
+	Lord         bool
+	Boss         bool
+	AI           AI
 	// ID・Group は敵の識別子と一団の名前（DES-MAP-07）。戦闘の中で比べるだけで、定義を引く手がかりにしない。
 	ID    string
 	Group string
@@ -236,20 +239,22 @@ type Unit struct {
 	Equipped           int      // 装備している武器の添字（DES-ITM-02）。
 	AllowedWeaponTypes []WeaponType
 	ClassName          string
-	Side               Side
-	Stats              Stats
-	Level              int
-	Exp                int
-	Growth             Growth
-	HP                 int
-	Pos                Pos
-	Items              []ItemStack
-	Skill              Skill
-	Lord               bool
-	Boss               bool
-	AI                 AI
-	Acted              bool
-	Alive              bool
+	// StaffHealCap は UnitSetup から写す兵種の杖の回復量の上限（DES-HEL-01）。
+	StaffHealCap int
+	Side         Side
+	Stats        Stats
+	Level        int
+	Exp          int
+	Growth       Growth
+	HP           int
+	Pos          Pos
+	Items        []ItemStack
+	Skill        Skill
+	Lord         bool
+	Boss         bool
+	AI           AI
+	Acted        bool
+	Alive        bool
 	// ID・Group は UnitSetup から写す敵の識別子と一団の名前（DES-MAP-07）。
 	ID    string
 	Group string

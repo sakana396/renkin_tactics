@@ -14,15 +14,15 @@ func TestMapEventConversion(t *testing.T) {
 	eventMap := func(m *defs.MapDef, _ *[]defs.CharacterDef) {
 		m.Rows = []string{".....", ".....", "....."}
 		m.Enemies = []defs.EnemyPlacement{
-			{Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", Boss: true, X: 4, Y: 0},
-			{Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", X: 4, Y: 2, ID: "guard", Group: "g"},
+			{Level: 1, Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", Boss: true, X: 4, Y: 0},
+			{Level: 1, Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", X: 4, Y: 2, ID: "guard", Group: "g"},
 		}
 		area := defs.Area{MinX: 1, MinY: 0, MaxX: 1, MaxY: 0}
 		m.Events = []defs.MapEvent{
 			{ID: "advance", Trigger: defs.TriggerPlayerEntered, Area: area, Effect: defs.EventChargeGroup, Group: "g"},
 			{ID: "alarm", Trigger: defs.TriggerPlayerEntered, Area: area, Effect: defs.EventReinforce, Enemies: []defs.EnemyPlacement{
-				{Class: "fighter", Weapons: []string{"iron_axe"}, AI: "hold", X: 0, Y: 2},
-				{Class: "fighter", Weapons: []string{"iron_axe"}, AI: "hold", X: 1, Y: 2},
+				{Level: 1, Class: "fighter", Weapons: []string{"iron_axe"}, AI: "hold", X: 0, Y: 2},
+				{Level: 1, Class: "fighter", Weapons: []string{"iron_axe"}, AI: "hold", X: 1, Y: 2},
 			}},
 		}
 	}
@@ -61,11 +61,12 @@ func TestMapEventConversion(t *testing.T) {
 			t.Fatalf("増援の名前 %v", names)
 		}
 	})
-	t.Run("TC-FR-MAP-03-20 / TC-FR-UNT-01-07 出来事の増援に幸運・魔力・魔防・兵種の分類・武器の欄を渡す", func(t *testing.T) {
+	t.Run("TC-FR-MAP-03-20 / TC-FR-UNT-01-07 / TC-FR-UNT-04-18 出来事の増援に幸運・魔力・魔防・兵種の分類・武器の欄とレベルを渡す", func(t *testing.T) {
 		// REV-068 の申し送り: #120 が足した欄が、出来事の増援の変換でも落ちないことを確かめる。
+		// REV-069 の申し送り: #123 の level も出来事の増援に渡る。
 		cat := smallCatalog(func(m *defs.MapDef, c *[]defs.CharacterDef) {
 			eventMap(m, c)
-			m.Events[1].Enemies[0] = defs.EnemyPlacement{Class: "armor_knight", Weapons: []string{"horse_lance"}, AI: "hold", X: 0, Y: 2, Bonus: defs.Stats{Lck: 1, Mag: 2, Res: 3}}
+			m.Events[1].Enemies[0] = defs.EnemyPlacement{Level: 9, Class: "armor_knight", Weapons: []string{"horse_lance"}, AI: "hold", X: 0, Y: 2, Bonus: defs.Stats{Lck: 1, Mag: 2, Res: 3}}
 		})
 		b, _, err := core.NewBattle(cat, "m", 1)
 		if err != nil {
@@ -84,6 +85,9 @@ func TestMapEventConversion(t *testing.T) {
 		}
 		if got == nil {
 			t.Fatalf("アーマーの増援が出ていない")
+		}
+		if got.Level != 9 {
+			t.Errorf("出来事の増援のレベル = %d、期待 9", got.Level)
 		}
 		if got.Stats.Lck != 3 || got.Stats.Mag != 2 || got.Stats.Res != 3 {
 			t.Errorf("幸運・魔力・魔防 %+v、期待 3/2/3", got.Stats)

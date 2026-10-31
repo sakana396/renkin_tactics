@@ -196,7 +196,7 @@ func TestExp(t *testing.T) {
 			u := b.Units()[i]
 			assertEqual(t, "レベルと経験", [2]int{u.Level, u.Exp}, [2]int{level, exp})
 			for _, u := range b.Units() {
-				if u.Side == tactics.Enemy && (u.Level != 0 || u.Exp != 0) {
+				if u.Side == tactics.Enemy && (u.Level != 1 || u.Exp != 0) {
 					t.Errorf("敵 %s のレベルと経験が %d・%d", u.Name, u.Level, u.Exp)
 				}
 			}
@@ -320,8 +320,8 @@ func TestGrowthSetup(t *testing.T) {
 		}{
 			{"Level −1", func(s *tactics.Setup) { s.Units[0].Level = -1 }},
 			{"Level 21", func(s *tactics.Setup) { s.Units[0].Level = 21 }},
-			{"敵の Level 1", func(s *tactics.Setup) { s.Units[3].Level = 1 }},
-			{"増援の Level 1", func(s *tactics.Setup) { s.Reinforcements[0].Unit.Level = 1 }},
+			{"敵の Level 0", func(s *tactics.Setup) { s.Units[3].Level = 0 }},
+			{"増援の Level 0", func(s *tactics.Setup) { s.Reinforcements[0].Unit.Level = 0 }},
 			{"Exp −1", func(s *tactics.Setup) { s.Units[0].Level, s.Units[0].Exp = 1, -1 }},
 			{"Exp 100", func(s *tactics.Setup) { s.Units[0].Level, s.Units[0].Exp = 1, 100 }},
 			{"Level 0 で Exp 1", func(s *tactics.Setup) { s.Units[0].Exp = 1 }},

@@ -20,15 +20,16 @@ func snapshotBattle(t *testing.T) *Battle {
 	enemy.Side = Enemy
 	enemy.Lord = false
 	enemy.Boss = true
-	enemy.Level = 0
+	enemy.Level = 1
 	enemy.Exp = 0
+	enemy.Growth = Growth{}
 	enemy.Pos = Pos{2, 0}
 	enemy.Stats.Spd = 1
 	enemy.Stats.Mov = 0
 	enemy.AI = Hold
 	enemy.Skill = Skill{Effect: Pavise, Chance: 50}
 	terrain := [][]Terrain{{{Cost: 1}, {Cost: 1}, {Cost: 1}}, {{Cost: 1}, {Cost: 1}, {Cost: 1}}}
-	b, _, err := New(Setup{Terrain: terrain, Units: []UnitSetup{player, ally, enemy}, Reinforcements: []ReinforcementSetup{{Turn: 2, Unit: UnitSetup{Name: "増援", Side: Enemy, Stats: Stats{HP: 10}, Weapon: weapon, Pos: Pos{2, 1}, Items: player.Items}}}}, 42)
+	b, _, err := New(Setup{Terrain: terrain, Units: []UnitSetup{player, ally, enemy}, Reinforcements: []ReinforcementSetup{{Turn: 2, Unit: UnitSetup{Name: "増援", Side: Enemy, Level: 1, Stats: Stats{HP: 10}, Weapon: weapon, Pos: Pos{2, 1}, Items: player.Items}}}}, 42)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +73,7 @@ func TestSnapshotState(t *testing.T) {
 		source := snapshotBattle(t)
 		setup := Setup{Terrain: source.terrain, Reinforcements: source.reinforcements}
 		for _, u := range source.units {
-			setup.Units = append(setup.Units, UnitSetup{Name: u.Name, Side: u.Side, Lord: u.Lord, Boss: u.Boss, Stats: u.Stats, Weapons: u.Weapons, AllowedWeaponTypes: u.AllowedWeaponTypes, Pos: u.Pos, Items: u.Items})
+			setup.Units = append(setup.Units, UnitSetup{Name: u.Name, Side: u.Side, Level: u.Level, Lord: u.Lord, Boss: u.Boss, Stats: u.Stats, Weapons: u.Weapons, AllowedWeaponTypes: u.AllowedWeaponTypes, Pos: u.Pos, Items: u.Items})
 		}
 		other, _, err := New(setup, 1)
 		if err != nil {

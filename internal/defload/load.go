@@ -135,6 +135,8 @@ type (
 		WeaponType string   `toml:"weapon_type"`
 		Tags       []string `toml:"tags"`
 		Base       rawStats `toml:"base"`
+		// StaffHealCap は杖の回復量の上限。省略は 0（上限なし）（DES-IT06 7.1 節）。
+		StaffHealCap int `toml:"staff_heal_cap"`
 	}
 	rawWeapon struct {
 		ID            string   `toml:"id"`
@@ -202,6 +204,8 @@ type (
 		Y int `toml:"y"`
 	}
 	rawEnemy struct {
+		// Level は敵のレベル。省略を 1 と読むので、ポインタにする（DES-IT06 7.3 節）。
+		Level *int `toml:"level"`
 		// Name は、省略と空の文字列を見分けるので、ポインタにする（規則 19）。
 		Name    *string        `toml:"name"`
 		Class   string         `toml:"class"`
@@ -218,6 +222,7 @@ type (
 		Group string  `toml:"group"`
 	}
 	rawReinforcement struct {
+		Level   *int           `toml:"level"`
 		Turn    int            `toml:"turn"`
 		Name    *string        `toml:"name"`
 		Class   string         `toml:"class"`
@@ -641,8 +646,9 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		p := fmt.Sprintf("classes[%d]", i)
 		cid.check(p, r.ID)
 		v.oneOf(FileClasses, p+".weapon_type", "武器の種類", r.WeaponType, weaponTypes...)
-		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponType: r.WeaponType, Base: toStats(r.Base), Tags: append([]string(nil), r.Tags...)}
+		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponType: r.WeaponType, StaffHealCap: r.StaffHealCap, Base: toStats(r.Base), Tags: append([]string(nil), r.Tags...)}
 		v.tags(FileClasses, p+".tags", "兵種の分類", c.Tags)
+		v.atLeast(FileClasses, p+".staff_heal_cap", c.StaffHealCap, 0)
 		classes[i] = c
 		if _, ok := ref.classByID[r.ID]; !ok {
 			ref.classByID[r.ID] = c
@@ -1130,6 +1136,12 @@ func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyI
 	const f = FileMaps
 	weapons := v.weaponList(f, q, e.Weapon, e.Weapons)
 	ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapons: weaponIDs(weapons), Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Boss: e.Boss, X: e.X, Y: e.Y, Group: e.Group}
+	// level の省略は 1 と読む。0 と 21 以上は拒む（DES-IT06 7.3 節）。
+	ep.Level = 1
+	if e.Level != nil {
+		ep.Level = *e.Level
+	}
+	v.between(FileMaps, q+".level", ep.Level, 1, maxLevel)
 	ep.ID = ids.check(q, generated, e.ID, e.Group)
 	v.unit(ref, f, q, e.Class, weapons, ep.Bonus)
 	v.noStaff(ref, weapons)
@@ -1140,7 +1152,7 @@ func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyI
 
 // enemy は増援の、ターンを除いた敵の欄を返す。
 func (r rawReinforcement) enemy() rawEnemy {
-	return rawEnemy{Name: r.Name, Class: r.Class, Weapon: r.Weapon, Weapons: r.Weapons, Bonus: r.Bonus, Items: r.Items, AI: r.AI, Boss: r.Boss, X: r.X, Y: r.Y, ID: r.ID, Group: r.Group}
+	return rawEnemy{Level: r.Level, Name: r.Name, Class: r.Class, Weapon: r.Weapon, Weapons: r.Weapons, Bonus: r.Bonus, Items: r.Items, AI: r.AI, Boss: r.Boss, X: r.X, Y: r.Y, ID: r.ID, Group: r.Group}
 }
 
 // maxLiveEnemies は一度に生きている敵の上限（DES-IT06 9.3 節、E-91）。tactics の maxLiveEnemies と同じ値。

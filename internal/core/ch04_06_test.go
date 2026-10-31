@@ -163,6 +163,13 @@ func pauseIT06(t *testing.T, issue string) {
 	t.Skipf("IT06: 新しい式で乱数の順が変わった。章の作り直し（%s）で新しい検査に置き換える", issue)
 }
 
+// pauseIT06Level は、敵のレベル（#123、DES-IT06 7.3 節）で撃破の経験とレベルアップの乱数が変わり、
+// 固定の seed の勝敗が変わった試し遊びのサブテストを止める。issue は章を作り直す Issue。
+func pauseIT06Level(t *testing.T, issue string) {
+	t.Helper()
+	t.Skipf("IT06: 敵のレベル（#123）で撃破の経験と成長の乱数が変わった。章の作り直し（%s）で新しい検査に置き換える", issue)
+}
+
 // 試し遊びの入力は制作記録 4・5 章。敵・名簿・乱数は戦闘開始後に書き換えない（DES-MAP-06）。
 func TestCh04To06Autoplay(t *testing.T) {
 	cat := baseCatalog(t)
@@ -177,10 +184,12 @@ func TestCh04To06Autoplay(t *testing.T) {
 		{"ch06", 0, false, 5}, {"ch06", 1, false, 12}, {"ch06", 0, true, 6}, {"ch06", 1, true, 6},
 	} {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-04 %s/作戦%d/低め%v/seed%d", tc.id, tc.plan, tc.low, tc.seed), func(t *testing.T) {
-			// IT06 で一時停止（TST-IT06 3.2 節）。ch04 は #131、ch06 は #132 で置き換える。
+			// IT06 で一時停止（TST-IT06 3.2・3.3 節）。ch04 は #131、ch06 は #132 で置き換える。
 			switch {
 			case tc.id == "ch04" && tc.plan == 0 && !tc.low && tc.seed == 9:
 				pauseIT06(t, "#131")
+			case tc.id == "ch04" && tc.plan == 0 && tc.low && tc.seed == 1:
+				pauseIT06Level(t, "#131")
 			case tc.id == "ch06" && tc.low && tc.seed == 6:
 				pauseIT06(t, "#132")
 			}

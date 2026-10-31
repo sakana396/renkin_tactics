@@ -29,7 +29,7 @@ func campaignCatalog(edit ...func(chars []defs.CharacterDef)) *defs.Catalog {
 		[]defs.ClassDef{{ID: "hero", Name: "主人公", WeaponType: "sword", Base: defs.Stats{HP: 20, Str: 20, Skl: 100, Spd: 5, Def: 10, Mov: 5}}, {ID: "weak", Name: "兵", WeaponType: "sword", Base: defs.Stats{HP: 10, Str: 20, Skl: 100, Spd: 5, Mov: 5}}},
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}},
 		[]defs.ItemDef{{ID: "a", Name: "同じ薬", Heal: 10}, {ID: "z", Name: "同じ薬", Heal: 10}}, nil,
-		chars, []defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Class: "weak", Weapons: []string{"s"}, AI: "hold", Boss: true, X: 2, Y: 0}}}},
+		chars, []defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Level: 1, Class: "weak", Weapons: []string{"s"}, AI: "hold", Boss: true, X: 2, Y: 0}}}},
 		[]defs.ChapterDef{{ID: "c1", Map: "m", Joins: []string{"join1"}, Reward: []defs.ItemCount{{Item: "a", Count: 2}}}, {ID: "c2", Map: "m", Joins: []string{"join2", "friend"}, Reward: []defs.ItemCount{{Item: "z", Count: 2}}}, {ID: "c3", Map: "m"}}, nil)
 }
 
@@ -105,7 +105,7 @@ func TestCampaignDeployment(t *testing.T) {
 		s := sortie(t, c, members...)
 		members[1] = 0
 		u := s.Battle.Units()
-		if !reflect.DeepEqual(s.Members, []int{0, 2, 1}) || u[1].Name != "控え" || u[1].Level != 3 || u[1].Exp != 42 || u[1].HP != 25 || u[1].Pos != (tactics.Pos{X: 1, Y: 0}) || u[0].Growth != (tactics.Growth{HP: 100, Str: 100, Skl: 100, Spd: 100, Def: 100}) || u[0].Items[0].Item.ID != "z" || u[3].Level != 0 {
+		if !reflect.DeepEqual(s.Members, []int{0, 2, 1}) || u[1].Name != "控え" || u[1].Level != 3 || u[1].Exp != 42 || u[1].HP != 25 || u[1].Pos != (tactics.Pos{X: 1, Y: 0}) || u[0].Growth != (tactics.Growth{HP: 100, Str: 100, Skl: 100, Spd: 100, Def: 100}) || u[0].Items[0].Item.ID != "z" || u[3].Level != 1 {
 			t.Fatalf("出撃 = %+v", u)
 		}
 		for i, pos := range []tactics.Pos{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}} {
@@ -145,9 +145,9 @@ func TestCampaignDeployment(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, r := range setup.Reinforcements {
-			if r.Unit.Level != 0 {
-				t.Fatal("増援にレベルがある")
+		for i, r := range setup.Reinforcements {
+			if r.Unit.Level != []int{1, 2, 3}[i] {
+				t.Fatal("増援のレベルが定義と違う")
 			}
 		}
 	})
@@ -440,7 +440,7 @@ func TestCampaignFallenGrowth(t *testing.T) {
 				chars = append(chars, v)
 			}
 			m, _ := base.Map("m")
-			m.Enemies = append(m.Enemies, defs.EnemyPlacement{Class: "weak", Weapons: []string{"s"}, AI: "hold", X: 2, Y: 1})
+			m.Enemies = append(m.Enemies, defs.EnemyPlacement{Level: 1, Class: "weak", Weapons: []string{"s"}, AI: "hold", X: 2, Y: 1})
 			cat := defs.NewCatalog(base.Game, base.Terrains(), classes, []defs.WeaponDef{w}, []defs.ItemDef{a, z}, nil, chars, []defs.MapDef{m}, base.Chapters(), nil)
 			c, err := core.NewCampaign(cat, rule)
 			if err != nil {
@@ -462,8 +462,8 @@ func TestCampaignFallenGrowth(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := core.MemberResult{Member: 1, LevelBefore: 2, LevelAfter: 3, ExpBefore: 80, ExpAfter: 10, Gains: tactics.Stats{HP: 1, Str: 1, Skl: 1, Spd: 1, Def: 1}, Fallen: true, Dead: rule == core.Permadeath}
-			if result.Members[1] != want || c.Roster[1].Level != 3 || c.Roster[1].Exp != 10 || c.Roster[1].Stats != (tactics.Stats{HP: 11, Str: 21, Skl: 101, Spd: 6, Def: 1, Mov: 5}) {
+			want := core.MemberResult{Member: 1, LevelBefore: 2, LevelAfter: 3, ExpBefore: 80, ExpAfter: 7, Gains: tactics.Stats{HP: 1, Str: 1, Skl: 1, Spd: 1, Def: 1}, Fallen: true, Dead: rule == core.Permadeath}
+			if result.Members[1] != want || c.Roster[1].Level != 3 || c.Roster[1].Exp != 7 || c.Roster[1].Stats != (tactics.Stats{HP: 11, Str: 21, Skl: 101, Spd: 6, Def: 1, Mov: 5}) {
 				t.Fatalf("倒れる前の成長 = %+v / %+v", result, c.Roster[1])
 			}
 		})

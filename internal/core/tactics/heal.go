@@ -36,13 +36,22 @@ func (b *Battle) validateHeal(cmd Command) (int, error) {
 }
 
 // healWithStaff は、ユニット i が武器の列の w 番目の杖で target を回復する（DES-HEL-01、DES-ITM-02）。i は呼ぶ前に移動を終えておく。
-// その杖の Uses を 1 減らしてから、target の HP を杖の Heal だけ回復し（最大 HP を超えない）、Heal を出す。装備は変えない。
+// その杖の Uses を 1 減らしてから、その杖の Heal ＋ 魔力を兵種の上限と不足 HP で抑えて回復し、Heal を出す。装備は変えない。
 // そのあと、回復した杖のユニットに経験を足す（DES-GRW-01）。命中の乱数は引かない。勝ち負けは決まらない。
 func (b *Battle) healWithStaff(events []Event, i, target, w int) []Event {
 	staff := &b.units[i].Weapons[w]
 	staff.Uses--
-	events = b.heal(events, target, staff.Heal, staff.Name)
+	events = b.heal(events, target, staffHealAmount(b.units[i], w), staff.Name)
 	return b.gainExp(events, i, expHit)
+}
+
+// staffHealAmount は、武器の列の w 番目の杖の回復量に魔力と兵種の上限を適用する（DES-HEL-01、DES-ITM-02）。
+func staffHealAmount(u Unit, w int) int {
+	amount := u.Weapons[w].Heal + u.Stats.Mag
+	if u.StaffHealCap > 0 {
+		amount = min(amount, u.StaffHealCap)
+	}
+	return amount
 }
 
 // HealForecast は回復の予測（DES-HEL-02）。
@@ -53,7 +62,7 @@ type HealForecast struct {
 	// HP と MaxHP は、回復される側の今の HP と最大 HP。
 	HP    int
 	MaxHP int
-	// Amount は実際に回復する量（min(杖の Heal, MaxHP − HP)）。After は回復したあとの HP。
+	// Amount は実際に回復する量（min(杖の Heal ＋ 魔力、兵種の上限（あれば）、MaxHP − HP)）。After は回復したあとの HP。
 	Amount int
 	After  int
 	// Uses と MaxUses は、選んだ杖の今の残りの使用回数と最大（回復したあとは Uses − 1 になる）。
@@ -75,8 +84,8 @@ func (b *Battle) HealForecast(cmd Command) (HealForecast, error) {
 		return HealForecast{}, err
 	}
 	h, t := b.units[cmd.Unit], b.units[cmd.Target]
+	amount := min(staffHealAmount(h, w), t.Stats.HP-t.HP)
 	staff := h.Weapons[w]
-	amount := min(staff.Heal, t.Stats.HP-t.HP)
 	return HealForecast{
 		Healer:  h.Name,
 		Target:  t.Name,

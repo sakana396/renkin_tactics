@@ -19,7 +19,7 @@ func deployRangeScenes(t *testing.T) *SceneController {
 		[]defs.ClassDef{{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 20, Mov: 2}}, {ID: "bow", Name: "弓兵", WeaponType: "bow", Base: defs.Stats{HP: 22, Str: 4, Skl: 6, Spd: 8, Def: 10, Mov: 2}}, {ID: "boss", Name: "騎兵", WeaponType: "sword", Base: defs.Stats{HP: 30}}},
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", MinRange: 1, MaxRange: 1}, {ID: "b", Name: "弓", Type: "bow", MinRange: 2, MaxRange: 2}}, nil, nil,
 		[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "lord", Weapons: []string{"s"}, Lord: true, Level: 1}, {ID: "friend", Name: "仲間", Class: "lord", Weapons: []string{"s"}, Level: 1}},
-		[]defs.MapDef{{ID: "m", Rows: []string{"......."}, Slots: []defs.Slot{{X: 2}, {X: 0}, {X: 1}}, Enemies: []defs.EnemyPlacement{{Class: "bow", Weapons: []string{"b"}, AI: "hold", X: 4}, {Class: "boss", Weapons: []string{"s"}, AI: "hold", Boss: true, X: 6}}, Reinforcements: []defs.Reinforcement{{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Class: "boss", Weapons: []string{"s"}, AI: "hold", X: 5}}}}},
+		[]defs.MapDef{{ID: "m", Rows: []string{"......."}, Slots: []defs.Slot{{X: 2}, {X: 0}, {X: 1}}, Enemies: []defs.EnemyPlacement{{Level: 1, Class: "bow", Weapons: []string{"b"}, AI: "hold", X: 4}, {Level: 1, Class: "boss", Weapons: []string{"s"}, AI: "hold", Boss: true, X: 6}}, Reinforcements: []defs.Reinforcement{{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Level: 1, Class: "boss", Weapons: []string{"s"}, AI: "hold", X: 5}}}}},
 		[]defs.ChapterDef{{ID: "c", Map: "m"}}, nil)
 	c, err := core.NewCampaign(cat, core.Withdraw)
 	if err != nil {

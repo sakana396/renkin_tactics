@@ -104,7 +104,7 @@ func TestIT06OrderAndRolls(t *testing.T) {
 			amount            int
 		}{{"B4", []int{10, 20, 49, 29}, true, true, true, 13}, {"必殺境界", []int{10, 20, 50, 29}, true, false, true, 4}, {"外れ", []int{99, 99}, false, false, false, 0}} {
 			t.Run(tc.name, func(t *testing.T) {
-				b, _, err := New(Setup{Terrain: [][]Terrain{{{Cost: 1}, {Cost: 1}}}, Units: []UnitSetup{{Side: Player, Lord: true, Stats: Stats{HP: 22, Str: 11, Skl: 5, Spd: 5}, Weapon: Weapon{Type: Axe, Might: 8, Hit: 70, Weight: 7, MinRange: 1, MaxRange: 1}, Skill: Skill{Effect: Wrath, Chance: 50}}, {Side: Enemy, Boss: true, Pos: Pos{X: 1}, Stats: Stats{HP: 100, Str: 6, Spd: 2, Def: 11, Lck: 2}, Weapon: Weapon{Type: Lance, Weight: 5, MinRange: 1, MaxRange: 1}, Skill: Skill{Effect: Pavise, Chance: 30}}}}, 1)
+				b, _, err := New(Setup{Terrain: [][]Terrain{{{Cost: 1}, {Cost: 1}}}, Units: []UnitSetup{{Side: Player, Lord: true, Stats: Stats{HP: 22, Str: 11, Skl: 5, Spd: 5}, Weapon: Weapon{Type: Axe, Might: 8, Hit: 70, Weight: 7, MinRange: 1, MaxRange: 1}, Skill: Skill{Effect: Wrath, Chance: 50}}, {Side: Enemy, Level: 1, Boss: true, Pos: Pos{X: 1}, Stats: Stats{HP: 100, Str: 6, Spd: 2, Def: 11, Lck: 2}, Weapon: Weapon{Type: Lance, Weight: 5, MinRange: 1, MaxRange: 1}, Skill: Skill{Effect: Pavise, Chance: 30}}}}, 1)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -158,7 +158,7 @@ func TestIT06ValidationAndGrowth(t *testing.T) {
 		}
 		terrain := [][]Terrain{{{Cost: 1}, {Cost: 1}}}
 		lord := UnitSetup{Side: Player, Lord: true, Stats: Stats{HP: 10}, Weapon: Weapon{MinRange: 1, MaxRange: 1}}
-		boss := UnitSetup{Side: Enemy, Boss: true, Pos: Pos{X: 1}, Stats: Stats{HP: 10}, Weapon: Weapon{MinRange: 1, MaxRange: 1}}
+		boss := UnitSetup{Side: Enemy, Level: 1, Boss: true, Pos: Pos{X: 1}, Stats: Stats{HP: 10}, Weapon: Weapon{MinRange: 1, MaxRange: 1}}
 		boss.Weapon, boss.Weapons = Weapon{}, []Weapon{{Weight: -1, MinRange: 1, MaxRange: 1}}
 		boss.AllowedWeaponTypes = []WeaponType{Sword}
 		if b, events, err := New(Setup{Terrain: terrain, Units: []UnitSetup{lord, boss}}, 1); !errors.Is(err, ErrInvalidSetup) || b != nil || events != nil || !strings.Contains(err.Error(), "weapons[0]") {
@@ -198,7 +198,7 @@ func TestIT06ValidationAndGrowth(t *testing.T) {
 
 func TestIT06Rewind(t *testing.T) {
 	t.Run("TC-NFR-06-08 / TC-FR-BTL-10-32", func(t *testing.T) {
-		setup := Setup{Terrain: [][]Terrain{{{Cost: 1}, {Cost: 1}, {Cost: 1}}}, Units: []UnitSetup{{Side: Player, Lord: true, Stats: Stats{HP: 100, Str: 1, Skl: 20, Spd: 4}, Level: 1, Exp: 99, Growth: Growth{Lck: 50, Mag: 50, Res: 50}, Weapon: Weapon{Hit: 100, Crit: 40, MinRange: 1, MaxRange: 1, Strikes: 2, EffectiveTags: []string{"armor"}}}, {Side: Enemy, Boss: true, Pos: Pos{X: 1}, Stats: Stats{HP: 100, Def: 1}, Tags: []string{"armor"}, Weapon: Weapon{Hit: 100, MinRange: 1, MaxRange: 1}}, {Side: Player, Pos: Pos{X: 2}, Stats: Stats{HP: 100}, Weapon: Weapon{MinRange: 1, MaxRange: 1}}}}
+		setup := Setup{Terrain: [][]Terrain{{{Cost: 1}, {Cost: 1}, {Cost: 1}}}, Units: []UnitSetup{{Side: Player, Lord: true, Stats: Stats{HP: 100, Str: 1, Skl: 20, Spd: 4}, Level: 1, Exp: 99, Growth: Growth{Lck: 50, Mag: 50, Res: 50}, Weapon: Weapon{Hit: 100, Crit: 40, MinRange: 1, MaxRange: 1, Strikes: 2, EffectiveTags: []string{"armor"}}}, {Side: Enemy, Level: 1, Boss: true, Pos: Pos{X: 1}, Stats: Stats{HP: 100, Def: 1}, Tags: []string{"armor"}, Weapon: Weapon{Hit: 100, MinRange: 1, MaxRange: 1}}, {Side: Player, Pos: Pos{X: 2}, Stats: Stats{HP: 100}, Weapon: Weapon{MinRange: 1, MaxRange: 1}}}}
 		b, _, err := New(setup, 17)
 		if err != nil {
 			t.Fatal(err)
@@ -260,7 +260,7 @@ func TestIT06BraveAxeForecastMatchesAct(t *testing.T) {
 		// A: 攻撃の速さ 12 − (9 − 8) = 11。D: 5。差 6 で A が追撃し、斧は槍に有利（+1）。
 		a := UnitSetup{Name: "A", Side: Player, Lord: true, Stats: Stats{HP: 60, Str: 8, Skl: 10, Spd: 12, Def: 5, Lck: 10, Mov: 1},
 			Weapon: Weapon{Name: "勇者の斧", Type: Axe, Might: 9, Hit: 100, Crit: 5, Weight: 9, Strikes: 2, MinRange: 1, MaxRange: 1}}
-		d := UnitSetup{Name: "D", Side: Enemy, Boss: true, AI: Hold, Pos: Pos{X: 1}, Stats: Stats{HP: 80, Str: 8, Skl: 4, Spd: 5, Def: 6, Lck: 2},
+		d := UnitSetup{Name: "D", Side: Enemy, Level: 1, Boss: true, AI: Hold, Pos: Pos{X: 1}, Stats: Stats{HP: 80, Str: 8, Skl: 4, Spd: 5, Def: 6, Lck: 2},
 			Weapon: Weapon{Name: "槍", Type: Lance, Might: 6, Hit: 100, Weight: 5, MinRange: 1, MaxRange: 1}}
 		b, _, err := New(Setup{Terrain: [][]Terrain{{{Name: "平地", Cost: 1}, {Name: "平地", Cost: 1}}}, Units: []UnitSetup{a, d}}, 1)
 		if err != nil {

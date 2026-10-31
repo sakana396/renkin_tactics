@@ -37,7 +37,7 @@ func alchemistBattle(t *testing.T) *Battle {
 		Weapons: []Weapon{testStaff, testFire, testBlade}, AllowedWeaponTypes: []WeaponType{Staff, Magic, Sword},
 		Items: []ItemStack{{Item: Item{ID: "potion", Name: "回復薬", Heal: 10}, Count: 1}}}
 	ally := UnitSetup{Name: "味方", Side: Player, Pos: Pos{0, 1}, Stats: Stats{HP: 20, Skl: 1, Mov: 0}, Weapon: testBlade}
-	boss := UnitSetup{Name: "ボス", Side: Enemy, Boss: true, AI: Hold, Pos: Pos{2, 0}, Stats: Stats{HP: 100, Str: 3, Skl: 1, Spd: 5, Mov: 0},
+	boss := UnitSetup{Name: "ボス", Side: Enemy, Level: 1, Boss: true, AI: Hold, Pos: Pos{2, 0}, Stats: Stats{HP: 100, Str: 3, Skl: 1, Spd: 5, Mov: 0},
 		Weapon: Weapon{Name: "鉄の槍", Type: Lance, Strikes: 1, Might: 4, Hit: 100, MinRange: 1, MaxRange: 1}}
 	b, _, err := New(Setup{Terrain: plainTerrain(4, 3), Units: []UnitSetup{alch, ally, boss}}, 1)
 	if err != nil {
@@ -72,11 +72,19 @@ func TestIT06WeaponCommand(t *testing.T) {
 		if err != nil || f.Attacker.Damage != 10 || f.Attacker.HitRate != 92 || f.Attacker.Count != 1 || f.Defender.Count != 0 {
 			t.Fatalf("ファイアの予測 %+v、%v", f, err)
 		}
+		// 杖の回復量は min(杖の回復 10 ＋ 魔力 5, 兵種の上限（0 はなし）, 不足 HP) で求める（DES-IT06 7.1 節）。
+		// 味方は HP 10/20 で不足 10 なので 10、HP 2/20 なら不足 18 なので 15。
 		if h, err := b.HealForecast(Command{Unit: 0, To: Pos{0, 0}, Action: Heal, Target: 1}); err != nil || h.Amount != 10 || h.Uses != 3 {
 			t.Fatalf("杖の予測 %+v、%v", h, err)
 		}
-		if h, err := b.HealForecast(Command{Unit: 0, To: Pos{0, 0}, Action: Heal, Target: 1, Weapon: ptr(0)}); err != nil || h.Amount != 10 {
+		b.units[1].HP = 2
+		if h, err := b.HealForecast(Command{Unit: 0, To: Pos{0, 0}, Action: Heal, Target: 1, Weapon: ptr(0)}); err != nil || h.Amount != 15 || h.After != 17 {
 			t.Fatalf("杖を選んだ予測 %+v、%v", h, err)
+		}
+		// 兵種の上限 8 があれば 8。
+		b.units[0].StaffHealCap = 8
+		if h, err := b.HealForecast(Command{Unit: 0, To: Pos{0, 0}, Action: Heal, Target: 1, Weapon: ptr(0)}); err != nil || h.Amount != 8 {
+			t.Fatalf("上限 8 の予測 %+v、%v", h, err)
 		}
 	})
 	t.Run("TC-FR-BTL-03-18 nil・範囲の外・持てない種類・攻撃に使えない武器を順に拒み、状態と乱数を変えない", func(t *testing.T) {
@@ -225,7 +233,7 @@ func TestIT06Equip(t *testing.T) {
 			{"同じ値の 2 本なら、添字 0 を選ぶ", Pos{1, 0}, []Weapon{testBlade, other}, []WeaponType{Sword}, 1, 0},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				boss := UnitSetup{Name: "ボス", Side: Enemy, Boss: true, AI: Charge, Pos: tc.pos, Stats: Stats{HP: 50, Str: 1, Skl: 1, Mov: 0},
+				boss := UnitSetup{Name: "ボス", Side: Enemy, Level: 1, Boss: true, AI: Charge, Pos: tc.pos, Stats: Stats{HP: 50, Str: 1, Skl: 1, Mov: 0},
 					Weapons: tc.weapons, AllowedWeaponTypes: tc.allowed, Equipped: tc.equipped}
 				b, _, err := New(Setup{Terrain: plainTerrain(3, 1), Units: []UnitSetup{lord, boss}}, 1)
 				if err != nil {
@@ -248,7 +256,7 @@ func TestIT06HandSlots(t *testing.T) {
 	potion := Item{ID: "potion", Name: "回復薬", Heal: 10}
 	base := func() Setup {
 		lord := UnitSetup{Name: "主人公", Side: Player, Lord: true, Pos: Pos{0, 0}, Stats: Stats{HP: 20, Mov: 1}, Weapon: testBlade}
-		boss := UnitSetup{Name: "ボス", Side: Enemy, Boss: true, Pos: Pos{2, 0}, Stats: Stats{HP: 20}, Weapon: testBlade}
+		boss := UnitSetup{Name: "ボス", Side: Enemy, Level: 1, Boss: true, Pos: Pos{2, 0}, Stats: Stats{HP: 20}, Weapon: testBlade}
 		return Setup{Terrain: plainTerrain(3, 1), Units: []UnitSetup{lord, boss}}
 	}
 	blades := func(n int) []Weapon {
@@ -313,7 +321,9 @@ func TestIT06HandSlots(t *testing.T) {
 		s := base()
 		staff := testStaff
 		staff.Uses = 0 // Setup の Uses は見ず、New が満タンにする。
-		s.Units[0].Weapon, s.Units[0].Weapons = Weapon{}, []Weapon{testBlade, staff, staff}
+		weak := staff
+		weak.Heal = 1 // 2 本目だけ回復 1。回復量は選んだ杖の値で求める。
+		s.Units[0].Weapon, s.Units[0].Weapons = Weapon{}, []Weapon{testBlade, staff, weak}
 		s.Units[0].AllowedWeaponTypes = []WeaponType{Sword, Staff}
 		s.Units = append(s.Units, UnitSetup{Name: "味方", Side: Player, Pos: Pos{1, 0}, Stats: Stats{HP: 20}, Weapon: testBlade})
 		b, _, err := New(s, 1)
@@ -325,7 +335,8 @@ func TestIT06HandSlots(t *testing.T) {
 			t.Fatal(err)
 		}
 		w := b.Units()[0].Weapons
-		if w[1].Uses != 3 || w[2].Uses != 2 || w[0].Uses != 0 || b.units[0].Equipped != 0 {
+		// 選んだ 2 本目（回復 1 ＋ 魔力 0）で 1 回復する。
+		if w[1].Uses != 3 || w[2].Uses != 2 || w[0].Uses != 0 || b.units[0].Equipped != 0 || b.units[2].HP != 2 {
 			t.Fatalf("杖の回数 %d / %d、剣 %d、装備 %d", w[1].Uses, w[2].Uses, w[0].Uses, b.units[0].Equipped)
 		}
 	})

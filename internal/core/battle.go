@@ -197,14 +197,15 @@ func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, 
 		return tactics.UnitSetup{}, err
 	}
 	return tactics.UnitSetup{
-		Name:      ch.Name,
-		ClassName: cls.Name,
-		Tags:      append([]string(nil), cls.Tags...),
-		Side:      tactics.Player,
-		Stats:     addStats(cls.Base, ch.Bonus),
-		Level:     ch.Level,
-		Growth:    tactics.Growth{HP: ch.Growth.HP, Str: ch.Growth.Str, Skl: ch.Growth.Skl, Spd: ch.Growth.Spd, Def: ch.Growth.Def, Lck: ch.Growth.Lck, Mag: ch.Growth.Mag, Res: ch.Growth.Res},
-		Pos:       tactics.Pos{X: slot.X, Y: slot.Y},
+		Name:         ch.Name,
+		ClassName:    cls.Name,
+		StaffHealCap: cls.StaffHealCap,
+		Tags:         append([]string(nil), cls.Tags...),
+		Side:         tactics.Player,
+		Stats:        addStats(cls.Base, ch.Bonus),
+		Level:        ch.Level,
+		Growth:       tactics.Growth{HP: ch.Growth.HP, Str: ch.Growth.Str, Skl: ch.Growth.Skl, Spd: ch.Growth.Spd, Def: ch.Growth.Def, Lck: ch.Growth.Lck, Mag: ch.Growth.Mag, Res: ch.Growth.Res},
+		Pos:          tactics.Pos{X: slot.X, Y: slot.Y},
 		// 初めの装備は武器の列の先頭（DES-ITM-02）。
 		Weapons:            weapons,
 		AllowedWeaponTypes: []tactics.WeaponType{allowed},
@@ -239,12 +240,14 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 		return tactics.UnitSetup{}, err
 	}
 	return tactics.UnitSetup{
-		Name:      name,
-		ClassName: cls.Name,
-		Tags:      append([]string(nil), cls.Tags...),
-		Side:      tactics.Enemy,
-		Stats:     addStats(cls.Base, e.Bonus),
-		Pos:       tactics.Pos{X: e.X, Y: e.Y},
+		Name:         name,
+		ClassName:    cls.Name,
+		StaffHealCap: cls.StaffHealCap,
+		Tags:         append([]string(nil), cls.Tags...),
+		Side:         tactics.Enemy,
+		Level:        e.Level,
+		Stats:        addStats(cls.Base, e.Bonus),
+		Pos:          tactics.Pos{X: e.X, Y: e.Y},
 		// 敵の武器は敵の定義から渡す（DES-ITM-02）。初めの装備は先頭。
 		Weapons:            weapons,
 		AllowedWeaponTypes: []tactics.WeaponType{allowed},

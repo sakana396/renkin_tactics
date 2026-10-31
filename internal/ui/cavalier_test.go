@@ -34,9 +34,9 @@ func cavalierCatalog() *defs.Catalog {
 		[]defs.MapDef{{ID: "m", Rows: []string{"....", "....", "...."},
 			Slots: []defs.Slot{{X: 0, Y: 0}, {X: 0, Y: 1}, {X: 0, Y: 2}},
 			Enemies: []defs.EnemyPlacement{
-				{Name: "隊長", Class: "cavalier", Weapons: []string{"l"}, Boss: true, AI: "hold", X: 1, Y: 0},
-				{Class: "cavalier", Weapons: []string{"l"}, Bonus: defs.Stats{HP: 5, Spd: 3}, AI: "hold", X: 3, Y: 2},
-				{Class: "armor", Weapons: []string{"l"}, AI: "hold", X: 3, Y: 0},
+				{Level: 1, Name: "隊長", Class: "cavalier", Weapons: []string{"l"}, Boss: true, AI: "hold", X: 1, Y: 0},
+				{Level: 1, Class: "cavalier", Weapons: []string{"l"}, Bonus: defs.Stats{HP: 5, Spd: 3}, AI: "hold", X: 3, Y: 2},
+				{Level: 1, Class: "armor", Weapons: []string{"l"}, AI: "hold", X: 3, Y: 0},
 			}}}, chapters, nil)
 }
 

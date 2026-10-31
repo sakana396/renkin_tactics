@@ -73,6 +73,7 @@ func newUnit(us UnitSetup) Unit {
 	u := Unit{
 		Name:               us.Name,
 		ClassName:          us.ClassName,
+		StaffHealCap:       us.StaffHealCap,
 		Tags:               us.Tags,
 		Weapons:            us.Weapons,
 		Equipped:           us.Equipped,
@@ -257,6 +258,10 @@ func validateUnit(u UnitSetup) error {
 		}
 		slots += it.Count
 	}
+	// 兵種の杖の回復量の上限は 0 以上（DES-IT06 7.1 節）。
+	if u.StaffHealCap < 0 {
+		return fmt.Errorf("杖の回復量の上限 %d は 0 以上でなければなりません", u.StaffHealCap)
+	}
 	// 持てる武器の種類（DES-ITM-02）。種類は Sword〜Magic のどれかで、重ならない。
 	if len(u.AllowedWeaponTypes) == 0 {
 		return fmt.Errorf("持てる武器の種類がありません")
@@ -344,8 +349,9 @@ func validateGrowth(u UnitSetup) error {
 	if u.Level < 0 || u.Level > maxLevel {
 		return fmt.Errorf("レベル %d は 0〜%d でなければなりません", u.Level, maxLevel)
 	}
-	if u.Side == Enemy && u.Level != 0 {
-		return fmt.Errorf("敵のレベル %d は 0 でなければなりません", u.Level)
+	// 敵のレベルは 1〜20（DES-IT06 7.3 節）。0 を許すと撃破の経験の式で黙って弱く扱われる。
+	if u.Side == Enemy && u.Level == 0 {
+		return fmt.Errorf("敵のレベル %d は 1〜%d でなければなりません", u.Level, maxLevel)
 	}
 	if u.Exp < 0 || u.Exp >= expPerLevel {
 		return fmt.Errorf("経験 %d は 0〜%d でなければなりません", u.Exp, expPerLevel-1)
@@ -358,6 +364,10 @@ func validateGrowth(u UnitSetup) error {
 		if r < 0 || r > 100 {
 			return fmt.Errorf("成長率 %+v は 0〜100 でなければなりません", g)
 		}
+	}
+	// 敵は育たないので、経験と成長率はすべて 0（DES-IT06 7.3 節）。
+	if u.Side == Enemy && (u.Exp != 0 || g != (Growth{})) {
+		return fmt.Errorf("敵の経験 %d と成長率 %+v は 0 でなければなりません", u.Exp, g)
 	}
 	return nil
 }

@@ -23,14 +23,14 @@ import (
 //	3T: (14, 1) → x 12〜15・y 0〜3
 func hintSetup() tactics.Setup {
 	reinforce := func(turn int, name string, p tactics.Pos) tactics.ReinforcementSetup {
-		return tactics.ReinforcementSetup{Turn: turn, Unit: tactics.UnitSetup{Name: name, ClassName: "ソルジャー", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30}, Pos: p, Weapon: testLance, AI: tactics.Hold}}
+		return tactics.ReinforcementSetup{Turn: turn, Unit: tactics.UnitSetup{Name: name, ClassName: "ソルジャー", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: p, Weapon: testLance, AI: tactics.Hold}}
 	}
 	return tactics.Setup{
 		Terrain: field(16, 16),
 		Units: []tactics.UnitSetup{
 			{Name: "レオン", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Mov: 3}, Pos: tactics.Pos{X: 0, Y: 0}, Weapon: testSword, Lord: true},
 			{Name: "ガルド", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Mov: 3}, Pos: tactics.Pos{X: 0, Y: 2}, Weapon: testLance},
-			{Name: "ボス", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 15, Y: 15}, Weapon: testLance, Boss: true, AI: tactics.Hold},
+			{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 15, Y: 15}, Weapon: testLance, Boss: true, AI: tactics.Hold},
 		},
 		Reinforcements: []tactics.ReinforcementSetup{
 			reinforce(2, "増援東", tactics.Pos{X: 9, Y: 5}),
@@ -187,7 +187,7 @@ func TestReinforcementHintNormal(t *testing.T) {
 		lost := func() tactics.Setup {
 			s := hintSetup()
 			s.Units[0].Stats.HP = 1
-			s.Units = append(s.Units, tactics.UnitSetup{Name: "ファイター", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30, Str: 5}, Pos: tactics.Pos{X: 1, Y: 0}, Weapon: testAxe, AI: tactics.Hold})
+			s.Units = append(s.Units, tactics.UnitSetup{Name: "ファイター", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30, Str: 5}, Pos: tactics.Pos{X: 1, Y: 0}, Weapon: testAxe, AI: tactics.Hold})
 			return s
 		}
 		o := newIdleWith(t, lost)

@@ -35,7 +35,7 @@ func example1Setup() tactics.Setup {
 		Terrain: terrain,
 		Units: []tactics.UnitSetup{
 			{Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: leonStats, Pos: tactics.Pos{X: 2, Y: 3}, Weapon: ironSword, Items: []tactics.ItemStack{{Item: potion, Count: 2}}, Skill: inspire, Lord: true},
-			{Name: "ソルジャー 3", ClassName: "ソルジャー", Side: tactics.Enemy, Stats: soldierSts, Pos: tactics.Pos{X: 3, Y: 3}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
+			{Name: "ソルジャー 3", ClassName: "ソルジャー", Side: tactics.Enemy, Level: 1, Stats: soldierSts, Pos: tactics.Pos{X: 3, Y: 3}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
 		},
 	}
 }
@@ -54,8 +54,8 @@ func example4Setup() tactics.Setup {
 		Units: []tactics.UnitSetup{
 			{Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: leonStats, Pos: tactics.Pos{X: 1, Y: 1}, Weapon: ironSword, Skill: inspire, Lord: true},
 			{Name: "ガルド", ClassName: "アーマー", Side: tactics.Player, Stats: tactics.Stats{HP: 24, Str: 6, Skl: 3, Spd: 2, Def: 10, Mov: 4}, Pos: tactics.Pos{X: 2, Y: 2}, Weapon: ironLance, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: pavise},
-			{Name: "ファイター", ClassName: "ファイター", Side: tactics.Enemy, Stats: tactics.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5}, Pos: tactics.Pos{X: 3, Y: 2}, Weapon: ironAxe, AI: tactics.Hold},
-			{Name: "ボス", Side: tactics.Enemy, Stats: soldierSts, Pos: tactics.Pos{X: 6, Y: 6}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
+			{Name: "ファイター", ClassName: "ファイター", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5}, Pos: tactics.Pos{X: 3, Y: 2}, Weapon: ironAxe, AI: tactics.Hold},
+			{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: soldierSts, Pos: tactics.Pos{X: 6, Y: 6}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
 		},
 	}
 }
@@ -79,8 +79,8 @@ func wrathSetup() tactics.Setup {
 			{Name: "剣兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Str: 9, Def: 30, Mov: 1}, Pos: tactics.Pos{X: 2, Y: 2}, Weapon: sword},
 			{Name: "弓兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Str: 1, Def: 30}, Pos: tactics.Pos{X: 3, Y: 4}, Weapon: bow, Skill: snipe},
 			{Name: "剣士", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Str: 1, Def: 30}, Pos: tactics.Pos{X: 4, Y: 2}, Weapon: sword},
-			{Name: "ブラン", Side: tactics.Enemy, Stats: tactics.Stats{HP: 20, Str: 5}, Pos: tactics.Pos{X: 3, Y: 2}, Weapon: axe, Skill: wrath, AI: tactics.Hold},
-			{Name: "ボス", Side: tactics.Enemy, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 5, Y: 0}, Weapon: axe, Boss: true, AI: tactics.Hold},
+			{Name: "ブラン", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 20, Str: 5}, Pos: tactics.Pos{X: 3, Y: 2}, Weapon: axe, Skill: wrath, AI: tactics.Hold},
+			{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 5, Y: 0}, Weapon: axe, Boss: true, AI: tactics.Hold},
 		},
 	}
 }

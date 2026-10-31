@@ -30,11 +30,13 @@ func TestBaseDataIt02(t *testing.T) {
 			name, class, weapon, ai string
 			boss                    bool
 			x, y                    int
+			level                   int
 		}
 		type reinf struct {
 			turn         int
 			class, weapn string
 			x, y         int
+			level        int
 		}
 		tests := []struct {
 			id, name  string
@@ -49,37 +51,37 @@ func TestBaseDataIt02(t *testing.T) {
 				[]defs.Slot{{X: 1, Y: 7}, {X: 1, Y: 6}, {X: 1, Y: 8}, {X: 0, Y: 6}, {X: 0, Y: 8}, {X: 2, Y: 7}},
 				defs.Stats{HP: 2, Str: 1, Skl: 1, Spd: 1, Def: 1},
 				[]enemy{
-					{"", "soldier", "iron_lance", "charge", false, 8, 5},
-					{"", "fighter", "iron_axe", "charge", false, 7, 9},
-					{"", "archer", "iron_bow", "hold", false, 9, 3},
-					{"", "myrmidon", "iron_sword", "hold", false, 10, 7},
-					{"", "cavalier", "iron_lance", "hold", false, 12, 11},
-					{"", "soldier", "iron_lance", "hold", false, 12, 6},
-					{"", "archer", "iron_bow", "hold", false, 13, 9},
-					{"ヴォルグ", "cavalier", "iron_lance", "hold", true, 14, 8},
+					{"", "soldier", "iron_lance", "charge", false, 8, 5, 3},
+					{"", "fighter", "iron_axe", "charge", false, 7, 9, 4},
+					{"", "archer", "iron_bow", "hold", false, 9, 3, 5},
+					{"", "myrmidon", "iron_sword", "hold", false, 10, 7, 3},
+					{"", "cavalier", "iron_lance", "hold", false, 12, 11, 4},
+					{"", "soldier", "iron_lance", "hold", false, 12, 6, 5},
+					{"", "archer", "iron_bow", "hold", false, 13, 9, 3},
+					{"ヴォルグ", "cavalier", "iron_lance", "hold", true, 14, 8, 8},
 				},
 				defs.Stats{HP: 8, Str: 2, Skl: 3, Spd: 2, Def: 1},
 				defs.Stats{HP: 28, Str: 8, Skl: 8, Spd: 8, Def: 6, Mov: 7, Lck: 3, Res: 1},
-				[]reinf{{2, "soldier", "iron_lance", 0, 4}, {3, "fighter", "iron_axe", 0, 10}, {4, "cavalier", "iron_lance", 0, 7}},
+				[]reinf{{2, "soldier", "iron_lance", 0, 4, 3}, {3, "fighter", "iron_axe", 0, 10, 4}, {4, "cavalier", "iron_lance", 0, 7, 5}},
 			},
 			{"ch03", "王都の奪還",
 				[]defs.Slot{{X: 7, Y: 14}, {X: 6, Y: 15}, {X: 8, Y: 15}, {X: 7, Y: 15}, {X: 8, Y: 14}},
 				defs.Stats{HP: 3, Str: 2, Skl: 1, Spd: 1, Def: 1},
 				[]enemy{
-					{"", "soldier", "iron_lance", "hold", false, 4, 8},
-					{"", "archer", "iron_bow", "hold", false, 11, 9},
-					{"", "fighter", "iron_axe", "charge", false, 12, 8},
-					{"", "myrmidon", "iron_sword", "hold", false, 4, 6},
-					{"", "soldier", "iron_lance", "hold", false, 11, 6},
-					{"", "archer", "iron_bow", "hold", false, 7, 5},
-					{"", "fighter", "iron_axe", "hold", false, 10, 5},
-					{"", "armor", "iron_lance", "hold", false, 6, 3},
-					{"", "soldier", "iron_lance", "hold", false, 11, 3},
-					{"グラウス", "myrmidon", "iron_sword", "hold", true, 8, 1},
+					{"", "soldier", "iron_lance", "hold", false, 4, 8, 5},
+					{"", "archer", "iron_bow", "hold", false, 11, 9, 6},
+					{"", "fighter", "iron_axe", "charge", false, 12, 8, 7},
+					{"", "myrmidon", "iron_sword", "hold", false, 4, 6, 5},
+					{"", "soldier", "iron_lance", "hold", false, 11, 6, 6},
+					{"", "archer", "iron_bow", "hold", false, 7, 5, 7},
+					{"", "fighter", "iron_axe", "hold", false, 10, 5, 5},
+					{"", "armor", "iron_lance", "hold", false, 6, 3, 6},
+					{"", "soldier", "iron_lance", "hold", false, 11, 3, 7},
+					{"グラウス", "myrmidon", "iron_sword", "hold", true, 8, 1, 10},
 				},
 				defs.Stats{HP: 10, Str: 4, Skl: 3, Spd: 2, Def: 3},
 				defs.Stats{HP: 27, Str: 8, Skl: 11, Spd: 11, Def: 5, Mov: 5, Lck: 4, Mag: 1, Res: 1},
-				[]reinf{{3, "cavalier", "iron_lance", 0, 14}, {3, "cavalier", "iron_lance", 15, 14}, {5, "fighter", "iron_axe", 4, 2}},
+				[]reinf{{3, "cavalier", "iron_lance", 0, 14, 5}, {3, "cavalier", "iron_lance", 15, 14, 6}, {5, "fighter", "iron_axe", 4, 2, 7}},
 			},
 		}
 		for _, tt := range tests {
@@ -99,7 +101,7 @@ func TestBaseDataIt02(t *testing.T) {
 				if e.boss {
 					b = tt.bossBonus
 				}
-				want = append(want, defs.EnemyPlacement{Name: e.name, Class: e.class, Weapons: []string{e.weapon}, Bonus: b, AI: e.ai, Boss: e.boss, X: e.x, Y: e.y})
+				want = append(want, defs.EnemyPlacement{Name: e.name, Class: e.class, Weapons: []string{e.weapon}, Bonus: b, AI: e.ai, Boss: e.boss, Level: e.level, X: e.x, Y: e.y})
 			}
 			if !reflect.DeepEqual(m.Enemies, want) {
 				t.Errorf("%s の敵 =\n%+v\nwant\n%+v", tt.id, m.Enemies, want)
@@ -110,7 +112,7 @@ func TestBaseDataIt02(t *testing.T) {
 			}
 			var wantR []defs.Reinforcement
 			for _, r := range tt.reinf {
-				wantR = append(wantR, defs.Reinforcement{Turn: r.turn, EnemyPlacement: defs.EnemyPlacement{Class: r.class, Weapons: []string{r.weapn}, Bonus: tt.bonus, AI: "charge", X: r.x, Y: r.y}})
+				wantR = append(wantR, defs.Reinforcement{Turn: r.turn, EnemyPlacement: defs.EnemyPlacement{Class: r.class, Weapons: []string{r.weapn}, Bonus: tt.bonus, AI: "charge", Level: r.level, X: r.x, Y: r.y}})
 			}
 			if !reflect.DeepEqual(m.Reinforcements, wantR) {
 				t.Errorf("%s の増援 =\n%+v\nwant\n%+v", tt.id, m.Reinforcements, wantR)

@@ -24,7 +24,7 @@ func weaponMenuController(t *testing.T) *Controller {
 			{Name: "ノエル", ClassName: "錬金術師", Side: tactics.Player, Lord: true, Stats: tactics.Stats{HP: 30, Mag: 5}, Pos: tactics.Pos{X: 1, Y: 1},
 				Weapons: []tactics.Weapon{menuStaff, menuFire, menuBlade, menuStaff}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Staff, tactics.Magic, tactics.Sword}},
 			{Name: "兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 1, Y: 2}, Weapon: testSword},
-			{Name: "ボス", Side: tactics.Enemy, Boss: true, AI: tactics.Hold, Stats: tactics.Stats{HP: 30, Str: 5}, Pos: tactics.Pos{X: 1, Y: 3}, Weapon: testSword},
+			{Name: "ボス", Side: tactics.Enemy, Level: 1, Boss: true, AI: tactics.Hold, Stats: tactics.Stats{HP: 30, Str: 5}, Pos: tactics.Pos{X: 1, Y: 3}, Weapon: testSword},
 		}}
 	})
 	// 番を 1 回終え、ボスが味方を攻撃する（味方は HP 15 になる）。

@@ -303,7 +303,7 @@ func TestCameraDeploy(t *testing.T) {
 					r[i] = strings.Repeat(".", 32)
 				}
 				return r
-			}(), Slots: []defs.Slot{{X: 31, Y: 31}, {X: 0, Y: 0}, {X: 31, Y: 0}, {X: 0, Y: 31}}, Enemies: []defs.EnemyPlacement{{Class: "lord", Weapons: []string{"s"}, AI: "hold", Boss: true, X: 30, Y: 30}}}},
+			}(), Slots: []defs.Slot{{X: 31, Y: 31}, {X: 0, Y: 0}, {X: 31, Y: 0}, {X: 0, Y: 31}}, Enemies: []defs.EnemyPlacement{{Level: 1, Class: "lord", Weapons: []string{"s"}, AI: "hold", Boss: true, X: 30, Y: 30}}}},
 			[]defs.ChapterDef{{ID: "c", Map: "m"}}, nil)
 		campaign, err := core.NewCampaign(cat, core.Withdraw)
 		if err != nil {
