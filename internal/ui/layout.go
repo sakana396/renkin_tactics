@@ -72,10 +72,14 @@ func (c *Controller) ClickMenu(i int) {
 		}
 	case ItemMenu:
 		c.ChooseItem(i)
+	case Canto:
+		if i == 0 {
+			c.EndCanto()
+		}
 	}
 }
 
-// MenuLabels は、ボタンに出す文を返す（DES-UI-02）。Moved では行動、ItemMenu では手持ちのアイテム、ほかは空。
+// MenuLabels は、ボタンに出す文を返す（DES-UI-02）。Moved では行動、ItemMenu では手持ちのアイテム、Canto では「終える」（DES-IT06 12.3 節）、ほかは空。
 func (c *Controller) MenuLabels() []string {
 	var out []string
 	switch c.state {
@@ -87,6 +91,8 @@ func (c *Controller) MenuLabels() []string {
 		for _, s := range c.battle.Units()[c.unit].Items {
 			out = append(out, itemLabel(s))
 		}
+	case Canto:
+		out = append(out, cantoEndLabel)
 	}
 	return out
 }

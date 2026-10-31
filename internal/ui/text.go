@@ -30,6 +30,12 @@ func actionName(a tactics.Action) string {
 	}
 }
 
+// cantoEndLabel は再移動を終えるボタンの文（DES-IT06 12.3 節）。
+const cantoEndLabel = "終える"
+
+// guideCantoWait は、再移動を待っている間はほかのユニットを操作できないことの案内（DES-IT06 12.3 節）。
+const guideCantoWait = "再移動を終えるまで、ほかのユニットの操作と番の終わりはできません（T: 巻き戻しは移動の前へ）"
+
 // itemLabel はアイテムの一覧に出す文を返す（DES-UI-02）。
 func itemLabel(s tactics.ItemStack) string {
 	return fmt.Sprintf("%s ×%d（回復 %d）", s.Item.Name, s.Count, s.Item.Heal)
@@ -158,6 +164,13 @@ func (c *Controller) Guide() []string {
 		lines = append(lines, guideDanger)
 	case ItemMenu:
 		lines = append(lines, "左クリック: 使うアイテムを選ぶ　右クリック・Esc: 戻る", guideDanger)
+	case Canto:
+		// 攻撃を決める前の取り消しと分け、結果が出たあとの Esc は再移動を終えることだと伝える（DES-IT06 12.3 節）。
+		rest := 0
+		if pc, ok := b.PendingCanto(); ok {
+			rest = pc.Remaining
+		}
+		lines = append(lines, fmt.Sprintf("再移動（残りの移動 %d）: 青いマスをクリックで移動　今の位置・「%s」・右クリック・Esc: その場で終える", rest, cantoEndLabel), guideCantoWait)
 	case Playing:
 		// PhaseStart は 1 行目と同じ文になるので出さない。
 		if e, _, ok := c.Event(); ok && e.Kind != tactics.EventPhaseStart {

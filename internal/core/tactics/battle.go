@@ -19,6 +19,8 @@ type Battle struct {
 	// mapEvents は出来事の定義（New が入力から独立させ、戦闘中に変えない）。mapState はその状態（DES-MAP-07）。
 	mapEvents []MapEventSetup
 	mapState  eventState
+	// canto は待っている再移動（DES-BTL-10）。
+	canto cantoState
 
 	// rng は戦闘が持つシード付きの乱数（DES-RNG-01）。
 	rng *rand.Rand
@@ -84,6 +86,7 @@ func newUnit(us UnitSetup) Unit {
 		Weapon:       us.Weapon,
 		Items:        us.Items,
 		Skill:        us.Skill,
+		ClassSkills:  us.ClassSkills,
 		Lord:         us.Lord,
 		Boss:         us.Boss,
 		AI:           us.AI,
@@ -233,14 +236,35 @@ func validateUnit(u UnitSetup) error {
 	if err := validateStaff(u); err != nil {
 		return err
 	}
-	if u.Skill.Effect < NoSkill || u.Skill.Effect > Snipe {
+	if u.Skill.Effect < NoSkill || u.Skill.Effect > Canto {
 		return fmt.Errorf("スキルの効果 %d が正しくありません", u.Skill.Effect)
 	}
 	if u.AI < Charge || u.AI > Hold {
 		return fmt.Errorf("動き方 %d が正しくありません", u.AI)
 	}
 	// 規則 6: スキルの数値（DES-DAT-03 の規則 6 と同じ範囲）。
-	sk := u.Skill
+	if err := validateSkill(u.Skill); err != nil {
+		return err
+	}
+	// 兵種のスキル: 効果があり、重ならない（DES-IT06 8.1 節）。
+	seen := map[SkillEffect]bool{}
+	for k, sk := range u.ClassSkills {
+		if sk.Effect <= NoSkill || sk.Effect > Canto {
+			return fmt.Errorf("classSkills[%d]: スキルの効果 %d が正しくありません", k, sk.Effect)
+		}
+		if seen[sk.Effect] {
+			return fmt.Errorf("classSkills[%d]: 兵種のスキルの効果 %d が重なっています", k, sk.Effect)
+		}
+		seen[sk.Effect] = true
+		if err := validateSkill(sk); err != nil {
+			return fmt.Errorf("classSkills[%d]: %w", k, err)
+		}
+	}
+	return validateGrowth(u)
+}
+
+// validateSkill はスキル 1 つの数値を確かめる（DES-DAT-03 の規則 6 と同じ範囲）。
+func validateSkill(sk Skill) error {
 	if sk.Range < 0 || sk.Hit < 0 || sk.Avoid < 0 {
 		return fmt.Errorf("スキルの数値（範囲 %d、命中 %d、回避 %d）は 0 以上でなければなりません", sk.Range, sk.Hit, sk.Avoid)
 	}
@@ -250,7 +274,7 @@ func validateUnit(u UnitSetup) error {
 	if sk.Multiplier < 0 || (sk.Effect == Wrath && sk.Multiplier != 0) {
 		return fmt.Errorf("スキルの倍率 %d が正しくありません（0 以上、怒りでは 0）", sk.Multiplier)
 	}
-	return validateGrowth(u)
+	return nil
 }
 
 // validateStaff はユニット 1 体の規則 8（杖）を確かめる（DES-HEL-01）。

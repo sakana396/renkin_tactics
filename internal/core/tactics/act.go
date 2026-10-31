@@ -8,7 +8,13 @@ package tactics
 // Heal は移動してから、杖で Target の味方を回復する（DES-HEL-01）。
 // 行動のあと、戦闘が続いていて、生きている自軍が全員行動済みなら、敵軍の番と次の自軍の番の始めまでを進める（DES-BTL-02）。
 // 返す出来事は、その間に起きたことすべて（DES-EVT-01）。
+//
+// 再移動のスキルを持つユニットが攻撃・回復・道具のあとに残りの移動力を持てば、再移動を待つ（PendingCanto）。
+// 待っている間は敵軍の番へ進まず、CantoMove・CantoEnd と巻き戻しだけを受け付ける（DES-BTL-10）。
 func (b *Battle) Act(cmd Command) ([]Event, error) {
+	if cmd.Action == CantoMove || cmd.Action == CantoEnd {
+		return b.actCanto(cmd)
+	}
 	if err := b.validateCommand(cmd); err != nil {
 		return nil, err
 	}
@@ -33,6 +39,8 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 		target = cmd.Target
 	}
 	record := b.beginHistory(historyEntry{Kind: historyAction, Action: cmd.Action, Unit: cmd.Unit, Target: target, To: cmd.To})
+	// 残りの移動力は、移動力から行動の前の位置から To までの最小の費用を引いたもの（DES-IT06 8.2 節）。
+	remaining := b.units[cmd.Unit].Stats.Mov - b.Reachable(cmd.Unit)[cmd.To]
 	// ここから状態を変える。まず移動する。
 	var events []Event
 	u := &b.units[cmd.Unit]
@@ -55,8 +63,13 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 	// 移動・攻撃・戦死・経験・成長・勝敗を済ませたあとで、出来事を評価する（DES-MAP-07）。
 	events = b.evaluateMapEvents(events, events)
 
+	// 再移動を待つときも、最初の Act の成功で履歴を公開し、同じ「前の状態」へ戻せるようにする（DES-BTL-10）。
 	b.finishHistory(record)
 	if b.Result != Ongoing {
+		return events, nil
+	}
+	if b.canCanto(cmd.Unit, cmd.Action, remaining) {
+		b.canto = cantoState{active: true, PendingCanto: PendingCanto{Unit: cmd.Unit, Remaining: remaining, HistoryID: b.history[record].entry.ID}}
 		return events, nil
 	}
 	if b.allPlayersActed() {
@@ -81,6 +94,10 @@ func (b *Battle) validateCommand(cmd Command) error {
 	}
 	if b.NeedsResume() {
 		return ErrResumeRequired
+	}
+	// 再移動を待っている間は、ほかの行動を受け付けない（DES-BTL-10）。
+	if b.canto.active {
+		return ErrCantoPending
 	}
 	// 3. Unit が存在し、生きている自軍のユニットである。
 	if !b.validUnit(cmd.Unit) || !b.units[cmd.Unit].Alive || b.units[cmd.Unit].Side != Player {
@@ -108,6 +125,9 @@ func (b *Battle) EndPhase() ([]Event, error) {
 	}
 	if b.NeedsResume() {
 		return nil, ErrResumeRequired
+	}
+	if b.canto.active {
+		return nil, ErrCantoPending
 	}
 	return b.runEnemyPhase(nil, false), nil
 }

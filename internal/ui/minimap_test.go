@@ -560,6 +560,11 @@ func TestInfoPagesLayout(t *testing.T) {
 			}
 			checkInfoArea(t, "戦闘", v)
 		}
+		// キャラと兵種の両方のスキル（#124）と手持ちを持つユニットも、「装備・スキル」のページが印の上に収まる。
+		two := tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, HP: 20, Weapon: testLance, Alive: true,
+			Skill: tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}, ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}},
+			Items: []tactics.ItemStack{{Item: potion, Count: 2}}}
+		checkInfoArea(t, "2 つのスキル", Panel{Unit: &two, Terrain: &forest, Page: PageEquip, Tabs: true}.View())
 		// 盤面の外でもページの印を出し、クリックできる。
 		if v := c.InfoView(600, 100); len(v.Tabs) != 2 || len(v.Texts) != 0 {
 			t.Errorf("盤面の外 = %+v", v)

@@ -73,7 +73,7 @@ type actErrorCase struct {
 // orderCases は、複数の検証に当てはまるコマンドで、最初の誤りが返ることを確かめる（DES-BTL-04）。
 var orderCases = []actErrorCase{
 	{"0 が 1〜5 より先", func(b *tactics.Battle) { over(b); enemyPhase(b) },
-		tactics.Command{Unit: 99, To: pos(9, 9), Action: tactics.Action(4)}, tactics.ErrInvalidAction},
+		tactics.Command{Unit: 99, To: pos(9, 9), Action: tactics.Action(6)}, tactics.ErrInvalidAction},
 	{"1 が 2〜5 より先", func(b *tactics.Battle) { over(b); enemyPhase(b) },
 		tactics.Command{Unit: 99, To: pos(9, 9), Action: tactics.Wait}, tactics.ErrBattleOver},
 	{"2 が 3〜5 より先", enemyPhase,
@@ -90,7 +90,7 @@ var orderCases = []actErrorCase{
 
 // eachCases は、検証 0〜5 の誤りを 1 つずつ起こす（DES-BTL-04、DES-BTL-08）。
 var eachCases = []actErrorCase{
-	{"ErrInvalidAction（4）", nil, tactics.Command{Unit: 0, To: pos(0, 0), Action: tactics.Action(4)}, tactics.ErrInvalidAction},
+	{"ErrInvalidAction（6）", nil, tactics.Command{Unit: 0, To: pos(0, 0), Action: tactics.Action(6)}, tactics.ErrInvalidAction},
 	{"ErrInvalidAction（-1）", nil, tactics.Command{Unit: 0, To: pos(0, 0), Action: tactics.Action(-1)}, tactics.ErrInvalidAction},
 	{"ErrBattleOver（勝ち）", func(b *tactics.Battle) { b.Result = tactics.Won },
 		tactics.Command{Unit: 0, To: pos(0, 0)}, tactics.ErrBattleOver},

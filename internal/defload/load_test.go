@@ -149,7 +149,7 @@ func TestLoad(t *testing.T) {
 			[]string{`classes.toml: classes[3].weapon_type: 武器の種類 "gun" は使えません`}},
 		{"TC-FR-SYS-04-04 スキルの効果の種類が決まった値でない",
 			[]edit{replace("skills.toml", `effect = "pavise"`, `effect = "shield"`)},
-			[]string{`skills.toml: skills[1].effect: スキルの効果の種類 "shield" は使えません（inspire・pavise・wrath・snipe のどれか）`}},
+			[]string{`skills.toml: skills[1].effect: スキルの効果の種類 "shield" は使えません（inspire・pavise・wrath・snipe・canto のどれか）`}},
 		{"TC-FR-SYS-04-04 敵の動き方が決まった値でない",
 			[]edit{replace("maps.toml", `ai = "charge"`, `ai = "flee"`)},
 			[]string{`maps.toml: maps[0].enemies[0].ai: 敵の動き方 "flee" は使えません（charge・hold のどれか）`}},
