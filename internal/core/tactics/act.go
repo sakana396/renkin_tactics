@@ -191,6 +191,7 @@ func (b *Battle) continuePhaseBefore(events []Event, before *battleSnapshot) []E
 		events = b.placeReinforcements(events)
 		events = b.placeEventReinforcements(events)
 		events = b.healOnForts(events, Enemy)
+		b.planEnemyGroups(n)
 
 		b.progress = phaseProgress{stage: enemyAction, enemyCount: n}
 		b.finishHistory(record)
