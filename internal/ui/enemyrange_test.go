@@ -47,11 +47,11 @@ func corridorSetup() tactics.Setup {
 		Terrain: terrain,
 		Units: []tactics.UnitSetup{
 			{Name: "レオン", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Mov: 3}, Pos: tactics.Pos{X: 2, Y: 0}, Weapon: testSword, Lord: true},
-			{Name: "ボス", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 0, Y: 0}, Weapon: testLance, Boss: true, AI: tactics.Hold},
-			{Name: "ソルジャー", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30, Mov: 3}, Pos: tactics.Pos{X: 4, Y: 0}, Weapon: testSword, AI: tactics.Charge},
+			{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 0, Y: 0}, Weapon: testLance, Boss: true, AI: tactics.Hold},
+			{Name: "ソルジャー", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30, Mov: 3}, Pos: tactics.Pos{X: 4, Y: 0}, Weapon: testSword, AI: tactics.Charge},
 		},
 		Reinforcements: []tactics.ReinforcementSetup{
-			{Turn: 2, Unit: tactics.UnitSetup{Name: "増援", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 9, Y: 0}, Weapon: testSword, AI: tactics.Hold}},
+			{Turn: 2, Unit: tactics.UnitSetup{Name: "増援", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 9, Y: 0}, Weapon: testSword, AI: tactics.Hold}},
 		},
 	}
 }

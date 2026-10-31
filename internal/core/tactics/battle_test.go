@@ -25,7 +25,7 @@ func TestNew(t *testing.T) {
 		for i, u := range units {
 			us := s.Units[i]
 			want := tactics.Unit{
-				Name: us.Name, ClassName: us.ClassName, Side: us.Side, Stats: us.Stats,
+				Name: us.Name, ClassName: us.ClassName, Side: us.Side, Stats: us.Stats, Level: us.Level,
 				HP: us.Stats.HP, Pos: us.Pos, Weapon: us.Weapon, Items: us.Items, Skill: us.Skill,
 				Lord: us.Lord, Boss: us.Boss, AI: us.AI, Acted: false, Alive: true,
 			}

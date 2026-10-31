@@ -39,7 +39,12 @@ func grid(rows ...string) [][]tactics.Terrain {
 
 // unit は、能力がそろったユニットの入力を作る。
 func unit(name string, side tactics.Side, x, y, mov int) tactics.UnitSetup {
+	level := 0
+	if side == tactics.Enemy {
+		level = 1
+	}
 	return tactics.UnitSetup{
+		Level:     level,
 		Name:      name,
 		ClassName: "テスト",
 		Side:      side,

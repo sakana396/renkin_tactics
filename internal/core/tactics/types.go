@@ -185,20 +185,23 @@ type Growth struct {
 
 // UnitSetup は、戦闘を始めるときのユニット 1 体の入力（DES-BTL-01）。HP は Stats.HP から始まる。
 // Level・Exp・Growth はレベル・経験・成長率（DES-GRW-03）。Level が 0 のユニットは経験を得ない。
+// 敵の Level は 1〜20 で、Exp と Growth は 0（DES-IT06 7.3 節）。
 type UnitSetup struct {
 	Name      string
 	Tags      []string // 兵種の特効分類（DES-DAT-04）。
 	Weapons   []Weapon // 後続の持ち替え用の列（DES-ITM-02）。
 	ClassName string
-	Side      Side
-	Stats     Stats
-	Level     int
-	Exp       int
-	Growth    Growth
-	Pos       Pos
-	Weapon    Weapon
-	Items     []ItemStack
-	Skill     Skill
+	// StaffHealCap は兵種の杖の回復量の上限。0 なら上限なし（DES-HEL-01、DES-IT06 7.1 節）。
+	StaffHealCap int
+	Side         Side
+	Stats        Stats
+	Level        int
+	Exp          int
+	Growth       Growth
+	Pos          Pos
+	Weapon       Weapon
+	Items        []ItemStack
+	Skill        Skill
 	// ClassSkills は兵種のスキル（DES-BTL-10、DES-DAT-04）。Skill（キャラのスキル）と合わせて効果を判定する。
 	ClassSkills []Skill
 	Lord        bool
@@ -231,16 +234,18 @@ type Unit struct {
 	Tags      []string // 兵種の特効分類（DES-DAT-04）。
 	Weapons   []Weapon // 後続の持ち替え用の列（DES-ITM-02）。
 	ClassName string
-	Side      Side
-	Stats     Stats
-	Level     int
-	Exp       int
-	Growth    Growth
-	HP        int
-	Pos       Pos
-	Weapon    Weapon
-	Items     []ItemStack
-	Skill     Skill
+	// StaffHealCap は UnitSetup から写す兵種の杖の回復量の上限（DES-HEL-01）。
+	StaffHealCap int
+	Side         Side
+	Stats        Stats
+	Level        int
+	Exp          int
+	Growth       Growth
+	HP           int
+	Pos          Pos
+	Weapon       Weapon
+	Items        []ItemStack
+	Skill        Skill
 	// ClassSkills は UnitSetup から写す兵種のスキル（DES-BTL-10）。
 	ClassSkills []Skill
 	Lord        bool
