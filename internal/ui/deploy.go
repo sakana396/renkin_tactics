@@ -7,6 +7,9 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/defs"
 )
 
+// deployButtonTop は配置のボタンの上端（DES-UI-20、DES-UI-28）。ページの印（y = 336〜）の上に置く。
+const deployButtonTop = infoTabTop - 40
+
 // DeployView は戦闘を作らずに表示する地形・初期敵・出撃枠と仮配置（DES-UI-20、DES-UI-23）。
 type DeployView struct {
 	Terrain           [][]tactics.Terrain
@@ -172,15 +175,18 @@ func (s *SceneController) deployView() SceneView {
 			}
 		}
 	}
+	// ボタンは情報欄（y < 360）の中、ページの印の上に横に並べ、右下のミニマップと重ねない（DES-UI-28）。
 	v := SceneView{Deploy: d, Buttons: []SceneButton{
-		{"戦闘開始", image.Rect(528, 432, 816, 468), true},
-		{"準備に戻る", image.Rect(528, 476, 816, 512), true},
+		{"戦闘開始", image.Rect(528, deployButtonTop, 668, deployButtonTop+32), true},
+		{"準備に戻る", image.Rect(676, deployButtonTop, 816, deployButtonTop+32), true},
 	}, Texts: []SceneText{
 		{Text: "左クリック: 味方を選ぶ・交換・空き出撃マスへ移す", X: 16, Y: 516, Style: StyleLabel},
 		{Text: "右クリック・Esc: 選択を解除／未選択なら準備に戻る", X: 16, Y: 534, Style: StyleLabel},
 	}}
+	mm := s.deployMinimap(d)
+	v.Minimap = &mm
 	if d.Selected >= 0 {
-		info := (Panel{Unit: &d.Units[d.Selected]}).View()
+		info := (Panel{Unit: &d.Units[d.Selected], Page: s.infoPage, Tabs: true}).View()
 		v.Info = &info
 	} else {
 		v.Texts = append(v.Texts, SceneText{Text: "配置する味方を選んでください", X: 528, Y: 24, Style: StyleLabel})

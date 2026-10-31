@@ -21,8 +21,9 @@ const (
 	hintPeriod = 8
 )
 
-// hintRewindY は巻き戻しの右欄で案内を出す行の上端。理由の 2 行（y=456・476）とボタン（y=520〜）の間の空き（DES-UI-24）。
-const hintRewindY = 500
+// hintRewindY は巻き戻しの右欄で案内を出す行の上端。下の行の「戻る」「決定」（y = 520〜560）の下の空きに置き、
+// 右下のミニマップ（y = 360〜511）と重ねない（DES-UI-24、DES-UI-28、REV-071 F-03）。
+const hintRewindY = ScreenHeight - lineHeight
 
 // HintView は盤面に描く増援の気配の表示値（DES-UI-24）。
 // Areas は tactics の予兆領域（4 マス単位に丸めた矩形）そのままで、正確な出現マスを持たない。
@@ -54,7 +55,7 @@ func (c *Controller) ReinforcementHintView() HintView {
 }
 
 // rewindHintView は巻き戻しの一覧・確認で、選択中の写しの予兆を返す（DES-UI-24、DES-UI-21）。
-// 案内は右欄の理由の行の下の空き（y=500）に出す。盤面を描けないときは隠す。
+// 案内は右欄の理由の行の下の空き（y=hintRewindY）に出す。盤面を描けないときは隠す。
 func (c *Controller) rewindHintView(areas []tactics.ReinforcementHint) HintView {
 	if len(areas) == 0 {
 		return HintView{}
