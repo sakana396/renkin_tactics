@@ -85,15 +85,13 @@ func (s eventState) clone() eventState {
 	return out
 }
 
-// cloneMapEvents は出来事の定義を、増援の手持ちまで入力から独立させる。
-// UnitSetup にスライスの欄を足したら、ここでもその欄を深く写す。
+// cloneMapEvents は出来事の定義を、増援の手持ち・特効の分類・武器の列まで入力から独立させる（UnitSetup.clone）。
 func cloneMapEvents(events []MapEventSetup) []MapEventSetup {
 	out := make([]MapEventSetup, len(events))
 	for i, e := range events {
 		enemies := make([]UnitSetup, len(e.Enemies))
 		for j, u := range e.Enemies {
-			u.Items = append([]ItemStack(nil), u.Items...)
-			enemies[j] = u
+			enemies[j] = u.clone()
 		}
 		e.Enemies = enemies
 		out[i] = e

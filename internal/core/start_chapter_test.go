@@ -61,7 +61,7 @@ func TestNewCampaignAt(t *testing.T) {
 						m := c.Roster[i]
 						ch, _ := tc.cat.Character(id)
 						cls, _ := tc.cat.Class(ch.Class)
-						want := tactics.Stats{HP: cls.Base.HP + ch.Bonus.HP, Str: cls.Base.Str + ch.Bonus.Str, Skl: cls.Base.Skl + ch.Bonus.Skl, Spd: cls.Base.Spd + ch.Bonus.Spd, Def: cls.Base.Def + ch.Bonus.Def, Mov: cls.Base.Mov + ch.Bonus.Mov}
+						want := tactics.Stats{HP: cls.Base.HP + ch.Bonus.HP, Str: cls.Base.Str + ch.Bonus.Str, Skl: cls.Base.Skl + ch.Bonus.Skl, Spd: cls.Base.Spd + ch.Bonus.Spd, Def: cls.Base.Def + ch.Bonus.Def, Mov: cls.Base.Mov + ch.Bonus.Mov, Lck: cls.Base.Lck + ch.Bonus.Lck, Mag: cls.Base.Mag + ch.Bonus.Mag, Res: cls.Base.Res + ch.Bonus.Res}
 						if m.Character != id || m.Level != ch.Level || m.Exp != 0 || !m.Alive || m.Stats != want || !reflect.DeepEqual(m.Items, ch.Items) {
 							t.Fatalf("名簿[%d] = %+v", i, m)
 						}

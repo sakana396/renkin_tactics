@@ -173,10 +173,14 @@ func (p Panel) View() InfoView {
 		y += lineHeight
 	}
 	if len(p.Forecast) > 0 {
-		y = v.addForecast(p, x, y) + lineHeight
+		// 予測の表は速さと特効を分けて 10 行になったので、表のあとの空き行を省いて情報欄の高さを保つ（REV-069 F-03）。
+		y = v.addForecast(p, x, y)
 	}
 	if p.Unit != nil {
-		y = v.addUnit(*p.Unit, x, y) + lineHeight
+		y = v.addUnit(*p.Unit, x, y)
+		if len(p.Forecast) == 0 {
+			y += lineHeight
+		}
 	}
 	if p.Terrain != nil {
 		for _, s := range TerrainLines(*p.Terrain) {
@@ -272,12 +276,17 @@ func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
 	v.text(x, y, fmt.Sprintf("HP %d/%d", u.HP, s.HP), StylePlain)
 	v.Bars = append(v.Bars, InfoBar{X: x + barX, Y: y + (lineHeight-barHeight)/2, Fill: HPBarLen(u.HP, s.HP), Frame: BarMax})
 	y += lineHeight
-	for _, st := range []struct {
+	for i, st := range []struct {
 		name  string
 		value int
 	}{{"力", s.Str}, {"技", s.Skl}, {"速さ", s.Spd}, {"守備", s.Def}} {
 		v.text(x, y, fmt.Sprintf("%s %d", st.name, st.value), StylePlain)
 		v.Bars = append(v.Bars, InfoBar{X: x + barX, Y: y + (lineHeight-barHeight)/2, Fill: StatBarLen(st.value)})
+		if i < 3 {
+			labels := []string{"魔力", "幸運", "魔防"}
+			values := []int{s.Mag, s.Lck, s.Res}
+			v.text(x+200, y, fmt.Sprintf("%s %d", labels[i], values[i]), StylePlain)
+		}
 		y += lineHeight
 	}
 	v.text(x, y, fmt.Sprintf("移動 %d", s.Mov), StylePlain)
@@ -294,6 +303,8 @@ func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
 	} else {
 		v.text(x+weaponTextX, y+lineHeight, fmt.Sprintf("威力 %d　命中 %d　射程 %s", w.Might, w.Hit, rangeText(w)), StylePlain)
 	}
+	v.text(x+200, y, fmt.Sprintf("必殺 %d ×%d", w.Crit, max(1, w.Strikes)), StylePlain)
+	v.text(x+200, y+lineHeight, fmt.Sprintf("重さ %d", w.Weight), StylePlain)
 	y += WeaponIconSize
 
 	v.text(x, y, "手持ち: "+itemsText(u.Items), StylePlain)
@@ -343,10 +354,9 @@ func TerrainLines(t tactics.Terrain) []string {
 
 // ForecastRows は、予測を表の行にする（DES-BTL-07、DES-UI-07、FR-BTL-08、UC-03）。
 // 名前（ボスなら ★）、HP（今 → すべて当たったときの後。ForecastAfter）、ダメージ（1 撃あたり）、命中率、攻撃の回数、必殺、
-// 効くスキルの順に並べる。回数は、反撃できなければ「反撃なし」、追撃すれば「×2」。
+// 必殺率・速さ（重さで落ちた分）・特効（効く威力）・効くスキルを並べる。回数は攻撃側最大4回、反撃側最大2回（DES-UI-26）。
 //
-// 攻撃の回数が 0 の側では、ダメージ・命中率・必殺を「―」にし、怒りを出さない。Forecast の Crit と怒りは回数によらず
-// 条件だけで真になるが、攻撃しない側の必殺は起きないため（REV-011 F-04、REV-015 I-01、DES-UI-07。表示だけで決め、tactics は変えない）。
+// 回数0の側では、ダメージ・命中率・必殺率を「―」にして怒りを出さない（DES-UI-26）。
 func ForecastRows(f tactics.Forecast, attackerBoss, defenderBoss bool) []ForecastRow {
 	a, d := f.Attacker, f.Defender
 	aAfter, dAfter := ForecastAfter(f)
@@ -357,6 +367,8 @@ func ForecastRows(f tactics.Forecast, attackerBoss, defenderBoss bool) []Forecas
 		{"命中率", hitRateText(a), hitRateText(d)},
 		{"回数", countText(a.Count), countText(d.Count)},
 		{"必殺", critText(a), critText(d)},
+		{"速さ", speedText(a), speedText(d)},
+		{"特効", effectiveText(a), effectiveText(d)},
 	}
 	as, ds := forecastSkills(a), forecastSkills(d)
 	n := max(len(as), len(ds), 1)
@@ -379,8 +391,7 @@ func ForecastRows(f tactics.Forecast, attackerBoss, defenderBoss bool) []Forecas
 }
 
 // ForecastAfter は、すべての 1 撃が当たったものとしたときの、攻撃する側と守る側の後の HP を返す（DES-UI-07）。
-// Forecast の回数とダメージから、1. 攻撃する側の 1 撃、2. 守る側の回数が 1 以上なら反撃、
-// 3. 攻撃する側の回数が 2 なら追撃、そうでなく守る側の回数が 2 なら守る側の追撃、の順に引く（DES-BTL-06）。
+// 攻撃側の最初の機会（武器によって1〜2撃）→反撃→速い側の追撃の順で引く（DES-BTL-09）。
 // HP は 0 で止め、どちらかが 0 になったらそこで止める。必殺と大盾は数えない。
 func ForecastAfter(f tactics.Forecast) (attacker, defender int) {
 	attacker, defender = f.Attacker.HP, f.Defender.HP
@@ -389,18 +400,25 @@ func ForecastAfter(f tactics.Forecast) (attacker, defender int) {
 		*hp = max(*hp-max(dmg, 0), 0)
 		return *hp == 0
 	}
-	if strike(&defender, f.Attacker.Damage) {
+
+	first := min(f.Attacker.Count, max(1, f.Attacker.Strikes))
+	for range first {
+		if strike(&defender, f.Attacker.Damage) {
+			return
+		}
+	}
+	if f.Defender.Count > 0 && strike(&attacker, f.Defender.Damage) {
 		return
 	}
-	if f.Defender.Count >= 1 && strike(&attacker, f.Defender.Damage) {
-		return
+	for range f.Attacker.Count - first {
+		if strike(&defender, f.Attacker.Damage) {
+			return
+		}
 	}
-	switch {
-	case f.Attacker.Count == 2:
-		strike(&defender, f.Attacker.Damage)
-	case f.Defender.Count == 2:
+	if f.Defender.Count == 2 {
 		strike(&attacker, f.Defender.Damage)
 	}
+
 	return
 }
 
@@ -543,8 +561,8 @@ func countText(n int) string {
 
 // critText は必殺の文を返す。攻撃の回数が 0 なら出さない（REV-011 F-04）。
 func critText(s tactics.ForecastSide) string {
-	if s.Crit && s.Count > 0 {
-		return "あり"
+	if s.Count > 0 {
+		return fmt.Sprintf("%d%%", s.CritRate)
 	}
 	return "―"
 }
@@ -557,6 +575,8 @@ func forecastSkills(s tactics.ForecastSide) []string {
 		switch {
 		case sk.Effect == tactics.Wrath && s.Count == 0:
 			continue
+		case sk.Effect == tactics.Wrath:
+			out = append(out, fmt.Sprintf("HP半分以下必殺+%d", sk.Chance))
 		case sk.Effect == tactics.Pavise:
 			out = append(out, fmt.Sprintf("%s %d%%", sk.Name, sk.Chance))
 		default:
@@ -577,6 +597,8 @@ func weaponTypeName(t tactics.WeaponType) string {
 		return "斧"
 	case tactics.Staff:
 		return "杖"
+	case tactics.Magic:
+		return "魔法"
 	case tactics.Bow:
 		return "弓"
 	}
@@ -611,7 +633,7 @@ func skillDescription(s tactics.Skill) string {
 	case tactics.Pavise:
 		return fmt.Sprintf("攻撃を受けると %d%% でダメージ半分", s.Chance)
 	case tactics.Wrath:
-		return fmt.Sprintf("HP が半分以下なら必殺（%d 倍）", s.Multiplier)
+		return fmt.Sprintf("HP 半分以下で必殺 ＋%d", s.Chance)
 	case tactics.Snipe:
 		return fmt.Sprintf("移動せずに攻撃すると命中 +%d", s.Hit)
 	}
@@ -625,4 +647,20 @@ func (c *Controller) healForecast() (tactics.HealForecast, bool) {
 	}
 	f, err := c.battle.HealForecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Heal, Target: c.target})
 	return f, err == nil
+}
+
+// speedText は予測での攻撃の速さと、武器の重さで落ちた分（DES-UI-26、DES-IT06 12.2 節）。例:「11（重さ −1）」。
+func speedText(s tactics.ForecastSide) string {
+	if s.WeightLoss > 0 {
+		return fmt.Sprintf("%d（重さ −%d）", s.AttackSpeed, s.WeightLoss)
+	}
+	return fmt.Sprintf("%d", s.AttackSpeed)
+}
+
+// effectiveText は予測での特効と、効く威力（DES-UI-26、DES-IT06 12.2 節）。例:「威力 12」。効かなければ「―」。
+func effectiveText(s tactics.ForecastSide) string {
+	if s.Effective {
+		return fmt.Sprintf("威力 %d", s.EffectiveMight)
+	}
+	return "―"
 }

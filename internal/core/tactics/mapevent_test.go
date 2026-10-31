@@ -196,7 +196,8 @@ func TestMapEventTriggers(t *testing.T) {
 			{name: "攻撃された（外れ）", event: reinforceEvent("e1", tactics.TriggerEnemyAttacked, "guard", 7, 0), roll: 99,
 				run: func(t *testing.T, b *tactics.Battle) []tactics.Event { return mustAct(t, b, attackGuard) }, fired: true},
 			{name: "攻撃された（0 ダメージ）", event: reinforceEvent("e1", tactics.TriggerEnemyAttacked, "guard", 7, 0), roll: 0,
-				edit: func(s *tactics.Setup) { s.Units[3].Stats.Def = 50 },
+				// 乱数 0 では必殺も出るので（DES-BTL-09、#120）、主人公の幸運を上げて門番の反撃の必殺を 0 % にする。
+				edit: func(s *tactics.Setup) { s.Units[3].Stats.Def = 50; s.Units[0].Stats.Lck = 50 },
 				run:  func(t *testing.T, b *tactics.Battle) []tactics.Event { return mustAct(t, b, attackGuard) }, fired: true},
 			{name: "自分から攻撃して反撃された", event: reinforceEvent("e1", tactics.TriggerEnemyAttacked, "guard", 7, 0), roll: 99,
 				edit: func(s *tactics.Setup) { s.Units[0].Pos = pos(3, 0) },
@@ -247,7 +248,9 @@ func TestMapEventTriggers(t *testing.T) {
 					return mustAct(t, b, attackGuard)
 				}, fired: true},
 			{name: "倒れていない", event: reinforceEvent("e1", tactics.TriggerEnemyDefeated, "guard", 7, 0), roll: 0,
-				run: func(t *testing.T, b *tactics.Battle) []tactics.Event { return mustAct(t, b, attackGuard) }, fired: false},
+				// 乱数 0 では必殺も出るので（DES-BTL-09、#120）、門番の幸運を上げて主人公の必殺を 0 % にする。
+				edit: func(s *tactics.Setup) { s.Units[3].Stats.Lck = 50 },
+				run:  func(t *testing.T, b *tactics.Battle) []tactics.Event { return mustAct(t, b, attackGuard) }, fired: false},
 			{name: "範囲に着いた", event: tactics.MapEventSetup{ID: "e1", Trigger: tactics.TriggerPlayerEntered, Area: tactics.Area{Min: pos(2, 0), Max: pos(2, 7)}, Effect: tactics.EffectChargeGroup, Group: "gate"}, roll: 99,
 				run: func(t *testing.T, b *tactics.Battle) []tactics.Event {
 					return mustAct(t, b, tactics.Command{Unit: 0, To: pos(2, 1), Action: tactics.Wait})

@@ -9,6 +9,7 @@ const (
 	WeaponBow   = "bow"
 	// WeaponStaff は杖。攻撃せず、回復に使う（DES-DAT-01 の反復 2 の変更、v0.3）。
 	WeaponStaff = "staff"
+	WeaponMagic = "magic"
 )
 
 // スキルの効果の種類（DES-DAT-01、DES-SKL-01）。
@@ -60,6 +61,10 @@ type Stats struct {
 	Skl int
 	Spd int
 	Def int
+	// 幸運・魔力・魔防（DES-UNT-01）。
+	Lck int
+	Mag int
+	Res int
 	Mov int
 }
 
@@ -68,22 +73,28 @@ type ClassDef struct {
 	ID         string
 	Name       string
 	WeaponType string
+	Tags       []string // 特効の分類（DES-DAT-04）。
 	Base       Stats
 }
 
-// WeaponDef は武器の定義（DES-DAT-01。反復 2 で変更）。
+// WeaponDef は武器の定義（DES-DAT-01、DES-DAT-04、DES-BTL-09）。
 // Heal（回復量）と Uses（使用回数）は杖（Type が WeaponStaff）だけが持ち、杖でない武器では 0。
 // 杖は Might・Hit を使わない（0）。
 type WeaponDef struct {
-	ID       string
-	Name     string
-	Type     string
-	Might    int
-	Hit      int
-	MinRange int
-	MaxRange int
-	Heal     int
-	Uses     int
+	ID            string
+	Name          string
+	Type          string
+	Crit          int
+	Weight        int
+	Strikes       int
+	DamageType    string
+	EffectiveTags []string
+	Might         int
+	Hit           int
+	MinRange      int
+	MaxRange      int
+	Heal          int
+	Uses          int
 }
 
 // ItemDef はアイテムの定義（DES-DAT-01）。
@@ -118,6 +129,10 @@ type Growth struct {
 	Skl int
 	Spd int
 	Def int
+	// 幸運・魔力・魔防（DES-UNT-01）。
+	Lck int
+	Mag int
+	Res int
 }
 
 // CharacterDef は自軍のキャラの定義（DES-DAT-01。反復 2 で変更）。Skill は空でもよい。
@@ -253,9 +268,11 @@ func NewCatalog(game GameDef, terrains []TerrainDef, classes []ClassDef, weapons
 		c.terrains = append(c.terrains, t)
 	}
 	for _, v := range classes {
+		v.Tags = append([]string(nil), v.Tags...)
 		c.classes[v.ID] = v
 	}
 	for _, v := range weapons {
+		v.EffectiveTags = append([]string(nil), v.EffectiveTags...)
 		c.weapons[v.ID] = v
 	}
 	for _, v := range items {
@@ -294,12 +311,14 @@ func (c *Catalog) Terrains() []TerrainDef {
 // Class は ID でクラスを引く（DES-DAT-01）。
 func (c *Catalog) Class(id string) (ClassDef, bool) {
 	v, ok := c.classes[id]
+	v.Tags = append([]string(nil), v.Tags...)
 	return v, ok
 }
 
 // Weapon は ID で武器を引く（DES-DAT-01）。
 func (c *Catalog) Weapon(id string) (WeaponDef, bool) {
 	v, ok := c.weapons[id]
+	v.EffectiveTags = append([]string(nil), v.EffectiveTags...)
 	return v, ok
 }
 

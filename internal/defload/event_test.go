@@ -108,6 +108,31 @@ group = "gate_group"
 		}
 	})
 
+	t.Run("TC-FR-MAP-03-20 / TC-FR-SYS-04-42 出来事の増援の幸運・魔力・魔防を読み、負の合計を拒む", func(t *testing.T) {
+		// REV-068 の申し送り: #120 が足した能力の欄を、出来事の増援でも読み、確かめる。
+		const old = `id = "reserve_1"`
+		m := baseFS(t)
+		smallMap(eventRows, strings.Replace(valid, old, old+`
+bonus = { lck = 1, mag = 2, res = 3 }`, 1))(t, m)
+		cat, err := defload.Load(m)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, _ := cat.Map("small")
+		if b := got.Events[0].Enemies[0].Bonus; b.Lck != 1 || b.Mag != 2 || b.Res != 3 {
+			t.Fatalf("出来事の増援のボーナス %+v", b)
+		}
+		for _, key := range []string{"lck", "mag", "res"} {
+			m := baseFS(t)
+			smallMap(eventRows, strings.Replace(valid, old, old+"\nbonus = { "+key+" = -100 }", 1))(t, m)
+			cat, err := defload.Load(m)
+			want := appended(t, "maps[N].events[0].enemies[0]")
+			if err == nil || cat != nil || !strings.Contains(err.Error(), want) || !strings.Contains(err.Error(), "."+key+": 能力") {
+				t.Errorf("%s: 誤り=%v", key, err)
+			}
+		}
+	})
+
 	t.Run("TC-FR-MAP-03-20 出来事の定義の誤りを拒む", func(t *testing.T) {
 		cases := []struct{ name, old, new, want string }{
 			{"出来事の ID の重なり", `id = "advance"`, `id = "gate_alarm"`, `maps[N].events[1].id: ID "gate_alarm" が重なっています`},

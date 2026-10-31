@@ -131,4 +131,46 @@ func TestEnemyCap(t *testing.T) {
 			t.Fatalf("復元した本物が写しに引きずられた: %+v", b.mapState)
 		}
 	})
+	t.Run("TC-FR-MAP-03-18 増援の定義は入力の特効の分類・武器の列・手持ちから独立する", func(t *testing.T) {
+		// REV-068 の申し送り: #120 が UnitSetup に足したスライスの欄も、出来事の増援とターンの増援で深く写す。
+		weapon := Weapon{Name: "槍", Type: Lance, Might: 5, Hit: 90, MinRange: 1, MaxRange: 1, EffectiveTags: []string{"mounted"}}
+		mk := func(name string, side Side, x, y int) UnitSetup {
+			return UnitSetup{Name: name, Side: side, Stats: Stats{HP: 20, Str: 5, Skl: 5, Spd: 5, Def: 3, Mov: 3}, Pos: Pos{x, y}, Weapon: weapon.clone(), AI: Hold,
+				Tags: []string{"armor"}, Weapons: []Weapon{weapon.clone()}, Items: []ItemStack{{Item: Item{Name: "薬", Heal: 10}, Count: 1}}}
+		}
+		lord := mk("主人公", Player, 0, 0)
+		lord.Lord = true
+		boss := mk("ボス", Enemy, 7, 7)
+		boss.Boss = true
+		boss.ID = "boss"
+		terrain := make([][]Terrain, 8)
+		for y := range terrain {
+			terrain[y] = make([]Terrain, 8)
+			for x := range terrain[y] {
+				terrain[y][x] = Terrain{Name: "平地", Cost: 1}
+			}
+		}
+		s := Setup{
+			Terrain:        terrain,
+			Units:          []UnitSetup{lord, boss},
+			Reinforcements: []ReinforcementSetup{{Turn: 2, Unit: mk("ターン増援", Enemy, 7, 0)}},
+			Events: []MapEventSetup{{ID: "e1", Trigger: TriggerEnemyAttacked, Unit: "boss", Effect: EffectReinforce,
+				Enemies: []UnitSetup{mk("出来事増援", Enemy, 5, 5)}}},
+		}
+		b, _, err := New(s, 7)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, u := range []UnitSetup{s.Events[0].Enemies[0], s.Reinforcements[0].Unit} {
+			u.Tags[0] = "changed"
+			u.Weapon.EffectiveTags[0] = "changed"
+			u.Weapons[0].EffectiveTags[0] = "changed"
+			u.Items[0].Count = 9
+		}
+		for name, u := range map[string]UnitSetup{"出来事の増援": b.mapEvents[0].Enemies[0], "ターンの増援": b.reinforcements[0].Unit} {
+			if u.Tags[0] != "armor" || u.Weapon.EffectiveTags[0] != "mounted" || u.Weapons[0].EffectiveTags[0] != "mounted" || u.Items[0].Count != 1 {
+				t.Errorf("%s が入力に引きずられた: %+v", name, u)
+			}
+		}
+	})
 }

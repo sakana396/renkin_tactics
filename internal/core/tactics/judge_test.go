@@ -78,7 +78,7 @@ func TestWin(t *testing.T) {
 		b := mustNew(t, judgeSetup(2, 4))
 		b.SetHP(2, 1)
 		mustAct(t, b, tactics.Command{Unit: 1, To: pos(0, 0), Action: tactics.Wait})
-		done := rolls(t, b, 0, 0)
+		done := rolls(t, b, 0, 0, 99)
 		events := mustAct(t, b, tactics.Command{Unit: 0, To: pos(3, 4), Action: tactics.Attack, Target: 2})
 		done()
 		return b, events
@@ -104,7 +104,7 @@ func TestWin(t *testing.T) {
 		var acted []int
 		targetOf(b, 2, 0, &acted)
 		// ボスの 1 撃目は外れ、主人公の反撃が当たる。
-		done := rolls(t, b, 99, 99, 0, 0)
+		done := rolls(t, b, 99, 99, 0, 0, 99)
 		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "種類", kinds(events), []tactics.EventKind{
@@ -125,7 +125,7 @@ func TestWin(t *testing.T) {
 	t.Run("TC-FR-MAP-05-04 ボスでない敵が倒れても戦闘は続く", func(t *testing.T) {
 		b := mustNew(t, judgeSetup(2, 0))
 		b.SetHP(3, 1)
-		done := rolls(t, b, 0, 0)
+		done := rolls(t, b, 0, 0, 99)
 		events := mustAct(t, b, tactics.Command{Unit: 0, To: pos(3, 0), Action: tactics.Attack, Target: 3})
 		done()
 		assertEqual(t, "種類", kinds(events), []tactics.EventKind{
@@ -145,7 +145,7 @@ func TestLose(t *testing.T) {
 		b.SetHP(0, 1)
 		var acted []int
 		targetOf(b, 3, 0, &acted)
-		done := rolls(t, b, 0, 0)
+		done := rolls(t, b, 0, 0, 99)
 		events := mustEndPhase(t, b)
 		done()
 		return b, events, acted
@@ -155,7 +155,7 @@ func TestLose(t *testing.T) {
 		b := mustNew(t, judgeSetup(2, 0))
 		b.SetHP(0, 1)
 		// 主人公の 1 撃目は外れ、敵の反撃が当たる。
-		done := rolls(t, b, 99, 99, 0, 0)
+		done := rolls(t, b, 99, 99, 0, 0, 99)
 		events := mustAct(t, b, tactics.Command{Unit: 0, To: pos(3, 0), Action: tactics.Attack, Target: 3})
 		done()
 		assertEqual(t, "種類", kinds(events), []tactics.EventKind{
@@ -184,7 +184,7 @@ func TestLose(t *testing.T) {
 		b.SetHP(0, 1)
 		var acted []int
 		targetOf(b, 4, 0, &acted)
-		done := rolls(t, b, 0, 0)
+		done := rolls(t, b, 0, 0, 99)
 		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "種類", kinds(events), []tactics.EventKind{
@@ -210,7 +210,7 @@ func TestLose(t *testing.T) {
 		b.SetHP(1, 1)
 		var acted []int
 		targetOf(b, 4, 1, &acted)
-		done := rolls(t, b, 0, 0)
+		done := rolls(t, b, 0, 0, 99)
 		events := mustEndPhase(t, b)
 		done()
 		assertEqual(t, "種類", kinds(events), []tactics.EventKind{

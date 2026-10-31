@@ -167,9 +167,12 @@ func (s *SceneController) prepareUnit(i int) tactics.Unit {
 	ch, _ := s.cfg.Catalog.Character(m.Character)
 	cls, _ := s.cfg.Catalog.Class(ch.Class)
 	w, _ := s.cfg.Catalog.Weapon(ch.Weapon)
-	wt := map[string]tactics.WeaponType{"sword": tactics.Sword, "lance": tactics.Lance, "axe": tactics.Axe, "bow": tactics.Bow, "staff": tactics.Staff}[string(w.Type)]
+	wt := map[string]tactics.WeaponType{"sword": tactics.Sword, "lance": tactics.Lance, "axe": tactics.Axe, "bow": tactics.Bow, "staff": tactics.Staff, "magic": tactics.Magic}[string(w.Type)]
 	u := tactics.Unit{Name: ch.Name, ClassName: cls.Name, Side: tactics.Player, Stats: m.Stats, HP: m.Stats.HP, Level: m.Level, Exp: m.Exp, Lord: ch.Lord, Alive: m.Alive,
-		Weapon: tactics.Weapon{Name: w.Name, Type: wt, Might: w.Might, Hit: w.Hit, MinRange: w.MinRange, MaxRange: w.MaxRange, Heal: w.Heal, Uses: w.Uses, MaxUses: w.Uses}}
+		Weapon: tactics.Weapon{Name: w.Name, Type: wt, Crit: w.Crit, Weight: w.Weight, Strikes: w.Strikes, EffectiveTags: append([]string(nil), w.EffectiveTags...), Might: w.Might, Hit: w.Hit, MinRange: w.MinRange, MaxRange: w.MaxRange, Heal: w.Heal, Uses: w.Uses, MaxUses: w.Uses}}
+	if w.DamageType == "magic" {
+		u.Weapon.DamageType = tactics.Magical
+	}
 	for _, ic := range m.Items {
 		it, _ := s.cfg.Catalog.Item(ic.Item)
 		u.Items = append(u.Items, tactics.ItemStack{Item: tactics.Item{ID: it.ID, Name: it.Name, Heal: it.Heal}, Count: ic.Count})

@@ -45,6 +45,16 @@ const (
 	Bow
 	// Staff は杖。攻撃も反撃もせず、行動 Heal で味方を回復する（DES-HEL-01）。
 	Staff
+	// Magic は魔法の種類（DES-BTL-09）。
+	Magic
+)
+
+// DamageType は物理と魔法の区分（DES-BTL-09）。
+type DamageType int
+
+const (
+	Physical DamageType = iota
+	Magical
 )
 
 // SkillEffect はスキルの効果の種類（DES-BTL-01、DES-SKL-01）。
@@ -94,21 +104,30 @@ type Stats struct {
 	Skl int
 	Spd int
 	Def int
+	// 幸運・魔力・魔防（DES-UNT-01）。
+	Lck int
+	Mag int
+	Res int
 	Mov int
 }
 
-// Weapon は武器（DES-BTL-01）。射程はマンハッタン距離の最小と最大。
+// Weapon は武器（DES-BTL-01、DES-BTL-09）。射程はマンハッタン距離の最小と最大。
 // Heal・Uses・MaxUses は杖の回復量・残りの使用回数・使用回数の最大で、杖でなければどれも 0（DES-HEL-01）。
 type Weapon struct {
-	Name     string
-	Type     WeaponType
-	Might    int
-	Hit      int
-	MinRange int
-	MaxRange int
-	Heal     int
-	Uses     int
-	MaxUses  int
+	Name          string
+	Type          WeaponType
+	Crit          int
+	Weight        int
+	Strikes       int
+	DamageType    DamageType
+	EffectiveTags []string
+	Might         int
+	Hit           int
+	MinRange      int
+	MaxRange      int
+	Heal          int
+	Uses          int
+	MaxUses       int
 }
 
 // Terrain は地形（DES-BTL-01、DES-MAP-01）。Cost が 0 の地形には入れない。
@@ -152,12 +171,18 @@ type Growth struct {
 	Skl int
 	Spd int
 	Def int
+	// 幸運・魔力・魔防（DES-UNT-01）。
+	Lck int
+	Mag int
+	Res int
 }
 
 // UnitSetup は、戦闘を始めるときのユニット 1 体の入力（DES-BTL-01）。HP は Stats.HP から始まる。
 // Level・Exp・Growth はレベル・経験・成長率（DES-GRW-03）。Level が 0 のユニットは経験を得ない。
 type UnitSetup struct {
 	Name      string
+	Tags      []string // 兵種の特効分類（DES-DAT-04）。
+	Weapons   []Weapon // 後続の持ち替え用の列（DES-ITM-02）。
 	ClassName string
 	Side      Side
 	Stats     Stats
@@ -195,6 +220,8 @@ type Setup struct {
 // Level・Exp・Growth はレベル・経験・成長率（DES-GRW-03）。
 type Unit struct {
 	Name      string
+	Tags      []string // 兵種の特効分類（DES-DAT-04）。
+	Weapons   []Weapon // 後続の持ち替え用の列（DES-ITM-02）。
 	ClassName string
 	Side      Side
 	Stats     Stats
@@ -228,8 +255,36 @@ type Command struct {
 
 // clone はユニットの写しを作る（手持ちの列も写す）。
 func (u Unit) clone() Unit {
+	u.Tags = append([]string(nil), u.Tags...)
+	u.Weapon = u.Weapon.clone()
+	u.Weapons = cloneWeapons(u.Weapons)
 	if u.Items != nil {
 		u.Items = append([]ItemStack(nil), u.Items...)
 	}
 	return u
+}
+
+// clone は UnitSetup のスライスの欄（特効の分類・武器と武器の列の特効・手持ち）を深く写し、入力から独立させる（DES-RWD-01）。
+// ターンの増援と出来事の増援の定義を写すときに使う。UnitSetup にスライスの欄を足したら、ここでも写す。
+func (us UnitSetup) clone() UnitSetup {
+	us.Items = append([]ItemStack(nil), us.Items...)
+	us.Tags = append([]string(nil), us.Tags...)
+	us.Weapon = us.Weapon.clone()
+	us.Weapons = cloneWeapons(us.Weapons)
+	return us
+}
+
+// clone は特効の分類も独立させる（DES-RWD-01）。
+func (w Weapon) clone() Weapon { w.EffectiveTags = append([]string(nil), w.EffectiveTags...); return w }
+
+// cloneWeapons は武器の列を深く写す（DES-RWD-01）。
+func cloneWeapons(ws []Weapon) []Weapon {
+	if ws == nil {
+		return nil
+	}
+	out := make([]Weapon, len(ws))
+	for i, w := range ws {
+		out[i] = w.clone()
+	}
+	return out
 }

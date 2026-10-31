@@ -61,6 +61,9 @@ func (b *Battle) gainExp(events []Event, i, amount int) []Event {
 		u.Stats.Skl += gains.Skl
 		u.Stats.Spd += gains.Spd
 		u.Stats.Def += gains.Def
+		u.Stats.Lck += gains.Lck
+		u.Stats.Mag += gains.Mag
+		u.Stats.Res += gains.Res
 		u.HP += gains.HP // 最大 HP が上がったら、今の HP も 1 上げる。
 	}
 	events = b.emit(events, Event{Kind: EventExp, Unit: i, Amount: amount})
@@ -70,7 +73,7 @@ func (b *Battle) gainExp(events []Event, i, amount int) []Event {
 	return events
 }
 
-// rollGrowth は、HP・力・技・速さ・守備の順に 0〜99 の乱数を 1 つずつ（計 5 つ）引き、
+// rollGrowth は、HP・力・技・速さ・守備・幸運・魔力・魔防の順に 0〜99 の乱数を 1 つずつ（計 8 つ）引き、
 // 成長率より小さい能力を 1 上げる分を返す（DES-GRW-02、DES-RNG-01）。移動は上がらない。引き直さない。
 func (b *Battle) rollGrowth(g Growth) Stats {
 	up := func(rate int) int {
@@ -85,5 +88,8 @@ func (b *Battle) rollGrowth(g Growth) Stats {
 	s.Skl = up(g.Skl)
 	s.Spd = up(g.Spd)
 	s.Def = up(g.Def)
+	s.Lck = up(g.Lck)
+	s.Mag = up(g.Mag)
+	s.Res = up(g.Res)
 	return s
 }

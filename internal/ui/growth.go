@@ -37,7 +37,7 @@ func growthText(g tactics.Stats) string {
 		name  string
 		value int
 	}{
-		{"HP", g.HP}, {"力", g.Str}, {"技", g.Skl}, {"速さ", g.Spd}, {"守備", g.Def},
+		{"HP", g.HP}, {"力", g.Str}, {"技", g.Skl}, {"速さ", g.Spd}, {"守備", g.Def}, {"幸運", g.Lck}, {"魔力", g.Mag}, {"魔防", g.Res},
 	} {
 		if s.value > 0 {
 			parts = append(parts, fmt.Sprintf("%s+%d", s.name, s.value))

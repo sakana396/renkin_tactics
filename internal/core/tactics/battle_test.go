@@ -46,7 +46,7 @@ func TestNew(t *testing.T) {
 		// スキルの数値の境界。
 		s.Units[0].Skill = tactics.Skill{Name: "大盾", Effect: tactics.Pavise, Chance: 100}
 		s.Units[1].Skill = tactics.Skill{Name: "大盾", Effect: tactics.Pavise, Chance: 0}
-		s.Units[2].Skill = tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Multiplier: 1}
+		s.Units[2].Skill = tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 0}
 		s.Units[3].Skill = tactics.Skill{Name: "狙撃", Effect: tactics.Snipe, Hit: 0, Multiplier: 0}
 		// 増援のターン 2。初めのユニットと同じマスでもよい。
 		r := foe("増援", 4, 0)
@@ -132,7 +132,7 @@ func TestNewInvalidSetup(t *testing.T) {
 		{"規則 6 増援のターンが 1", func(s *tactics.Setup) {
 			s.Reinforcements = []tactics.ReinforcementSetup{{Turn: 1, Unit: foe("増援", 4, 0)}}
 		}, "ターン 1"},
-		{"規則 6 武器の種類が範囲外", func(s *tactics.Setup) { s.Units[1].Weapon.Type = tactics.Staff + 1 }, "武器の種類"},
+		{"規則 6 武器の種類が範囲外", func(s *tactics.Setup) { s.Units[1].Weapon.Type = tactics.Magic + 1 }, "武器の種類"},
 		{"規則 6 武器の種類が負", func(s *tactics.Setup) { s.Units[1].Weapon.Type = -1 }, "武器の種類"},
 		{"規則 6 スキルの効果が範囲外", func(s *tactics.Setup) { s.Units[1].Skill.Effect = tactics.Snipe + 1 }, "スキルの効果"},
 		{"規則 6 動き方が範囲外", func(s *tactics.Setup) { s.Units[3].AI = tactics.Hold + 1 }, "動き方"},
@@ -142,9 +142,9 @@ func TestNewInvalidSetup(t *testing.T) {
 		{"規則 6 スキルの確率が 101", func(s *tactics.Setup) { s.Units[1].Skill.Chance = 101 }, "確率 101"},
 		{"規則 6 スキルの確率が負", func(s *tactics.Setup) { s.Units[1].Skill.Chance = -1 }, "確率 -1"},
 		{"規則 6 スキルの倍率が負", func(s *tactics.Setup) { s.Units[1].Skill.Multiplier = -1 }, "倍率 -1"},
-		{"規則 6 怒りの倍率が 0", func(s *tactics.Setup) {
-			s.Units[1].Skill = tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Multiplier: 0}
-		}, "倍率 0"},
+		{"規則 6 怒りの倍率が 1", func(s *tactics.Setup) {
+			s.Units[1].Skill = tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Multiplier: 1}
+		}, "倍率 1"},
 	}
 	for _, tt := range tests {
 		t.Run("TC-FR-BTL-01-10 "+tt.name, func(t *testing.T) {

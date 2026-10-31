@@ -16,7 +16,7 @@ var (
 	ironBow    = tactics.Weapon{Name: "鉄の弓", Type: tactics.Bow, Might: 6, Hit: 85, MinRange: 2, MaxRange: 2}
 	inspire    = tactics.Skill{Name: "鼓舞", Effect: tactics.Inspire, Range: 2, Hit: 10, Avoid: 10}
 	pavise     = tactics.Skill{Name: "大盾", Effect: tactics.Pavise, Chance: 30}
-	wrath      = tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Multiplier: 3}
+	wrath      = tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}
 	snipe      = tactics.Skill{Name: "狙撃", Effect: tactics.Snipe, Hit: 20}
 	leonStats  = tactics.Stats{HP: 20, Str: 6, Skl: 8, Spd: 9, Def: 4, Mov: 5}
 	soldierSts = tactics.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5}
@@ -122,13 +122,14 @@ func TestInfoPanel(t *testing.T) {
 		"レオン",
 		"クラス: ロード",
 		"HP 20/20",
-		"力 6",
-		"技 8",
-		"速さ 9",
+		"力 6 魔力 0",
+		"技 8 幸運 0",
+		"速さ 9 魔防 0",
 		"守備 4",
 		"移動 5",
 		"武器: 鉄の剣（剣）",
 		"威力 5　命中 90　射程 1",
+		"必殺 0 ×1", "重さ 0",
 		"手持ち: 回復薬 ×2",
 		"スキル: 鼓舞",
 		"　距離 2 以内の味方の命中 +10・回避 +10",
@@ -163,13 +164,14 @@ func TestInfoPanel(t *testing.T) {
 			"ソルジャー 3　★ボス",
 			"クラス: ソルジャー",
 			"HP 18/18",
-			"力 5",
-			"技 4",
-			"速さ 4",
+			"力 5 魔力 0",
+			"技 4 幸運 0",
+			"速さ 4 魔防 0",
 			"守備 4",
 			"移動 5",
 			"武器: 鉄の槍（槍）",
 			"威力 7　命中 80　射程 1",
+			"必殺 0 ×1", "重さ 0",
 			"手持ち: なし",
 			"スキル: なし",
 			"地形: 森",
@@ -191,13 +193,15 @@ func TestInfoPanel(t *testing.T) {
 			"ミラ",
 			"クラス: アーチャー",
 			"HP 9/17",
-			"力 5",
-			"技 9",
-			"速さ 7",
+			"力 5 魔力 0",
+			"技 9 幸運 0",
+			"速さ 7 魔防 0",
 			"守備 3",
+
 			"移動 5",
 			"武器: 長弓（弓）",
 			"威力 6　命中 85　射程 2〜3",
+			"必殺 0 ×1", "重さ 0",
 			"手持ち: 回復薬 ×1、特効薬 ×2",
 			"スキル: 狙撃",
 			"　移動せずに攻撃すると命中 +20",
@@ -208,7 +212,7 @@ func TestInfoPanel(t *testing.T) {
 		}
 		descs := map[string]tactics.Skill{
 			"　攻撃を受けると 30% でダメージ半分": pavise,
-			"　HP が半分以下なら必殺（3 倍）":   wrath,
+			"　HP 半分以下で必殺 ＋50":      wrath,
 		}
 		for d, sk := range descs {
 			u.Skill = sk
@@ -311,7 +315,9 @@ func TestForecastPanel(t *testing.T) {
 			{"ダメージ", "5", "9"},
 			{"命中率", "63%", "85%"},
 			{"回数", "×2", "×1"},
-			{"必殺", "―", "―"},
+			{"必殺", "4%", "2%"},
+			{"速さ", "9", "4"},
+			{"特効", "―", "―"},
 			{"スキル", "―", "―"},
 		}
 		p := c.Panel(tactics.Pos{X: 3, Y: 3}, true)
@@ -334,7 +340,9 @@ func TestForecastPanel(t *testing.T) {
 			{"ダメージ", "9", "6"},
 			{"命中率", "73%", "79%"},
 			{"回数", "×1", "×1"},
-			{"必殺", "―", "―"},
+			{"必殺", "1%", "2%"},
+			{"速さ", "2", "4"},
+			{"特効", "―", "―"},
 			{"スキル", "鼓舞", "―"},
 			{"", "大盾 30%", ""},
 		}
@@ -374,7 +382,7 @@ func TestForecastPanel(t *testing.T) {
 		target(t, c, tactics.Pos{X: 3, Y: 4}, tactics.Pos{X: 3, Y: 2})
 		_, dest, tg := c.Selection()
 		f, err := c.Battle().Forecast(tactics.Command{Unit: 2, To: dest, Action: tactics.Attack, Target: tg})
-		if err != nil || f.Defender.Count != 0 || !f.Defender.Crit {
+		if err != nil || f.Defender.Count != 0 || !(f.Defender.CritRate > 0) {
 			t.Fatalf("前提: 予測 %+v, %v", f.Defender, err)
 		}
 		want := []ForecastRow{
@@ -383,7 +391,9 @@ func TestForecastPanel(t *testing.T) {
 			{"ダメージ", "1", "―"},
 			{"命中率", "100%", "―"},
 			{"回数", "×1", "反撃なし"},
-			{"必殺", "―", "―"},
+			{"必殺", "0%", "―"},
+			{"速さ", "0", "0"},
+			{"特効", "―", "―"},
 			{"スキル", "狙撃", "―"},
 		}
 		if got := c.Panel(tactics.Pos{X: 3, Y: 2}, true).Forecast; !reflect.DeepEqual(got, want) {
@@ -400,8 +410,10 @@ func TestForecastPanel(t *testing.T) {
 			{"ダメージ", "2", "0"},
 			{"命中率", "100%", "100%"},
 			{"回数", "×1", "×1"},
-			{"必殺", "―", "あり"},
-			{"スキル", "―", "怒り"},
+			{"必殺", "0%", "50%"},
+			{"速さ", "0", "0"},
+			{"特効", "―", "―"},
+			{"スキル", "―", "HP半分以下必殺+50"},
 		}
 		if got := c.Panel(tactics.Pos{X: 3, Y: 2}, true).Forecast; !reflect.DeepEqual(got, want) {
 			t.Errorf("反撃あり = %q\nのはず %q", got, want)

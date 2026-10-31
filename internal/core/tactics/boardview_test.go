@@ -41,7 +41,7 @@ func TestPreviewRewindBoard(t *testing.T) {
 					b.units[0].Weapon = Weapon{Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 2, MaxUses: 3}
 					cmd = Command{Unit: 0, To: Pos{0, 0}, Action: Heal, Target: 1}
 				case "成長":
-					b.units[0].Growth = Growth{100, 100, 100, 100, 100}
+					b.units[0].Growth = Growth{100, 100, 100, 100, 100, 0, 0, 0}
 				case "撃破":
 					b.units[2].HP = 1
 					b.units[2].Skill = Skill{}

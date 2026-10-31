@@ -37,20 +37,20 @@ func newCh01(t *testing.T) (*tactics.Battle, []tactics.Event) {
 
 var (
 	potion  = tactics.Item{ID: "potion", Name: "回復薬", Heal: 10}
-	sword   = tactics.Weapon{Name: "鉄の剣", Type: tactics.Sword, Might: 5, Hit: 90, MinRange: 1, MaxRange: 1}
-	lance   = tactics.Weapon{Name: "鉄の槍", Type: tactics.Lance, Might: 7, Hit: 80, MinRange: 1, MaxRange: 1}
-	axe     = tactics.Weapon{Name: "鉄の斧", Type: tactics.Axe, Might: 8, Hit: 70, MinRange: 1, MaxRange: 1}
-	bow     = tactics.Weapon{Name: "鉄の弓", Type: tactics.Bow, Might: 6, Hit: 85, MinRange: 2, MaxRange: 2}
+	sword   = tactics.Weapon{Name: "鉄の剣", Type: tactics.Sword, Weight: 4, Strikes: 1, Might: 5, Hit: 90, MinRange: 1, MaxRange: 1}
+	lance   = tactics.Weapon{Name: "鉄の槍", Type: tactics.Lance, Weight: 5, Strikes: 1, Might: 7, Hit: 80, MinRange: 1, MaxRange: 1}
+	axe     = tactics.Weapon{Name: "鉄の斧", Type: tactics.Axe, Weight: 7, Strikes: 1, Might: 8, Hit: 70, MinRange: 1, MaxRange: 1}
+	bow     = tactics.Weapon{Name: "鉄の弓", Type: tactics.Bow, Weight: 5, Strikes: 1, Might: 6, Hit: 85, MinRange: 2, MaxRange: 2}
 	inspire = tactics.Skill{Name: "鼓舞", Effect: tactics.Inspire, Range: 2, Hit: 10, Avoid: 10}
 	pavise  = tactics.Skill{Name: "大盾", Effect: tactics.Pavise, Chance: 30}
-	wrath   = tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Multiplier: 3}
+	wrath   = tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}
 	snipe   = tactics.Skill{Name: "狙撃", Effect: tactics.Snipe, Hit: 20}
 
 	// クラスの基本値（設計書 10.1 節）。
-	soldierBase  = tactics.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5}
-	myrmidonBase = tactics.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5}
-	fighterBase  = tactics.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5}
-	archerBase   = tactics.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5}
+	soldierBase  = tactics.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5, Lck: 2, Mag: 0, Res: 1}
+	myrmidonBase = tactics.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5, Lck: 4, Mag: 1, Res: 1}
+	fighterBase  = tactics.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5, Lck: 2, Mag: 0, Res: 0}
+	archerBase   = tactics.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}
 )
 
 // 本体のデータから ch01 の戦闘を作り、10.3 節・10.4 節の値（自軍の能力と出撃の枠は設計書（反復 2）10.3・10.4 節の値）と一致することを確かめる。
@@ -68,11 +68,11 @@ func TestNewBattleCh01(t *testing.T) {
 			t.Fatalf("ユニットの数 = %d（自軍 5、敵 8）", len(units))
 		}
 		want := []tactics.Unit{
-			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20}, Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: tactics.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5}, HP: 19, Pos: tactics.Pos{X: 1, Y: 14}, Weapon: sword, Items: []tactics.ItemStack{{Item: potion, Count: 2}}, Skill: inspire, Lord: true, Alive: true},
-			{Level: 1, Growth: tactics.Growth{HP: 85, Str: 40, Skl: 20, Spd: 10, Def: 70}, Name: "ガルド", ClassName: "アーマー", Side: tactics.Player, Stats: tactics.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4}, HP: 24, Pos: tactics.Pos{X: 2, Y: 13}, Weapon: lance, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: pavise, Alive: true},
-			{Level: 1, Growth: tactics.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15}, Name: "ブラン", ClassName: "ファイター", Side: tactics.Player, Stats: tactics.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5}, HP: 22, Pos: tactics.Pos{X: 3, Y: 14}, Weapon: axe, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: wrath, Alive: true},
-			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20}, Name: "ミラ", ClassName: "アーチャー", Side: tactics.Player, Stats: tactics.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5}, HP: 17, Pos: tactics.Pos{X: 1, Y: 15}, Weapon: bow, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: snipe, Alive: true},
-			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 0, Skl: 40, Spd: 60, Def: 30}, Name: "リナ", ClassName: "僧侶", Side: tactics.Player, Stats: tactics.Stats{HP: 16, Str: 0, Skl: 2, Spd: 6, Def: 2, Mov: 5}, HP: 16, Pos: tactics.Pos{X: 2, Y: 15}, Weapon: tactics.Weapon{Name: "癒やしの杖", Type: tactics.Staff, Heal: 10, Uses: 15, MaxUses: 15, MinRange: 1, MaxRange: 1}, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20, Lck: 40, Mag: 20, Res: 20}, Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: tactics.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}, HP: 19, Pos: tactics.Pos{X: 1, Y: 14}, Weapon: sword, Items: []tactics.ItemStack{{Item: potion, Count: 2}}, Skill: inspire, Lord: true, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 85, Str: 40, Skl: 20, Spd: 10, Def: 70, Lck: 20, Mag: 0, Res: 10}, Name: "ガルド", ClassName: "アーマー", Side: tactics.Player, Stats: tactics.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4, Lck: 2, Mag: 0, Res: 0}, HP: 24, Pos: tactics.Pos{X: 2, Y: 13}, Weapon: lance, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: pavise, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15, Lck: 25, Mag: 0, Res: 10}, Name: "ブラン", ClassName: "ファイター", Side: tactics.Player, Stats: tactics.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5, Lck: 2, Mag: 0, Res: 0}, HP: 22, Pos: tactics.Pos{X: 3, Y: 14}, Weapon: axe, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: wrath, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20, Lck: 35, Mag: 5, Res: 15}, Name: "ミラ", ClassName: "アーチャー", Side: tactics.Player, Stats: tactics.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}, HP: 17, Pos: tactics.Pos{X: 1, Y: 15}, Weapon: bow, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: snipe, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 0, Skl: 40, Spd: 60, Def: 30, Lck: 45, Mag: 50, Res: 45}, Name: "リナ", ClassName: "僧侶", Side: tactics.Player, Stats: tactics.Stats{HP: 16, Str: 0, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}, HP: 16, Pos: tactics.Pos{X: 2, Y: 15}, Weapon: tactics.Weapon{Name: "癒やしの杖", Type: tactics.Staff, Strikes: 1, Heal: 10, Uses: 15, MaxUses: 15, MinRange: 1, MaxRange: 1}, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Alive: true},
 		}
 		for i, w := range want {
 			if !reflect.DeepEqual(units[i], w) {
@@ -84,7 +84,7 @@ func TestNewBattleCh01(t *testing.T) {
 	t.Run("TC-FR-UNT-01-02 敵の能力・配置・動き方・ボスが 10.4 節のとおり", func(t *testing.T) {
 		b, _ := newCh01(t)
 		units := b.Units()
-		boss := tactics.Stats{HP: 26, Str: 8, Skl: 7, Spd: 6, Def: 7, Mov: 5}
+		boss := tactics.Stats{HP: 26, Str: 8, Skl: 7, Spd: 6, Def: 7, Mov: 5, Lck: 2, Res: 1}
 		want := []struct {
 			class  string
 			stats  tactics.Stats
@@ -105,7 +105,7 @@ func TestNewBattleCh01(t *testing.T) {
 		for i, w := range want {
 			u := units[5+i]
 			if u.Side != tactics.Enemy || u.ClassName != w.class || u.Stats != w.stats || u.HP != w.stats.HP ||
-				u.Weapon != w.weapon || u.Pos != w.pos || u.AI != w.ai || u.Boss != w.boss || u.Lord ||
+				!reflect.DeepEqual(u.Weapon, w.weapon) || u.Pos != w.pos || u.AI != w.ai || u.Boss != w.boss || u.Lord ||
 				u.Skill != (tactics.Skill{}) || u.Items != nil || !u.Alive || u.Acted || u.Level != 0 || (w.boss && u.Name != "ハーゲン") {
 				t.Errorf("units[%d] = %+v", 5+i, u)
 			}
@@ -244,7 +244,7 @@ func TestNewBattleCh01(t *testing.T) {
 			for x, r := range []rune(row) {
 				td := bySymbol[r]
 				want := tactics.Terrain{Name: td.Name, Cost: td.Cost, Avoid: td.Avoid, Def: td.Def, HealPercent: td.HealPercent}
-				if got := b.TerrainAt(tactics.Pos{X: x, Y: y}); got != want {
+				if got := b.TerrainAt(tactics.Pos{X: x, Y: y}); !reflect.DeepEqual(got, want) {
 					t.Errorf("(%d, %d) = %+v, want %+v", x, y, got, want)
 				}
 			}
@@ -342,14 +342,16 @@ func smallCatalogParty(party []string, edit func(m *defs.MapDef, chars *[]defs.C
 			{ID: "forest", Name: "森", Symbol: "森", Cost: 2, Avoid: 20, Def: 1},
 		},
 		[]defs.ClassDef{
-			{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 18, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5}},
-			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5}},
-			{ID: "fighter", Name: "ファイター", WeaponType: "axe", Base: defs.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5}},
+			{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 18, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
+			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5, Lck: 2, Mag: 0, Res: 1}},
+			{ID: "fighter", Name: "ファイター", WeaponType: "axe", Base: defs.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
+			{ID: "armor_knight", Name: "アーマー", WeaponType: "lance", Tags: []string{"armor"}, Base: defs.Stats{HP: 22, Str: 6, Skl: 3, Spd: 2, Def: 9, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
 		},
 		[]defs.WeaponDef{
-			{ID: "iron_sword", Name: "鉄の剣", Type: "sword", Might: 5, Hit: 90, MinRange: 1, MaxRange: 1},
-			{ID: "iron_lance", Name: "鉄の槍", Type: "lance", Might: 7, Hit: 80, MinRange: 1, MaxRange: 1},
-			{ID: "iron_axe", Name: "鉄の斧", Type: "axe", Might: 8, Hit: 70, MinRange: 1, MaxRange: 1},
+			{ID: "iron_sword", Name: "鉄の剣", Type: "sword", Weight: 4, Strikes: 1, DamageType: "physical", Might: 5, Hit: 90, MinRange: 1, MaxRange: 1},
+			{ID: "iron_lance", Name: "鉄の槍", Type: "lance", Weight: 5, Strikes: 1, DamageType: "physical", Might: 7, Hit: 80, MinRange: 1, MaxRange: 1},
+			{ID: "iron_axe", Name: "鉄の斧", Type: "axe", Weight: 7, Strikes: 1, DamageType: "physical", Might: 8, Hit: 70, MinRange: 1, MaxRange: 1},
+			{ID: "horse_lance", Name: "騎兵の槍", Type: "lance", Crit: 10, Weight: 6, Strikes: 2, DamageType: "physical", EffectiveTags: []string{"mounted"}, Might: 6, Hit: 75, MinRange: 1, MaxRange: 1},
 			{ID: "gun", Name: "銃", Type: "gun", Might: 9, Hit: 90, MinRange: 1, MaxRange: 3},
 		},
 		[]defs.ItemDef{{ID: "potion", Name: "回復薬", Heal: 10}},

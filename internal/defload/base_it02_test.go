@@ -59,7 +59,7 @@ func TestBaseDataIt02(t *testing.T) {
 					{"ヴォルグ", "cavalier", "iron_lance", "hold", true, 14, 8},
 				},
 				defs.Stats{HP: 8, Str: 2, Skl: 3, Spd: 2, Def: 1},
-				defs.Stats{HP: 28, Str: 8, Skl: 8, Spd: 8, Def: 6, Mov: 7},
+				defs.Stats{HP: 28, Str: 8, Skl: 8, Spd: 8, Def: 6, Mov: 7, Lck: 3, Res: 1},
 				[]reinf{{2, "soldier", "iron_lance", 0, 4}, {3, "fighter", "iron_axe", 0, 10}, {4, "cavalier", "iron_lance", 0, 7}},
 			},
 			{"ch03", "王都の奪還",
@@ -78,7 +78,7 @@ func TestBaseDataIt02(t *testing.T) {
 					{"グラウス", "myrmidon", "iron_sword", "hold", true, 8, 1},
 				},
 				defs.Stats{HP: 10, Str: 4, Skl: 3, Spd: 2, Def: 3},
-				defs.Stats{HP: 27, Str: 8, Skl: 11, Spd: 11, Def: 5, Mov: 5},
+				defs.Stats{HP: 27, Str: 8, Skl: 11, Spd: 11, Def: 5, Mov: 5, Lck: 4, Mag: 1, Res: 1},
 				[]reinf{{3, "cavalier", "iron_lance", 0, 14}, {3, "cavalier", "iron_lance", 15, 14}, {5, "fighter", "iron_axe", 4, 2}},
 			},
 		}
@@ -118,7 +118,7 @@ func TestBaseDataIt02(t *testing.T) {
 		}
 		// 3 章の門のアーマーの能力は 25/8/4/3/10/4（10.6 節）。
 		m, _ := cat.Map("ch03")
-		if a := m.Enemies[7]; statsOf(a.Class, a.Bonus) != (defs.Stats{HP: 25, Str: 8, Skl: 4, Spd: 3, Def: 10, Mov: 4}) {
+		if a := m.Enemies[7]; statsOf(a.Class, a.Bonus) != (defs.Stats{HP: 25, Str: 8, Skl: 4, Spd: 3, Def: 10, Mov: 4, Lck: 2}) {
 			t.Errorf("3 章のアーマーの能力 = %+v", statsOf(a.Class, a.Bonus))
 		}
 	})
@@ -344,8 +344,8 @@ func TestLoadDefaults(t *testing.T) {
 		m := baseFS(t)
 		for _, e := range []edit{
 			// ミラの成長率を hp だけにし、ブランの成長率を消す。
-			replace("characters.toml", "growth = { hp = 55, str = 40, skl = 60, spd = 45, def = 20 }", "growth = { hp = 50 }"),
-			replace("characters.toml", "growth = { hp = 70, str = 75, skl = 35, spd = 30, def = 15 }\n", ""),
+			replace("characters.toml", "growth = { hp = 55, str = 40, skl = 60, spd = 45, def = 20, lck = 35, mag = 5, res = 15 }", "growth = { hp = 50 }"),
+			replace("characters.toml", "growth = { hp = 70, str = 75, skl = 35, spd = 30, def = 15, lck = 25, mag = 0, res = 10 }\n", ""),
 			replace("chapters.toml", `before = "ch03_before"`+"\n", ""),
 		} {
 			e(t, m)

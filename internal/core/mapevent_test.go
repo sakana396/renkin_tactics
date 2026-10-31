@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core"
@@ -58,6 +59,41 @@ func TestMapEventConversion(t *testing.T) {
 		}
 		if len(names) != 2 || names[0] != "ファイター 1" || names[1] != "ファイター 2" {
 			t.Fatalf("増援の名前 %v", names)
+		}
+	})
+	t.Run("TC-FR-MAP-03-20 / TC-FR-UNT-01-07 出来事の増援に幸運・魔力・魔防・兵種の分類・武器の欄を渡す", func(t *testing.T) {
+		// REV-068 の申し送り: #120 が足した欄が、出来事の増援の変換でも落ちないことを確かめる。
+		cat := smallCatalog(func(m *defs.MapDef, c *[]defs.CharacterDef) {
+			eventMap(m, c)
+			m.Events[1].Enemies[0] = defs.EnemyPlacement{Class: "armor_knight", Weapon: "horse_lance", AI: "hold", X: 0, Y: 2, Bonus: defs.Stats{Lck: 1, Mag: 2, Res: 3}}
+		})
+		b, _, err := core.NewBattle(cat, "m", 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		events, err := b.Act(tactics.Command{Unit: 0, To: tactics.Pos{X: 1, Y: 0}, Action: tactics.Wait})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got *tactics.Unit
+		for _, e := range events {
+			if e.Kind == tactics.EventReinforce && e.Units[e.Unit].ClassName == "アーマー" {
+				u := e.Units[e.Unit]
+				got = &u
+			}
+		}
+		if got == nil {
+			t.Fatalf("アーマーの増援が出ていない")
+		}
+		if got.Stats.Lck != 3 || got.Stats.Mag != 2 || got.Stats.Res != 3 {
+			t.Errorf("幸運・魔力・魔防 %+v、期待 3/2/3", got.Stats)
+		}
+		if !reflect.DeepEqual(got.Tags, []string{"armor"}) {
+			t.Errorf("兵種の分類 %v", got.Tags)
+		}
+		w := got.Weapon
+		if w.Crit != 10 || w.Weight != 6 || w.Strikes != 2 || w.DamageType != tactics.Physical || !reflect.DeepEqual(w.EffectiveTags, []string{"mounted"}) {
+			t.Errorf("武器 %+v", w)
 		}
 	})
 	t.Run("TC-FR-MAP-03-20 知らないきっかけ・効果を拒む", func(t *testing.T) {

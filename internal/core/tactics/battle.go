@@ -57,7 +57,7 @@ func New(setup Setup, seed uint64) (*Battle, []Event, error) {
 
 	b.terrain, b.units = view.terrain, view.units
 	for _, r := range setup.Reinforcements {
-		r.Unit.Items = append([]ItemStack(nil), r.Unit.Items...)
+		r.Unit = r.Unit.clone()
 		b.reinforcements = append(b.reinforcements, r)
 	}
 	b.mapEvents = cloneMapEvents(setup.Events)
@@ -71,6 +71,8 @@ func newUnit(us UnitSetup) Unit {
 	u := Unit{
 		Name:      us.Name,
 		ClassName: us.ClassName,
+		Tags:      us.Tags,
+		Weapons:   us.Weapons,
 		Side:      us.Side,
 		Stats:     us.Stats,
 		Level:     us.Level,
@@ -192,7 +194,7 @@ func validateUnit(u UnitSetup) error {
 	if st.HP < 1 {
 		return fmt.Errorf("最大 HP %d は 1 以上でなければなりません", st.HP)
 	}
-	if st.Str < 0 || st.Skl < 0 || st.Spd < 0 || st.Def < 0 || st.Mov < 0 {
+	if st.Str < 0 || st.Skl < 0 || st.Spd < 0 || st.Def < 0 || st.Mov < 0 || st.Lck < 0 || st.Mag < 0 || st.Res < 0 {
 		return fmt.Errorf("能力 %+v に負の値があります", st)
 	}
 	// 規則 4: 武器の射程は 1 ≦ 最小 ≦ 最大。
@@ -209,8 +211,23 @@ func validateUnit(u UnitSetup) error {
 		}
 	}
 	// 規則 6・8: 定数の型の値。武器の種類は Sword〜Staff のどれか。
-	if u.Weapon.Type < Sword || u.Weapon.Type > Staff {
+	if u.Weapon.Type < Sword || u.Weapon.Type > Magic {
 		return fmt.Errorf("武器の種類 %d が正しくありません", u.Weapon.Type)
+	}
+	if err := validateWeapon(u.Weapon); err != nil {
+		return err
+	}
+	// 武器の列の各要素も同じ規則で確かめる（DES-ITM-02、DES-BTL-09）。
+	for k, w := range u.Weapons {
+		if w.Type < Sword || w.Type > Magic {
+			return fmt.Errorf("weapons[%d]: 武器の種類 %d が正しくありません", k, w.Type)
+		}
+		if err := validateWeapon(w); err != nil {
+			return fmt.Errorf("weapons[%d]: %w", k, err)
+		}
+	}
+	if err := validateTags("兵種の分類", u.Tags); err != nil {
+		return err
 	}
 	if err := validateStaff(u); err != nil {
 		return err
@@ -229,8 +246,8 @@ func validateUnit(u UnitSetup) error {
 	if sk.Chance < 0 || sk.Chance > 100 {
 		return fmt.Errorf("スキルの確率 %d は 0〜100 でなければなりません", sk.Chance)
 	}
-	if sk.Multiplier < 0 || (sk.Effect == Wrath && sk.Multiplier < 1) {
-		return fmt.Errorf("スキルの倍率 %d が正しくありません（0 以上、怒りでは 1 以上）", sk.Multiplier)
+	if sk.Multiplier < 0 || (sk.Effect == Wrath && sk.Multiplier != 0) {
+		return fmt.Errorf("スキルの倍率 %d が正しくありません（0 以上、怒りでは 0）", sk.Multiplier)
 	}
 	return validateGrowth(u)
 }
@@ -273,7 +290,7 @@ func validateGrowth(u UnitSetup) error {
 		return fmt.Errorf("レベル %d の経験 %d は 0 でなければなりません", u.Level, u.Exp)
 	}
 	g := u.Growth
-	for _, r := range []int{g.HP, g.Str, g.Skl, g.Spd, g.Def} {
+	for _, r := range []int{g.HP, g.Str, g.Skl, g.Spd, g.Def, g.Lck, g.Mag, g.Res} {
 		if r < 0 || r > 100 {
 			return fmt.Errorf("成長率 %+v は 0〜100 でなければなりません", g)
 		}
@@ -318,4 +335,34 @@ func (b *Battle) unitAt(p Pos) int {
 // validUnit は i が存在するユニットの添字かを返す。
 func (b *Battle) validUnit(i int) bool {
 	return i >= 0 && i < len(b.units)
+}
+
+// validateWeapon は攻撃の追加欄を検証する。省略の回数 0 は 1 に補う（DES-BTL-09）。
+func validateWeapon(w Weapon) error {
+	if w.Crit < 0 || w.Crit > 100 || w.Weight < 0 || w.Might < 0 || w.Hit < 0 || w.Strikes < 0 || w.Strikes > 2 || w.DamageType < Physical || w.DamageType > Magical {
+		return fmt.Errorf("武器の必殺・重さ・回数・区分が正しくありません")
+	}
+	if w.Type == Staff && (w.Crit != 0 || w.Strikes > 1 || len(w.EffectiveTags) > 0) {
+		return fmt.Errorf("杖には必殺・特効・2 回攻撃を付けられません")
+	}
+	// 種類 Magic の武器は魔法の攻撃だけ（DES-IT06 5.1 節）。
+	if w.Type == Magic && w.DamageType != Magical {
+		return fmt.Errorf("種類 Magic の武器は魔法の攻撃だけです")
+	}
+	return validateTags("特効の分類", w.EffectiveTags)
+}
+
+// validateTags は分類が armor・mounted のどれかで、重ならないことを確かめる（DES-IT06 5.2 節）。
+func validateTags(what string, tags []string) error {
+	seen := map[string]bool{}
+	for _, tag := range tags {
+		if tag != "armor" && tag != "mounted" {
+			return fmt.Errorf("%s %q は使えません", what, tag)
+		}
+		if seen[tag] {
+			return fmt.Errorf("%s %q が重なっています", what, tag)
+		}
+		seen[tag] = true
+	}
+	return nil
 }
