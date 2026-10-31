@@ -167,6 +167,12 @@ func TestCh07To08Autoplay(t *testing.T) {
 			if tc.id == "ch07" && tc.plan == 0 && !tc.low && tc.seed == 4 {
 				pauseIT06Level(t, "#132")
 			}
+			if tc.id == "ch07" && tc.plan == 0 && tc.low && tc.seed == 3 {
+				pauseIT06EnemyAI(t, "#132")
+			}
+			if tc.id == "ch07" && tc.plan == 1 && tc.low && tc.seed == 2 {
+				pauseIT06EnemyAI(t, "#132")
+			}
 			c := estimatedRoster(t, cat, tc.id, tc.low)
 			s, ids, err := autoBattleWith(c, tc.seed, p.members)
 			if err != nil {

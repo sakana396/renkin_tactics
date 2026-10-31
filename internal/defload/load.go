@@ -206,33 +206,35 @@ type (
 		// Level は敵のレベル。省略を 1 と読むので、ポインタにする（DES-IT06 7.3 節）。
 		Level *int `toml:"level"`
 		// Name は、省略と空の文字列を見分けるので、ポインタにする（規則 19）。
-		Name   *string        `toml:"name"`
-		Class  string         `toml:"class"`
-		Weapon string         `toml:"weapon"`
-		Bonus  rawStats       `toml:"bonus"`
-		Items  []rawItemCount `toml:"items"`
-		AI     string         `toml:"ai"`
-		Boss   bool           `toml:"boss"`
-		X      int            `toml:"x"`
-		Y      int            `toml:"y"`
+		Name     *string        `toml:"name"`
+		Class    string         `toml:"class"`
+		Weapon   string         `toml:"weapon"`
+		Bonus    rawStats       `toml:"bonus"`
+		Items    []rawItemCount `toml:"items"`
+		AI       string         `toml:"ai"`
+		Approach string         `toml:"approach"`
+		Boss     bool           `toml:"boss"`
+		X        int            `toml:"x"`
+		Y        int            `toml:"y"`
 		// ID は、省略と空の文字列を見分けるので、ポインタにする（DES-MAP-07）。
 		ID    *string `toml:"id"`
 		Group string  `toml:"group"`
 	}
 	rawReinforcement struct {
-		Level  *int           `toml:"level"`
-		Turn   int            `toml:"turn"`
-		Name   *string        `toml:"name"`
-		Class  string         `toml:"class"`
-		Weapon string         `toml:"weapon"`
-		Bonus  rawStats       `toml:"bonus"`
-		Items  []rawItemCount `toml:"items"`
-		AI     string         `toml:"ai"`
-		Boss   bool           `toml:"boss"`
-		X      int            `toml:"x"`
-		Y      int            `toml:"y"`
-		ID     *string        `toml:"id"`
-		Group  string         `toml:"group"`
+		Level    *int           `toml:"level"`
+		Turn     int            `toml:"turn"`
+		Name     *string        `toml:"name"`
+		Class    string         `toml:"class"`
+		Weapon   string         `toml:"weapon"`
+		Bonus    rawStats       `toml:"bonus"`
+		Items    []rawItemCount `toml:"items"`
+		AI       string         `toml:"ai"`
+		Approach string         `toml:"approach"`
+		Boss     bool           `toml:"boss"`
+		X        int            `toml:"x"`
+		Y        int            `toml:"y"`
+		ID       *string        `toml:"id"`
+		Group    string         `toml:"group"`
 	}
 	// rawArea は出来事の範囲（DES-MAP-07）。両端を含む。
 	rawArea struct {
@@ -1099,6 +1101,31 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 
 	// 出来事（DES-MAP-07）。
 	m.Events = v.mapEvents(ref, p, r.Events, len(grid), width(grid), inMap, enemyIDs)
+	approaches := map[string]string{}
+	checkApproach := func(q string, e defs.EnemyPlacement) {
+		if e.Group == "" {
+			return
+		}
+		approach := e.Approach
+		if approach == "" {
+			approach = defs.ApproachDirect
+		}
+		if first, ok := approaches[e.Group]; ok && first != approach {
+			v.add(f, q+".approach", "一団 %q の寄り方がそろっていません", e.Group)
+		}
+		approaches[e.Group] = approach
+	}
+	for j, e := range m.Enemies {
+		checkApproach(fmt.Sprintf("%s.enemies[%d]", p, j), e)
+	}
+	for j, e := range m.Reinforcements {
+		checkApproach(fmt.Sprintf("%s.reinforcements[%d]", p, j), e.EnemyPlacement)
+	}
+	for j, event := range m.Events {
+		for k, e := range event.Enemies {
+			checkApproach(fmt.Sprintf("%s.events[%d].enemies[%d]", p, j, k), e)
+		}
+	}
 	return m
 }
 
@@ -1107,7 +1134,7 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 // 座標とボスの確かめは、配置の種類ごとに呼ぶ側で行う。
 func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyIDSet) defs.EnemyPlacement {
 	const f = FileMaps
-	ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapon: e.Weapon, Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Boss: e.Boss, X: e.X, Y: e.Y, Group: e.Group}
+	ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapon: e.Weapon, Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Approach: e.Approach, Boss: e.Boss, X: e.X, Y: e.Y, Group: e.Group}
 	// level の省略は 1 と読む。0 と 21 以上は拒む（DES-IT06 7.3 節）。
 	ep.Level = 1
 	if e.Level != nil {
@@ -1119,12 +1146,18 @@ func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyI
 	v.noStaff(ref, q, e.Weapon)
 	v.hand(ref, f, q, e.Items, false)
 	v.oneOf(f, q+".ai", "敵の動き方", e.AI, defs.AICharge, defs.AIHold)
+	if ep.Approach != "" {
+		v.oneOf(f, q+".approach", "敵の寄り方", ep.Approach, defs.ApproachDirect, defs.ApproachGroup)
+	}
+	if ep.Approach == defs.ApproachGroup && ep.Group == "" {
+		v.add(f, q+".group", "一団の寄り方には一団の名前が必要です")
+	}
 	return ep
 }
 
 // enemy は増援の、ターンを除いた敵の欄を返す。
 func (r rawReinforcement) enemy() rawEnemy {
-	return rawEnemy{Level: r.Level, Name: r.Name, Class: r.Class, Weapon: r.Weapon, Bonus: r.Bonus, Items: r.Items, AI: r.AI, Boss: r.Boss, X: r.X, Y: r.Y, ID: r.ID, Group: r.Group}
+	return rawEnemy{Level: r.Level, Name: r.Name, Class: r.Class, Weapon: r.Weapon, Bonus: r.Bonus, Items: r.Items, AI: r.AI, Approach: r.Approach, Boss: r.Boss, X: r.X, Y: r.Y, ID: r.ID, Group: r.Group}
 }
 
 // maxLiveEnemies は一度に生きている敵の上限（DES-IT06 9.3 節、E-91）。tactics の maxLiveEnemies と同じ値。

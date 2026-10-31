@@ -24,8 +24,10 @@ const (
 
 // 敵の動き方（DES-DAT-01、E-13 P-03）。
 const (
-	AICharge = "charge"
-	AIHold   = "hold"
+	AICharge       = "charge"
+	AIHold         = "hold"
+	ApproachDirect = "direct"
+	ApproachGroup  = "group"
 )
 
 // 出来事のきっかけと効果（DES-MAP-07）。
@@ -163,15 +165,16 @@ type Slot struct {
 
 // EnemyPlacement は敵の配置（DES-DAT-01。反復 2 で変更）。Name は空なら、クラスの名前から付ける。
 type EnemyPlacement struct {
-	Name   string
-	Class  string
-	Weapon string
-	Bonus  Stats
-	Items  []ItemCount
-	AI     string
-	Boss   bool
-	X      int
-	Y      int
+	Name     string
+	Class    string
+	Weapon   string
+	Bonus    Stats
+	Items    []ItemCount
+	AI       string
+	Approach string
+	Boss     bool
+	X        int
+	Y        int
 	// Level は敵のレベル 1〜20（キー level、省略は 1）。撃破の経験の式に使い、能力は補正しない（DES-IT06 7.3 節）。
 	Level int
 	// ID はマップの中で、初めの敵・すべての増援を通して重ならない敵の ID（DES-MAP-07）。
