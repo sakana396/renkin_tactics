@@ -41,6 +41,8 @@ type Game struct {
 	sheets     map[assets.Sheet]*ebiten.Image
 	// hintLayer は増援の気配を不透明に描いてから薄く重ねる層（DES-UI-24）。
 	hintLayer *ebiten.Image
+	// shotCursor は開発用撮影で情報欄のカーソル位置を固定する。
+	shotCursor *image.Point
 }
 
 // Run はタイトルからキャンペーンを始める（DES-UI-09、DES-CMD-02）。
@@ -209,6 +211,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawMenu(board)
 	g.drawOver(board)
 	cx, cy := ebiten.CursorPosition()
+	if g.shotCursor != nil {
+		cx, cy = g.shotCursor.X, g.shotCursor.Y
+	}
 	g.drawInfo(screen, cx, cy)
 	g.drawGuide(screen)
 	g.drawHintText(screen, hint)
