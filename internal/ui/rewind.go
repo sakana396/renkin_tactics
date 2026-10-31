@@ -168,8 +168,9 @@ func fitRewind(s string, width int) string {
 }
 
 // 右欄の一覧・確認の配置（DES-UI-21）。盤面の右 x=512〜832 だけを使い、左右に 8 px の余白を置く。
-// 一覧・詳細・理由・気配の案内は右上の情報欄（y < 360）に収め、右下のミニマップ（y = 360〜511）と重ねない。
-// 「戻る」「決定」などのボタンは今までどおり下の行（y = 520〜560）に置く（DES-UI-28）。
+// 一覧・詳細・理由は右上の情報欄（y < 360）に収め、右下のミニマップ（y = 360〜511）と重ねない。座標だけを詰め、
+// 8 行の一覧と最大 5 行の詳細（DES-UI-21、DES-IT04 7.1 節）は保つ（REV-071 F-03 案 B）。
+// 「戻る」「決定」などのボタンと気配の案内は下の行（y = 520〜576）に置く（DES-UI-28）。
 const (
 	rewindLeft    = MapSize + 8
 	rewindWidth   = InfoWidth - 16
@@ -177,14 +178,14 @@ const (
 	rewindTitleY  = 4
 	rewindSubY    = 22
 	rewindRowTop  = 40
-	rewindRowH    = 22
-	rewindRowText = 3
+	rewindRowH    = 20
+	rewindRowText = 2
 	// rewindPageY は「前」「次」のボタン、rewindDetailY は一覧の詳細の上端。
 	rewindPageY   = rewindRowTop + 8*rewindRowH + 4
 	rewindDetailY = rewindPageY + 24
 	// rewindDetailLines は一覧の詳細に出す行の数、rewindConfirmLines は確認に出す行の数。
-	rewindDetailLines  = 3
-	rewindConfirmLines = 15
+	rewindDetailLines  = 5
+	rewindConfirmLines = 16
 	// rewindGuideY は操作の案内（確認では残り回数）、rewindReasonY は理由の 2 行（確認ではホイールの案内）の上端。
 	rewindGuideY  = rewindDetailY + rewindDetailLines*lineHeight + 2
 	rewindReasonY = rewindGuideY + lineHeight

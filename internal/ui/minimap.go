@@ -216,7 +216,7 @@ func (g gridTerrain) Width() int {
 func (g gridTerrain) TerrainAt(p tactics.Pos) tactics.Terrain { return g[p.Y][p.X] }
 
 // CenterOn はカメラの中心をマス p に移し、今の上限で止める（DES-UI-28、Q-DES06-10）。
-// 16 マスの表示の中心は左上から 8 マス目とする。
+// 16 マスの表示の中心は、左上から 0 から数えて 8 のマスとする。
 func (c *Camera) CenterOn(p tactics.Pos) {
 	c.X, c.Y = p.X-8, p.Y-8
 	c.Move(0, 0)

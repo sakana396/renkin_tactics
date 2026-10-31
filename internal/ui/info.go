@@ -152,10 +152,15 @@ func (c *Controller) InfoView(x, y int) InfoView {
 }
 
 // ToggleInfoPage は Tab キーで情報欄のページを切り替える（DES-UI-28）。表示だけを変える。
+// ページの印を出していないとき（攻撃の予測・巻き戻しの一覧）は切り替えない（REV-071 F-01）。勝敗が決まった Over でも受ける。
 func (c *Controller) ToggleInfoPage() {
-	if !c.rewind.open {
-		c.infoPage = c.infoPage.next()
+	if c.rewind.open {
+		return
 	}
+	if _, ok := c.attackForecast(); ok {
+		return
+	}
+	c.infoPage = c.infoPage.next()
 }
 
 // InfoClick は情報欄のページの印のクリックを受ける（DES-UI-28）。印を出していないとき（予測・巻き戻しの一覧）は受けない。

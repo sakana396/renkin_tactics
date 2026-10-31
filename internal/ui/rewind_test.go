@@ -306,7 +306,7 @@ func TestRewindMouse(t *testing.T) {
 		c.EndPhase()
 		playOut(c)
 		c.RewindClick(310, 520)
-		// 右欄の 1 行目（x=520〜824、y=40〜62）。DES-UI-21 の配置を、ミニマップと重ならないよう詰めた（DES-UI-28）。
+		// 右欄の 1 行目（x=520〜824、y=40〜60）。DES-UI-21 の配置の座標を、ミニマップと重ならないよう詰めた（DES-UI-28、REV-071 F-03）。
 		c.RewindClick(600, 50)
 		if c.rewind.selected != 0 {
 			t.Fatal("行を選べない")

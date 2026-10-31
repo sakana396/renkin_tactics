@@ -21,8 +21,9 @@ const (
 	hintPeriod = 8
 )
 
-// hintRewindY は巻き戻しの右欄で案内を出す行の上端。理由の 2 行の下で、右下のミニマップ（y = 360〜）の上（DES-UI-24、DES-UI-28）。
-const hintRewindY = rewindReasonY + 2*lineHeight
+// hintRewindY は巻き戻しの右欄で案内を出す行の上端。下の行の「戻る」「決定」（y = 520〜560）の下の空きに置き、
+// 右下のミニマップ（y = 360〜511）と重ねない（DES-UI-24、DES-UI-28、REV-071 F-03）。
+const hintRewindY = ScreenHeight - lineHeight
 
 // HintView は盤面に描く増援の気配の表示値（DES-UI-24）。
 // Areas は tactics の予兆領域（4 マス単位に丸めた矩形）そのままで、正確な出現マスを持たない。

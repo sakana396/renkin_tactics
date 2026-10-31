@@ -132,6 +132,10 @@ func (g *Game) Update() error {
 		_, wheel := ebiten.Wheel()
 		scrolled := c.Wheel(x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift)) || dx != 0 || dy != 0
 		c.SetCursor(x, y)
+		// Tab は勝敗が決まった Over でも受ける（DES-UI-28、REV-071 F-02）。
+		if inpututil.IsKeyJustPressed(ebiten.KeyTab) {
+			c.ToggleInfoPage()
+		}
 		if c.State() == Over {
 			if left {
 				s.Click(ebiten.CursorPosition())
@@ -148,9 +152,6 @@ func (g *Game) Update() error {
 			}
 			if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
 				c.ToggleDanger()
-			}
-			if inpututil.IsKeyJustPressed(ebiten.KeyTab) {
-				c.ToggleInfoPage()
 			}
 			c.SetFastForward(ebiten.IsKeyPressed(ebiten.KeySpace) || ebiten.IsKeyPressed(ebiten.KeyEnter))
 			c.Tick()

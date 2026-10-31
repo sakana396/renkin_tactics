@@ -216,6 +216,10 @@ func (s *SceneController) Click(x, y int) {
 		s.syncRewind()
 		return
 	}
+	// 勝敗が決まった Over でも、情報欄のページの印は先に受ける（DES-UI-28、REV-071 F-02）。
+	if s.scene == Battle && s.battle != nil && s.battle.State() == Over && s.battle.InfoClick(x, y) {
+		return
+	}
 	if s.scene == Battle && !image.Pt(x, y).In(BattleEndRect()) {
 		return
 	}

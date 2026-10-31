@@ -689,6 +689,60 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 	})
 
+	t.Run("TC-FR-MAP-06-07 Targeting で Tab を押してもページが変わらない（REV-071 F-01）", func(t *testing.T) {
+		c := newIdleWith(t, example1Setup)
+		target(t, c, tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3})
+		if _, ok := c.attackForecast(); !ok || c.State() != Targeting {
+			t.Fatal("前提: 攻撃の予測")
+		}
+		target := c.target
+		c.ToggleInfoPage()
+		c.ToggleInfoPage()
+		c.ToggleInfoPage()
+		if c.infoPage != PageStats || c.State() != Targeting || c.target != target {
+			t.Errorf("予測の間の Tab: ページ %d、状態 %v、相手 %d", c.infoPage, c.State(), c.target)
+		}
+		// 予測を閉じたあとは切り替える。
+		c.Cancel()
+		c.ToggleInfoPage()
+		if c.infoPage != PageEquip {
+			t.Errorf("予測を閉じたあとの Tab: ページ %d", c.infoPage)
+		}
+	})
+
+	t.Run("TC-FR-MAP-06-07 勝敗が決まった Over でも印のクリックと Tab でページを切り替え、場面と戦闘は変えない（REV-071 F-02）", func(t *testing.T) {
+		s := fixtureScenes(&memoryStore{}, false, false)
+		startScenes(s)
+		winScene(t, s)
+		playOut(s.battle)
+		c := s.battle
+		if s.Scene() != Battle || c.State() != Over {
+			t.Fatalf("前提: 場面 %v、状態 %v", s.Scene(), c.State())
+		}
+		if v := c.InfoView(600, 100); len(v.Tabs) != 2 {
+			t.Fatalf("Over の印 = %+v", v.Tabs)
+		}
+		old, before := c.Battle(), c.Battle().Units()
+		r := InfoTabRects()[1]
+		s.Click(r.Min.X+2, r.Min.Y+2)
+		if c.infoPage != PageEquip {
+			t.Errorf("Over の印のクリック: ページ %d", c.infoPage)
+		}
+		c.ToggleInfoPage()
+		if c.infoPage != PageStats {
+			t.Errorf("Over の Tab: ページ %d", c.infoPage)
+		}
+		if s.Scene() != Battle || c.State() != Over || c.Battle() != old || !reflect.DeepEqual(before, old.Units()) {
+			t.Error("Over の印の操作で場面か戦闘が変わった")
+		}
+		// 印の外の Over のクリックは、今までどおり勝敗の帯で次へ進む。
+		e := BattleEndRect()
+		s.Click(e.Min.X+2, e.Min.Y+2)
+		if s.Scene() == Battle {
+			t.Error("勝敗の帯のクリックで次へ進まない")
+		}
+	})
+
 	t.Run("TC-FR-MAP-06-07 巻き戻しの一覧・確認・理由・気配の案内は右上と下の行に収め、ミニマップと重ならない", func(t *testing.T) {
 		c := newIdleWith(t, hintSetup)
 		endTurn(c)
@@ -733,11 +787,27 @@ func TestInfoPagesLayout(t *testing.T) {
 			}
 		}
 		check("一覧")
+		// 一覧の詳細は最大 5 行（DES-UI-21、DES-IT04 7.1 節。REV-071 F-03 案 B）で、y = 228 から 16 px ごと。
+		var detail []int
+		for _, tx := range c.RewindView().Texts {
+			if tx.X == rewindLeft && tx.Y >= 228 && tx.Y < 310 {
+				detail = append(detail, tx.Y)
+			}
+		}
+		if !reflect.DeepEqual(detail, []int{228, 244, 260, 276, 292}) {
+			t.Errorf("詳細の行の y = %v", detail)
+		}
+		// 気配の案内は下の行の「戻る」「決定」の下（y = 560）。
+		for _, tx := range c.RewindView().Texts {
+			if strings.HasPrefix(tx.Text, hintText) && (tx.Y != 560 || tx.X != rewindLeft) {
+				t.Errorf("気配の案内の位置 (%d, %d)", tx.X, tx.Y)
+			}
+		}
 		c.RewindEnter()
 		if !c.rewind.confirm {
 			t.Fatal("前提: 確認でない")
 		}
-		// 確認では全文が 15 行を超えても、見せる行は情報欄の中で止める（ホイールで送る）。
+		// 確認では全文が 16 行を超えても、見せる行は情報欄の中で止める（ホイールで送る）。
 		if n := len(c.rewindDetail()); n <= rewindConfirmLines {
 			t.Fatalf("前提: 確認の全文 %d 行", n)
 		}
