@@ -331,6 +331,12 @@ func TestIT06HandSlots(t *testing.T) {
 			t.Fatal(err)
 		}
 		b.units[2].HP = 1
+		// 予測も選んだ杖で求める。1 本目は回復 10、2 本目は回復 1（魔力 0）。
+		for _, tc := range []struct{ weapon, want int }{{1, 10}, {2, 1}} {
+			if h, err := b.HealForecast(Command{Unit: 0, To: Pos{0, 0}, Action: Heal, Target: 2, Weapon: ptr(tc.weapon)}); err != nil || h.Amount != tc.want {
+				t.Fatalf("杖 %d の予測 %+v、%v", tc.weapon, h, err)
+			}
+		}
 		if _, err := b.Act(Command{Unit: 0, To: Pos{0, 0}, Action: Heal, Target: 2, Weapon: ptr(2)}); err != nil {
 			t.Fatal(err)
 		}

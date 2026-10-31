@@ -273,7 +273,12 @@ func (c *Controller) Cancel() {
 	case Moved:
 		c.state = Selected
 	case Targeting, HealTargeting:
-		// 相手 → 武器 → 行動の一覧 の順に戻る（DES-IT06 12.1 節）。一覧を飛ばしたときは行動の一覧へ戻る。
+		// 予測 → 相手 → 武器 → 行動の一覧 の順に戻る（DES-IT06 12.1 節、UC-02 5c）。
+		// 相手を選んで予測を出しているときは、相手の選択を外すだけにする。一覧を飛ばしたときは行動の一覧へ戻る。
+		if c.target >= 0 {
+			c.target = -1
+			return
+		}
 		switch {
 		case c.weaponMenu && c.state == Targeting:
 			c.state = WeaponMenu

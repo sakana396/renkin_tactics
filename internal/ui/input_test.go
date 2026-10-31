@@ -353,7 +353,8 @@ func TestControllerTransitions(t *testing.T) {
 		c.Click(tactics.Pos{X: 0, Y: 0})
 		c.ChooseAction(tactics.Attack)
 		c.Click(tactics.Pos{X: 1, Y: 0})
-		want := []State{Moved, Selected, Idle, Idle}
+		// 相手を選んだ Targeting からは、相手の選択 → 行動の一覧 → … の順に戻る（UC-02 5c、DES-IT06 12.1 節。REV-072 F-01）。
+		want := []State{Targeting, Moved, Selected, Idle, Idle}
 		for i, w := range want {
 			c.Cancel()
 			if c.State() != w {

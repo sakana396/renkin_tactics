@@ -88,12 +88,18 @@ func TestHealUI(t *testing.T) {
 		if c.State() != HealTargeting || c.target != 1 || !reflect.DeepEqual(before, c.Battle().Units()) || c.Units()[0].Pos != (tactics.Pos{X: 3, Y: 2}) {
 			t.Fatal("予測前に状態が変わった")
 		}
+		// 予測 → 相手 → 行動の一覧 の順に戻る（UC-02 5c。REV-072 F-01）。
+		c.Escape()
+		if c.State() != HealTargeting || c.target != -1 {
+			t.Fatal("相手の選択を取り消せない")
+		}
 		c.Escape()
 		if c.State() != Moved || c.target != -1 {
 			t.Fatal("取り消せない")
 		}
 		c.ChooseAction(tactics.Heal)
 		c.Click(tactics.Pos{X: 3, Y: 1})
+		c.Cancel()
 		c.Cancel()
 		if c.State() != Moved {
 			t.Fatal("右クリック相当の取り消し")

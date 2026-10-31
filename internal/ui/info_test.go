@@ -400,6 +400,8 @@ func TestForecastPanel(t *testing.T) {
 			t.Errorf("反撃なし = %q\nのはず %q", got, want)
 		}
 		// 隣の剣士が攻撃すると、怒りの敵は反撃できるので、必殺と怒りを出す。
+		// 取り消しは 予測 → 相手 → 行動の一覧 → 移動先 → Idle（REV-072 F-01）。
+		c.Cancel()
 		c.Cancel()
 		c.Cancel()
 		c.Cancel()

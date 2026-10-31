@@ -27,7 +27,7 @@ func campaignCatalog(edit ...func(chars []defs.CharacterDef)) *defs.Catalog {
 	return defs.NewCatalog(defs.GameDef{Party: []string{"hero", "friend", "bench"}, Stock: []defs.ItemCount{{Item: "z", Count: 2}, {Item: "a", Count: 1}}},
 		[]defs.TerrainDef{{ID: "plain", Name: "平地", Symbol: ".", Cost: 1}},
 		[]defs.ClassDef{{ID: "hero", Name: "主人公", WeaponType: "sword", Base: defs.Stats{HP: 20, Str: 20, Skl: 100, Spd: 5, Def: 10, Mov: 5}}, {ID: "weak", Name: "兵", WeaponType: "sword", Base: defs.Stats{HP: 10, Str: 20, Skl: 100, Spd: 5, Mov: 5}}},
-		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}},
+		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}, {ID: "t", Name: "もう 1 本の剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}},
 		[]defs.ItemDef{{ID: "a", Name: "同じ薬", Heal: 10}, {ID: "z", Name: "同じ薬", Heal: 10}}, nil,
 		chars, []defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Level: 1, Class: "weak", Weapons: []string{"s"}, AI: "hold", Boss: true, X: 2, Y: 0}}}},
 		[]defs.ChapterDef{{ID: "c1", Map: "m", Joins: []string{"join1"}, Reward: []defs.ItemCount{{Item: "a", Count: 2}}}, {ID: "c2", Map: "m", Joins: []string{"join2", "friend"}, Reward: []defs.ItemCount{{Item: "z", Count: 2}}}, {ID: "c3", Map: "m"}}, nil)

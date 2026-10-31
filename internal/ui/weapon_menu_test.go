@@ -72,11 +72,17 @@ func TestWeaponMenu(t *testing.T) {
 		if len(p.Forecast) == 0 || p.ForecastWeapons[0] != tactics.Magic || c.Battle().Units()[0].Equipped != 0 {
 			t.Fatalf("予測 %v、武器 %v、装備 %d", p.Forecast, p.ForecastWeapons, c.Battle().Units()[0].Equipped)
 		}
-		// 取り消し: 相手と予測 → 武器の一覧 → 行動の一覧 → 移動先の選択。装備は変わらない。
-		for _, wantState := range []State{WeaponMenu, Moved, Selected} {
+		// 取り消し: 予測 → 相手 → 武器の一覧 → 行動の一覧 → 移動先の選択（REV-072 F-01）。装備は変わらない。
+		for i, want := range []struct {
+			state  State
+			target int
+		}{{Targeting, -1}, {WeaponMenu, -1}, {Moved, -1}, {Selected, -1}} {
 			c.Cancel()
-			if c.State() != wantState {
-				t.Fatalf("取り消しのあと %v、期待 %v", c.State(), wantState)
+			if _, _, target := c.Selection(); c.State() != want.state || target != want.target {
+				t.Fatalf("取り消し %d 回目のあと %v・相手 %d、期待 %v・%d", i+1, c.State(), target, want.state, want.target)
+			}
+			if i == 0 && (c.weapon != 1 || len(c.Panel(tactics.Pos{}, false).Forecast) != 0) {
+				t.Fatalf("1 回目の取り消しで武器 %d、予測が残る", c.weapon)
 			}
 		}
 		if c.Battle().Units()[0].Equipped != 0 || len(c.Battle().History()) != history {
@@ -125,6 +131,12 @@ func TestWeaponMenu(t *testing.T) {
 		c.ChooseAction(tactics.Attack)
 		if c.State() != Targeting || !reflect.DeepEqual(c.Targets(), []int{2}) {
 			t.Fatalf("状態 %v、相手 %v", c.State(), c.Targets())
+		}
+		// 予測 → 相手 → 行動の一覧（一覧を飛ばしたので武器の段はない）。
+		c.Click(tactics.Pos{X: 1, Y: 3})
+		c.Cancel()
+		if _, _, target := c.Selection(); c.State() != Targeting || target != -1 {
+			t.Fatalf("1 回目の取り消しのあと %v・相手 %d", c.State(), target)
 		}
 		c.Cancel()
 		if c.State() != Moved {
