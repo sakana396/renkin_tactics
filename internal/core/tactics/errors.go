@@ -42,6 +42,10 @@ var (
 	ErrNoWeapon = errors.New("tactics: その武器はありません")
 	// ErrWeaponType は、選んだ武器の種類を兵種が持てないことを表す（DES-ITM-02）。
 	ErrWeaponType = errors.New("tactics: その種類の武器は使えません")
+	// ErrCantoPending は、再移動を待っている間に、ほかのユニットの行動や番の終わりを求めたことを表す（DES-BTL-10）。
+	ErrCantoPending = errors.New("tactics: 再移動を待っています（再移動するか、その場で終えてください）")
+	// ErrNoCantoPending は、待っている再移動がないのに CantoMove・CantoEnd を求めたことを表す（DES-BTL-10）。
+	ErrNoCantoPending = errors.New("tactics: 待っている再移動がありません")
 	// ErrInvalidSetup は、Setup が正しくないことを表す（New だけ）。
 	ErrInvalidSetup = errors.New("tactics: 戦闘の入力が正しくありません")
 )

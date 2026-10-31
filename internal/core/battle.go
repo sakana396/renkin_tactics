@@ -196,6 +196,10 @@ func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, 
 	if err != nil {
 		return tactics.UnitSetup{}, err
 	}
+	classSkills, err := convertClassSkills(cat, cls)
+	if err != nil {
+		return tactics.UnitSetup{}, err
+	}
 	return tactics.UnitSetup{
 		Name:         ch.Name,
 		ClassName:    cls.Name,
@@ -210,14 +214,15 @@ func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, 
 		Weapons:            weapons,
 		AllowedWeaponTypes: []tactics.WeaponType{allowed},
 
-		Items: items,
-		Skill: skill,
-		Lord:  ch.Lord,
+		Items:       items,
+		Skill:       skill,
+		ClassSkills: classSkills,
+		Lord:        ch.Lord,
 	}, nil
 }
 
 // enemyUnit は敵の配置から、名前 name のユニット 1 体の入力を作る（DES-CORE-01）。
-// 敵はスキルを持たない。
+// 敵はキャラのスキルを持たない。兵種のスキルは自軍と同じく持つ（DES-BTL-10。敵の再移動の思考は DES-AI-02）。
 func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.UnitSetup, error) {
 	cls, ok := cat.Class(e.Class)
 	if !ok {
@@ -239,6 +244,10 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 	if err != nil {
 		return tactics.UnitSetup{}, err
 	}
+	classSkills, err := convertClassSkills(cat, cls)
+	if err != nil {
+		return tactics.UnitSetup{}, err
+	}
 	return tactics.UnitSetup{
 		Name:         name,
 		ClassName:    cls.Name,
@@ -252,6 +261,7 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 		Weapons:            weapons,
 		AllowedWeaponTypes: []tactics.WeaponType{allowed},
 		Items:              items,
+		ClassSkills:        classSkills,
 		Boss:               e.Boss,
 		AI:                 ai,
 		ID:                 e.ID,
@@ -411,6 +421,8 @@ func convertSkill(cat *defs.Catalog, id string) (tactics.Skill, error) {
 		effect = tactics.Wrath
 	case defs.EffectSnipe:
 		effect = tactics.Snipe
+	case defs.EffectCanto:
+		effect = tactics.Canto
 	default:
 		return tactics.Skill{}, fmt.Errorf("スキル %q の効果の種類 %q は使えません", id, s.Effect)
 	}
@@ -423,6 +435,20 @@ func convertSkill(cat *defs.Catalog, id string) (tactics.Skill, error) {
 		Chance:     s.Chance,
 		Multiplier: s.Multiplier,
 	}, nil
+}
+
+// convertClassSkills は兵種のスキルの ID の列を tactics のスキルの列に変える（DES-CORE-01、DES-BTL-10）。
+// 列が空なら nil を返す。
+func convertClassSkills(cat *defs.Catalog, cls defs.ClassDef) ([]tactics.Skill, error) {
+	var out []tactics.Skill
+	for _, id := range cls.Skills {
+		s, err := convertSkill(cat, id)
+		if err != nil {
+			return nil, fmt.Errorf("クラス %q: %w", cls.ID, err)
+		}
+		out = append(out, s)
+	}
+	return out, nil
 }
 
 // convertAI は敵の動き方の文字列を tactics の動き方に変える（DES-CORE-01、DES-AI-01）。

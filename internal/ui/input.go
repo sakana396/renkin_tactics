@@ -29,11 +29,15 @@ const (
 // HealTargeting は回復する味方を選ぶ状態（DES-UI-18）。
 const HealTargeting State = Over + 1
 
+// Canto は、行動の結果を再生したあと、待っている再移動の行き先を選んでいる状態（DES-UI-26、DES-IT06 12.3 節）。
+// ほかのユニットは操作できず、番も終えられない。
+const Canto State = HealTargeting + 1
+
 // WeaponMenu は攻撃に使う武器を選ぶ状態、StaffMenu は回復に使う杖を選ぶ状態（DES-UI-26、DES-IT06 12.1 節）。
 // 決定するまで core の装備は変えない。
 const (
-	WeaponMenu State = Over + 2
-	StaffMenu  State = Over + 3
+	WeaponMenu State = Canto + 1
+	StaffMenu  State = Canto + 2
 )
 
 // FramesPerEvent は、出来事 1 つを表示するフレームの数（DES-UI-04）。
@@ -153,6 +157,13 @@ func (c *Controller) Click(p tactics.Pos) {
 		if _, ok := c.battle.Reachable(c.unit)[p]; ok {
 			c.state, c.dest = Moved, p
 			c.camera.Focus(p)
+		}
+	case Canto:
+		// 今の位置は「その場で終える」、ほかの行けるマスは再移動にする（DES-IT06 12.3 節）。
+		if p == c.dest {
+			c.EndCanto()
+		} else if _, ok := c.battle.CantoReachable()[p]; ok {
+			c.act(tactics.Command{Unit: c.unit, To: p, Action: tactics.CantoMove})
 		}
 	case Targeting, HealTargeting:
 		targets, action := c.Targets(), tactics.Attack
@@ -293,7 +304,18 @@ func (c *Controller) Cancel() {
 		c.state, c.weapon, c.weaponMenu, c.message = Moved, -1, false, ""
 	case ItemMenu:
 		c.state = Moved
+	case Canto:
+		// 結果が出たあとの取り消しは、攻撃を取り消さず、今の位置で再移動を終える（DES-IT06 8.2・12.3 節）。
+		c.EndCanto()
 	}
+}
+
+// EndCanto は、待っている再移動を今の位置で終える（CantoEnd。DES-IT06 12.3 節）。Canto のときだけ受け付ける。
+func (c *Controller) EndCanto() {
+	if c.rewind.open || c.battle.NeedsResume() || c.state != Canto {
+		return
+	}
+	c.act(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.CantoEnd})
 }
 
 // Escape は戦闘中の選択を取り消す。Over では何もしない（DES-UI-17）。
@@ -522,6 +544,13 @@ func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
 	switch c.state {
 	case Selected:
 		return c.ranges(c.unit)
+	case Canto:
+		// 再移動で行けるマスだけを青で出す（DES-IT06 12.3 節）。
+		blue = map[tactics.Pos]bool{}
+		for p := range c.battle.CantoReachable() {
+			blue[p] = true
+		}
+		return blue, nil
 	case Moved, Targeting, HealTargeting, WeaponMenu, StaffMenu:
 		// 相手を選んでいる間と一覧の上の行は、選んだ武器 1 本の射程、ほかは攻撃の武器を合わせた射程（DES-ITM-02）。
 		cells := c.battle.AttackRange(c.unit, c.dest)
@@ -661,6 +690,11 @@ func (c *Controller) finish() {
 	c.refreshHints()
 	if c.battle.Result != tactics.Ongoing {
 		c.state = Over
+		return
+	}
+	// 行動の再生のあとに待っている再移動があれば、再移動の状態に入る（DES-IT06 12.3 節）。
+	if pc, ok := c.battle.PendingCanto(); ok {
+		c.state, c.unit, c.dest = Canto, pc.Unit, c.battle.Units()[pc.Unit].Pos
 		return
 	}
 	c.state = Idle

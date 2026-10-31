@@ -134,6 +134,7 @@ type (
 		Name       string   `toml:"name"`
 		WeaponType string   `toml:"weapon_type"`
 		Tags       []string `toml:"tags"`
+		Skills     []string `toml:"skills"`
 		Base       rawStats `toml:"base"`
 		// StaffHealCap は杖の回復量の上限。省略は 0（上限なし）（DES-IT06 7.1 節）。
 		StaffHealCap int `toml:"staff_heal_cap"`
@@ -526,6 +527,26 @@ func (s *ids) check(path, id string) {
 	s.seen[id] = path
 }
 
+// classSkills は兵種のスキルの参照と重なりを確かめる（DES-IT06 8.1 節、DES-DAT-04）。
+// スキルの定義を読んだあとに呼ぶ。参照のない ID と、同じ ID の重なりを拒む。
+func (v *validator) classSkills(ref refs, classes []rawClass) {
+	for i, r := range classes {
+		seen := map[string]bool{}
+		for j, id := range r.Skills {
+			p := fmt.Sprintf("classes[%d].skills[%d]", i, j)
+			if !ref.skillIDs[id] {
+				v.add(FileClasses, p, "スキル %q がありません", id)
+				continue
+			}
+			if seen[id] {
+				v.add(FileClasses, p, "兵種のスキル %q が重なっています", id)
+				continue
+			}
+			seen[id] = true
+		}
+	}
+}
+
 // tags は兵種の分類・武器の特効の分類が armor・mounted のどれかで、重ならないことを確かめる（DES-IT06 5.2 節、DES-DAT-04）。
 func (v *validator) tags(file, path, what string, tags []string) {
 	seen := map[string]bool{}
@@ -646,7 +667,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		p := fmt.Sprintf("classes[%d]", i)
 		cid.check(p, r.ID)
 		v.oneOf(FileClasses, p+".weapon_type", "武器の種類", r.WeaponType, weaponTypes...)
-		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponType: r.WeaponType, StaffHealCap: r.StaffHealCap, Base: toStats(r.Base), Tags: append([]string(nil), r.Tags...)}
+		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponType: r.WeaponType, StaffHealCap: r.StaffHealCap, Base: toStats(r.Base), Tags: append([]string(nil), r.Tags...), Skills: append([]string(nil), r.Skills...)}
 		v.tags(FileClasses, p+".tags", "兵種の分類", c.Tags)
 		v.atLeast(FileClasses, p+".staff_heal_cap", c.StaffHealCap, 0)
 		classes[i] = c
@@ -715,7 +736,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 	for i, r := range rd.skills {
 		p := fmt.Sprintf("skills[%d]", i)
 		sid.check(p, r.ID)
-		v.oneOf(FileSkills, p+".effect", "スキルの効果の種類", r.Effect, defs.EffectInspire, defs.EffectPavise, defs.EffectWrath, defs.EffectSnipe)
+		v.oneOf(FileSkills, p+".effect", "スキルの効果の種類", r.Effect, defs.EffectInspire, defs.EffectPavise, defs.EffectWrath, defs.EffectSnipe, defs.EffectCanto)
 		v.atLeast(FileSkills, p+".range", r.Range, 0)
 		v.atLeast(FileSkills, p+".hit", r.Hit, 0)
 		v.atLeast(FileSkills, p+".avoid", r.Avoid, 0)
@@ -728,6 +749,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		skills[i] = defs.SkillDef{ID: r.ID, Name: r.Name, Effect: r.Effect, Range: r.Range, Hit: r.Hit, Avoid: r.Avoid, Chance: r.Chance, Multiplier: r.Multiplier}
 		ref.skillIDs[r.ID] = true
 	}
+	v.classSkills(ref, rd.classes)
 
 	// キャラ（規則 2、3、5、6、16、17）。
 	characters := make([]defs.CharacterDef, len(rd.characters))

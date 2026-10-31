@@ -73,10 +73,14 @@ func (c *Controller) ClickMenu(i int) {
 		c.ChooseItem(i)
 	case WeaponMenu, StaffMenu:
 		c.ChooseWeapon(i)
+	case Canto:
+		if i == 0 {
+			c.EndCanto()
+		}
 	}
 }
 
-// MenuLabels は、ボタンに出す文を返す（DES-UI-02）。Moved では行動、ItemMenu では手持ちのアイテム、
+// MenuLabels は、ボタンに出す文を返す（DES-UI-02）。Moved では行動、ItemMenu では手持ちのアイテム、Canto では「終える」（DES-IT06 12.3 節）、
 // WeaponMenu・StaffMenu では武器・杖（DES-UI-26）、ほかは空。
 func (c *Controller) MenuLabels() []string {
 	var out []string
@@ -99,6 +103,8 @@ func (c *Controller) MenuLabels() []string {
 			}
 			out = append(out, label)
 		}
+	case Canto:
+		out = append(out, cantoEndLabel)
 	}
 	return out
 }

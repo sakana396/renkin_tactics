@@ -18,6 +18,8 @@ const (
 	EffectPavise  = "pavise"
 	EffectWrath   = "wrath"
 	EffectSnipe   = "snipe"
+	// EffectCanto は再移動。兵種のスキルに使い、数値はない（DES-BTL-10、DES-DAT-04）。
+	EffectCanto = "canto"
 )
 
 // 敵の動き方（DES-DAT-01、E-13 P-03）。
@@ -76,6 +78,7 @@ type ClassDef struct {
 	// StaffHealCap は杖の回復量の上限（キー staff_heal_cap）。0 なら上限なし（DES-HEL-01、DES-IT06 7.1 節）。
 	StaffHealCap int
 	Tags         []string // 特効の分類（DES-DAT-04）。
+	Skills       []string // 兵種のスキルの ID（DES-DAT-04、DES-BTL-10）。
 	Base         Stats
 }
 
@@ -276,6 +279,7 @@ func NewCatalog(game GameDef, terrains []TerrainDef, classes []ClassDef, weapons
 	}
 	for _, v := range classes {
 		v.Tags = append([]string(nil), v.Tags...)
+		v.Skills = append([]string(nil), v.Skills...)
 		c.classes[v.ID] = v
 	}
 	for _, v := range weapons {
@@ -319,6 +323,7 @@ func (c *Catalog) Terrains() []TerrainDef {
 func (c *Catalog) Class(id string) (ClassDef, bool) {
 	v, ok := c.classes[id]
 	v.Tags = append([]string(nil), v.Tags...)
+	v.Skills = append([]string(nil), v.Skills...)
 	return v, ok
 }
 

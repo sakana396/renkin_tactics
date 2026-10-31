@@ -25,6 +25,7 @@ type phaseProgress struct {
 
 // battleSnapshot は復元対象だけの深い写し。履歴と次の ID・残り回数は含めない（DES-RWD-01・03）。
 // 明示の番終了は playerInput、自動移行は enemyStart を保存する（DES-IT04 7.1 節）。
+// 待っている再移動（DES-BTL-10）も値として含める。
 // 地形と増援・出来事の定義は New が入力から独立させ、戦闘中に変更しないので共有する。出来事の状態は深く写す（DES-IT06 9.3 節）。
 type battleSnapshot struct {
 	Turn           int
@@ -36,6 +37,7 @@ type battleSnapshot struct {
 	progress       phaseProgress
 	mapEvents      []MapEventSetup
 	mapState       eventState
+	canto          cantoState
 	rngState       []byte
 	eventCount     int
 }
@@ -47,7 +49,7 @@ func (b *Battle) snapshot() battleSnapshot {
 	return battleSnapshot{
 		Turn: b.Turn, Phase: b.Phase, Result: b.Result,
 		units: b.Units(), terrain: b.terrain, reinforcements: b.reinforcements,
-		progress: b.progress, mapEvents: b.mapEvents, mapState: b.mapState.clone(), rngState: append([]byte(nil), data...), eventCount: b.eventCount,
+		progress: b.progress, mapEvents: b.mapEvents, mapState: b.mapState.clone(), canto: b.canto, rngState: append([]byte(nil), data...), eventCount: b.eventCount,
 	}
 }
 
@@ -68,6 +70,7 @@ func (b *Battle) restore(s battleSnapshot) error {
 	b.units, b.terrain, b.reinforcements = units, s.terrain, s.reinforcements
 	b.progress, b.eventCount = s.progress, s.eventCount
 	b.mapEvents, b.mapState = s.mapEvents, s.mapState.clone()
+	b.canto = s.canto
 	b.pcg = pcg
 	b.rng = rand.New(pcg)
 	b.roll = func() int { return b.rng.IntN(100) }

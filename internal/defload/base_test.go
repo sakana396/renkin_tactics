@@ -40,7 +40,7 @@ func TestBaseData(t *testing.T) {
 			{ID: "archer", Name: "アーチャー", WeaponType: "bow", Base: defs.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}},
 			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5, Lck: 2, Mag: 0, Res: 1}},
 			{ID: "myrmidon", Name: "剣士", WeaponType: "sword", Base: defs.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5, Lck: 4, Mag: 1, Res: 1}},
-			{ID: "cavalier", Name: "騎兵", WeaponType: "lance", Base: defs.Stats{HP: 20, Str: 6, Skl: 5, Spd: 6, Def: 5, Mov: 7, Lck: 3, Mag: 0, Res: 1}},
+			{ID: "cavalier", Name: "騎兵", WeaponType: "lance", Skills: []string{"canto"}, Base: defs.Stats{HP: 20, Str: 6, Skl: 5, Spd: 6, Def: 5, Mov: 7, Lck: 3, Mag: 0, Res: 1}},
 			{ID: "cleric", Name: "僧侶", WeaponType: "staff", Base: defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}},
 		}
 		for _, want := range classes {

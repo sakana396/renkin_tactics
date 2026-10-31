@@ -10,7 +10,7 @@
 ## 検証
 
 - `gofmt -l .` は出力なし。`go vet`・`go test`（internal/ui・cmd/renkin 以外）は成功。internal/ui・cmd/renkin は `GOOS=windows go vet ./...`、`GOOS=windows go test -c`、`GOOS=windows go build` で確かめ、internal/ui のテストの実行ファイルは WSL から実行して全件成功した（WSL に X11 のヘッダがないため。cmd/renkin の実行は CI）。`go run ./tools/tccheck` は整合 OK。CI（`gh pr checks 140`）は成功
-- ミュータント検査: 実装者の 24 件と、修正の分の 5 件（計 29 件）をすべて検出し、元に戻した（TST-IT06 3.4 節）
+- ミュータント検査: 実装者の 24 件と、修正の分の 5 件（計 29 件）をすべて検出し、元に戻した（TST-IT06 3.5 節）
 - `git merge-tree` で main（563afdd、#123 の PR #138 を含む）との取り込みを試し、22 ファイルの衝突を確かめた（F-04）
 - 反撃の武器（外れても装備が替わる）、命令の検証の順（6.1 節）、失敗で状態・乱数・装備が変わらないこと、章の終わりに装備を持ち越さないこと、敵の思考の武器の候補と同点の 6 番目（10.1 節）は設計どおり
 
@@ -18,10 +18,10 @@
 
 | # | 指摘 | 区分 | 対応 |
 |---|---|---|---|
-| F-01 | 取り消しの順（中）。予測が出ている状態で Esc を押すと、相手の選択を飛ばして武器の一覧へ戻る。UC-02 v0.10・5c と DES-IT06 12.1 節は「予測 → 相手 → 武器 → 行動の一覧 → 移動先」。TC-IF-01-40 の期待値は実装の動作を写していた | 設計どおりへの修正 | `Cancel` で、Targeting・HealTargeting のとき相手を選んでいれば `target = -1` にするだけにした。次の取り消しで武器の一覧（1 本で一覧を省いたときは行動の一覧）へ戻る。TC-IF-01-40 の期待値を 予測 → 相手 → 武器の一覧 → 行動の一覧 → 移動先 に直した。古い順を写していた既存のケース TC-IF-01-08・TC-FR-BTL-08-14（TST-IT01）、TC-IF-01-36（TST-IT02）の期待値と、TC-FR-BTL-08-07 の手順（取り消しを 1 回増やす）を UC-02 5c に合わせて改めた。ミュータント「予測の取り消しで相手の段を飛ばす」を検出 |
+| F-01 | 取り消しの順（中）。予測が出ている状態で Esc を押すと、相手の選択を飛ばして武器の一覧へ戻る。UC-02 v0.10・5c と DES-IT06 12.1 節は「予測 → 相手 → 武器 → 行動の一覧 → 移動先」。TC-IF-01-41 の期待値は実装の動作を写していた | 設計どおりへの修正 | `Cancel` で、Targeting・HealTargeting のとき相手を選んでいれば `target = -1` にするだけにした。次の取り消しで武器の一覧（1 本で一覧を省いたときは行動の一覧）へ戻る。TC-IF-01-41 の期待値を 予測 → 相手 → 武器の一覧 → 行動の一覧 → 移動先 に直した。古い順を写していた既存のケース TC-IF-01-08・TC-FR-BTL-08-14（TST-IT01）、TC-IF-01-36（TST-IT02）の期待値と、TC-FR-BTL-08-07 の手順（取り消しを 1 回増やす）を UC-02 5c に合わせて改めた。ミュータント「予測の取り消しで相手の段を飛ばす」を検出 |
 | F-02 | 装備を持ち越さないことのテスト（低）。同じ ID の剣 2 本では、章の終わりに使った武器を先頭へ並べ替える誤りを見分けられない | 設計どおりへの修正（テストの強化） | campaignCatalog に別の ID の剣 "t" を足し、名簿を ["s", "t"] にして "t" で勝ったあと、名簿の順が ["s", "t"] のままで、次の章の装備が "s" であることを確かめるようにした（TC-FR-ITM-01-04）。ミュータント「章の終わりに使った武器を先頭へ並べ替える」を検出 |
 | F-03 | 特効の対象の表示（低）。詳しい欄に「特効 armor」と定義の語のまま出る。今の本体のデータには特効の武器がない | 設計の範囲内の改善 | 今は直さない。特効の対象の表示名（例「鎧」「騎馬」）は、特効の武器を本体のデータに入れる #122 へ申し送る |
-| F-04 | main（#123）の取り込み（中）。杖の回復量を選んだ杖で求める、`StaffHealCap` の検査を `validateUnit` へ移す、新しいテストの敵に Level を書く、消えた `Weapon` の欄を使う #123 のテストを `Weapons` に移す | 設計どおりへの修正（取り込みの作業） | origin/main（563afdd）を `git merge` で取り込み、22 ファイルの衝突を解いた。(a) `staffHealAmount(u, w)` は選んだ杖 `Weapons[w]` の Heal ＋ 魔力を使い、`healWithStaff` と `HealForecast` の両方で渡す。(b) `StaffHealCap < 0` の検査を `validateUnit` へ移し、`newUnit` の写しに入れた。(c) 新しいテストの敵（weapons_it06_test.go のボス・敵の思考の 2 件・TestIT06HandSlots、ui/weapon_menu_test.go）に Level 1 を書いた。(d) #123 のテスト（heal_level_it06_test.go など）の `Weapon: "…"` を `Weapons` に移した。(e) `allyUnit`・`enemyUnit`、`defs.EnemyPlacement`、defload の `rawEnemy`・`rawReinforcement` に `StaffHealCap`・`Level` と `Weapons`・`AllowedWeaponTypes` を両方残した（base_test.go などの期待値も）。(f) TC-FR-BTL-03-18 の杖の予測を min(回復 ＋ 魔力, 上限, 不足 HP) で確かめ直した（不足 10 → 10、不足 18 → 15、上限 8 → 8）。2 本目の杖だけ回復 1 にして予測と回復を確かめるケースも足した（TC-FR-ITM-01-05）。ミュータント「回復量を別の杖で求める（回復・予測）」「負の杖の上限を許す」を検出 |
+| F-04 | main（#123）の取り込み（中）。杖の回復量を選んだ杖で求める、`StaffHealCap` の検査を `validateUnit` へ移す、新しいテストの敵に Level を書く、消えた `Weapon` の欄を使う #123 のテストを `Weapons` に移す | 設計どおりへの修正（取り込みの作業） | origin/main（563afdd）を `git merge` で取り込み、22 ファイルの衝突を解いた。その間に #124（PR #141、d02a7e0）もマージされたので、続けて取り込んだ（入力の状態の番号を `Canto` のあとに並べ直し、`ClassSkills` と武器の列を両方残した。#124 も TC-IF-01-40 を使っていたので、#121 の画面の自動の試験を TC-IF-01-41 に振り直した）。(a) `staffHealAmount(u, w)` は選んだ杖 `Weapons[w]` の Heal ＋ 魔力を使い、`healWithStaff` と `HealForecast` の両方で渡す。(b) `StaffHealCap < 0` の検査を `validateUnit` へ移し、`newUnit` の写しに入れた。(c) 新しいテストの敵（weapons_it06_test.go のボス・敵の思考の 2 件・TestIT06HandSlots、ui/weapon_menu_test.go）に Level 1 を書いた。(d) #123 のテスト（heal_level_it06_test.go など）の `Weapon: "…"` を `Weapons` に移した。(e) `allyUnit`・`enemyUnit`、`defs.EnemyPlacement`、defload の `rawEnemy`・`rawReinforcement` に `StaffHealCap`・`Level` と `Weapons`・`AllowedWeaponTypes` を両方残した（base_test.go などの期待値も）。(f) TC-FR-BTL-03-18 の杖の予測を min(回復 ＋ 魔力, 上限, 不足 HP) で確かめ直した（不足 10 → 10、不足 18 → 15、上限 8 → 8）。2 本目の杖だけ回復 1 にして予測と回復を確かめるケースも足した（TC-FR-ITM-01-05）。ミュータント「回復量を別の杖で求める（回復・予測）」「負の杖の上限を許す」を検出 |
 
 ## 設計への提案の判定
 

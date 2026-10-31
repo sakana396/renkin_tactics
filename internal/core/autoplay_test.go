@@ -103,6 +103,12 @@ func (p *autoPlayer) do(cmd tactics.Command, why string) error {
 	u := p.b.Units()[cmd.Unit]
 	events, err := p.b.Act(cmd)
 	p.note(events)
+	// 自動の試し遊びは再移動を使わず、その場で終える（反復 5 までの作戦を保つ。DES-BTL-10）。
+	if pc, ok := p.b.PendingCanto(); ok && err == nil {
+		more, cerr := p.b.Act(tactics.Command{Unit: pc.Unit, To: p.b.Units()[pc.Unit].Pos, Action: tactics.CantoEnd})
+		p.note(more)
+		err = cerr
+	}
 	if p.log != nil {
 		p.log(fmt.Sprintf("T%d %s HP%d %v→%v %v 対象%d %s err=%v", p.b.Turn, u.Name, u.HP, u.Pos, cmd.To, cmd.Action, cmd.Target, why, err))
 	}

@@ -365,7 +365,7 @@ func (g *Game) drawSelection(dst *ebiten.Image) {
 	switch c.State() {
 	case Selected:
 		g.strokeCell(dst, units[unit].Pos, cursorColor)
-	case Moved, ItemMenu, WeaponMenu, StaffMenu:
+	case Moved, ItemMenu, Canto, WeaponMenu, StaffMenu:
 		g.strokeCell(dst, dest, cursorColor)
 	case Targeting, HealTargeting:
 		clr := cursorColor

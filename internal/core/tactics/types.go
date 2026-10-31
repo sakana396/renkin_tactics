@@ -71,6 +71,8 @@ const (
 	Wrath
 	// Snipe は狙撃。
 	Snipe
+	// Canto は再移動。兵種のスキルとして持ち、攻撃・回復・道具のあと残りの移動力で動ける（DES-BTL-10）。
+	Canto
 )
 
 // AI は敵の動き方（DES-BTL-01、DES-AI-01）。
@@ -95,6 +97,10 @@ const (
 	UseItem
 	// Heal は杖による味方の回復（DES-HEL-01）。
 	Heal
+	// CantoMove は、待っている再移動で動く（DES-BTL-10）。
+	CantoMove
+	// CantoEnd は、再移動せずに今の位置で終える（DES-BTL-10）。To は今の位置に限る。
+	CantoEnd
 )
 
 // Stats はユニットの能力（DES-BTL-01）。HP は最大 HP。
@@ -204,9 +210,11 @@ type UnitSetup struct {
 	Weapon       Weapon
 	Items        []ItemStack
 	Skill        Skill
-	Lord         bool
-	Boss         bool
-	AI           AI
+	// ClassSkills は兵種のスキル（DES-BTL-10、DES-DAT-04）。Skill（キャラのスキル）と合わせて効果を判定する。
+	ClassSkills []Skill
+	Lord        bool
+	Boss        bool
+	AI          AI
 	// ID・Group は敵の識別子と一団の名前（DES-MAP-07）。戦闘の中で比べるだけで、定義を引く手がかりにしない。
 	ID    string
 	Group string
@@ -250,11 +258,13 @@ type Unit struct {
 	Pos          Pos
 	Items        []ItemStack
 	Skill        Skill
-	Lord         bool
-	Boss         bool
-	AI           AI
-	Acted        bool
-	Alive        bool
+	// ClassSkills は UnitSetup から写す兵種のスキル（DES-BTL-10）。
+	ClassSkills []Skill
+	Lord        bool
+	Boss        bool
+	AI          AI
+	Acted       bool
+	Alive       bool
 	// ID・Group は UnitSetup から写す敵の識別子と一団の名前（DES-MAP-07）。
 	ID    string
 	Group string
@@ -295,6 +305,7 @@ func (u Unit) clone() Unit {
 	u.Tags = append([]string(nil), u.Tags...)
 	u.Weapons = cloneWeapons(u.Weapons)
 	u.AllowedWeaponTypes = append([]WeaponType(nil), u.AllowedWeaponTypes...)
+	u.ClassSkills = cloneSkills(u.ClassSkills)
 	if u.Items != nil {
 		u.Items = append([]ItemStack(nil), u.Items...)
 	}
@@ -309,7 +320,33 @@ func (us UnitSetup) clone() UnitSetup {
 	us.Weapon = us.Weapon.clone()
 	us.Weapons = cloneWeapons(us.Weapons)
 	us.AllowedWeaponTypes = append([]WeaponType(nil), us.AllowedWeaponTypes...)
+	us.ClassSkills = cloneSkills(us.ClassSkills)
 	return us
+}
+
+// cloneSkills は兵種のスキルの列を写す（DES-RWD-01）。nil は nil のまま。
+func cloneSkills(s []Skill) []Skill {
+	if s == nil {
+		return nil
+	}
+	return append([]Skill(nil), s...)
+}
+
+// skill は、キャラのスキルと兵種のスキルを合わせて、効果 e を持つスキルを返す（DES-BTL-10 8.1 節）。
+// 同じ効果を二重にかけないよう、最初に見つかった 1 つだけを返す（キャラのスキルが先）。
+func (u Unit) skill(e SkillEffect) (Skill, bool) {
+	if e == NoSkill {
+		return Skill{}, false
+	}
+	if u.Skill.Effect == e {
+		return u.Skill, true
+	}
+	for _, s := range u.ClassSkills {
+		if s.Effect == e {
+			return s, true
+		}
+	}
+	return Skill{}, false
 }
 
 // clone は特効の分類も独立させる（DES-RWD-01）。

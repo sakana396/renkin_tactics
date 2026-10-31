@@ -38,7 +38,7 @@ func weaponMenuController(t *testing.T) *Controller {
 }
 
 func TestWeaponMenu(t *testing.T) {
-	t.Run("TC-IF-01-40 攻撃は 行動 → 武器 → 相手 → 予測 → 決定 の順で、届かない武器は理由を出し、決定まで装備を変えない", func(t *testing.T) {
+	t.Run("TC-IF-01-41 攻撃は 行動 → 武器 → 相手 → 予測 → 決定 の順で、届かない武器は理由を出し、決定まで装備を変えない", func(t *testing.T) {
 		c := weaponMenuController(t)
 		history := len(c.Battle().History())
 		c.Click(tactics.Pos{X: 1, Y: 1})
@@ -104,7 +104,7 @@ func TestWeaponMenu(t *testing.T) {
 		textOf(t, v, "武器: ファイア（魔法）")
 		textOf(t, v, "ほかの武器: 癒やしの杖、鉄の剣、癒やしの杖")
 	})
-	t.Run("TC-IF-01-40 回復は 行動 → 杖 → 相手 で、選んだ杖の回数だけ減り、装備は変えない", func(t *testing.T) {
+	t.Run("TC-IF-01-41 回復は 行動 → 杖 → 相手 で、選んだ杖の回数だけ減り、装備は変えない", func(t *testing.T) {
 		c := weaponMenuController(t)
 		c.Click(tactics.Pos{X: 1, Y: 1})
 		c.Click(tactics.Pos{X: 1, Y: 1})
@@ -124,7 +124,7 @@ func TestWeaponMenu(t *testing.T) {
 			t.Fatalf("杖の回数 %d / %d、装備 %d", u.Weapons[0].Uses, u.Weapons[3].Uses, u.Equipped)
 		}
 	})
-	t.Run("TC-IF-01-40 攻撃の武器が 1 本だけなら一覧を飛ばし、取り消すと行動の一覧へ戻る", func(t *testing.T) {
+	t.Run("TC-IF-01-41 攻撃の武器が 1 本だけなら一覧を飛ばし、取り消すと行動の一覧へ戻る", func(t *testing.T) {
 		c := weaponMenuController(t)
 		c.Click(tactics.Pos{X: 1, Y: 2})
 		c.Click(tactics.Pos{X: 1, Y: 2})
@@ -143,7 +143,7 @@ func TestWeaponMenu(t *testing.T) {
 			t.Fatalf("取り消しのあと %v", c.State())
 		}
 	})
-	t.Run("TC-IF-01-40 一覧の上の行の詳しい欄", func(t *testing.T) {
+	t.Run("TC-IF-01-41 一覧の上の行の詳しい欄", func(t *testing.T) {
 		if got := weaponDetail(menuFire); got != "ファイア　魔法　威力 5　命中 85　必殺 0　重さ 2　射程 1〜2　特効 なし" {
 			t.Errorf("ファイア %q", got)
 		}

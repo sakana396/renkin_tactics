@@ -19,6 +19,12 @@ func (b BoardView) Reachable(unit int) map[Pos]int {
 	if !b.validUnit(unit) || !b.units[unit].Alive {
 		return nil
 	}
+	return b.reachableWithin(unit, b.units[unit].Stats.Mov)
+}
+
+// reachableWithin は、移動力の代わりに mov までの費用で行けるマスを返す（DES-BTL-03、DES-BTL-10）。
+// 再移動の残りの移動力でも、地形の費用と「ほかのユニットがいるマス」の決まりは Reachable と同じ。
+func (b BoardView) reachableWithin(unit, mov int) map[Pos]int {
 	u := b.units[unit]
 	occupant := map[Pos]Side{}
 	for i, o := range b.units {
@@ -48,7 +54,7 @@ func (b BoardView) Reachable(unit int) map[Pos]int {
 				continue
 			}
 			total := cur.cost + c
-			if total > u.Stats.Mov {
+			if total > mov {
 				continue
 			}
 			if prev, ok := best[next]; ok && prev <= total {
