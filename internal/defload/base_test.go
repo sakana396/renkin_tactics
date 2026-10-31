@@ -111,14 +111,14 @@ func TestBaseData(t *testing.T) {
 			t.Errorf("出撃の枠 = %+v", m.Slots)
 		}
 		enemies := []defs.EnemyPlacement{
-			{Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 6, Y: 10},
-			{Class: "soldier", Weapon: "iron_lance", AI: "hold", X: 7, Y: 4},
-			{Class: "myrmidon", Weapon: "iron_sword", AI: "hold", X: 9, Y: 8},
-			{Class: "myrmidon", Weapon: "iron_sword", AI: "hold", X: 11, Y: 3},
-			{Class: "fighter", Weapon: "iron_axe", AI: "charge", X: 10, Y: 11},
-			{Class: "fighter", Weapon: "iron_axe", AI: "hold", X: 13, Y: 8},
-			{Class: "archer", Weapon: "iron_bow", AI: "hold", X: 12, Y: 7},
-			{Name: "ハーゲン", Class: "soldier", Weapon: "iron_lance", Bonus: defs.Stats{HP: 8, Str: 3, Skl: 3, Spd: 2, Def: 3}, AI: "hold", Boss: true, X: 13, Y: 1},
+			{Level: 1, Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 6, Y: 10},
+			{Level: 2, Class: "soldier", Weapon: "iron_lance", AI: "hold", X: 7, Y: 4},
+			{Level: 3, Class: "myrmidon", Weapon: "iron_sword", AI: "hold", X: 9, Y: 8},
+			{Level: 1, Class: "myrmidon", Weapon: "iron_sword", AI: "hold", X: 11, Y: 3},
+			{Level: 2, Class: "fighter", Weapon: "iron_axe", AI: "charge", X: 10, Y: 11},
+			{Level: 3, Class: "fighter", Weapon: "iron_axe", AI: "hold", X: 13, Y: 8},
+			{Level: 1, Class: "archer", Weapon: "iron_bow", AI: "hold", X: 12, Y: 7},
+			{Level: 7, Name: "ハーゲン", Class: "soldier", Weapon: "iron_lance", Bonus: defs.Stats{HP: 8, Str: 3, Skl: 3, Spd: 2, Def: 3}, AI: "hold", Boss: true, X: 13, Y: 1},
 		}
 		if !reflect.DeepEqual(m.Enemies, enemies) {
 			t.Errorf("敵の配置 = %+v", m.Enemies)
@@ -130,9 +130,9 @@ func TestBaseData(t *testing.T) {
 			t.Errorf("ボスの能力 = %+v", s)
 		}
 		reinf := []defs.Reinforcement{
-			{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Class: "fighter", Weapon: "iron_axe", AI: "charge", X: 0, Y: 3}},
-			{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 0, Y: 4}},
-			{Turn: 5, EnemyPlacement: defs.EnemyPlacement{Class: "myrmidon", Weapon: "iron_sword", AI: "charge", X: 15, Y: 15}},
+			{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Level: 1, Class: "fighter", Weapon: "iron_axe", AI: "charge", X: 0, Y: 3}},
+			{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Level: 2, Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 0, Y: 4}},
+			{Turn: 5, EnemyPlacement: defs.EnemyPlacement{Level: 3, Class: "myrmidon", Weapon: "iron_sword", AI: "charge", X: 15, Y: 15}},
 		}
 		if !reflect.DeepEqual(m.Reinforcements, reinf) {
 			t.Errorf("増援 = %+v", m.Reinforcements)

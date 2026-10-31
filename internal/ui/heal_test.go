@@ -21,7 +21,7 @@ func healController(t *testing.T, uses int, damage ...int) *Controller {
 			{Name: "リナ", ClassName: "僧侶", Side: tactics.Player, Stats: tactics.Stats{HP: 16, Mov: 3, Def: 2}, Pos: tactics.Pos{X: 2, Y: 1}, Weapon: tactics.Weapon{Name: "癒やしの杖", Type: tactics.Staff, Heal: 10, MaxUses: uses, MinRange: 1, MaxRange: 1}, Items: []tactics.ItemStack{{Item: potion, Count: 1}}},
 			{Name: "レオン", Side: tactics.Player, Stats: tactics.Stats{HP: 19}, Pos: tactics.Pos{X: 3, Y: 1}, Weapon: testSword, Lord: true},
 			{Name: "ガルド", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 2, Y: 2}, Weapon: testLance},
-			{Name: "ボス", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30, Str: hit}, Pos: tactics.Pos{X: 4, Y: 1}, Weapon: testSword, Boss: true, AI: tactics.Hold},
+			{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30, Str: hit}, Pos: tactics.Pos{X: 4, Y: 1}, Weapon: testSword, Boss: true, AI: tactics.Hold},
 		}}
 	})
 	c.EndPhase()

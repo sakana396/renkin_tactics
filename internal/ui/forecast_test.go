@@ -25,8 +25,8 @@ func example2Setup(defenderHP int) func() tactics.Setup {
 			Units: []tactics.UnitSetup{
 				{Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: leonStats, Pos: tactics.Pos{X: 0, Y: 6}, Weapon: ironSword, Skill: inspire, Lord: true},
 				{Name: "ブラン", ClassName: "ファイター", Side: tactics.Player, Stats: tactics.Stats{HP: 26, Str: 8, Skl: 4, Spd: 5, Def: 3, Mov: 5}, Pos: tactics.Pos{X: 2, Y: 2}, Weapon: ironAxe, Skill: wrath},
-				{Name: "剣士", ClassName: "剣士", Side: tactics.Enemy, Stats: tactics.Stats{HP: defenderHP, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5}, Pos: tactics.Pos{X: 3, Y: 2}, Weapon: ironSword, AI: tactics.Hold},
-				{Name: "ボス", Side: tactics.Enemy, Stats: soldierSts, Pos: tactics.Pos{X: 6, Y: 0}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
+				{Name: "剣士", ClassName: "剣士", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: defenderHP, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5}, Pos: tactics.Pos{X: 3, Y: 2}, Weapon: ironSword, AI: tactics.Hold},
+				{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: soldierSts, Pos: tactics.Pos{X: 6, Y: 0}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
 			},
 		}
 	}
@@ -54,8 +54,8 @@ func archerSetup() tactics.Setup {
 		Terrain: field(7, 7),
 		Units: []tactics.UnitSetup{
 			{Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: leonStats, Pos: tactics.Pos{X: 2, Y: 3}, Weapon: ironSword, Skill: inspire, Lord: true},
-			{Name: "アーチャー", ClassName: "アーチャー", Side: tactics.Enemy, Stats: tactics.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5}, Pos: tactics.Pos{X: 3, Y: 3}, Weapon: ironBow, AI: tactics.Hold},
-			{Name: "ボス", Side: tactics.Enemy, Stats: soldierSts, Pos: tactics.Pos{X: 6, Y: 6}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
+			{Name: "アーチャー", ClassName: "アーチャー", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5}, Pos: tactics.Pos{X: 3, Y: 3}, Weapon: ironBow, AI: tactics.Hold},
+			{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: soldierSts, Pos: tactics.Pos{X: 6, Y: 6}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
 		},
 	}
 }
@@ -79,9 +79,9 @@ func example3Setup() tactics.Setup {
 		Units: []tactics.UnitSetup{
 			{Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: leonStats, Pos: tactics.Pos{X: 0, Y: 6}, Weapon: ironSword, Skill: inspire, Lord: true},
 			{Name: "ブラン", ClassName: "ファイター", Side: tactics.Player, Stats: tactics.Stats{HP: 26, Str: 8, Skl: 4, Spd: 5, Def: 3, Mov: 5}, Pos: tactics.Pos{X: 2, Y: 2}, Weapon: ironAxe, Skill: wrath},
-			{Name: "剣士", ClassName: "剣士", Side: tactics.Enemy, Stats: tactics.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2}, Pos: tactics.Pos{X: 5, Y: 2}, Weapon: ironSword, AI: tactics.Hold},
-			{Name: "弓兵", Side: tactics.Enemy, Stats: tactics.Stats{HP: 20, Str: 16}, Pos: tactics.Pos{X: 2, Y: 4}, Weapon: bow, AI: tactics.Hold},
-			{Name: "ボス", Side: tactics.Enemy, Stats: tactics.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4}, Pos: tactics.Pos{X: 6, Y: 6}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
+			{Name: "剣士", ClassName: "剣士", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2}, Pos: tactics.Pos{X: 5, Y: 2}, Weapon: ironSword, AI: tactics.Hold},
+			{Name: "弓兵", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 20, Str: 16}, Pos: tactics.Pos{X: 2, Y: 4}, Weapon: bow, AI: tactics.Hold},
+			{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4}, Pos: tactics.Pos{X: 6, Y: 6}, Weapon: ironLance, Boss: true, AI: tactics.Hold},
 		},
 	}
 }

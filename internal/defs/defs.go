@@ -73,8 +73,10 @@ type ClassDef struct {
 	ID         string
 	Name       string
 	WeaponType string
-	Tags       []string // 特効の分類（DES-DAT-04）。
-	Base       Stats
+	// StaffHealCap は杖の回復量の上限（キー staff_heal_cap）。0 なら上限なし（DES-HEL-01、DES-IT06 7.1 節）。
+	StaffHealCap int
+	Tags         []string // 特効の分類（DES-DAT-04）。
+	Base         Stats
 }
 
 // WeaponDef は武器の定義（DES-DAT-01、DES-DAT-04、DES-BTL-09）。
@@ -167,6 +169,8 @@ type EnemyPlacement struct {
 	Boss   bool
 	X      int
 	Y      int
+	// Level は敵のレベル 1〜20（キー level、省略は 1）。撃破の経験の式に使い、能力は補正しない（DES-IT06 7.3 節）。
+	Level int
 	// ID はマップの中で、初めの敵・すべての増援を通して重ならない敵の ID（DES-MAP-07）。
 	// 省いた敵は空。defload は「配置の種類 ＋ 定義の添字」で重なりだけを確かめる。出来事から参照できるのは id を書いた敵だけ。
 	// Group は一団の名前（空なら一団に入らない）。
