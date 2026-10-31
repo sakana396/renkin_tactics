@@ -310,16 +310,33 @@ func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
 	v.text(x, y, "手持ち: "+itemsText(u.Items), StylePlain)
 	y += lineHeight
 
-	// スキルは名前を黄で 1 行に出し、次の行に効果の文を出す。
+	// スキルは名前を黄で 1 行に出し、次の行に効果の文を出す。キャラのスキルのあとに兵種のスキルを並べる（DES-IT06 12.2 節）。
 	v.text(x, y, "スキル:", StyleLabel)
-	if u.Skill.Effect == tactics.NoSkill {
+	skills := unitSkills(u)
+	if len(skills) == 0 {
 		v.text(x+skillNameX, y, "なし", StylePlain)
 		return y + lineHeight
 	}
-	v.text(x+skillNameX, y, u.Skill.Name, StyleSkill)
-	y += lineHeight
-	v.text(x, y, "　"+skillDescription(u.Skill), StylePlain)
+	names := make([]string, len(skills))
+	for i, sk := range skills {
+		names[i] = sk.Name
+	}
+	v.text(x+skillNameX, y, strings.Join(names, "、"), StyleSkill)
+	// 説明はスキルごとに 1 行にし、情報欄の幅に収める（REV-073 F-01）。
+	for _, sk := range skills {
+		y += lineHeight
+		v.text(x, y, "　"+skillDescription(sk), StylePlain)
+	}
 	return y + lineHeight
+}
+
+// unitSkills は、キャラのスキル（あれば）と兵種のスキルを、この順に返す（DES-BTL-10、DES-IT06 8.1・12.2 節）。
+func unitSkills(u tactics.Unit) []tactics.Skill {
+	var out []tactics.Skill
+	if u.Skill.Effect != tactics.NoSkill {
+		out = append(out, u.Skill)
+	}
+	return append(out, u.ClassSkills...)
 }
 
 // unitName はユニットの名前を返す。ボスは名前ではボスと分からない（例「ソルジャー 3」。REV-010 F-03）ので、盤面と同じ ★ の印を添える。
@@ -636,6 +653,8 @@ func skillDescription(s tactics.Skill) string {
 		return fmt.Sprintf("HP 半分以下で必殺 ＋%d", s.Chance)
 	case tactics.Snipe:
 		return fmt.Sprintf("移動せずに攻撃すると命中 +%d", s.Hit)
+	case tactics.Canto:
+		return "攻撃・回復・道具のあと、残りの移動で動ける"
 	}
 	return ""
 }

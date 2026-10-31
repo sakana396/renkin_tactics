@@ -134,7 +134,7 @@ func TestNewInvalidSetup(t *testing.T) {
 		}, "ターン 1"},
 		{"規則 6 武器の種類が範囲外", func(s *tactics.Setup) { s.Units[1].Weapon.Type = tactics.Magic + 1 }, "武器の種類"},
 		{"規則 6 武器の種類が負", func(s *tactics.Setup) { s.Units[1].Weapon.Type = -1 }, "武器の種類"},
-		{"規則 6 スキルの効果が範囲外", func(s *tactics.Setup) { s.Units[1].Skill.Effect = tactics.Snipe + 1 }, "スキルの効果"},
+		{"規則 6 スキルの効果が範囲外", func(s *tactics.Setup) { s.Units[1].Skill.Effect = tactics.Canto + 1 }, "スキルの効果"},
 		{"規則 6 動き方が範囲外", func(s *tactics.Setup) { s.Units[3].AI = tactics.Hold + 1 }, "動き方"},
 		{"規則 6 スキルの範囲が負", func(s *tactics.Setup) { s.Units[1].Skill.Range = -1 }, "スキルの数値"},
 		{"規則 6 スキルの命中が負", func(s *tactics.Setup) { s.Units[1].Skill.Hit = -1 }, "スキルの数値"},

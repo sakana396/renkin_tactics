@@ -1,5 +1,6 @@
 # クラス（DES-DAT-02、設計書 10.1 節）
 # weapon_type は sword・lance・axe・bow・staff のどれか
+# skills は兵種のスキルの ID の列（DES-IT06 8.1 節）。再移動（canto）は騎兵だけが持つ
 
 [[classes]]
 id = "lord"
@@ -42,6 +43,7 @@ base = { hp = 17, str = 4, skl = 8, spd = 9, def = 2, mov = 5, lck = 4, mag = 1,
 id = "cavalier"
 name = "騎兵"
 weapon_type = "lance"
+skills = ["canto"]
 base = { hp = 20, str = 6, skl = 5, spd = 6, def = 5, mov = 7, lck = 3, mag = 0, res = 1 }
 
 # 僧侶（設計書（反復 2）10.1 節）。自軍の回復役

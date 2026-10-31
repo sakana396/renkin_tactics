@@ -120,7 +120,7 @@ func TestHeal(t *testing.T) {
 		{"ErrFullHP", func(b *tactics.Battle) { b.SetHP(1, 19) }, healCmd(0, pos(2, 1), 1), tactics.ErrFullHP},
 	}
 	orderCases := []actErrorCase{
-		{"0 が 1〜6 より先", over, tactics.Command{Unit: 99, To: pos(9, 9), Action: tactics.Action(4), Target: 99}, tactics.ErrInvalidAction},
+		{"0 が 1〜6 より先", over, tactics.Command{Unit: 99, To: pos(9, 9), Action: tactics.Action(6), Target: 99}, tactics.ErrInvalidAction},
 		{"5 が 6a より先", nil, healCmd(1, pos(6, 6), 0), tactics.ErrUnreachable},
 		{"6a が 6b・6c より先", func(b *tactics.Battle) { b.SetUses(1, 0) }, healCmd(1, pos(3, 1), -1), tactics.ErrCannotHeal},
 		{"6b が 6c より先", func(b *tactics.Battle) { b.SetUses(0, 0) }, healCmd(0, pos(2, 1), -1), tactics.ErrNoUses},
@@ -353,7 +353,7 @@ func TestHealForecast(t *testing.T) {
 			{"Attack は ErrInvalidAction", nil, tactics.Command{Unit: 0, To: pos(2, 1), Action: tactics.Attack, Target: 1}, tactics.ErrInvalidAction},
 			{"Wait は ErrInvalidAction", nil, tactics.Command{Unit: 0, To: pos(2, 1), Action: tactics.Wait, Target: 1}, tactics.ErrInvalidAction},
 			{"UseItem は ErrInvalidAction", nil, tactics.Command{Unit: 0, To: pos(2, 1), Action: tactics.UseItem, Target: 1}, tactics.ErrInvalidAction},
-			{"範囲外の Action は ErrInvalidAction", nil, tactics.Command{Unit: 0, To: pos(2, 1), Action: tactics.Action(4), Target: 1}, tactics.ErrInvalidAction},
+			{"範囲外の Action は ErrInvalidAction", nil, tactics.Command{Unit: 0, To: pos(2, 1), Action: tactics.Action(6), Target: 1}, tactics.ErrInvalidAction},
 			{"Heal でないことが戦闘の終わりより先", over, tactics.Command{Unit: 0, To: pos(2, 1), Action: tactics.Wait, Target: 1}, tactics.ErrInvalidAction},
 			{"ErrBattleOver", over, healCmd(0, pos(2, 1), 1), tactics.ErrBattleOver},
 			{"ErrNotPlayerPhase", enemyPhase, healCmd(0, pos(2, 1), 1), tactics.ErrNotPlayerPhase},
