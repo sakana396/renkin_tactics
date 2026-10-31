@@ -143,8 +143,8 @@ func TestAlternativeReinforcements(t *testing.T) {
 						u := b.units[2].clone()
 						u.Pos = p
 						u.AI = Hold
-						u.Weapon.MinRange = 10
-						u.Weapon.MaxRange = 10
+						u.Weapons[0].MinRange = 10
+						u.Weapons[0].MaxRange = 10
 						b.units = append(b.units, u)
 					} else {
 						b.terrain[y][x].Cost = 0
@@ -237,7 +237,7 @@ func TestReinforcementHints(t *testing.T) {
 		b := snapshotBattle(t)
 		s := Setup{Terrain: b.terrain, Reinforcements: b.reinforcements}
 		for _, u := range b.units {
-			s.Units = append(s.Units, UnitSetup{Name: u.Name, Side: u.Side, Level: u.Level, Lord: u.Lord, Boss: u.Boss, Stats: u.Stats, Weapon: u.Weapon, Pos: u.Pos})
+			s.Units = append(s.Units, UnitSetup{Name: u.Name, Side: u.Side, Level: u.Level, Lord: u.Lord, Boss: u.Boss, Stats: u.Stats, Weapons: u.Weapons, AllowedWeaponTypes: u.AllowedWeaponTypes, Pos: u.Pos})
 		}
 		v, err := NewBoardView(s)
 		if err != nil || len(v.ReinforcementHints()) != 0 {

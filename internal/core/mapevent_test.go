@@ -14,15 +14,15 @@ func TestMapEventConversion(t *testing.T) {
 	eventMap := func(m *defs.MapDef, _ *[]defs.CharacterDef) {
 		m.Rows = []string{".....", ".....", "....."}
 		m.Enemies = []defs.EnemyPlacement{
-			{Level: 1, Class: "soldier", Weapon: "iron_lance", AI: "hold", Boss: true, X: 4, Y: 0},
-			{Level: 1, Class: "soldier", Weapon: "iron_lance", AI: "hold", X: 4, Y: 2, ID: "guard", Group: "g"},
+			{Level: 1, Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", Boss: true, X: 4, Y: 0},
+			{Level: 1, Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", X: 4, Y: 2, ID: "guard", Group: "g"},
 		}
 		area := defs.Area{MinX: 1, MinY: 0, MaxX: 1, MaxY: 0}
 		m.Events = []defs.MapEvent{
 			{ID: "advance", Trigger: defs.TriggerPlayerEntered, Area: area, Effect: defs.EventChargeGroup, Group: "g"},
 			{ID: "alarm", Trigger: defs.TriggerPlayerEntered, Area: area, Effect: defs.EventReinforce, Enemies: []defs.EnemyPlacement{
-				{Level: 1, Class: "fighter", Weapon: "iron_axe", AI: "hold", X: 0, Y: 2},
-				{Level: 1, Class: "fighter", Weapon: "iron_axe", AI: "hold", X: 1, Y: 2},
+				{Level: 1, Class: "fighter", Weapons: []string{"iron_axe"}, AI: "hold", X: 0, Y: 2},
+				{Level: 1, Class: "fighter", Weapons: []string{"iron_axe"}, AI: "hold", X: 1, Y: 2},
 			}},
 		}
 	}
@@ -66,7 +66,7 @@ func TestMapEventConversion(t *testing.T) {
 		// REV-069 の申し送り: #123 の level も出来事の増援に渡る。
 		cat := smallCatalog(func(m *defs.MapDef, c *[]defs.CharacterDef) {
 			eventMap(m, c)
-			m.Events[1].Enemies[0] = defs.EnemyPlacement{Level: 9, Class: "armor_knight", Weapon: "horse_lance", AI: "hold", X: 0, Y: 2, Bonus: defs.Stats{Lck: 1, Mag: 2, Res: 3}}
+			m.Events[1].Enemies[0] = defs.EnemyPlacement{Level: 9, Class: "armor_knight", Weapons: []string{"horse_lance"}, AI: "hold", X: 0, Y: 2, Bonus: defs.Stats{Lck: 1, Mag: 2, Res: 3}}
 		})
 		b, _, err := core.NewBattle(cat, "m", 1)
 		if err != nil {
@@ -95,7 +95,7 @@ func TestMapEventConversion(t *testing.T) {
 		if !reflect.DeepEqual(got.Tags, []string{"armor"}) {
 			t.Errorf("兵種の分類 %v", got.Tags)
 		}
-		w := got.Weapon
+		w := got.EquippedWeapon()
 		if w.Crit != 10 || w.Weight != 6 || w.Strikes != 2 || w.DamageType != tactics.Physical || !reflect.DeepEqual(w.EffectiveTags, []string{"mounted"}) {
 			t.Errorf("武器 %+v", w)
 		}

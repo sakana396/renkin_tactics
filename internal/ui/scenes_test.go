@@ -157,8 +157,8 @@ func sceneCatalog(before, after bool) *defs.Catalog {
 		[]defs.ClassDef{{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 20, Str: 20, Skl: 100, Def: 10, Mov: 2}}, {ID: "soldier", Name: "兵", WeaponType: "sword", Base: defs.Stats{HP: 1, Str: 20, Skl: 100, Mov: 1}}},
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}},
 		[]defs.ItemDef{{ID: "p", Name: "薬", Heal: 10}}, nil,
-		[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "lord", Weapon: "s", Lord: true, Level: 1}, {ID: "friend", Name: "仲間", Class: "lord", Weapon: "s", Level: 2}, {ID: "join", Name: "加入者", Class: "lord", Weapon: "s", Level: 4}, {ID: "join2", Name: "加入者2", Class: "lord", Weapon: "s", Level: 5}},
-		[]defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Level: 1, Class: "soldier", Weapon: "s", Boss: true, AI: "hold", X: 1, Y: 0}}}}, chapters,
+		[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "lord", Weapons: []string{"s"}, Lord: true, Level: 1}, {ID: "friend", Name: "仲間", Class: "lord", Weapons: []string{"s"}, Level: 2}, {ID: "join", Name: "加入者", Class: "lord", Weapons: []string{"s"}, Level: 4}, {ID: "join2", Name: "加入者2", Class: "lord", Weapons: []string{"s"}, Level: 5}},
+		[]defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Level: 1, Class: "soldier", Weapons: []string{"s"}, Boss: true, AI: "hold", X: 1, Y: 0}}}}, chapters,
 		[]defs.StoryDef{{ID: "before", Paragraphs: []string{"前の物語の最初。", "前の物語の最後。"}}, {ID: "after", Paragraphs: []string{"あとの物語。"}}})
 }
 func fixtureScenes(m *memoryStore, before, after bool) *SceneController {

@@ -88,6 +88,11 @@ func TestHealUI(t *testing.T) {
 		if c.State() != HealTargeting || c.target != 1 || !reflect.DeepEqual(before, c.Battle().Units()) || c.Units()[0].Pos != (tactics.Pos{X: 3, Y: 2}) {
 			t.Fatal("予測前に状態が変わった")
 		}
+		// 予測 → 相手 → 行動の一覧 の順に戻る（UC-02 5c。REV-072 F-01）。
+		c.Escape()
+		if c.State() != HealTargeting || c.target != -1 {
+			t.Fatal("相手の選択を取り消せない")
+		}
 		c.Escape()
 		if c.State() != Moved || c.target != -1 {
 			t.Fatal("取り消せない")
@@ -95,20 +100,21 @@ func TestHealUI(t *testing.T) {
 		c.ChooseAction(tactics.Heal)
 		c.Click(tactics.Pos{X: 3, Y: 1})
 		c.Cancel()
+		c.Cancel()
 		if c.State() != Moved {
 			t.Fatal("右クリック相当の取り消し")
 		}
 		c.ChooseAction(tactics.Heal)
 		c.Click(tactics.Pos{X: 3, Y: 1})
 		c.Click(tactics.Pos{X: 3, Y: 1})
-		if c.State() != Playing || c.Battle().Units()[1].HP != 19 || c.Battle().Units()[0].Weapon.Uses != 14 {
+		if c.State() != Playing || c.Battle().Units()[1].HP != 19 || c.Battle().Units()[0].EquippedWeapon().Uses != 14 {
 			t.Fatal("回復の確定に失敗")
 		}
 		found := false
 		for _, e := range c.events {
 			if e.Kind == tactics.EventHeal {
 				found = true
-				if e.Unit != 1 || e.Amount != 7 || e.Item != "癒やしの杖" || e.Units[0].Weapon.Uses != 14 || !strings.Contains(EventText(e), "7 回復した") {
+				if e.Unit != 1 || e.Amount != 7 || e.Item != "癒やしの杖" || e.Units[0].EquippedWeapon().Uses != 14 || !strings.Contains(EventText(e), "7 回復した") {
 					t.Fatal(e)
 				}
 			}
@@ -186,7 +192,7 @@ func TestHealUI(t *testing.T) {
 	t.Run("TC-FR-UNT-09-15 杖の情報と僧侶の絵", func(t *testing.T) {
 		c := healController(t, 15)
 		u := c.Units()[0]
-		u.Weapon.Uses = 12
+		u.Weapons[0].Uses = 12
 		v := (Panel{Unit: &u}).View()
 		textOf(t, v, "武器: 癒やしの杖（杖）")
 		textOf(t, v, "回復 10　射程 1　残り 12/15")

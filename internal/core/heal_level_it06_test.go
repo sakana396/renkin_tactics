@@ -27,14 +27,14 @@ func healCapCatalog(healCap int) *defs.Catalog {
 		},
 		nil, nil,
 		[]defs.CharacterDef{
-			{ID: "hero", Name: "主人公", Class: "lord", Weapon: "iron_sword", Level: 1, Lord: true},
-			{ID: "noel", Name: "錬金術師", Class: "alchemist", Weapon: "heal_staff", Level: 1},
+			{ID: "hero", Name: "主人公", Class: "lord", Weapons: []string{"iron_sword"}, Level: 1, Lord: true},
+			{ID: "noel", Name: "錬金術師", Class: "alchemist", Weapons: []string{"heal_staff"}, Level: 1},
 		},
 		[]defs.MapDef{{
 			ID: "m", Name: "小さなマップ", Rows: []string{"...."},
 			Slots:          []defs.Slot{{X: 0, Y: 0}, {X: 1, Y: 0}},
-			Enemies:        []defs.EnemyPlacement{{Level: 5, Class: "soldier", Weapon: "iron_lance", AI: "hold", Boss: true, X: 3, Y: 0}},
-			Reinforcements: []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Level: 7, Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 2, Y: 0}}},
+			Enemies:        []defs.EnemyPlacement{{Level: 5, Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", Boss: true, X: 3, Y: 0}},
+			Reinforcements: []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Level: 7, Class: "soldier", Weapons: []string{"iron_lance"}, AI: "charge", X: 2, Y: 0}}},
 		}},
 		[]defs.ChapterDef{{ID: "c1", Name: "章", Map: "m"}},
 		nil,

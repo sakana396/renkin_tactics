@@ -26,17 +26,17 @@ func cavalierCatalog() *defs.Catalog {
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}, {ID: "l", Name: "槍", Type: "lance", Hit: 100, MinRange: 1, MaxRange: 1}},
 		nil, nil,
 		[]defs.CharacterDef{
-			{ID: "hero", Name: "主人公", Class: "lord", Weapon: "s", Lord: true, Level: 1},
-			{ID: "elsa", Name: "エルザ", Class: "cavalier", Weapon: "l", Level: 2},
-			{ID: "gard", Name: "ガルド", Class: "armor", Weapon: "l", Level: 2},
-			{ID: "luca", Name: "ルカ", Class: "cavalier", Weapon: "l", Level: 5, Bonus: defs.Stats{HP: 9, Str: 4, Def: 3}},
+			{ID: "hero", Name: "主人公", Class: "lord", Weapons: []string{"s"}, Lord: true, Level: 1},
+			{ID: "elsa", Name: "エルザ", Class: "cavalier", Weapons: []string{"l"}, Level: 2},
+			{ID: "gard", Name: "ガルド", Class: "armor", Weapons: []string{"l"}, Level: 2},
+			{ID: "luca", Name: "ルカ", Class: "cavalier", Weapons: []string{"l"}, Level: 5, Bonus: defs.Stats{HP: 9, Str: 4, Def: 3}},
 		},
 		[]defs.MapDef{{ID: "m", Rows: []string{"....", "....", "...."},
 			Slots: []defs.Slot{{X: 0, Y: 0}, {X: 0, Y: 1}, {X: 0, Y: 2}},
 			Enemies: []defs.EnemyPlacement{
-				{Level: 1, Name: "隊長", Class: "cavalier", Weapon: "l", Boss: true, AI: "hold", X: 1, Y: 0},
-				{Level: 1, Class: "cavalier", Weapon: "l", Bonus: defs.Stats{HP: 5, Spd: 3}, AI: "hold", X: 3, Y: 2},
-				{Level: 1, Class: "armor", Weapon: "l", AI: "hold", X: 3, Y: 0},
+				{Level: 1, Name: "隊長", Class: "cavalier", Weapons: []string{"l"}, Boss: true, AI: "hold", X: 1, Y: 0},
+				{Level: 1, Class: "cavalier", Weapons: []string{"l"}, Bonus: defs.Stats{HP: 5, Spd: 3}, AI: "hold", X: 3, Y: 2},
+				{Level: 1, Class: "armor", Weapons: []string{"l"}, AI: "hold", X: 3, Y: 0},
 			}}}, chapters, nil)
 }
 
@@ -49,25 +49,25 @@ func TestCavalierTile(t *testing.T) {
 			u    tactics.Unit
 			want assets.Tile
 		}{
-			{"自軍の騎兵", tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Weapon: lance}, assets.Cavalier},
-			{"敵の騎兵", tactics.Unit{Name: "騎兵 1", ClassName: "騎兵", Side: tactics.Enemy, Weapon: lance}, assets.Cavalier},
-			{"騎兵の武器が槍でなくても騎乗", tactics.Unit{ClassName: "騎兵", Side: tactics.Player, Weapon: tactics.Weapon{Type: tactics.Sword}}, assets.Cavalier},
-			{"騎兵のボスも騎乗（ボスより騎兵が先）", tactics.Unit{Name: "ヴォルグ", ClassName: "騎兵", Side: tactics.Enemy, Boss: true, Weapon: lance}, assets.Cavalier},
-			{"主人公は騎兵より先", tactics.Unit{ClassName: "騎兵", Side: tactics.Player, Lord: true, Weapon: lance}, assets.PlayerLord},
-			{"騎兵でないボスは従来のボス", tactics.Unit{ClassName: "ソルジャー", Side: tactics.Enemy, Boss: true, Weapon: lance}, assets.EnemyBoss},
-			{"自軍のアーマーは従来の槍", tactics.Unit{Name: "ガルド", ClassName: "アーマー", Side: tactics.Player, Weapon: lance}, assets.PlayerLance},
-			{"敵のソルジャーは従来の槍", tactics.Unit{ClassName: "ソルジャー", Side: tactics.Enemy, Weapon: lance}, assets.EnemyLance},
-			{"名前がエルザでもアーマーなら従来の槍", tactics.Unit{Name: "エルザ", ClassName: "アーマー", Side: tactics.Player, Weapon: lance, Stats: tactics.Stats{Mov: 7}}, assets.PlayerLance},
-			{"未知のクラスは従来の武器別", tactics.Unit{ClassName: "竜騎士", Side: tactics.Enemy, Weapon: lance}, assets.EnemyLance},
-			{"クラス名の空は従来の武器別", tactics.Unit{Side: tactics.Player, Weapon: tactics.Weapon{Type: tactics.Bow}}, assets.PlayerBow},
-			{"一部だけ一致するクラス名は騎兵でない", tactics.Unit{ClassName: "重騎兵", Side: tactics.Enemy, Weapon: lance}, assets.EnemyLance},
+			{"自軍の騎兵", tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Weapons: []tactics.Weapon{lance}}, assets.Cavalier},
+			{"敵の騎兵", tactics.Unit{Name: "騎兵 1", ClassName: "騎兵", Side: tactics.Enemy, Weapons: []tactics.Weapon{lance}}, assets.Cavalier},
+			{"騎兵の武器が槍でなくても騎乗", tactics.Unit{ClassName: "騎兵", Side: tactics.Player, Weapons: []tactics.Weapon{tactics.Weapon{Type: tactics.Sword}}}, assets.Cavalier},
+			{"騎兵のボスも騎乗（ボスより騎兵が先）", tactics.Unit{Name: "ヴォルグ", ClassName: "騎兵", Side: tactics.Enemy, Boss: true, Weapons: []tactics.Weapon{lance}}, assets.Cavalier},
+			{"主人公は騎兵より先", tactics.Unit{ClassName: "騎兵", Side: tactics.Player, Lord: true, Weapons: []tactics.Weapon{lance}}, assets.PlayerLord},
+			{"騎兵でないボスは従来のボス", tactics.Unit{ClassName: "ソルジャー", Side: tactics.Enemy, Boss: true, Weapons: []tactics.Weapon{lance}}, assets.EnemyBoss},
+			{"自軍のアーマーは従来の槍", tactics.Unit{Name: "ガルド", ClassName: "アーマー", Side: tactics.Player, Weapons: []tactics.Weapon{lance}}, assets.PlayerLance},
+			{"敵のソルジャーは従来の槍", tactics.Unit{ClassName: "ソルジャー", Side: tactics.Enemy, Weapons: []tactics.Weapon{lance}}, assets.EnemyLance},
+			{"名前がエルザでもアーマーなら従来の槍", tactics.Unit{Name: "エルザ", ClassName: "アーマー", Side: tactics.Player, Weapons: []tactics.Weapon{lance}, Stats: tactics.Stats{Mov: 7}}, assets.PlayerLance},
+			{"未知のクラスは従来の武器別", tactics.Unit{ClassName: "竜騎士", Side: tactics.Enemy, Weapons: []tactics.Weapon{lance}}, assets.EnemyLance},
+			{"クラス名の空は従来の武器別", tactics.Unit{Side: tactics.Player, Weapons: []tactics.Weapon{tactics.Weapon{Type: tactics.Bow}}}, assets.PlayerBow},
+			{"一部だけ一致するクラス名は騎兵でない", tactics.Unit{ClassName: "重騎兵", Side: tactics.Enemy, Weapons: []tactics.Weapon{lance}}, assets.EnemyLance},
 		} {
 			if got := unitTile(tc.u); got != tc.want {
 				t.Errorf("%s: unitTile = %v、%v のはず", tc.name, got, tc.want)
 			}
 		}
 		// 騎兵のボスは、騎乗の絵のまま名前に ★ の印を添える（盤面の印は drawUnitList が Boss で描く）。
-		boss := tactics.Unit{Name: "ヴォルグ", ClassName: "騎兵", Side: tactics.Enemy, Boss: true, Alive: true, HP: 10, Stats: tactics.Stats{HP: 10}, Weapon: lance}
+		boss := tactics.Unit{Name: "ヴォルグ", ClassName: "騎兵", Side: tactics.Enemy, Boss: true, Alive: true, HP: 10, Stats: tactics.Stats{HP: 10}, Weapons: []tactics.Weapon{lance}}
 		v := Panel{Unit: &boss}.View()
 		pic := portraitOf(t, v)
 		if pic.Tile != assets.Cavalier {

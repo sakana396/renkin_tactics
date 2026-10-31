@@ -2,47 +2,52 @@ package tactics
 
 // 回復の行動（DES-HEL-01）と回復の予測（DES-HEL-02）。
 
-// validateHeal は Heal の検証 6a〜6e を順に確かめる（DES-HEL-01）。状態は変えない。
-// 6a. 武器が杖である（ErrCannotHeal）。6b. 杖の Uses が 1 以上（ErrNoUses）。
+// validateHeal は Heal の検証 6a〜6e を順に確かめ、使う杖の添字を返す（DES-HEL-01、DES-ITM-02）。状態は変えない。
+// 6a. 選んだ武器がある（ErrNoWeapon）、持てる種類（ErrWeaponType）、杖である（ErrCannotHeal）。6b. その杖の Uses が 1 以上（ErrNoUses）。
 // 6c. Target が生きている同じ陣営のユニットで、自分でない（ErrNoTarget）。
 // 6d. To から Target までの距離が杖の射程に入っている（ErrOutOfRange）。6e. Target の HP が最大でない（ErrFullHP）。
-func (b *Battle) validateHeal(cmd Command) error {
-	u := b.units[cmd.Unit]
-	if u.Weapon.Type != Staff {
-		return ErrCannotHeal
+func (b *Battle) validateHeal(cmd Command) (int, error) {
+	w, err := b.selectWeapon(cmd)
+	if err != nil {
+		return -1, err
 	}
-	if u.Weapon.Uses < 1 {
-		return ErrNoUses
+	u := b.units[cmd.Unit]
+	staff := u.Weapons[w]
+	if staff.Type != Staff {
+		return -1, ErrCannotHeal
+	}
+	if staff.Uses < 1 {
+		return -1, ErrNoUses
 	}
 	if !b.validUnit(cmd.Target) || cmd.Target == cmd.Unit {
-		return ErrNoTarget
+		return -1, ErrNoTarget
 	}
 	t := b.units[cmd.Target]
 	if !t.Alive || t.Side != u.Side {
-		return ErrNoTarget
+		return -1, ErrNoTarget
 	}
-	if !inRange(u.Weapon, distance(cmd.To, t.Pos)) {
-		return ErrOutOfRange
+	if !inRange(staff, distance(cmd.To, t.Pos)) {
+		return -1, ErrOutOfRange
 	}
 	if t.HP >= t.Stats.HP {
-		return ErrFullHP
+		return -1, ErrFullHP
 	}
-	return nil
+	return w, nil
 }
 
-// healWithStaff は、杖のユニット i が target を回復する（DES-HEL-01）。i は呼ぶ前に移動を終えておく。
-// 杖の Uses を 1 減らしてから、杖の Heal ＋ 魔力を兵種の上限と不足 HP で抑えて回復し、Heal を出す。
+// healWithStaff は、ユニット i が武器の列の w 番目の杖で target を回復する（DES-HEL-01、DES-ITM-02）。i は呼ぶ前に移動を終えておく。
+// その杖の Uses を 1 減らしてから、その杖の Heal ＋ 魔力を兵種の上限と不足 HP で抑えて回復し、Heal を出す。装備は変えない。
 // そのあと、回復した杖のユニットに経験を足す（DES-GRW-01）。命中の乱数は引かない。勝ち負けは決まらない。
-func (b *Battle) healWithStaff(events []Event, i, target int) []Event {
-	w := &b.units[i].Weapon
-	w.Uses--
-	events = b.heal(events, target, staffHealAmount(b.units[i]), w.Name)
+func (b *Battle) healWithStaff(events []Event, i, target, w int) []Event {
+	staff := &b.units[i].Weapons[w]
+	staff.Uses--
+	events = b.heal(events, target, staffHealAmount(b.units[i], w), staff.Name)
 	return b.gainExp(events, i, expHit)
 }
 
-// staffHealAmount は杖の回復量に魔力と兵種の上限を適用する（DES-HEL-01）。
-func staffHealAmount(u Unit) int {
-	amount := u.Weapon.Heal + u.Stats.Mag
+// staffHealAmount は、武器の列の w 番目の杖の回復量に魔力と兵種の上限を適用する（DES-HEL-01、DES-ITM-02）。
+func staffHealAmount(u Unit, w int) int {
+	amount := u.Weapons[w].Heal + u.Stats.Mag
 	if u.StaffHealCap > 0 {
 		amount = min(amount, u.StaffHealCap)
 	}
@@ -60,7 +65,7 @@ type HealForecast struct {
 	// Amount は実際に回復する量（min(杖の Heal ＋ 魔力、兵種の上限（あれば）、MaxHP − HP)）。After は回復したあとの HP。
 	Amount int
 	After  int
-	// Uses と MaxUses は、杖の今の残りの使用回数と最大（回復したあとは Uses − 1 になる）。
+	// Uses と MaxUses は、選んだ杖の今の残りの使用回数と最大（回復したあとは Uses − 1 になる）。
 	Uses    int
 	MaxUses int
 }
@@ -74,11 +79,13 @@ func (b *Battle) HealForecast(cmd Command) (HealForecast, error) {
 	if err := b.validateCommand(cmd); err != nil {
 		return HealForecast{}, err
 	}
-	if err := b.validateHeal(cmd); err != nil {
+	w, err := b.validateHeal(cmd)
+	if err != nil {
 		return HealForecast{}, err
 	}
 	h, t := b.units[cmd.Unit], b.units[cmd.Target]
-	amount := min(staffHealAmount(h), t.Stats.HP-t.HP)
+	amount := min(staffHealAmount(h, w), t.Stats.HP-t.HP)
+	staff := h.Weapons[w]
 	return HealForecast{
 		Healer:  h.Name,
 		Target:  t.Name,
@@ -86,7 +93,7 @@ func (b *Battle) HealForecast(cmd Command) (HealForecast, error) {
 		MaxHP:   t.Stats.HP,
 		Amount:  amount,
 		After:   t.HP + amount,
-		Uses:    h.Weapon.Uses,
-		MaxUses: h.Weapon.MaxUses,
+		Uses:    staff.Uses,
+		MaxUses: staff.MaxUses,
 	}, nil
 }

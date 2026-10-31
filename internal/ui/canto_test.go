@@ -152,7 +152,7 @@ func TestCantoUI(t *testing.T) {
 			{"なし", tactics.Skill{}, nil, "なし", ""},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				u := tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, HP: 20, Weapon: testLance, Skill: tc.skill, ClassSkills: tc.class, Alive: true}
+				u := tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, HP: 20, Weapons: []tactics.Weapon{testLance}, Skill: tc.skill, ClassSkills: tc.class, Alive: true}
 				v := (Panel{Unit: &u}).View()
 				var texts []string
 				for _, x := range v.Texts {

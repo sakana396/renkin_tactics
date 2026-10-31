@@ -142,17 +142,18 @@ type Growth struct {
 
 // CharacterDef は自軍のキャラの定義（DES-DAT-01。反復 2 で変更）。Skill は空でもよい。
 // Level は加わるときのレベル（定義データで省略すると 1）、Growth は成長率。
+// Weapons は初めの武器の ID の列で、先頭が初めの装備（DES-ITM-02）。古い weapon は 1 本の列に直してある。
 type CharacterDef struct {
-	ID     string
-	Name   string
-	Class  string
-	Bonus  Stats
-	Level  int
-	Growth Growth
-	Weapon string
-	Items  []ItemCount
-	Skill  string
-	Lord   bool
+	ID      string
+	Name    string
+	Class   string
+	Bonus   Stats
+	Level   int
+	Growth  Growth
+	Weapons []string
+	Items   []ItemCount
+	Skill   string
+	Lord    bool
 }
 
 // Slot は出撃の枠 1 つの座標（DES-DAT-01 の反復 2 の変更）。
@@ -162,16 +163,18 @@ type Slot struct {
 }
 
 // EnemyPlacement は敵の配置（DES-DAT-01。反復 2 で変更）。Name は空なら、クラスの名前から付ける。
+//
+// Weapons は武器の ID の列で、先頭が初めの装備（DES-ITM-02）。古い weapon は 1 本の列に直してある。
 type EnemyPlacement struct {
-	Name   string
-	Class  string
-	Weapon string
-	Bonus  Stats
-	Items  []ItemCount
-	AI     string
-	Boss   bool
-	X      int
-	Y      int
+	Name    string
+	Class   string
+	Weapons []string
+	Bonus   Stats
+	Items   []ItemCount
+	AI      string
+	Boss    bool
+	X       int
+	Y       int
 	// Level は敵のレベル 1〜20（キー level、省略は 1）。撃破の経験の式に使い、能力は補正しない（DES-IT06 7.3 節）。
 	Level int
 	// ID はマップの中で、初めの敵・すべての増援を通して重ならない敵の ID（DES-MAP-07）。

@@ -331,6 +331,11 @@ func TestForecastVisual(t *testing.T) {
 		if _, _, ok := c.TargetLabel(); !ok {
 			t.Fatalf("相手を選んだのに出さない")
 		}
+		// 1 回目の取り消しで相手の選択を外し（Targeting のまま。REV-072 F-01）、2 回目で Moved に戻る。
+		c.Cancel()
+		if _, _, ok := c.TargetLabel(); ok || c.State() != Targeting {
+			t.Errorf("相手の選択を取り消したあと（%v）に出した", c.State())
+		}
 		c.Cancel()
 		if _, _, ok := c.TargetLabel(); ok || c.State() != Moved {
 			t.Errorf("取り消したあと（%v）に出した", c.State())

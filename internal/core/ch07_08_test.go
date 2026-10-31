@@ -315,7 +315,7 @@ func checkCh07To08Definition(t *testing.T, m defs.MapDef) {
 			b.Spd++
 			b.Def += 2
 		}
-		if e.Bonus != b || e.Weapon != weapons[e.Class] {
+		if e.Bonus != b || len(e.Weapons) != 1 || e.Weapons[0] != weapons[e.Class] {
 			t.Errorf("敵の能力・武器 %+v", e)
 		}
 	}

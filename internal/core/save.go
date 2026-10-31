@@ -108,7 +108,7 @@ func (c *Campaign) Save(w io.Writer) error {
 		weapons := m.Weapons
 		if len(weapons) == 0 {
 			ch, _ := c.cat.Character(m.Character)
-			weapons = []string{ch.Weapon}
+			weapons = ch.Weapons
 		}
 		d.Roster[i] = saveMember{Character: m.Character, Level: m.Level, Exp: m.Exp, Stats: saveStats(m.Stats), Weapons: append([]string{}, weapons...), Items: saveItems(m.Items), Alive: m.Alive}
 	}
@@ -272,7 +272,8 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 			m.Stats.Lck = cls.Base.Lck + ch.Bonus.Lck + levels*ch.Growth.Lck/100
 			m.Stats.Mag = cls.Base.Mag + ch.Bonus.Mag + levels*ch.Growth.Mag/100
 			m.Stats.Res = cls.Base.Res + ch.Bonus.Res + levels*ch.Growth.Res/100
-			m.Weapons = []string{ch.Weapon}
+			// 版 1 には武器の所持がないので、定義の初めの武器を渡す（DES-IT06 6.3 節）。
+			m.Weapons = append([]string(nil), ch.Weapons...)
 		}
 		if len(m.Weapons) == 0 || len(m.Weapons) > 5 {
 			return nil, invalidSave(fmt.Sprintf("roster[%d].weapons", i), "武器は 1〜5 本必要です")
@@ -289,6 +290,10 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 	c.Stock, err = loadItems(cat, d.Stock, "stock", false)
 	if err != nil {
 		return nil, err
+	}
+	// 武器の本数と道具の個数が 5 枠を超える仲間は、あふれた道具を同じ ID の在庫に足す（DES-IT06 6.3 節、REV-069）。
+	for i := range c.Roster {
+		c.Roster[i].Items, c.Stock = overflowToStock(c.Roster[i], c.Stock)
 	}
 
 	seenWeapons := map[string]bool{}
@@ -318,6 +323,28 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 		}
 	}
 	return c, nil
+}
+
+// overflowToStock は、武器の列を先頭に、道具をセーブの順・個数の順に後ろへ並べ、先頭から 5 枠までを手持ちに残す（DES-IT06 6.3 節）。
+// あふれた道具は同じ ID の在庫に足す。武器は読み込みで 5 本以下に限るので、あふれるのは道具だけ。
+// 版 1 の移し替えと、#120 の版 2（武器 1 本 ＋ 道具 5 個がありうる。REV-069）の両方に使う。元の列は変えない。
+func overflowToStock(m Member, stock []defs.ItemCount) (items, newStock []defs.ItemCount) {
+	if handSlots(m) <= maxHand {
+		return m.Items, stock
+	}
+	room := maxHand - len(m.Weapons)
+	newStock = stock
+	for _, ic := range m.Items {
+		keep := min(ic.Count, max(0, room))
+		room -= keep
+		if keep > 0 {
+			items = append(items, defs.ItemCount{Item: ic.Item, Count: keep})
+		}
+		if ic.Count > keep {
+			newStock = changeItem(newStock, ic.Item, ic.Count-keep)
+		}
+	}
+	return items, newStock
 }
 
 // loadItems は参照・個数・手持ち上限または在庫の重複を検証する（DES-SAV-03 規則 7）。
