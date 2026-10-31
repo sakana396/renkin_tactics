@@ -1,10 +1,8 @@
 package tactics
 
-// 経験（DES-GRW-01）、レベルアップと成長（DES-GRW-02）、その出来事（DES-GRW-03）。
+// 経験（DES-GRW-01、撃破の経験は DES-GRW-04）、レベルアップと成長（DES-GRW-02）、その出来事（DES-GRW-03）。
 
 const (
-	// expKill は、相手（敵）が攻撃の流れの中で倒れたときの経験（DES-GRW-01）。
-	expKill = 30
 	// expHit は、自分の 1 撃が 1 回以上当たったときの経験（DES-GRW-01）。
 	expHit = 10
 	// expOther は、それ以外（すべて外れた、1 撃も行わなかった）のときの経験（DES-GRW-01）。
@@ -29,18 +27,33 @@ func (b *Battle) attackExp(events []Event, a, d int, playerHit bool) []Event {
 	amount := expOther
 	switch {
 	case !b.units[e].Alive:
-		amount = expKill
+		amount = killExp(b.units[p].Level, b.units[e].Level)
 	case playerHit:
 		amount = expHit
 	}
 	return b.gainExp(events, p, amount)
 }
 
+const (
+	// expKillBase・expKillPerLevel は、相手を倒したときの経験の式の基準と、レベル差 1 あたりの増減（DES-GRW-04）。
+	expKillBase     = 30
+	expKillPerLevel = 3
+	// expKillMin・expKillMax は、相手を倒したときの経験の下限と上限（DES-GRW-04）。
+	expKillMin = 10
+	expKillMax = 50
+)
+
+// killExp は、Level own の自軍が Level other の相手を倒したときの経験
+// clamp(30 ＋ (other − own) × 3, 10, 50) を返す（DES-GRW-04、DES-GRW-01 の改訂）。own は成長の前のレベル。
+func killExp(own, other int) int {
+	return max(expKillMin, min(expKillMax, expKillBase+(other-own)*expKillPerLevel))
+}
+
 // gainExp は、ユニット i に経験 amount を足し、100 以上ならレベルを上げて成長させる（DES-GRW-01、DES-GRW-02）。
 //
 // 経験を得るのは、Level が 1〜19 の自軍のユニットだけ。それ以外は何もしない。
 // 経験・レベル・能力・今の HP を更新してから Exp を出し、レベルが上がったら LevelUp を出す（DES-GRW-03）。
-// 1 回に足す経験は 30 以下で、足す前の経験は 99 以下なので、1 回に上がるのは 1 レベルまで。
+// 1 回に足す経験は 50 以下で、足す前の経験は 99 以下なので、1 回に上がるのは 1 レベルまで。
 func (b *Battle) gainExp(events []Event, i, amount int) []Event {
 	u := &b.units[i]
 	if u.Side != Player || u.Level < 1 || u.Level >= maxLevel {

@@ -106,7 +106,7 @@ func TestNewBattleCh01(t *testing.T) {
 			u := units[5+i]
 			if u.Side != tactics.Enemy || u.ClassName != w.class || u.Stats != w.stats || u.HP != w.stats.HP ||
 				!reflect.DeepEqual(u.Weapon, w.weapon) || u.Pos != w.pos || u.AI != w.ai || u.Boss != w.boss || u.Lord ||
-				u.Skill != (tactics.Skill{}) || u.Items != nil || !u.Alive || u.Acted || u.Level != 0 || (w.boss && u.Name != "ハーゲン") {
+				u.Skill != (tactics.Skill{}) || u.Items != nil || !u.Alive || u.Acted || u.Level != []int{1, 2, 3, 1, 2, 3, 1, 7}[i] || (w.boss && u.Name != "ハーゲン") {
 				t.Errorf("units[%d] = %+v", 5+i, u)
 			}
 		}
@@ -138,8 +138,8 @@ func TestNewBattleCh01(t *testing.T) {
 		// 敵に 1 体、増援に 1 体だけのクラスは、通して数えるので番号が付く。
 		// 敵だけに 1 体のクラスは番号が付かない。
 		cat := smallCatalog(func(m *defs.MapDef, _ *[]defs.CharacterDef) {
-			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 0, Y: 1}}}
-			m.Enemies = append(m.Enemies, defs.EnemyPlacement{Class: "fighter", Weapon: "iron_axe", AI: "hold", X: 2, Y: 1})
+			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Level: 1, Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 0, Y: 1}}}
+			m.Enemies = append(m.Enemies, defs.EnemyPlacement{Level: 1, Class: "fighter", Weapon: "iron_axe", AI: "hold", X: 2, Y: 1})
 		})
 		setup, err = core.NewSetup(cat, "m")
 		if err != nil {
@@ -151,8 +151,8 @@ func TestNewBattleCh01(t *testing.T) {
 		named := smallCatalog(func(m *defs.MapDef, _ *[]defs.CharacterDef) {
 			m.Enemies[0].Name = "隊長"
 			m.Reinforcements = []defs.Reinforcement{
-				{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Name: "増援隊長", Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 0, Y: 1}},
-				{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 2, Y: 1}},
+				{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Level: 1, Name: "増援隊長", Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 0, Y: 1}},
+				{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Level: 1, Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 2, Y: 1}},
 			}
 		})
 		ns, err := core.NewSetup(named, "m")
@@ -276,9 +276,9 @@ func TestNewBattleCh01(t *testing.T) {
 			t.Fatal(err)
 		}
 		want := []tactics.ReinforcementSetup{
-			{Turn: 3, Unit: tactics.UnitSetup{Name: "ファイター 3", ClassName: "ファイター", Side: tactics.Enemy, Stats: fighterBase, Pos: tactics.Pos{X: 0, Y: 3}, Weapon: axe, AI: tactics.Charge}},
-			{Turn: 3, Unit: tactics.UnitSetup{Name: "ソルジャー 3", ClassName: "ソルジャー", Side: tactics.Enemy, Stats: soldierBase, Pos: tactics.Pos{X: 0, Y: 4}, Weapon: lance, AI: tactics.Charge}},
-			{Turn: 5, Unit: tactics.UnitSetup{Name: "剣士 3", ClassName: "剣士", Side: tactics.Enemy, Stats: myrmidonBase, Pos: tactics.Pos{X: 15, Y: 15}, Weapon: sword, AI: tactics.Charge}},
+			{Turn: 3, Unit: tactics.UnitSetup{Name: "ファイター 3", ClassName: "ファイター", Side: tactics.Enemy, Level: 1, Stats: fighterBase, Pos: tactics.Pos{X: 0, Y: 3}, Weapon: axe, AI: tactics.Charge}},
+			{Turn: 3, Unit: tactics.UnitSetup{Name: "ソルジャー 3", ClassName: "ソルジャー", Side: tactics.Enemy, Level: 2, Stats: soldierBase, Pos: tactics.Pos{X: 0, Y: 4}, Weapon: lance, AI: tactics.Charge}},
+			{Turn: 5, Unit: tactics.UnitSetup{Name: "剣士 3", ClassName: "剣士", Side: tactics.Enemy, Level: 3, Stats: myrmidonBase, Pos: tactics.Pos{X: 15, Y: 15}, Weapon: sword, AI: tactics.Charge}},
 		}
 		if !reflect.DeepEqual(setup.Reinforcements, want) {
 			t.Errorf("増援 =\n%+v\nwant\n%+v", setup.Reinforcements, want)
@@ -327,7 +327,7 @@ func smallCatalogParty(party []string, edit func(m *defs.MapDef, chars *[]defs.C
 		Name:    "小さなマップ",
 		Rows:    []string{"...", ".森."},
 		Slots:   []defs.Slot{{X: 0, Y: 0}},
-		Enemies: []defs.EnemyPlacement{{Class: "soldier", Weapon: "iron_lance", AI: "hold", Boss: true, X: 2, Y: 0}},
+		Enemies: []defs.EnemyPlacement{{Level: 1, Class: "soldier", Weapon: "iron_lance", AI: "hold", Boss: true, X: 2, Y: 0}},
 	}
 	chars := []defs.CharacterDef{
 		{ID: "leon", Name: "レオン", Class: "lord", Weapon: "iron_sword", Skill: "inspire", Lord: true},
@@ -395,10 +395,10 @@ func TestNewBattleErrors(t *testing.T) {
 		{"武器の種類が使えない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].Weapon = "gun" }, `武器 "gun" の種類 "gun" は使えません`},
 		{"敵のクラスがない", func(m *defs.MapDef, _ *[]defs.CharacterDef) { m.Enemies[0].Class = "dragon" }, `enemies[0]: クラス "dragon" がありません`},
 		{"増援のクラスがない", func(m *defs.MapDef, _ *[]defs.CharacterDef) {
-			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Class: "dragon", Weapon: "iron_lance", AI: "charge", X: 0, Y: 1}}}
+			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Level: 1, Class: "dragon", Weapon: "iron_lance", AI: "charge", X: 0, Y: 1}}}
 		}, `reinforcements[0]: クラス "dragon" がありません`},
 		{"増援の武器がない", func(m *defs.MapDef, _ *[]defs.CharacterDef) {
-			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapon: "iron_rapier", AI: "charge", X: 0, Y: 1}}}
+			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Level: 1, Class: "soldier", Weapon: "iron_rapier", AI: "charge", X: 0, Y: 1}}}
 		}, `reinforcements[0]: 武器 "iron_rapier" がありません`},
 		{"敵のアイテムがない", func(m *defs.MapDef, _ *[]defs.CharacterDef) {
 			m.Enemies[0].Items = []defs.ItemCount{{Item: "elixir", Count: 1}}

@@ -158,7 +158,7 @@ func sceneCatalog(before, after bool) *defs.Catalog {
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}},
 		[]defs.ItemDef{{ID: "p", Name: "薬", Heal: 10}}, nil,
 		[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "lord", Weapon: "s", Lord: true, Level: 1}, {ID: "friend", Name: "仲間", Class: "lord", Weapon: "s", Level: 2}, {ID: "join", Name: "加入者", Class: "lord", Weapon: "s", Level: 4}, {ID: "join2", Name: "加入者2", Class: "lord", Weapon: "s", Level: 5}},
-		[]defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Class: "soldier", Weapon: "s", Boss: true, AI: "hold", X: 1, Y: 0}}}}, chapters,
+		[]defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Level: 1, Class: "soldier", Weapon: "s", Boss: true, AI: "hold", X: 1, Y: 0}}}}, chapters,
 		[]defs.StoryDef{{ID: "before", Paragraphs: []string{"前の物語の最初。", "前の物語の最後。"}}, {ID: "after", Paragraphs: []string{"あとの物語。"}}})
 }
 func fixtureScenes(m *memoryStore, before, after bool) *SceneController {

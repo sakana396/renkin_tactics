@@ -13,7 +13,11 @@ func capBattle(t *testing.T, live int) *Battle {
 	t.Helper()
 	weapon := Weapon{Name: "剣", Type: Sword, Might: 5, Hit: 90, MinRange: 1, MaxRange: 1}
 	mk := func(name string, side Side, x, y int) UnitSetup {
-		return UnitSetup{Name: name, Side: side, Stats: Stats{HP: 20, Str: 5, Skl: 5, Spd: 5, Def: 3, Mov: 3}, Pos: Pos{x, y}, Weapon: weapon, AI: Hold}
+		level := 0
+		if side == Enemy {
+			level = 1
+		}
+		return UnitSetup{Name: name, Side: side, Level: level, Stats: Stats{HP: 20, Str: 5, Skl: 5, Spd: 5, Def: 3, Mov: 3}, Pos: Pos{x, y}, Weapon: weapon, AI: Hold}
 	}
 	terrain := make([][]Terrain, 10)
 	for y := range terrain {
@@ -135,7 +139,11 @@ func TestEnemyCap(t *testing.T) {
 		// REV-068 の申し送り: #120 が UnitSetup に足したスライスの欄も、出来事の増援とターンの増援で深く写す。
 		weapon := Weapon{Name: "槍", Type: Lance, Might: 5, Hit: 90, MinRange: 1, MaxRange: 1, EffectiveTags: []string{"mounted"}}
 		mk := func(name string, side Side, x, y int) UnitSetup {
-			return UnitSetup{Name: name, Side: side, Stats: Stats{HP: 20, Str: 5, Skl: 5, Spd: 5, Def: 3, Mov: 3}, Pos: Pos{x, y}, Weapon: weapon.clone(), AI: Hold,
+			level := 0
+			if side == Enemy {
+				level = 1
+			}
+			return UnitSetup{Name: name, Side: side, Level: level, Stats: Stats{HP: 20, Str: 5, Skl: 5, Spd: 5, Def: 3, Mov: 3}, Pos: Pos{x, y}, Weapon: weapon.clone(), AI: Hold,
 				Tags: []string{"armor"}, Weapons: []Weapon{weapon.clone()}, Items: []ItemStack{{Item: Item{Name: "薬", Heal: 10}, Count: 1}}}
 		}
 		lord := mk("主人公", Player, 0, 0)

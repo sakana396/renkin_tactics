@@ -22,8 +22,13 @@ var (
 )
 
 func chara(name string, side tactics.Side, x, y int, st tactics.Stats, w tactics.Weapon, sk tactics.Skill) tactics.UnitSetup {
+	level := 0
+	if side == tactics.Enemy {
+		level = 1
+	}
 	return tactics.UnitSetup{
-		Name: name, ClassName: "テスト", Side: side, Stats: st, Pos: pos(x, y), Weapon: w, Skill: sk,
+		Level: level,
+		Name:  name, ClassName: "テスト", Side: side, Stats: st, Pos: pos(x, y), Weapon: w, Skill: sk,
 	}
 }
 
@@ -342,6 +347,7 @@ func TestWeaponTriangle(t *testing.T) {
 		// 守備 10 の相手（ガルドの能力の敵。スキルなし）。
 		g := gald(2, 1)
 		g.Side = tactics.Enemy
+		g.Level = 1
 		g.Skill = tactics.Skill{}
 		b := mustNew(t, arena(weak, g, farBoss(6, 0), reserve()))
 		f := mustForecast(t, b, tactics.Command{Unit: 0, To: pos(1, 1), Target: 1})
@@ -683,6 +689,7 @@ func TestSkills(t *testing.T) {
 		// ガルドを、平地のファイターが攻撃する形にするため、ガルドを敵にする。
 		g := gald(2, 1)
 		g.Side = tactics.Enemy
+		g.Level = 1
 		// 主人公はブランの能力の斧使い（怒りなし）: 斧は槍に有利。攻撃力 8 ＋ 8 ＋ 1 = 17、ダメージ 17 − 10 = 7。
 		a := bran(1, 1)
 		a.Lord = true
@@ -756,6 +763,7 @@ func TestSkills(t *testing.T) {
 		// 剣士の命中率は 100 なので、追撃の乱数 (99, 99) でも当たる。
 		br := bran(2, 2)
 		br.Side = tactics.Enemy
+		br.Level = 1
 		my := myrmidon(1, 2)
 		my.Side = tactics.Player
 		my.Lord = true
@@ -780,6 +788,7 @@ func TestSkills(t *testing.T) {
 		// 攻撃力 8 ＋ 8 ＋ 1 = 17、ダメージ 17。17 × 3 = 51、半分で 25（切り捨て）。
 		g := gald(2, 2)
 		g.Side = tactics.Enemy
+		g.Level = 1
 		g.Stats.Def = 0
 		g.Stats.HP = 60
 		b := mustNew(t, arena(bran(1, 2), g, leon(6, 6), farBoss(6, 0)))
