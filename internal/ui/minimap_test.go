@@ -458,7 +458,7 @@ func minimapDeployScenes(t *testing.T) *SceneController {
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", MinRange: 1, MaxRange: 1}}, nil, nil,
 		[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "lord", Weapon: "s", Lord: true, Level: 1}, {ID: "friend", Name: "仲間", Class: "lord", Weapon: "s", Level: 1}},
 		[]defs.MapDef{{ID: "m", Rows: rows, Slots: []defs.Slot{{X: 31, Y: 31}, {X: 0, Y: 0}, {X: 31, Y: 0}, {X: 0, Y: 31}},
-			Enemies: []defs.EnemyPlacement{{Class: "lord", Weapon: "s", AI: "hold", Boss: true, X: 30, Y: 30}}}},
+			Enemies: []defs.EnemyPlacement{{Level: 1, Class: "lord", Weapon: "s", AI: "hold", Boss: true, X: 30, Y: 30}}}},
 		[]defs.ChapterDef{{ID: "c", Map: "m"}}, nil)
 	campaign, err := core.NewCampaign(cat, core.Withdraw)
 	if err != nil {

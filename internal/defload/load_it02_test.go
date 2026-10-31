@@ -85,7 +85,7 @@ func TestLoadIt02(t *testing.T) {
 		// 規則 22
 		{"TC-FR-SYS-04-28 敵と増援が杖を持つ",
 			[]edit{
-				replace("maps.toml", "class = \"soldier\"\nweapon = \"iron_lance\"\nai = \"charge\"\nx = 6", "class = \"cleric\"\nweapon = \"heal_staff\"\nai = \"charge\"\nx = 6"),
+				replace("maps.toml", "class = \"soldier\"\nweapon = \"iron_lance\"\nlevel = 1\nai = \"charge\"\nx = 6", "class = \"cleric\"\nweapon = \"heal_staff\"\nai = \"charge\"\nx = 6"),
 				replace("maps.toml", "turn = 5\nclass = \"myrmidon\"\nweapon = \"iron_sword\"", "turn = 5\nclass = \"myrmidon\"\nweapon = \"heal_staff\""),
 			},
 			[]string{

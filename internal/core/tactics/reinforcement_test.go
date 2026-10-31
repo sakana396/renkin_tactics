@@ -237,7 +237,7 @@ func TestReinforcementHints(t *testing.T) {
 		b := snapshotBattle(t)
 		s := Setup{Terrain: b.terrain, Reinforcements: b.reinforcements}
 		for _, u := range b.units {
-			s.Units = append(s.Units, UnitSetup{Name: u.Name, Side: u.Side, Lord: u.Lord, Boss: u.Boss, Stats: u.Stats, Weapon: u.Weapon, Pos: u.Pos})
+			s.Units = append(s.Units, UnitSetup{Name: u.Name, Side: u.Side, Level: u.Level, Lord: u.Lord, Boss: u.Boss, Stats: u.Stats, Weapon: u.Weapon, Pos: u.Pos})
 		}
 		v, err := NewBoardView(s)
 		if err != nil || len(v.ReinforcementHints()) != 0 {

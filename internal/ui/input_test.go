@@ -45,9 +45,9 @@ func basicSetup() tactics.Setup {
 		Units: []tactics.UnitSetup{
 			{Name: "レオン", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Mov: 3}, Pos: tactics.Pos{X: 0, Y: 0}, Weapon: testSword, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Lord: true},
 			{Name: "ガルド", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Def: 5, Mov: 3}, Pos: tactics.Pos{X: 0, Y: 2}, Weapon: testLance},
-			{Name: "ボス", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 5, Y: 5}, Weapon: testLance, Boss: true, AI: tactics.Hold},
+			{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 5, Y: 5}, Weapon: testLance, Boss: true, AI: tactics.Hold},
 			// 斧は剣に不利なので、攻撃力は 3 − 1 = 2。
-			{Name: "ファイター", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30, Str: 3}, Pos: tactics.Pos{X: 1, Y: 0}, Weapon: testAxe, AI: tactics.Hold},
+			{Name: "ファイター", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30, Str: 3}, Pos: tactics.Pos{X: 1, Y: 0}, Weapon: testAxe, AI: tactics.Hold},
 		},
 	}
 }
@@ -409,7 +409,7 @@ func TestControllerTransitions(t *testing.T) {
 		// 相手が 2 体いるとき、別の相手をクリックすると選び直すだけで Act を呼ばない。
 		two := func() tactics.Setup {
 			s := basicSetup()
-			s.Units = append(s.Units, tactics.UnitSetup{Name: "ソルジャー", Side: tactics.Enemy, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 0, Y: 1}, Weapon: testLance, AI: tactics.Hold})
+			s.Units = append(s.Units, tactics.UnitSetup{Name: "ソルジャー", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 0, Y: 1}, Weapon: testLance, AI: tactics.Hold})
 			return s
 		}
 		d := newIdleWith(t, two)
@@ -595,7 +595,7 @@ func TestControllerTransitions(t *testing.T) {
 				Terrain: field(3, 1),
 				Units: []tactics.UnitSetup{
 					{Name: "レオン", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Str: 5, Mov: 1}, Pos: tactics.Pos{X: 0, Y: 0}, Weapon: testSword, Lord: true},
-					{Name: "ボス", Side: tactics.Enemy, Stats: tactics.Stats{HP: 1}, Pos: tactics.Pos{X: 1, Y: 0}, Weapon: testLance, Boss: true, AI: tactics.Hold},
+					{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 1}, Pos: tactics.Pos{X: 1, Y: 0}, Weapon: testLance, Boss: true, AI: tactics.Hold},
 				},
 			}
 		}
