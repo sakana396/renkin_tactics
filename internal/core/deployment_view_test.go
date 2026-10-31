@@ -13,19 +13,19 @@ import (
 func deploymentCatalog(rows []string, enemies []defs.EnemyPlacement) *defs.Catalog {
 	return defs.NewCatalog(defs.GameDef{Party: []string{"hero", "friend"}},
 		[]defs.TerrainDef{{ID: "plain", Name: "平地", Symbol: ".", Cost: 1}, {ID: "forest", Name: "森", Symbol: "F", Cost: 2, Avoid: 20, Def: 1}, {ID: "wall", Name: "壁", Symbol: "#"}},
-		[]defs.ClassDef{{ID: "soldier", Name: "兵", Base: defs.Stats{HP: 20, Str: 3, Skl: 4, Spd: 5, Def: 6, Mov: 3}}},
+		[]defs.ClassDef{{ID: "soldier", Name: "兵", WeaponType: "sword", Base: defs.Stats{HP: 20, Str: 3, Skl: 4, Spd: 5, Def: 6, Mov: 3}}, {ID: "bowman", Name: "兵", WeaponType: "bow", Base: defs.Stats{HP: 20, Str: 3, Skl: 4, Spd: 5, Def: 6, Mov: 3}}},
 		[]defs.WeaponDef{{ID: "sword", Name: "剣", Type: "sword", Might: 4, Hit: 1000, MinRange: 1, MaxRange: 1}, {ID: "bow", Name: "弓", Type: "bow", Might: 5, Hit: 80, MinRange: 2, MaxRange: 2}},
 		[]defs.ItemDef{{ID: "potion", Name: "薬", Heal: 10}}, nil,
-		[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "soldier", Weapon: "sword", Level: 1, Lord: true}, {ID: "friend", Name: "仲間", Class: "soldier", Weapon: "sword", Level: 2}},
+		[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "soldier", Weapons: []string{"sword"}, Level: 1, Lord: true}, {ID: "friend", Name: "仲間", Class: "soldier", Weapons: []string{"sword"}, Level: 2}},
 		[]defs.MapDef{{ID: "m", Rows: rows, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 0, Y: 1}, {X: 1, Y: 0}}, Enemies: enemies,
-			Reinforcements: []defs.Reinforcement{{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Level: 1, Class: "soldier", Weapon: "bow", AI: "charge", X: 0, Y: 0}}}}}, []defs.ChapterDef{{ID: "c", Map: "m"}}, nil)
+			Reinforcements: []defs.Reinforcement{{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Level: 1, Class: "bowman", Weapons: []string{"bow"}, AI: "charge", X: 0, Y: 0}}}}}, []defs.ChapterDef{{ID: "c", Map: "m"}}, nil)
 }
 
 func TestDeploymentView(t *testing.T) {
 	t.Run("TC-FR-CMP-11-08", func(t *testing.T) {
 		enemies := []defs.EnemyPlacement{
-			{Level: 1, Class: "soldier", Weapon: "bow", AI: "hold", X: 4, Y: 1, Bonus: defs.Stats{HP: 2, Str: 1, Skl: 2, Spd: 3, Def: 4, Mov: 1}, Items: []defs.ItemCount{{Item: "potion", Count: 2}}},
-			{Level: 1, Class: "soldier", Name: "隊長", Weapon: "sword", AI: "charge", Boss: true, X: 4, Y: 0},
+			{Level: 1, Class: "bowman", Weapons: []string{"bow"}, AI: "hold", X: 4, Y: 1, Bonus: defs.Stats{HP: 2, Str: 1, Skl: 2, Spd: 3, Def: 4, Mov: 1}, Items: []defs.ItemCount{{Item: "potion", Count: 2}}},
+			{Level: 1, Class: "soldier", Name: "隊長", Weapons: []string{"sword"}, AI: "charge", Boss: true, X: 4, Y: 0},
 		}
 		cat := deploymentCatalog([]string{"..F..", "..#..", "....."}, enemies)
 		c, err := core.NewCampaign(cat, core.Withdraw)
@@ -56,8 +56,8 @@ func TestDeploymentView(t *testing.T) {
 				if len(u) != 4 || !reflect.DeepEqual(u, s.Battle.Units()) {
 					t.Fatalf("初期ユニット: %+v", u)
 				}
-				wantEnemy := tactics.Unit{Level: 1, Name: "兵 1", ClassName: "兵", Side: tactics.Enemy, Stats: tactics.Stats{HP: 22, Str: 4, Skl: 6, Spd: 8, Def: 10, Mov: 4}, HP: 22, Pos: tactics.Pos{X: 4, Y: 1}, Weapon: tactics.Weapon{Name: "弓", Type: tactics.Bow, Might: 5, Hit: 80, MinRange: 2, MaxRange: 2}, Items: []tactics.ItemStack{{Item: tactics.Item{ID: "potion", Name: "薬", Heal: 10}, Count: 2}}, AI: tactics.Hold, Alive: true}
-				wantBoss := tactics.Unit{Level: 1, Name: "隊長", ClassName: "兵", Side: tactics.Enemy, Stats: tactics.Stats{HP: 20, Str: 3, Skl: 4, Spd: 5, Def: 6, Mov: 3}, HP: 20, Pos: tactics.Pos{X: 4}, Weapon: tactics.Weapon{Name: "剣", Type: tactics.Sword, Might: 4, Hit: 1000, MinRange: 1, MaxRange: 1}, Boss: true, AI: tactics.Charge, Alive: true}
+				wantEnemy := tactics.Unit{Level: 1, Name: "兵 1", ClassName: "兵", Side: tactics.Enemy, Stats: tactics.Stats{HP: 22, Str: 4, Skl: 6, Spd: 8, Def: 10, Mov: 4}, HP: 22, Pos: tactics.Pos{X: 4, Y: 1}, Weapons: []tactics.Weapon{{ID: "bow", Name: "弓", Type: tactics.Bow, Might: 5, Hit: 80, MinRange: 2, MaxRange: 2}}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Bow}, Items: []tactics.ItemStack{{Item: tactics.Item{ID: "potion", Name: "薬", Heal: 10}, Count: 2}}, AI: tactics.Hold, Alive: true}
+				wantBoss := tactics.Unit{Level: 1, Name: "隊長", ClassName: "兵", Side: tactics.Enemy, Stats: tactics.Stats{HP: 20, Str: 3, Skl: 4, Spd: 5, Def: 6, Mov: 3}, HP: 20, Pos: tactics.Pos{X: 4}, Weapons: []tactics.Weapon{{ID: "sword", Name: "剣", Type: tactics.Sword, Might: 4, Hit: 1000, MinRange: 1, MaxRange: 1}}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Sword}, Boss: true, AI: tactics.Charge, Alive: true}
 				if !reflect.DeepEqual(u[2], wantEnemy) || !reflect.DeepEqual(u[3], wantBoss) {
 					t.Fatalf("敵の完全な変換: %+v", u[2:])
 				}
@@ -127,7 +127,7 @@ func TestDeploymentView(t *testing.T) {
 			{"壁で通路なし", []string{".#..", "####"}, 0, map[tactics.Pos]int{{X: 3}: 0}},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				cat := deploymentCatalog(tc.rows, []defs.EnemyPlacement{{Level: 1, Class: "soldier", Weapon: "bow", AI: "hold", Boss: true, X: 3, Y: 0}, {Level: 1, Class: "soldier", Weapon: "sword", AI: "hold", X: 2, Y: 0}})
+				cat := deploymentCatalog(tc.rows, []defs.EnemyPlacement{{Level: 1, Class: "bowman", Weapons: []string{"bow"}, AI: "hold", Boss: true, X: 3, Y: 0}, {Level: 1, Class: "soldier", Weapons: []string{"sword"}, AI: "hold", X: 2, Y: 0}})
 				c, err := core.NewCampaign(cat, core.Withdraw)
 				if err != nil {
 					t.Fatal(err)
@@ -155,7 +155,7 @@ func TestDeploymentView(t *testing.T) {
 			})
 		}
 		// 倒れた敵は停止・通過を妨げず、本人の範囲は空。実際の撃破後の盤面で確認する。
-		cat := deploymentCatalog([]string{".......", "......."}, []defs.EnemyPlacement{{Level: 1, Class: "soldier", Weapon: "bow", AI: "hold", Boss: true, X: 6}, {Level: 1, Class: "soldier", Weapon: "sword", AI: "hold", X: 5}, {Level: 1, Class: "soldier", Weapon: "sword", AI: "hold", X: 4}})
+		cat := deploymentCatalog([]string{".......", "......."}, []defs.EnemyPlacement{{Level: 1, Class: "bowman", Weapons: []string{"bow"}, AI: "hold", Boss: true, X: 6}, {Level: 1, Class: "soldier", Weapons: []string{"sword"}, AI: "hold", X: 5}, {Level: 1, Class: "soldier", Weapons: []string{"sword"}, AI: "hold", X: 4}})
 		c, err := core.NewCampaign(cat, core.Withdraw)
 		if err != nil {
 			t.Fatal(err)

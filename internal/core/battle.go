@@ -180,9 +180,13 @@ func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, 
 	if !ok {
 		return tactics.UnitSetup{}, fmt.Errorf("キャラ %q のクラス %q がありません", ch.ID, ch.Class)
 	}
-	weapon, err := convertWeapon(cat, ch.Weapon)
+	weapons, err := convertWeapons(cat, ch.Weapons)
 	if err != nil {
 		return tactics.UnitSetup{}, err
+	}
+	allowed, err := convertWeaponType(cls.WeaponType)
+	if err != nil {
+		return tactics.UnitSetup{}, fmt.Errorf("クラス %q: %w", cls.ID, err)
 	}
 	items, err := convertItems(cat, ch.Items)
 	if err != nil {
@@ -206,7 +210,9 @@ func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, 
 		Level:        ch.Level,
 		Growth:       tactics.Growth{HP: ch.Growth.HP, Str: ch.Growth.Str, Skl: ch.Growth.Skl, Spd: ch.Growth.Spd, Def: ch.Growth.Def, Lck: ch.Growth.Lck, Mag: ch.Growth.Mag, Res: ch.Growth.Res},
 		Pos:          tactics.Pos{X: slot.X, Y: slot.Y},
-		Weapon:       weapon,
+		// 初めの装備は武器の列の先頭（DES-ITM-02）。
+		Weapons:            weapons,
+		AllowedWeaponTypes: []tactics.WeaponType{allowed},
 
 		Items:       items,
 		Skill:       skill,
@@ -222,9 +228,13 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 	if !ok {
 		return tactics.UnitSetup{}, fmt.Errorf("クラス %q がありません", e.Class)
 	}
-	weapon, err := convertWeapon(cat, e.Weapon)
+	weapons, err := convertWeapons(cat, e.Weapons)
 	if err != nil {
 		return tactics.UnitSetup{}, err
+	}
+	allowed, err := convertWeaponType(cls.WeaponType)
+	if err != nil {
+		return tactics.UnitSetup{}, fmt.Errorf("クラス %q: %w", cls.ID, err)
 	}
 	items, err := convertItems(cat, e.Items)
 	if err != nil {
@@ -247,13 +257,15 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 		Level:        e.Level,
 		Stats:        addStats(cls.Base, e.Bonus),
 		Pos:          tactics.Pos{X: e.X, Y: e.Y},
-		Weapon:       weapon,
-		Items:        items,
-		ClassSkills:  classSkills,
-		Boss:         e.Boss,
-		AI:           ai,
-		ID:           e.ID,
-		Group:        e.Group,
+		// 敵の武器は敵の定義から渡す（DES-ITM-02）。初めの装備は先頭。
+		Weapons:            weapons,
+		AllowedWeaponTypes: []tactics.WeaponType{allowed},
+		Items:              items,
+		ClassSkills:        classSkills,
+		Boss:               e.Boss,
+		AI:                 ai,
+		ID:                 e.ID,
+		Group:              e.Group,
 	}, nil
 }
 
@@ -314,28 +326,47 @@ func addStats(base, bonus defs.Stats) tactics.Stats {
 	}
 }
 
+// convertWeaponType は武器の種類の文字列を tactics の種類に変える（DES-CORE-01、DES-ITM-02）。
+func convertWeaponType(t string) (tactics.WeaponType, error) {
+	switch t {
+	case defs.WeaponSword:
+		return tactics.Sword, nil
+	case defs.WeaponLance:
+		return tactics.Lance, nil
+	case defs.WeaponAxe:
+		return tactics.Axe, nil
+	case defs.WeaponBow:
+		return tactics.Bow, nil
+	case defs.WeaponMagic:
+		return tactics.Magic, nil
+	case defs.WeaponStaff:
+		return tactics.Staff, nil
+	}
+	return 0, fmt.Errorf("武器の種類 %q は使えません", t)
+}
+
+// convertWeapons は武器の ID の列を、順を保って tactics の武器の列に変える（DES-CORE-01、DES-ITM-02）。
+func convertWeapons(cat *defs.Catalog, ids []string) ([]tactics.Weapon, error) {
+	out := make([]tactics.Weapon, 0, len(ids))
+	for _, id := range ids {
+		w, err := convertWeapon(cat, id)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, w)
+	}
+	return out, nil
+}
+
 // convertWeapon は武器の ID から tactics の武器を作る（DES-CORE-01、DES-HEL-01）。
-// 杖の定義の Uses は MaxUses に渡し、戦闘開始時に tactics.New が満タンにする。
+// 杖の定義の Uses は MaxUses に渡し、戦闘開始時に tactics.New が満タンにする。ID は名簿へ戻すために写す（DES-ITM-02）。
 func convertWeapon(cat *defs.Catalog, id string) (tactics.Weapon, error) {
 	w, ok := cat.Weapon(id)
 	if !ok {
 		return tactics.Weapon{}, fmt.Errorf("武器 %q がありません", id)
 	}
-	var typ tactics.WeaponType
-	switch w.Type {
-	case defs.WeaponSword:
-		typ = tactics.Sword
-	case defs.WeaponLance:
-		typ = tactics.Lance
-	case defs.WeaponAxe:
-		typ = tactics.Axe
-	case defs.WeaponBow:
-		typ = tactics.Bow
-	case defs.WeaponMagic:
-		typ = tactics.Magic
-	case defs.WeaponStaff:
-		typ = tactics.Staff
-	default:
+	typ, err := convertWeaponType(w.Type)
+	if err != nil {
 		return tactics.Weapon{}, fmt.Errorf("武器 %q の種類 %q は使えません", id, w.Type)
 	}
 	damageType := tactics.Physical
@@ -343,6 +374,7 @@ func convertWeapon(cat *defs.Catalog, id string) (tactics.Weapon, error) {
 		damageType = tactics.Magical
 	}
 	return tactics.Weapon{
+		ID:   w.ID,
 		Name: w.Name,
 		Crit: w.Crit, Weight: w.Weight, Strikes: w.Strikes, DamageType: damageType, EffectiveTags: append([]string(nil), w.EffectiveTags...),
 		Type:     typ,

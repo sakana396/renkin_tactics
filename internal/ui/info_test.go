@@ -130,19 +130,21 @@ func TestInfoPanel(t *testing.T) {
 		"レオン",
 		"クラス: ロード",
 		"HP 20/20",
-		"力 6 魔力 0",
-		"技 8 幸運 0",
-		"速さ 9 魔防 0",
+		"力 6",
+		"魔力 0",
+		"技 8",
+		"速さ 9",
+		"幸運 0",
 		"守備 4",
+		"魔防 0",
 		"移動 5",
 		"地形: 平地",
 		"回避 0　守備 0　回復 0%",
 	}
 	leonEquip := []string{
 		"レオン",
-		"武器: 鉄の剣（剣）",
-		"威力 5　命中 90　射程 1",
-		"必殺 0 ×1", "重さ 0",
+		"武器: 鉄の剣（剣） 必殺 0",
+		"威力 5 命中 90 射程 1 重さ 0",
 		"手持ち: 回復薬 ×2",
 		"スキル: 鼓舞",
 		"　距離 2 以内の味方の命中 +10・回避 +10",
@@ -163,7 +165,7 @@ func TestInfoPanel(t *testing.T) {
 		for _, tc := range []struct {
 			page InfoPage
 			last string
-		}{{PageStats, "移動 5"}, {PageEquip, leonEquip[7]}} {
+		}{{PageStats, "移動 5"}, {PageEquip, leonEquip[5]}} {
 			p.Page = tc.page
 			v := p.View()
 			desc, terrain := textOf(t, v, tc.last), textOf(t, v, "地形: 平地")
@@ -186,19 +188,21 @@ func TestInfoPanel(t *testing.T) {
 			"ソルジャー 3　★ボス",
 			"クラス: ソルジャー",
 			"HP 18/18",
-			"力 5 魔力 0",
-			"技 4 幸運 0",
-			"速さ 4 魔防 0",
+			"力 5",
+			"魔力 0",
+			"技 4",
+			"速さ 4",
+			"幸運 0",
 			"守備 4",
+			"魔防 0",
 			"移動 5",
 			"地形: 森",
 			"回避 20　守備 1　回復 0%",
 		}
 		equip := []string{
 			"ソルジャー 3　★ボス",
-			"武器: 鉄の槍（槍）",
-			"威力 7　命中 80　射程 1",
-			"必殺 0 ×1", "重さ 0",
+			"武器: 鉄の槍（槍） 必殺 0",
+			"威力 7 命中 80 射程 1 重さ 0",
 			"手持ち: なし",
 			"スキル: なし",
 			"地形: 森",
@@ -216,26 +220,28 @@ func TestInfoPanel(t *testing.T) {
 	t.Run("TC-FR-UNT-09-03 武器の種類・射程の幅、大盾・怒り・狙撃の説明、複数の手持ち、砦の回復", func(t *testing.T) {
 		u := tactics.Unit{
 			Name: "ミラ", ClassName: "アーチャー", Stats: tactics.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5}, HP: 9,
-			Weapon: tactics.Weapon{Name: "長弓", Type: tactics.Bow, Might: 6, Hit: 85, MinRange: 2, MaxRange: 3},
-			Items:  []tactics.ItemStack{{Item: potion, Count: 1}, {Item: tactics.Item{Name: "特効薬", Heal: 20}, Count: 2}},
-			Skill:  snipe,
+			Weapons: []tactics.Weapon{{Name: "長弓", Type: tactics.Bow, Might: 6, Hit: 85, MinRange: 2, MaxRange: 3}},
+			Items:   []tactics.ItemStack{{Item: potion, Count: 1}, {Item: tactics.Item{Name: "特効薬", Heal: 20}, Count: 2}},
+			Skill:   snipe,
 		}
 		want := []string{
 			"ミラ",
 			"クラス: アーチャー",
 			"HP 9/17",
-			"力 5 魔力 0",
-			"技 9 幸運 0",
-			"速さ 7 魔防 0",
+			"力 5",
+			"魔力 0",
+			"技 9",
+			"速さ 7",
+			"幸運 0",
 			"守備 3",
+			"魔防 0",
 
 			"移動 5",
 		}
 		equip := []string{
 			"ミラ",
-			"武器: 長弓（弓）",
-			"威力 6　命中 85　射程 2〜3",
-			"必殺 0 ×1", "重さ 0",
+			"武器: 長弓（弓） 必殺 0",
+			"威力 6 命中 85 射程 2〜3 重さ 0",
 			"手持ち: 回復薬 ×1、特効薬 ×2",
 			"スキル: 狙撃",
 			"　移動せずに攻撃すると命中 +20",
@@ -258,8 +264,8 @@ func TestInfoPanel(t *testing.T) {
 			}
 		}
 		for typ, name := range map[tactics.WeaponType]string{tactics.Sword: "剣", tactics.Lance: "槍", tactics.Axe: "斧", tactics.Bow: "弓"} {
-			u.Weapon.Type = typ
-			if got := unitRows(u)[1]; got != "武器: 長弓（"+name+"）" {
+			u.Weapons[0].Type = typ
+			if got := unitRows(u)[1]; got != "武器: 長弓（"+name+"） 必殺 0" {
 				t.Errorf("武器の種類 %v = %q", typ, got)
 			}
 		}
@@ -443,6 +449,8 @@ func TestForecastPanel(t *testing.T) {
 			t.Errorf("反撃なし = %q\nのはず %q", got, want)
 		}
 		// 隣の剣士が攻撃すると、怒りの敵は反撃できるので、必殺と怒りを出す。
+		// 取り消しは 予測 → 相手 → 行動の一覧 → 移動先 → Idle（REV-072 F-01）。
+		c.Cancel()
 		c.Cancel()
 		c.Cancel()
 		c.Cancel()

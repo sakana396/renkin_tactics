@@ -456,9 +456,9 @@ func minimapDeployScenes(t *testing.T) *SceneController {
 		[]defs.TerrainDef{{ID: "p", Name: "平地", Symbol: ".", Cost: 1}},
 		[]defs.ClassDef{{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 20, Mov: 3}}},
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", MinRange: 1, MaxRange: 1}}, nil, nil,
-		[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "lord", Weapon: "s", Lord: true, Level: 1}, {ID: "friend", Name: "仲間", Class: "lord", Weapon: "s", Level: 1}},
+		[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "lord", Weapons: []string{"s"}, Lord: true, Level: 1}, {ID: "friend", Name: "仲間", Class: "lord", Weapons: []string{"s"}, Level: 1}},
 		[]defs.MapDef{{ID: "m", Rows: rows, Slots: []defs.Slot{{X: 31, Y: 31}, {X: 0, Y: 0}, {X: 31, Y: 0}, {X: 0, Y: 31}},
-			Enemies: []defs.EnemyPlacement{{Level: 1, Class: "lord", Weapon: "s", AI: "hold", Boss: true, X: 30, Y: 30}}}},
+			Enemies: []defs.EnemyPlacement{{Level: 1, Class: "lord", Weapons: []string{"s"}, AI: "hold", Boss: true, X: 30, Y: 30}}}},
 		[]defs.ChapterDef{{ID: "c", Map: "m"}}, nil)
 	campaign, err := core.NewCampaign(cat, core.Withdraw)
 	if err != nil {
@@ -561,7 +561,7 @@ func TestInfoPagesLayout(t *testing.T) {
 			checkInfoArea(t, "戦闘", v)
 		}
 		// キャラと兵種の両方のスキル（#124）と手持ちを持つユニットも、「装備・スキル」のページが印の上に収まる。
-		two := tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, HP: 20, Weapon: testLance, Alive: true,
+		two := tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, HP: 20, Weapons: []tactics.Weapon{testLance}, Alive: true,
 			Skill: tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}, ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}},
 			Items: []tactics.ItemStack{{Item: potion, Count: 2}}}
 		checkInfoArea(t, "2 つのスキル", Panel{Unit: &two, Terrain: &forest, Page: PageEquip, Tabs: true}.View())
@@ -596,6 +596,91 @@ func TestInfoPagesLayout(t *testing.T) {
 				t.Errorf("回復の予測とページ %d: %q", page, rows(v))
 			}
 			checkInfoArea(t, "回復の予測", v)
+		}
+	})
+
+	t.Run("TC-FR-MAP-06-07 能力の 7 つの棒、武器と杖の行の桁、5 本の武器と 2 つのスキル（開発者の確認（2026-11-01）で直した）", func(t *testing.T) {
+		x0 := MapSize + infoMargin
+		u := tactics.Unit{Name: "ノエル", ClassName: "錬金術師", Side: tactics.Player, Alive: true, HP: 20,
+			Stats: tactics.Stats{HP: 20, Str: 4, Mag: 7, Skl: 5, Spd: 6, Lck: 9, Def: 3, Res: 8, Mov: 5},
+			Weapons: []tactics.Weapon{
+				{Name: "勇者の斧", Type: tactics.Axe, Might: 6, Hit: 65, Crit: 0, Weight: 14, Strikes: 2, MinRange: 1, MaxRange: 1},
+				{Name: "アーマーキラー", Type: tactics.Sword, Might: 4, Hit: 80, Weight: 7, MinRange: 1, MaxRange: 1},
+				{Name: "ホースキラー", Type: tactics.Lance, Might: 6, Hit: 75, Weight: 10, MinRange: 1, MaxRange: 1},
+				{Name: "キルソード", Type: tactics.Sword, Might: 6, Hit: 85, Crit: 30, Weight: 7, MinRange: 1, MaxRange: 1},
+				{Name: "癒やしの杖", Type: tactics.Staff, Heal: 10, Uses: 15, MaxUses: 15, MinRange: 1, MaxRange: 1},
+			},
+			Skill: tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}, ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}},
+			Items: []tactics.ItemStack{{Item: potion, Count: 2}}}
+		// 「能力」のページ: HP の枠のほかに、力・魔力・技・速さ・幸運・守備・魔防の 7 本を同じ左端・同じ式で 1 列に並べる。
+		v := Panel{Unit: &u, Terrain: &forest, Tabs: true}.View()
+		checkInfoArea(t, "能力", v)
+		var prevY int
+		for i, tc := range []struct {
+			label string
+			value int
+		}{{"力 4", 4}, {"魔力 7", 7}, {"技 5", 5}, {"速さ 6", 6}, {"幸運 9", 9}, {"守備 3", 3}, {"魔防 8", 8}} {
+			b := barOf(t, v, tc.label)
+			tx := textOf(t, v, tc.label)
+			if b.Fill != StatBarLen(tc.value) || b.Frame != 0 || b.X != x0+barX || tx.X != x0 {
+				t.Errorf("%s: 棒 %+v、文 %+v", tc.label, b, tx)
+			}
+			if i > 0 && tx.Y != prevY+lineHeight {
+				t.Errorf("%s の行 y = %d、前の行 %d の次のはず", tc.label, tx.Y, prevY)
+			}
+			prevY = tx.Y
+		}
+		if len(v.Bars) != 8 {
+			t.Errorf("棒の数 = %d、8 のはず", len(v.Bars))
+		}
+		// 「装備・スキル」のページ: 2 回攻撃の武器は「必殺 0 ×2」、2 行目の 3 つの値は決まった桁。
+		u.Equipped = 0
+		v = Panel{Unit: &u, Terrain: &forest, Page: PageEquip, Tabs: true}.View()
+		checkInfoArea(t, "5 本と 2 つのスキル", v)
+		if tx := textOf(t, v, "必殺 0 ×2"); tx.X != x0+weaponSideX {
+			t.Errorf("必殺の x = %d", tx.X)
+		}
+		weapon := textOf(t, v, "武器: 勇者の斧（斧）")
+		for i, s := range []string{"威力 6", "命中 65", "射程 1"} {
+			if tx := textOf(t, v, s); tx.X != x0+weaponCols[i] || tx.Y != weapon.Y+lineHeight {
+				t.Errorf("%q の位置 (%d, %d)", s, tx.X, tx.Y)
+			}
+		}
+		if tx := textOf(t, v, "重さ 14"); tx.X != x0+weaponSideX || tx.Y != weapon.Y+lineHeight {
+			t.Errorf("重さの位置 (%d, %d)", tx.X, tx.Y)
+		}
+		// ほかの 4 本は欄の幅で折り返し、2 つのスキルの説明まで印（y = 336）の上に収まる。
+		all := strings.Join(rows(v), "")
+		for _, name := range []string{"アーマーキラー", "ホースキラー", "キルソード", "癒やしの杖", "怒り、再移動"} {
+			if !strings.Contains(all, name) {
+				t.Errorf("%q がない: %q", name, rows(v))
+			}
+		}
+		// 攻撃の回数が 1 の武器は「×1」を省き、杖は必殺と回数を出さずに回復・射程・残りを同じ桁に置く。
+		u.Equipped = 3
+		v = Panel{Unit: &u, Page: PageEquip}.View()
+		textOf(t, v, "必殺 30")
+		u.Equipped = 4
+		v = Panel{Unit: &u, Page: PageEquip}.View()
+		staff := textOf(t, v, "武器: 癒やしの杖（杖）")
+		for i, s := range []string{"回復 10", "射程 1", "残り 15/15"} {
+			if tx := textOf(t, v, s); tx.X != x0+weaponCols[i] || tx.Y != staff.Y+lineHeight {
+				t.Errorf("杖の %q の位置 (%d, %d)", s, tx.X, tx.Y)
+			}
+		}
+		for _, tx := range v.Texts {
+			if strings.HasPrefix(tx.Text, "必殺") || strings.Contains(tx.Text, "×") && !strings.HasPrefix(tx.Text, "手持ち") {
+				t.Errorf("杖に必殺・回数 %q", tx.Text)
+			}
+		}
+		// 値の桁どうし、右の桁は重ならない。
+		for i := 0; i < 2; i++ {
+			if weaponCols[i]+textWidth("残り 15/15") > weaponCols[i+1] && weaponCols[i]+textWidth("命中 100") > weaponCols[i+1] {
+				t.Errorf("桁 %d が次の桁と重なる", i)
+			}
+		}
+		if weaponCols[2]+textWidth("残り 15/15") > weaponSideX || weaponCols[2]+textWidth("射程 1〜3") > weaponSideX {
+			t.Error("3 つ目の桁が右の桁と重なる")
 		}
 	})
 

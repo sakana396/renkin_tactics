@@ -62,7 +62,7 @@ func TestInfoView(t *testing.T) {
 	leon := func() tactics.Unit {
 		return tactics.Unit{
 			Name: "レオン", ClassName: "ロード", Side: tactics.Player, Lord: true, Alive: true,
-			Stats: leonStats, HP: 20, Weapon: ironSword, Skill: inspire,
+			Stats: leonStats, HP: 20, Weapons: []tactics.Weapon{ironSword}, Skill: inspire,
 			Items: []tactics.ItemStack{{Item: potion, Count: 2}},
 		}
 	}
@@ -70,7 +70,7 @@ func TestInfoView(t *testing.T) {
 	// equip は「装備・スキル」のページ（DES-UI-28）。
 	equip := func(u tactics.Unit) InfoView { return Panel{Unit: &u, Page: PageEquip}.View() }
 
-	t.Run("TC-FR-UNT-09-07 力・技・速さ・守備の棒は値 × 6 px で、120 px で止める。移動は棒にしない", func(t *testing.T) {
+	t.Run("TC-FR-UNT-09-07 力・魔力・技・速さ・幸運・守備・魔防の棒は値 × 6 px で、120 px で止める。移動は棒にしない", func(t *testing.T) {
 		for _, tc := range []struct{ value, want int }{{0, 0}, {1, 6}, {6, 36}, {19, 114}, {20, 120}, {25, 120}} {
 			if got := StatBarLen(tc.value); got != tc.want {
 				t.Errorf("StatBarLen(%d) = %d、%d のはず", tc.value, got, tc.want)
@@ -78,18 +78,20 @@ func TestInfoView(t *testing.T) {
 		}
 		u := leon()
 		u.Stats.Def = 25
+		u.Stats.Mag, u.Stats.Lck, u.Stats.Res = 3, 21, 1
 		v := view(u)
+		// 魔力・幸運・魔防も同じ式の棒（開発者の確認（2026-11-01）で直した。#129）。
 		for _, tc := range []struct {
 			label string
 			want  int
-		}{{"力 6", 36}, {"技 8", 48}, {"速さ 9", 54}, {"守備 25", 120}} {
+		}{{"力 6", 36}, {"魔力 3", 18}, {"技 8", 48}, {"速さ 9", 54}, {"幸運 21", 120}, {"守備 25", 120}, {"魔防 1", 6}} {
 			if b := barOf(t, v, tc.label); b.Fill != tc.want || b.Frame != 0 {
 				t.Errorf("%s の棒 = %+v、長さ %d で枠なしのはず", tc.label, b, tc.want)
 			}
 		}
-		// 棒は HP と 4 つの能力の 5 本だけで、左端がそろう。
-		if len(v.Bars) != 5 {
-			t.Fatalf("棒の数 = %d、5 のはず（移動は数字だけ）", len(v.Bars))
+		// 棒は HP と 7 つの能力の 8 本だけで、左端がそろう。
+		if len(v.Bars) != 8 {
+			t.Fatalf("棒の数 = %d、8 のはず（移動は数字だけ）", len(v.Bars))
 		}
 		mov := textOf(t, v, "移動 5")
 		for _, b := range v.Bars {
@@ -137,7 +139,7 @@ func TestInfoView(t *testing.T) {
 			t.Errorf("HP の行 y = %d が絵と重なる", hp.Y)
 		}
 		// 敵は盤面と同じ敵のタイル、ボスはボスのタイル。
-		enemy := tactics.Unit{Name: "ソルジャー", Side: tactics.Enemy, Stats: soldierSts, HP: 18, Weapon: ironLance}
+		enemy := tactics.Unit{Name: "ソルジャー", Side: tactics.Enemy, Stats: soldierSts, HP: 18, Weapons: []tactics.Weapon{ironLance}}
 		if got := view(enemy).Icons[0].Tile; got != unitTile(enemy) || got != assets.EnemyLance {
 			t.Errorf("敵の絵 = %+v", got)
 		}
@@ -205,7 +207,7 @@ func TestInfoView(t *testing.T) {
 			}
 			// 武器の絵は、武器の名前の行の左に 32 px で描く。
 			u := leon()
-			u.Weapon.Type = tc.typ
+			u.Weapons[0].Type = tc.typ
 			v := equip(u)
 			w := textOf(t, v, "武器: 鉄の剣（"+weaponTypeName(tc.typ)+"）")
 			if len(v.Icons) != 1 || v.Icons[0].Tile != tc.want || v.Icons[0].Size != 32 || v.Icons[0].Y != w.Y || v.Icons[0].X+v.Icons[0].Size > w.X {
@@ -222,8 +224,8 @@ func TestInfoView(t *testing.T) {
 		}
 		// 知らない種類なら武器の絵を描かない（文は出す）。
 		u := leon()
-		u.Weapon.Type = tactics.WeaponType(99)
-		if _, ok := weaponTile(u.Weapon.Type); ok {
+		u.Weapons[0].Type = tactics.WeaponType(99)
+		if _, ok := weaponTile(u.EquippedWeapon().Type); ok {
 			t.Errorf("知らない種類に絵がある")
 		}
 		if v := equip(u); len(v.Icons) != 0 {

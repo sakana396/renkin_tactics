@@ -28,8 +28,8 @@ func TestRewindAction(t *testing.T) {
 	t.Run("TC-FR-BTL-10-01 移動・反撃・追撃と生死を行動前へ戻す", func(t *testing.T) {
 		for _, lethal := range []bool{false, true} {
 			b := snapshotBattle(t)
-			b.units[0].Weapon.Hit = 1000
-			b.units[2].Weapon.Hit = 1000
+			b.units[0].Weapons[0].Hit = 1000
+			b.units[2].Weapons[0].Hit = 1000
 			b.units[2].Skill = Skill{}
 			if lethal {
 				b.units[2].HP = 1
@@ -59,8 +59,8 @@ func TestRewindAction(t *testing.T) {
 		b := snapshotBattle(t)
 		b.units[0].Growth = Growth{100, 100, 100, 100, 100, 0, 0, 0}
 		b.units[2].Stats.Str = 0
-		b.units[2].Weapon.Might = 0
-		b.units[0].Weapon.Hit = 1000
+		b.units[2].Weapons[0].Might = 0
+		b.units[0].Weapons[0].Hit = 1000
 		before := b.Units()
 		rewindAct(t, b, Command{Unit: 0, To: Pos{1, 0}, Action: Attack, Target: 2})
 		u := b.units[0]
@@ -84,11 +84,11 @@ func TestRewindAction(t *testing.T) {
 			b.units[0].HP = 40
 			b.units[1].HP = 40
 			if action == Heal {
-				b.units[0].Weapon = Weapon{Name: "杖", Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 3, MaxUses: 3}
+				b.units[0].setWeapon(Weapon{Name: "杖", Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 3, MaxUses: 3})
 			}
 			before := b.Units()
 			rewindAct(t, b, Command{Unit: 0, To: Pos{0, 0}, Action: action, Target: 1, Item: 0})
-			if action == Heal && (b.units[0].Weapon.Uses != 2 || b.units[1].HP != 50 || b.units[0].Level != 2) {
+			if action == Heal && (b.units[0].Weapons[0].Uses != 2 || b.units[1].HP != 50 || b.units[0].Level != 2) {
 				t.Fatal("杖の消費・回復・経験を通っていない")
 			}
 			if action == UseItem && (b.units[0].Items[0].Count != 1 || b.units[0].HP != 50) {
@@ -256,11 +256,11 @@ func TestRewindRandomAndCount(t *testing.T) {
 	t.Run("TC-FR-BTL-10-06 公開巻き戻しで大盾・成長の乱数を再現", func(t *testing.T) {
 		run := func() ([]Event, battleSnapshot) {
 			b := snapshotBattle(t)
-			b.units[0].Weapon.Hit = 1000
+			b.units[0].Weapons[0].Hit = 1000
 			b.units[2].Skill.Chance = 100
 			// 先行する公開の回復行動の成長で PCG を進め、初期 seed への置換を検出する。
 			b.units[0].HP = 90
-			b.units[1].Weapon = Weapon{Name: "杖", Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 3, MaxUses: 3}
+			b.units[1].setWeapon(Weapon{Name: "杖", Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 3, MaxUses: 3})
 			rewindAct(t, b, Command{Unit: 1, To: Pos{0, 1}, Action: Heal, Target: 0})
 			cmd := Command{Unit: 0, To: Pos{1, 0}, Action: Attack, Target: 2}
 			first := rewindAct(t, b, cmd)
@@ -411,8 +411,8 @@ func TestRewindErrorsAndBranch(t *testing.T) {
 		for _, loss := range []bool{false, true} {
 			b := snapshotBattle(t)
 			b.units[0].Pos = Pos{1, 0}
-			b.units[0].Weapon.Hit = 1000
-			b.units[2].Weapon.Hit = 1000
+			b.units[0].Weapons[0].Hit = 1000
+			b.units[2].Weapons[0].Hit = 1000
 			b.units[2].Skill = Skill{}
 			if loss {
 				b.units[0].HP = 1

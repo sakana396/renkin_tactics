@@ -33,6 +33,13 @@ const HealTargeting State = Over + 1
 // ほかのユニットは操作できず、番も終えられない。
 const Canto State = HealTargeting + 1
 
+// WeaponMenu は攻撃に使う武器を選ぶ状態、StaffMenu は回復に使う杖を選ぶ状態（DES-UI-26、DES-IT06 12.1 節）。
+// 決定するまで core の装備は変えない。
+const (
+	WeaponMenu State = Canto + 1
+	StaffMenu  State = Canto + 2
+)
+
 // FramesPerEvent は、出来事 1 つを表示するフレームの数（DES-UI-04）。
 const FramesPerEvent = 20
 
@@ -61,6 +68,10 @@ type Controller struct {
 	unit   int
 	dest   tactics.Pos
 	target int
+	// weapon は攻撃・回復に選んだ武器の列の添字（選んでいなければ -1）。
+	// weaponMenu は武器・杖の一覧を出したこと（取り消しで一覧へ戻るか、行動の一覧へ戻るかを分ける。DES-IT06 12.1 節）。
+	weapon     int
+	weaponMenu bool
 	// watched は Idle でクリックして範囲を出し続けている敵（いなければ -1）。
 	watched int
 	// cursorX と cursorY は、カーソルの画面の座標（DES-UI-08）。まだ知らなければ盤面の外の (-1, -1)。
@@ -92,7 +103,7 @@ type Controller struct {
 
 // NewController は、newBattle で戦闘を作り、初めの出来事の再生から始める（DES-UI-02、DES-UI-04）。
 func NewController(newBattle Factory) (*Controller, error) {
-	c := &Controller{target: -1, watched: -1, cursorX: -1, cursorY: -1}
+	c := &Controller{target: -1, weapon: -1, watched: -1, cursorX: -1, cursorY: -1}
 	b, events, err := newBattle()
 	if err != nil {
 		return nil, err
@@ -167,8 +178,9 @@ func (c *Controller) Click(p tactics.Pos) {
 				continue
 			}
 			if c.target == t {
-				// 同じ相手をもう一度クリックすると決定する。
-				c.act(tactics.Command{Unit: c.unit, To: c.dest, Action: action, Target: t})
+				// 同じ相手をもう一度クリックすると決定する。選んだ武器・杖をコマンドで渡す（DES-ITM-02）。
+				w := c.weapon
+				c.act(tactics.Command{Unit: c.unit, To: c.dest, Action: action, Target: t, Weapon: &w})
 			} else {
 				c.target = t
 			}
@@ -189,9 +201,9 @@ func (c *Controller) ChooseAction(a tactics.Action) {
 	case tactics.Wait:
 		c.act(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Wait})
 	case tactics.Attack:
-		c.state, c.target = Targeting, -1
+		c.chooseWeapons(c.attackWeapons(), WeaponMenu, Targeting)
 	case tactics.Heal:
-		c.state, c.target = HealTargeting, -1
+		c.chooseWeapons(c.staffWeapons(), StaffMenu, HealTargeting)
 	case tactics.UseItem:
 		c.state = ItemMenu
 	}
@@ -203,6 +215,46 @@ func (c *Controller) ChooseAction(a tactics.Action) {
 		if len(targets) > 0 {
 			c.camera.Focus(c.battle.Units()[targets[0]].Pos)
 		}
+	}
+}
+
+// chooseWeapons は、攻撃の武器か杖の候補 ws から、相手を選ぶ状態 next か一覧の状態 menu に進む（DES-UI-26、DES-IT06 12.1 節）。
+// 候補が 1 本だけなら一覧を飛ばし、その 1 本で相手を選ぶ（取り消すと行動の一覧へ戻る）。
+func (c *Controller) chooseWeapons(ws []int, menu, next State) {
+	c.target = -1
+	if len(ws) == 1 {
+		c.state, c.weapon, c.weaponMenu = next, ws[0], false
+		return
+	}
+	c.state, c.weapon, c.weaponMenu = menu, -1, true
+}
+
+// ChooseWeapon は、武器・杖の一覧の k 行目を選んだときの処理（DES-UI-26）。WeaponMenu・StaffMenu のときだけ受け付ける。
+// 選んだ武器で届く相手がいなければ、理由を知らせて一覧に残る。core の装備は変えない。
+func (c *Controller) ChooseWeapon(k int) {
+	if c.rewind.open || c.battle.NeedsResume() {
+		return
+	}
+	ws, next := c.attackWeapons(), Targeting
+	if c.state == StaffMenu {
+		ws, next = c.staffWeapons(), HealTargeting
+	} else if c.state != WeaponMenu {
+		return
+	}
+	if k < 0 || k >= len(ws) {
+		return
+	}
+	if reason := c.weaponReason(ws[k]); reason != "" {
+		c.message = reason
+		return
+	}
+	c.state, c.weapon, c.target, c.message = next, ws[k], -1, ""
+	targets := c.Targets()
+	if next == HealTargeting {
+		targets = c.HealTargets()
+	}
+	if len(targets) > 0 {
+		c.camera.Focus(c.battle.Units()[targets[0]].Pos)
 	}
 }
 
@@ -235,8 +287,24 @@ func (c *Controller) Cancel() {
 	case Moved:
 		c.state = Selected
 	case Targeting, HealTargeting:
-		c.state, c.target = Moved, -1
+		// 予測 → 相手 → 武器 → 行動の一覧 の順に戻る（DES-IT06 12.1 節、UC-02 5c）。
+		// 相手を選んで予測を出しているときは、相手の選択を外すだけにする。一覧を飛ばしたときは行動の一覧へ戻る。
+		if c.target >= 0 {
+			c.target = -1
+			return
+		}
+		switch {
+		case c.weaponMenu && c.state == Targeting:
+			c.state = WeaponMenu
+		case c.weaponMenu:
+			c.state = StaffMenu
+		default:
+			c.state = Moved
+		}
+		c.target, c.weapon = -1, -1
 		c.camera.Focus(c.dest)
+	case WeaponMenu, StaffMenu:
+		c.state, c.weapon, c.weaponMenu, c.message = Moved, -1, false, ""
 	case ItemMenu:
 		c.state = Moved
 	case Canto:
@@ -335,7 +403,7 @@ func (c *Controller) Units() []tactics.Unit {
 	}
 	units := c.battle.Units()
 	switch c.state {
-	case Moved, Targeting, HealTargeting, ItemMenu:
+	case Moved, Targeting, HealTargeting, ItemMenu, WeaponMenu, StaffMenu:
 		units[c.unit].Pos = c.dest
 	}
 	return units
@@ -361,27 +429,109 @@ func (c *Controller) Actions() []tactics.Action {
 	return append(out, tactics.Wait)
 }
 
-// Targets は、選んだ自軍が移動先から攻撃できる、生きている敵の添字を返す（DES-UI-02、DES-BTL-04）。
-// Moved・Targeting のときだけ返す。
+// Targets は、選んだ自軍が移動先から攻撃できる、生きている敵の添字を返す（DES-UI-02、DES-BTL-04、DES-ITM-02）。
+// Targeting では選んだ武器で届く敵、Moved では手持ちのどれかの攻撃の武器で届く敵を返す。ほかの状態では nil。
+// 届くかは core の予測の検証で決め、画面で射程を計算し直さない。
 func (c *Controller) Targets() []int {
-	if c.state != Moved && c.state != Targeting {
-		return nil
+	switch c.state {
+	case Targeting:
+		return c.targetsWith(c.weapon)
+	case Moved:
+		return unionTargets(c.attackWeapons(), c.targetsWith)
 	}
-	units := c.battle.Units()
-	w := units[c.unit].Weapon
-	if w.Type == tactics.Staff {
-		return nil
-	}
+	return nil
+}
+
+// targetsWith は、武器の列の w 番目で移動先から攻撃できる敵の添字を、添字の順に返す（DES-ITM-02）。
+func (c *Controller) targetsWith(w int) []int {
 	var out []int
-	for i, u := range units {
-		if !u.Alive || u.Side == units[c.unit].Side {
-			continue
-		}
-		if d := distance(c.dest, u.Pos); d >= w.MinRange && d <= w.MaxRange {
+	for i := range c.battle.Units() {
+		if _, err := c.battle.Forecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Attack, Target: i, Weapon: &w}); err == nil {
 			out = append(out, i)
 		}
 	}
 	return out
+}
+
+// unionTargets は、武器の候補 ws のどれかで届く相手を、添字の順に重ねずに返す。
+func unionTargets(ws []int, with func(int) []int) []int {
+	seen := map[int]bool{}
+	for _, w := range ws {
+		for _, t := range with(w) {
+			seen[t] = true
+		}
+	}
+	var out []int
+	for i := 0; len(seen) > 0; i++ {
+		if seen[i] {
+			out = append(out, i)
+			delete(seen, i)
+		}
+	}
+	return out
+}
+
+// attackWeapons は選んだ自軍の攻撃の武器（杖を除く）の添字を、武器の列の順に返す（DES-ITM-02）。
+func (c *Controller) attackWeapons() []int {
+	var out []int
+	for k, w := range c.battle.Units()[c.unit].Weapons {
+		if w.Type != tactics.Staff {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+// staffWeapons は選んだ自軍の杖の添字を、武器の列の順に返す（DES-ITM-02）。
+func (c *Controller) staffWeapons() []int {
+	var out []int
+	for k, w := range c.battle.Units()[c.unit].Weapons {
+		if w.Type == tactics.Staff {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+// weaponReason は、武器の列の w 番目を選べない理由を返す（DES-IT06 12.1 節）。選べるなら空。
+func (c *Controller) weaponReason(w int) string {
+	weapon := c.battle.Units()[c.unit].Weapons[w]
+	if weapon.Type == tactics.Staff {
+		if weapon.Uses < 1 {
+			return fmt.Sprintf("%s: %s", weapon.Name, tactics.ErrNoUses.Error())
+		}
+		if len(c.healTargetsWith(w)) == 0 {
+			return fmt.Sprintf("%s で回復できる味方がいません", weapon.Name)
+		}
+		return ""
+	}
+	if len(c.targetsWith(w)) == 0 {
+		return fmt.Sprintf("%s の射程（%s）に届く敵がいません", weapon.Name, rangeText(weapon))
+	}
+	return ""
+}
+
+// menuWeapons は、今の一覧に並べる武器の添字を返す（WeaponMenu は攻撃の武器、StaffMenu は杖）。
+func (c *Controller) menuWeapons() []int {
+	switch c.state {
+	case WeaponMenu:
+		return c.attackWeapons()
+	case StaffMenu:
+		return c.staffWeapons()
+	}
+	return nil
+}
+
+// hoveredWeapon は、一覧の上でカーソルが指している武器の添字を返す。なければ -1。
+func (c *Controller) hoveredWeapon() int {
+	ws := c.menuWeapons()
+	if len(ws) == 0 {
+		return -1
+	}
+	if i := HitMenu(c.Camera().MenuRects(c.dest, len(ws)), c.cursorX, c.cursorY); i >= 0 {
+		return ws[i]
+	}
+	return -1
 }
 
 // Overlay は移動範囲と武器の射程を返す（DES-UI-03、DES-UI-08、DES-UI-18）。
@@ -404,9 +554,21 @@ func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
 			blue[p] = true
 		}
 		return blue, nil
-	case Moved, Targeting, HealTargeting:
+	case Moved, Targeting, HealTargeting, WeaponMenu, StaffMenu:
+		// 相手を選んでいる間と一覧の上の行は、選んだ武器 1 本の射程、ほかは攻撃の武器を合わせた射程（DES-ITM-02）。
+		cells := c.battle.AttackRange(c.unit, c.dest)
+		w := c.weapon
+		if c.state == WeaponMenu || c.state == StaffMenu {
+			w = c.hoveredWeapon()
+			if staffs := c.staffWeapons(); w < 0 && c.state == StaffMenu && len(staffs) > 0 {
+				w = staffs[0]
+			}
+		}
+		if w >= 0 {
+			cells = c.battle.WeaponRange(c.unit, c.dest, w)
+		}
 		red = map[tactics.Pos]bool{}
-		for _, p := range c.battle.AttackRange(c.unit, c.dest) {
+		for _, p := range cells {
 			red[p] = true
 		}
 		return nil, red
@@ -582,14 +744,23 @@ func abs(n int) int {
 	return n
 }
 
-// HealTargets は移動先から回復できる味方を core の検証で選ぶ（DES-UI-18）。
+// HealTargets は移動先から回復できる味方を core の検証で選ぶ（DES-UI-18、DES-ITM-02）。
+// HealTargeting では選んだ杖、Moved では手持ちのどれかの杖で回復できる味方を返す。
 func (c *Controller) HealTargets() []int {
-	if c.state != Moved && c.state != HealTargeting {
-		return nil
+	switch c.state {
+	case HealTargeting:
+		return c.healTargetsWith(c.weapon)
+	case Moved:
+		return unionTargets(c.staffWeapons(), c.healTargetsWith)
 	}
+	return nil
+}
+
+// healTargetsWith は、武器の列の w 番目の杖で移動先から回復できる味方の添字を返す（DES-ITM-02）。
+func (c *Controller) healTargetsWith(w int) []int {
 	var out []int
 	for i := range c.battle.Units() {
-		if _, err := c.battle.HealForecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Heal, Target: i}); err == nil {
+		if _, err := c.battle.HealForecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Heal, Target: i, Weapon: &w}); err == nil {
 			out = append(out, i)
 		}
 	}
@@ -597,9 +768,18 @@ func (c *Controller) HealTargets() []int {
 }
 
 // RangeStyle は表示中の射程の色を返す。敵の射程は赤のままにする（DES-UI-18、DES-UI-08）。
+// 攻撃の武器の赤と、選んだ杖の緑を分ける（DES-IT06 6.1 節）。移動先を選ぶ前と行動の一覧では、攻撃の武器がなければ緑。
 func (c *Controller) RangeStyle() InfoStyle {
-	if c.shownEnemy() < 0 && (c.state == Selected || c.state == Moved || c.state == HealTargeting) && c.battle.Units()[c.unit].Weapon.Type == tactics.Staff {
+	if c.shownEnemy() >= 0 {
+		return StyleBad
+	}
+	switch c.state {
+	case HealTargeting, StaffMenu:
 		return StyleGood
+	case Selected, Moved:
+		if len(c.attackWeapons()) == 0 {
+			return StyleGood
+		}
 	}
 	return StyleBad
 }

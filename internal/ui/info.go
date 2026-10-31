@@ -120,7 +120,8 @@ func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 	if f, ok := c.attackForecast(); ok {
 		// 相手は Targets から選んでいるので、ふつうは誤りにならない。誤りなら予測を出さない。
 		p.Forecast = ForecastRows(f, units[c.unit].Boss, units[c.target].Boss)
-		p.ForecastWeapons = [2]tactics.WeaponType{units[c.unit].Weapon.Type, units[c.target].Weapon.Type}
+		// 攻撃する側は選んだ武器、守る側は装備している武器（DES-ITM-02）。
+		p.ForecastWeapons = [2]tactics.WeaponType{units[c.unit].Weapons[c.weapon].Type, units[c.target].EquippedWeapon().Type}
 		a, d := ForecastAfter(f)
 		p.ForecastAfter = [2]int{a, d}
 		p.Emphasis = forecastEmphasis(f)
@@ -188,6 +189,8 @@ const (
 	WeaponIconSize = 2 * assets.TileSize
 	// weaponTextX は、武器の絵の右に並べる文の位置。
 	weaponTextX = WeaponIconSize + 4
+	// weaponSideX は武器の必殺・重さを置く右の桁（DES-UI-28）。
+	weaponSideX = 220
 	// skillNameX はスキルの名前の位置（「スキル:」の右）。
 	skillNameX = 48
 	// barX は能力の棒の左端。
@@ -204,6 +207,9 @@ const (
 	forecastAttackX = 80
 	forecastDefendX = 200
 )
+
+// weaponCols は武器の 2 行目の 3 つの値の桁（情報欄の左端から。DES-UI-28）。攻撃の武器と杖で同じ桁を使う。
+var weaponCols = [3]int{weaponTextX, weaponTextX + 60, weaponTextX + 120}
 
 // InfoStyle は情報欄の文の色の種類（DES-UI-06）。描画の側で色に読み替える。
 type InfoStyle int
@@ -299,7 +305,8 @@ func (p Panel) View() InfoView {
 		}
 		y += lineHeight
 	}
-	if p.Terrain != nil {
+	// 回復の予測を開いている間は、地形を出さずに予測とユニットのページを 320×360 に収める（DES-UI-28）。
+	if p.Terrain != nil && p.Heal == nil {
 		for _, s := range TerrainLines(*p.Terrain) {
 			v.text(x, y, s, StylePlain)
 			y += lineHeight
@@ -388,22 +395,18 @@ func (v *InfoView) addStats(u tactics.Unit, x, y int) int {
 	}
 	y += PortraitSize + blockGap
 
-	// HP は枠に割合で塗り、力・技・速さ・守備は値に比例した棒にする。移動は数字だけ。
+	// HP は枠に割合で塗り、力・魔力・技・速さ・幸運・守備・魔防の 7 つは、同じ式（StatBarLen）で値に比例した棒にして
+	// 1 列に並べる（DES-UI-06。開発者の確認（2026-11-01）で、魔力・幸運・魔防にも棒を付けた）。移動は数字だけ。
 	s := u.Stats
 	v.text(x, y, fmt.Sprintf("HP %d/%d", u.HP, s.HP), StylePlain)
 	v.Bars = append(v.Bars, InfoBar{X: x + barX, Y: y + (lineHeight-barHeight)/2, Fill: HPBarLen(u.HP, s.HP), Frame: BarMax})
 	y += lineHeight
-	for i, st := range []struct {
+	for _, st := range []struct {
 		name  string
 		value int
-	}{{"力", s.Str}, {"技", s.Skl}, {"速さ", s.Spd}, {"守備", s.Def}} {
+	}{{"力", s.Str}, {"魔力", s.Mag}, {"技", s.Skl}, {"速さ", s.Spd}, {"幸運", s.Lck}, {"守備", s.Def}, {"魔防", s.Res}} {
 		v.text(x, y, fmt.Sprintf("%s %d", st.name, st.value), StylePlain)
 		v.Bars = append(v.Bars, InfoBar{X: x + barX, Y: y + (lineHeight-barHeight)/2, Fill: StatBarLen(st.value)})
-		if i < 3 {
-			labels := []string{"魔力", "幸運", "魔防"}
-			values := []int{s.Mag, s.Lck, s.Res}
-			v.text(x+200, y, fmt.Sprintf("%s %d", labels[i], values[i]), StylePlain)
-		}
 		y += lineHeight
 	}
 	v.text(x, y, fmt.Sprintf("移動 %d", s.Mov), StylePlain)
@@ -416,23 +419,41 @@ func (v *InfoView) addEquip(u tactics.Unit, x, y int) int {
 	v.text(x, y, unitName(u), StyleTitle)
 	y += lineHeight + blockGap
 
-	// 武器の行は、種類の絵を左に置き、右に名前と威力・命中・射程の 2 行を並べる。
-	w := u.Weapon
+	// 武器の行は、種類の絵を左に置き、右の 1 行目に名前と種類、2 行目に 3 つの値を決まった桁（weaponCols）に並べる。
+	// 攻撃の武器は「威力」「命中」「射程」、杖は「回復」「射程」「残り」を同じ桁に置く。右の桁（weaponSideX）には、
+	// 攻撃の武器なら 1 行目に必殺（2 回攻撃なら「×2」を添える。回数 1 の「×1」は予測と同じく省く）、どちらも 2 行目に重さを出す。
+	// 杖には必殺と攻撃の回数を出さない（開発者の確認（2026-11-01）で直した）。
+	w := u.EquippedWeapon()
 	if t, ok := weaponTile(w.Type); ok {
 		v.Icons = append(v.Icons, InfoIcon{X: x, Y: y, Size: WeaponIconSize, Tile: t})
 	}
 	v.text(x+weaponTextX, y, fmt.Sprintf("武器: %s（%s）", w.Name, weaponTypeName(w.Type)), StylePlain)
+	cols := []string{fmt.Sprintf("威力 %d", w.Might), fmt.Sprintf("命中 %d", w.Hit), "射程 " + rangeText(w)}
 	if w.Type == tactics.Staff {
-		v.text(x+weaponTextX, y+lineHeight, fmt.Sprintf("回復 %d　射程 %s　残り %d/%d", w.Heal, rangeText(w), w.Uses, w.MaxUses), StylePlain)
+		cols = []string{fmt.Sprintf("回復 %d", w.Heal), "射程 " + rangeText(w), fmt.Sprintf("残り %d/%d", w.Uses, w.MaxUses)}
 	} else {
-		v.text(x+weaponTextX, y+lineHeight, fmt.Sprintf("威力 %d　命中 %d　射程 %s", w.Might, w.Hit, rangeText(w)), StylePlain)
+		crit := fmt.Sprintf("必殺 %d", w.Crit)
+		if w.Strikes > 1 {
+			crit += fmt.Sprintf(" ×%d", w.Strikes)
+		}
+		v.text(x+weaponSideX, y, crit, StylePlain)
 	}
-	v.text(x+200, y, fmt.Sprintf("必殺 %d ×%d", w.Crit, max(1, w.Strikes)), StylePlain)
-	v.text(x+200, y+lineHeight, fmt.Sprintf("重さ %d", w.Weight), StylePlain)
+	for i, c := range cols {
+		v.text(x+weaponCols[i], y+lineHeight, c, StylePlain)
+	}
+	v.text(x+weaponSideX, y+lineHeight, fmt.Sprintf("重さ %d", w.Weight), StylePlain)
 	y += WeaponIconSize
 
 	v.text(x, y, "手持ち: "+itemsText(u.Items), StylePlain)
 	y += lineHeight
+	// 装備のほかに持っている武器を、武器の列の順に出す（DES-UI-26、DES-IT06 12.2 節）。1 本だけなら出さない。
+	// 長い名前が並んで欄の幅を超えるときは折り返す（5 本を持っても欄に収める。DES-UI-28）。
+	if others := otherWeapons(u); others != "" {
+		for _, line := range wrapWidth("ほかの武器: "+others, InfoWidth-2*infoMargin) {
+			v.text(x, y, line, StylePlain)
+			y += lineHeight
+		}
+	}
 
 	// スキルは名前を黄で 1 行に出し、次の行に効果の文を出す。キャラのスキルのあとに兵種のスキルを並べる（DES-IT06 12.2 節）。
 	v.text(x, y, "スキル:", StyleLabel)
@@ -471,7 +492,7 @@ func unitName(u tactics.Unit) string {
 	return u.Name
 }
 
-// StatBarLen は、力・技・速さ・守備の棒の長さ（px）を返す（DES-UI-06）。値 × 6 で、BarMax（値 20）で止める。
+// StatBarLen は、力・魔力・技・速さ・幸運・守備・魔防の棒の長さ（px）を返す（DES-UI-06）。値 × 6 で、BarMax（値 20）で止める。
 func StatBarLen(value int) int {
 	return min(max(value, 0)*statBarUnit, BarMax)
 }
@@ -620,7 +641,8 @@ func (c *Controller) attackForecast() (tactics.Forecast, bool) {
 	if c.state != Targeting || c.target < 0 {
 		return tactics.Forecast{}, false
 	}
-	f, err := c.battle.Forecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Attack, Target: c.target})
+	w := c.weapon
+	f, err := c.battle.Forecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Attack, Target: c.target, Weapon: &w})
 	return f, err == nil
 }
 
@@ -754,6 +776,17 @@ func rangeText(w tactics.Weapon) string {
 	return fmt.Sprintf("%d〜%d", w.MinRange, w.MaxRange)
 }
 
+// otherWeapons は、装備していない武器の名前を武器の列の順に並べる（DES-ITM-02）。なければ空。
+func otherWeapons(u tactics.Unit) string {
+	var names []string
+	for k, w := range u.Weapons {
+		if k != u.Equipped {
+			names = append(names, w.Name)
+		}
+	}
+	return strings.Join(names, "、")
+}
+
 // itemsText は手持ちの名前と数を並べる。なければ「なし」。
 func itemsText(items []tactics.ItemStack) string {
 	if len(items) == 0 {
@@ -788,7 +821,8 @@ func (c *Controller) healForecast() (tactics.HealForecast, bool) {
 	if c.state != HealTargeting || c.target < 0 {
 		return tactics.HealForecast{}, false
 	}
-	f, err := c.battle.HealForecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Heal, Target: c.target})
+	w := c.weapon
+	f, err := c.battle.HealForecast(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Heal, Target: c.target, Weapon: &w})
 	return f, err == nil
 }
 

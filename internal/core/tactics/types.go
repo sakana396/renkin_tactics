@@ -120,6 +120,8 @@ type Stats struct {
 // Weapon は武器（DES-BTL-01、DES-BTL-09）。射程はマンハッタン距離の最小と最大。
 // Heal・Uses・MaxUses は杖の回復量・残りの使用回数・使用回数の最大で、杖でなければどれも 0（DES-HEL-01）。
 type Weapon struct {
+	// ID は tactics の外（core）へ返すための武器の ID。定義を探すのには使わない（DES-ITM-02）。
+	ID            string
 	Name          string
 	Type          WeaponType
 	Crit          int
@@ -185,12 +187,18 @@ type Growth struct {
 
 // UnitSetup は、戦闘を始めるときのユニット 1 体の入力（DES-BTL-01）。HP は Stats.HP から始まる。
 // Level・Exp・Growth はレベル・経験・成長率（DES-GRW-03）。Level が 0 のユニットは経験を得ない。
+//
+// 武器は Weapons（武器の列）と Equipped（初めの装備の添字）で渡す（DES-ITM-02）。AllowedWeaponTypes は兵種が持てる武器の種類。
+// Weapon は武器 1 本の古い入力のための互換の入口で、Weapons が空のときだけ Weapons の 1 本に直す。
+// 両方を指定したら New が拒む。Weapon で渡して AllowedWeaponTypes を省いたときだけ、その 1 本の種類を持てる種類にする。
 // 敵の Level は 1〜20 で、Exp と Growth は 0（DES-IT06 7.3 節）。
 type UnitSetup struct {
-	Name      string
-	Tags      []string // 兵種の特効分類（DES-DAT-04）。
-	Weapons   []Weapon // 後続の持ち替え用の列（DES-ITM-02）。
-	ClassName string
+	Name               string
+	Tags               []string // 兵種の特効分類（DES-DAT-04）。
+	Weapons            []Weapon // 手持ちの武器の列（DES-ITM-02）。
+	Equipped           int      // 装備している武器の添字（DES-ITM-02）。
+	AllowedWeaponTypes []WeaponType
+	ClassName          string
 	// StaffHealCap は兵種の杖の回復量の上限。0 なら上限なし（DES-HEL-01、DES-IT06 7.1 節）。
 	StaffHealCap int
 	Side         Side
@@ -229,11 +237,16 @@ type Setup struct {
 
 // Unit は戦闘の中のユニット（DES-BTL-01）。倒れたユニットは Alive が偽になり、マップから外れる。
 // Level・Exp・Growth はレベル・経験・成長率（DES-GRW-03）。
+//
+// Weapons は手持ちの武器の列、Equipped は装備している（最後に攻撃に使った）武器の添字（DES-ITM-02）。
+// 装備している武器は EquippedWeapon で引く。AllowedWeaponTypes は兵種が持てる武器の種類。
 type Unit struct {
-	Name      string
-	Tags      []string // 兵種の特効分類（DES-DAT-04）。
-	Weapons   []Weapon // 後続の持ち替え用の列（DES-ITM-02）。
-	ClassName string
+	Name               string
+	Tags               []string // 兵種の特効分類（DES-DAT-04）。
+	Weapons            []Weapon // 手持ちの武器の列（DES-ITM-02）。
+	Equipped           int      // 装備している武器の添字（DES-ITM-02）。
+	AllowedWeaponTypes []WeaponType
+	ClassName          string
 	// StaffHealCap は UnitSetup から写す兵種の杖の回復量の上限（DES-HEL-01）。
 	StaffHealCap int
 	Side         Side
@@ -243,7 +256,6 @@ type Unit struct {
 	Growth       Growth
 	HP           int
 	Pos          Pos
-	Weapon       Weapon
 	Items        []ItemStack
 	Skill        Skill
 	// ClassSkills は UnitSetup から写す兵種のスキル（DES-BTL-10）。
@@ -260,19 +272,39 @@ type Unit struct {
 
 // Command は、自軍のユニット 1 体の移動と行動（DES-BTL-01、DES-BTL-04）。
 // Target は Attack のとき攻撃する相手、Heal のとき回復する味方の添字（DES-HEL-01）。Item は UseItem のときだけ使う。
+//
+// Weapon は Attack・Heal で使う武器の列の添字（DES-ITM-02）。nil なら今の装備を使う。Wait・UseItem では nil にする。
 type Command struct {
 	Unit   int
 	To     Pos
 	Action Action
 	Target int
 	Item   int
+	Weapon *int
+}
+
+// EquippedWeapon は装備している武器を返す（DES-ITM-02）。添字が列の外ならゼロ値を返す。
+// 返す値は写しで、変えても本物は変わらない。
+func (u Unit) EquippedWeapon() Weapon {
+	if u.Equipped < 0 || u.Equipped >= len(u.Weapons) {
+		return Weapon{}
+	}
+	return u.Weapons[u.Equipped].clone()
+}
+
+// weapon は装備している武器を、写さずに返す（tactics の中の計算用）。
+func (u Unit) weapon() Weapon {
+	if u.Equipped < 0 || u.Equipped >= len(u.Weapons) {
+		return Weapon{}
+	}
+	return u.Weapons[u.Equipped]
 }
 
 // clone はユニットの写しを作る（手持ちの列も写す）。
 func (u Unit) clone() Unit {
 	u.Tags = append([]string(nil), u.Tags...)
-	u.Weapon = u.Weapon.clone()
 	u.Weapons = cloneWeapons(u.Weapons)
+	u.AllowedWeaponTypes = append([]WeaponType(nil), u.AllowedWeaponTypes...)
 	u.ClassSkills = cloneSkills(u.ClassSkills)
 	if u.Items != nil {
 		u.Items = append([]ItemStack(nil), u.Items...)
@@ -280,13 +312,14 @@ func (u Unit) clone() Unit {
 	return u
 }
 
-// clone は UnitSetup のスライスの欄（特効の分類・武器と武器の列の特効・手持ち）を深く写し、入力から独立させる（DES-RWD-01）。
+// clone は UnitSetup のスライスの欄（特効の分類・武器と武器の列の特効・持てる種類・手持ち）を深く写し、入力から独立させる（DES-RWD-01）。
 // ターンの増援と出来事の増援の定義を写すときに使う。UnitSetup にスライスの欄を足したら、ここでも写す。
 func (us UnitSetup) clone() UnitSetup {
 	us.Items = append([]ItemStack(nil), us.Items...)
 	us.Tags = append([]string(nil), us.Tags...)
 	us.Weapon = us.Weapon.clone()
 	us.Weapons = cloneWeapons(us.Weapons)
+	us.AllowedWeaponTypes = append([]WeaponType(nil), us.AllowedWeaponTypes...)
 	us.ClassSkills = cloneSkills(us.ClassSkills)
 	return us
 }

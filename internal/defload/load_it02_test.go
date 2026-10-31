@@ -150,9 +150,10 @@ func TestLoadIt02(t *testing.T) {
 				"game.toml: stock[0].count: 1 以上にしてください（0）",
 				`chapters.toml: chapters[0].reward[1].item: アイテム "potion" を 2 回書いています（chapters[0].reward[0] と同じ）`,
 			}},
-		{"TC-FR-SYS-04-35 手持ちの数の合計が 5、在庫の数が 1 なら通る",
+		// 反復 6 で、武器の本数と道具の個数が 5 枠を分け合う（DES-IT06 6.1 節）。レオンは武器 1 本なので道具 4 個で 5 枠ちょうど。
+		{"TC-FR-SYS-04-35 手持ちの枠の合計が 5（武器 1 本 ＋ 道具 4 個）、在庫の数が 1 なら通る",
 			[]edit{
-				replace("characters.toml", `items = [{ item = "potion", count = 2 }]`, `items = [{ item = "potion", count = 2 }, { item = "potion", count = 3 }]`),
+				replace("characters.toml", `items = [{ item = "potion", count = 2 }]`, `items = [{ item = "potion", count = 2 }, { item = "potion", count = 2 }]`),
 				appendTo("game.toml", `stock = [{ item = "potion", count = 1 }]`),
 			},
 			nil},

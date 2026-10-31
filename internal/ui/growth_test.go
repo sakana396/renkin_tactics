@@ -144,7 +144,7 @@ func TestLevelInfo(t *testing.T) {
 			{tactics.Player, 19, 99, "Lv 19　経験 99"}, {tactics.Player, 20, 0, "Lv 20　経験 ―"},
 			{tactics.Enemy, 0, 0, ""}, {tactics.Player, 0, 0, ""},
 		} {
-			u := tactics.Unit{Name: "レオン", ClassName: "ロード", Side: tc.side, Level: tc.level, Exp: tc.exp, Stats: leonStats, HP: 20, Weapon: ironSword}
+			u := tactics.Unit{Name: "レオン", ClassName: "ロード", Side: tc.side, Level: tc.level, Exp: tc.exp, Stats: leonStats, HP: 20, Weapons: []tactics.Weapon{ironSword}}
 			v := (Panel{Unit: &u}).View()
 			var got []string
 			for _, tx := range v.Texts {
