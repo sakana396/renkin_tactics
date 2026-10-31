@@ -10,10 +10,11 @@ import (
 // unreachable は、どの自軍にもたどり着けないマスの近さ（無限大）。
 const unreachable = math.MaxInt
 
-// candidate は攻撃の候補 1 つ（DES-AI-01）。敵が to に移動して target を攻撃する。
+// candidate は攻撃の候補 1 つ（DES-AI-01）。敵が to に移動し、武器の列の weapon 番目で target を攻撃する（DES-ITM-02）。
 type candidate struct {
 	to     Pos
 	target int
+	weapon int
 	// kill は倒せるか（ダメージ × 攻撃の回数 ≧ 相手の今の HP。必殺と大盾は数えない）。
 	kill bool
 	// gain は ダメージ × 命中率 × 攻撃の回数。
@@ -22,7 +23,7 @@ type candidate struct {
 	risk int
 }
 
-// better は、候補 c が候補 o よりよいかを返す（DES-AI-01 の比べ方 1〜5）。乱数は使わない。
+// better は、候補 c が候補 o よりよいかを返す（DES-AI-01 の比べ方 1〜5、DES-IT06 10.1 節の 6）。乱数は使わない。
 func (c candidate) better(o candidate) bool {
 	// 1. 倒せるものを先にする。
 	if c.kill != o.kill {
@@ -41,7 +42,11 @@ func (c candidate) better(o candidate) bool {
 		return c.target < o.target
 	}
 	// 5. 移動先のマスの y が小さいもの、同じなら x が小さいもの。
-	return posLess(c.to, o.to)
+	if c.to != o.to {
+		return posLess(c.to, o.to)
+	}
+	// 6. 武器の列の添字が小さいもの。
+	return c.weapon < o.weapon
 }
 
 // posLess は、a が b より y が小さいか、y が同じで x が小さいかを返す。
@@ -63,6 +68,8 @@ func (b *Battle) actEnemy(events []Event, unit int) []Event {
 		b.units[unit].AI = Charge
 		from := b.units[unit].Pos
 		events = b.moveEnemy(events, unit, best.to)
+		// 攻撃に使った武器を装備する（DES-ITM-02）。
+		b.units[unit].Equipped = best.weapon
 		return b.attack(events, unit, best.target, best.to == from)
 	}
 	if b.units[unit].AI != Charge {
@@ -85,27 +92,32 @@ func (b *Battle) moveEnemy(events []Event, unit int, to Pos) []Event {
 }
 
 // bestCandidate は、敵 unit の攻撃の候補のうち最もよいものを返す（DES-AI-01）。候補がなければ偽を返す。
-// 候補は、移動できる各マス（今いるマスを含む）から、武器の射程に入る生きている自軍のユニットの組。
-// 値は予測（DES-BTL-07）と同じ（鼓舞・狙撃を含む）。
+// 候補は、移動できる各マス（今いるマスを含む）・手持ちの攻撃の武器（杖を除く）・その射程に入る生きている自軍のユニットの組
+// （DES-ITM-02。持ち替えて攻撃できるので、今の装備だけに限らない）。値は予測（DES-BTL-07）と同じ（鼓舞・狙撃を含む）。
 func (b *Battle) bestCandidate(unit int, reach map[Pos]int) (candidate, bool) {
 	var best candidate
 	found := false
-	w := b.units[unit].Weapon
-	for to := range reach {
-		for t, p := range b.units {
-			if !p.Alive || p.Side != Player || !inRange(w, distance(to, p.Pos)) {
-				continue
-			}
-			f := b.forecast(unit, t, to)
-			c := candidate{
-				to:     to,
-				target: t,
-				kill:   f.Attacker.Damage*f.Attacker.Count >= p.HP,
-				gain:   f.Attacker.Damage * f.Attacker.HitRate * f.Attacker.Count,
-				risk:   f.Defender.Damage * f.Defender.HitRate * f.Defender.Count,
-			}
-			if !found || c.better(best) {
-				best, found = c, true
+	for k, w := range b.units[unit].Weapons {
+		if w.Type == Staff {
+			continue
+		}
+		for to := range reach {
+			for t, p := range b.units {
+				if !p.Alive || p.Side != Player || !inRange(w, distance(to, p.Pos)) {
+					continue
+				}
+				f := b.forecast(unit, t, to, k)
+				c := candidate{
+					to:     to,
+					target: t,
+					weapon: k,
+					kill:   f.Attacker.Damage*f.Attacker.Count >= p.HP,
+					gain:   f.Attacker.Damage * f.Attacker.HitRate * f.Attacker.Count,
+					risk:   f.Defender.Damage * f.Defender.HitRate * f.Defender.Count,
+				}
+				if !found || c.better(best) {
+					best, found = c, true
+				}
 			}
 		}
 	}

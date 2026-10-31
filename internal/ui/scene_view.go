@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
+	"github.com/sakana396/renkin_tactics/internal/defs"
 	"github.com/sakana396/renkin_tactics/internal/ui/assets"
 )
 
@@ -117,7 +118,10 @@ func (s *SceneController) View() SceneView {
 				continue
 			}
 			add(ch.Name+"が仲間に加わった", 48, 144, true, StyleTitle)
-			w, _ := s.cfg.Catalog.Weapon(ch.Weapon)
+			var w defs.WeaponDef
+			if len(m.Weapons) > 0 {
+				w, _ = s.cfg.Catalog.Weapon(m.Weapons[0])
+			}
 			weaponType := tactics.Sword
 			switch string(w.Type) {
 			case "lance":
@@ -128,9 +132,11 @@ func (s *SceneController) View() SceneView {
 				weaponType = tactics.Bow
 			case "staff":
 				weaponType = tactics.Staff
+			case "magic":
+				weaponType = tactics.Magic
 			}
 			// 騎兵の絵を選べるよう、クラス名も渡す（DES-UI-22）。
-			v.Icons = append(v.Icons, SceneIcon{unitTile(tactics.Unit{ClassName: class.Name, Side: tactics.Player, Weapon: tactics.Weapon{Type: weaponType}}), 48, 208})
+			v.Icons = append(v.Icons, SceneIcon{unitTile(tactics.Unit{ClassName: class.Name, Side: tactics.Player, Weapons: []tactics.Weapon{{Type: weaponType}}}), 48, 208})
 			lines(fmt.Sprintf("%s　Lv %d", class.Name, m.Level), 256, StylePlain)
 			lines(fmt.Sprintf("HP %d　力 %d　技 %d　速さ %d　守備 %d　移動 %d", m.Stats.HP, m.Stats.Str, m.Stats.Skl, m.Stats.Spd, m.Stats.Def, m.Stats.Mov), 296, StylePlain)
 		}

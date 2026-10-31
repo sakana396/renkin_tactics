@@ -26,7 +26,7 @@ func TestNew(t *testing.T) {
 			us := s.Units[i]
 			want := tactics.Unit{
 				Name: us.Name, ClassName: us.ClassName, Side: us.Side, Stats: us.Stats,
-				HP: us.Stats.HP, Pos: us.Pos, Weapon: us.Weapon, Items: us.Items, Skill: us.Skill,
+				HP: us.Stats.HP, Pos: us.Pos, Weapons: []tactics.Weapon{us.Weapon}, AllowedWeaponTypes: []tactics.WeaponType{us.Weapon.Type}, Items: us.Items, Skill: us.Skill,
 				Lord: us.Lord, Boss: us.Boss, AI: us.AI, Acted: false, Alive: true,
 			}
 			assertEqual(t, "Units", u, want)

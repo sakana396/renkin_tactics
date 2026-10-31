@@ -5,16 +5,19 @@ package tactics
 // 共通の検証 0〜5 と、行動ごとの検証 6 を順に確かめ、最初に当てはまった誤りを返す。
 // 失敗したら状態を変えない（DES-ERR-01）。
 // Attack は移動してから Target を攻撃する（DES-BTL-06）。UseItem は移動してから Item 番目のアイテムを使う（DES-ITM-01）。
-// Heal は移動してから、杖で Target の味方を回復する（DES-HEL-01）。
+// Heal は移動してから、選んだ杖で Target の味方を回復する（DES-HEL-01）。
+// Attack と Heal は Weapon で武器の列の添字を選べる（nil なら今の装備）。装備を変えるのは成功した Attack だけ（DES-ITM-02）。
 // 行動のあと、戦闘が続いていて、生きている自軍が全員行動済みなら、敵軍の番と次の自軍の番の始めまでを進める（DES-BTL-02）。
 // 返す出来事は、その間に起きたことすべて（DES-EVT-01）。
 func (b *Battle) Act(cmd Command) ([]Event, error) {
 	if err := b.validateCommand(cmd); err != nil {
 		return nil, err
 	}
+	weapon := -1
+	var err error
 	switch cmd.Action {
 	case Attack:
-		if err := b.validateAttack(cmd); err != nil {
+		if weapon, err = b.validateAttack(cmd); err != nil {
 			return nil, err
 		}
 	case UseItem:
@@ -22,7 +25,7 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 			return nil, err
 		}
 	case Heal:
-		if err := b.validateHeal(cmd); err != nil {
+		if weapon, err = b.validateHeal(cmd); err != nil {
 			return nil, err
 		}
 	}
@@ -46,11 +49,13 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 	case Wait:
 		events = b.emit(events, Event{Kind: EventWait, Unit: cmd.Unit})
 	case Attack:
+		// 攻撃を決めたときだけ、選んだ武器を装備する。外れても「攻撃に使った」に入り、反撃・追撃もこの武器で行う（DES-ITM-02）。
+		u.Equipped = weapon
 		events = b.attack(events, cmd.Unit, cmd.Target, cmd.To == from)
 	case UseItem:
 		events = b.useItem(events, cmd.Unit, cmd.Item)
 	case Heal:
-		events = b.healWithStaff(events, cmd.Unit, cmd.Target)
+		events = b.healWithStaff(events, cmd.Unit, cmd.Target, weapon)
 	}
 	// 移動・攻撃・戦死・経験・成長・勝敗を済ませたあとで、出来事を評価する（DES-MAP-07）。
 	events = b.evaluateMapEvents(events, events)
@@ -69,6 +74,10 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 func (b *Battle) validateCommand(cmd Command) error {
 	// 0. Action が 4 つ（Wait・Attack・UseItem・Heal）のどれかである（DES-HEL-01）。
 	if cmd.Action < Wait || cmd.Action > Heal {
+		return ErrInvalidAction
+	}
+	// 武器を選べるのは攻撃と回復だけ（DES-ITM-02）。
+	if cmd.Weapon != nil && cmd.Action != Attack && cmd.Action != Heal {
 		return ErrInvalidAction
 	}
 	// 1. 戦闘が終わっていない。

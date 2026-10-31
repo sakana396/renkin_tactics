@@ -15,11 +15,11 @@ import (
 // edit を渡すと、目録を作る前にキャラの定義を書き換える。
 func campaignCatalog(edit ...func(chars []defs.CharacterDef)) *defs.Catalog {
 	chars := []defs.CharacterDef{
-		{ID: "hero", Name: "主人公", Class: "hero", Weapon: "s", Level: 1, Lord: true, Growth: defs.Growth{HP: 100, Str: 100, Skl: 100, Spd: 100, Def: 100}, Items: []defs.ItemCount{{Item: "z", Count: 2}}},
-		{ID: "friend", Name: "仲間", Class: "weak", Weapon: "s", Level: 2, Items: []defs.ItemCount{{Item: "a", Count: 1}}},
-		{ID: "bench", Name: "控え", Class: "weak", Weapon: "s", Level: 3},
-		{ID: "join1", Name: "加入1", Class: "weak", Weapon: "s", Level: 4, Items: []defs.ItemCount{{Item: "z", Count: 1}}},
-		{ID: "join2", Name: "加入2", Class: "weak", Weapon: "s", Level: 5},
+		{ID: "hero", Name: "主人公", Class: "hero", Weapons: []string{"s"}, Level: 1, Lord: true, Growth: defs.Growth{HP: 100, Str: 100, Skl: 100, Spd: 100, Def: 100}, Items: []defs.ItemCount{{Item: "z", Count: 2}}},
+		{ID: "friend", Name: "仲間", Class: "weak", Weapons: []string{"s"}, Level: 2, Items: []defs.ItemCount{{Item: "a", Count: 1}}},
+		{ID: "bench", Name: "控え", Class: "weak", Weapons: []string{"s"}, Level: 3},
+		{ID: "join1", Name: "加入1", Class: "weak", Weapons: []string{"s"}, Level: 4, Items: []defs.ItemCount{{Item: "z", Count: 1}}},
+		{ID: "join2", Name: "加入2", Class: "weak", Weapons: []string{"s"}, Level: 5},
 	}
 	for _, e := range edit {
 		e(chars)
@@ -29,7 +29,7 @@ func campaignCatalog(edit ...func(chars []defs.CharacterDef)) *defs.Catalog {
 		[]defs.ClassDef{{ID: "hero", Name: "主人公", WeaponType: "sword", Base: defs.Stats{HP: 20, Str: 20, Skl: 100, Spd: 5, Def: 10, Mov: 5}}, {ID: "weak", Name: "兵", WeaponType: "sword", Base: defs.Stats{HP: 10, Str: 20, Skl: 100, Spd: 5, Mov: 5}}},
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}},
 		[]defs.ItemDef{{ID: "a", Name: "同じ薬", Heal: 10}, {ID: "z", Name: "同じ薬", Heal: 10}}, nil,
-		chars, []defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Class: "weak", Weapon: "s", AI: "hold", Boss: true, X: 2, Y: 0}}}},
+		chars, []defs.MapDef{{ID: "m", Rows: []string{"...", "..."}, Slots: []defs.Slot{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}}, Enemies: []defs.EnemyPlacement{{Class: "weak", Weapons: []string{"s"}, AI: "hold", Boss: true, X: 2, Y: 0}}}},
 		[]defs.ChapterDef{{ID: "c1", Map: "m", Joins: []string{"join1"}, Reward: []defs.ItemCount{{Item: "a", Count: 2}}}, {ID: "c2", Map: "m", Joins: []string{"join2", "friend"}, Reward: []defs.ItemCount{{Item: "z", Count: 2}}}, {ID: "c3", Map: "m"}}, nil)
 }
 
@@ -186,13 +186,14 @@ func TestCampaignDeployment(t *testing.T) {
 }
 func TestCampaignItems(t *testing.T) {
 	t.Run("TC-FR-CMP-03-04 / TC-FR-CMP-03-05", func(t *testing.T) {
+		// 主人公は武器 1 本 ＋ 道具 2 個（3 枠）。武器と道具が 5 枠を分け合うので、2 個で 5 枠になる（DES-IT06 6.1 節）。
 		c := newCampaign(t, core.Withdraw)
-		for _, id := range []string{"a", "z", "z"} {
+		for _, id := range []string{"a", "z"} {
 			if err := c.TakeItem(0, id); err != nil {
 				t.Fatal(err)
 			}
 		}
-		if !reflect.DeepEqual(c.Roster[0].Items, []defs.ItemCount{{Item: "z", Count: 4}, {Item: "a", Count: 1}}) || len(c.Stock) != 0 {
+		if !reflect.DeepEqual(c.Roster[0].Items, []defs.ItemCount{{Item: "z", Count: 3}, {Item: "a", Count: 1}}) || !reflect.DeepEqual(c.Stock, []defs.ItemCount{{Item: "z", Count: 1}}) {
 			t.Fatalf("取り出し = %+v", c)
 		}
 		if err := c.StoreItem(1, "a"); err != nil {
@@ -208,7 +209,7 @@ func TestCampaignItems(t *testing.T) {
 		if err := c.StoreItem(0, "a"); err != nil {
 			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(c.Stock, []defs.ItemCount{{Item: "a", Count: 2}, {Item: "z", Count: 1}}) || !reflect.DeepEqual(c.Roster[0].Items, []defs.ItemCount{{Item: "z", Count: 3}}) || len(c.Roster[1].Items) != 0 {
+		if !reflect.DeepEqual(c.Stock, []defs.ItemCount{{Item: "a", Count: 2}, {Item: "z", Count: 2}}) || !reflect.DeepEqual(c.Roster[0].Items, []defs.ItemCount{{Item: "z", Count: 2}}) || len(c.Roster[1].Items) != 0 {
 			t.Fatalf("預ける = %+v", c)
 		}
 	})
@@ -439,7 +440,7 @@ func TestCampaignFallenGrowth(t *testing.T) {
 				chars = append(chars, v)
 			}
 			m, _ := base.Map("m")
-			m.Enemies = append(m.Enemies, defs.EnemyPlacement{Class: "weak", Weapon: "s", AI: "hold", X: 2, Y: 1})
+			m.Enemies = append(m.Enemies, defs.EnemyPlacement{Class: "weak", Weapons: []string{"s"}, AI: "hold", X: 2, Y: 1})
 			cat := defs.NewCatalog(base.Game, base.Terrains(), classes, []defs.WeaponDef{w}, []defs.ItemDef{a, z}, nil, chars, []defs.MapDef{m}, base.Chapters(), nil)
 			c, err := core.NewCampaign(cat, rule)
 			if err != nil {

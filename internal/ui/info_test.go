@@ -185,9 +185,9 @@ func TestInfoPanel(t *testing.T) {
 	t.Run("TC-FR-UNT-09-03 武器の種類・射程の幅、大盾・怒り・狙撃の説明、複数の手持ち、砦の回復", func(t *testing.T) {
 		u := tactics.Unit{
 			Name: "ミラ", ClassName: "アーチャー", Stats: tactics.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5}, HP: 9,
-			Weapon: tactics.Weapon{Name: "長弓", Type: tactics.Bow, Might: 6, Hit: 85, MinRange: 2, MaxRange: 3},
-			Items:  []tactics.ItemStack{{Item: potion, Count: 1}, {Item: tactics.Item{Name: "特効薬", Heal: 20}, Count: 2}},
-			Skill:  snipe,
+			Weapons: []tactics.Weapon{{Name: "長弓", Type: tactics.Bow, Might: 6, Hit: 85, MinRange: 2, MaxRange: 3}},
+			Items:   []tactics.ItemStack{{Item: potion, Count: 1}, {Item: tactics.Item{Name: "特効薬", Heal: 20}, Count: 2}},
+			Skill:   snipe,
 		}
 		want := []string{
 			"ミラ",
@@ -221,7 +221,7 @@ func TestInfoPanel(t *testing.T) {
 			}
 		}
 		for typ, name := range map[tactics.WeaponType]string{tactics.Sword: "剣", tactics.Lance: "槍", tactics.Axe: "斧", tactics.Bow: "弓"} {
-			u.Weapon.Type = typ
+			u.Weapons[0].Type = typ
 			if got := unitRows(u)[8]; got != "武器: 長弓（"+name+"）" {
 				t.Errorf("武器の種類 %v = %q", typ, got)
 			}

@@ -61,22 +61,22 @@ func wrathful(u Unit) bool {
 // 相性・地形・鼓舞を入れ、still が真なら狙撃も入れる（sniping を参照）。
 func (b *Battle) strikeValues(s, r int, still bool) (damage, rate int) {
 	su, ru := b.units[s], b.units[r]
-	t := triangle(su.Weapon.Type, ru.Weapon.Type)
+	t := triangle(su.weapon().Type, ru.weapon().Type)
 	tr := b.TerrainAt(ru.Pos)
 
-	might := su.Weapon.Might
-	if effective(su.Weapon, ru.Tags) {
+	might := su.weapon().Might
+	if effective(su.weapon(), ru.Tags) {
 		might *= 3
 	}
 	power, defense := su.Stats.Str, ru.Stats.Def
-	if su.Weapon.DamageType == Magical {
+	if su.weapon().DamageType == Magical {
 		power, defense = su.Stats.Mag, ru.Stats.Res
 	}
 	damage = max(0, power+might+t-defense-tr.Def)
 
 	sHit, _, _ := b.inspired(s)
 	_, rAvoid, _ := b.inspired(r)
-	hit := su.Stats.Skl*2 + su.Weapon.Hit + 15*t + sHit
+	hit := su.Stats.Skl*2 + su.weapon().Hit + 15*t + sHit
 	if b.sniping(s, still) {
 		hit += su.Skill.Hit
 	}
@@ -85,10 +85,11 @@ func (b *Battle) strikeValues(s, r int, still bool) (damage, rate int) {
 	return damage, rate
 }
 
-// canCounter は、守る側 d が攻撃する側 a に反撃できるか（d の武器の射程に a がいるか）を返す（DES-BTL-06）。
-// 杖のユニットは反撃しない（射程に a がいても偽。DES-HEL-01）。
+// canCounter は、守る側 d が攻撃する側 a に反撃できるか（d の装備している武器の射程に a がいるか）を返す（DES-BTL-06）。
+// 装備は最後に攻撃に使った武器で、反撃のために別の武器を選ばない（DES-ITM-02）。
+// 装備が杖なら反撃しない（射程に a がいても偽。DES-HEL-01）。
 func (b *Battle) canCounter(a, d int) bool {
-	w := b.units[d].Weapon
+	w := b.units[d].weapon()
 	return w.Type != Staff && inRange(w, distance(b.units[a].Pos, b.units[d].Pos))
 }
 
@@ -111,7 +112,7 @@ func (b *Battle) strikeOrder(a, d int) []int {
 	for _, s := range order {
 		n := 1
 		if s == a {
-			n = max(1, b.units[a].Weapon.Strikes)
+			n = max(1, b.units[a].weapon().Strikes)
 		}
 		for range n {
 			expanded = append(expanded, s)
@@ -203,24 +204,48 @@ func (b *Battle) judge(events []Event) []Event {
 	return events
 }
 
-// validateAttack は Attack の検証 6 を確かめる（DES-BTL-04）。状態は変えない。
-// 武器が杖でなく（ErrCannotAttack。DES-HEL-01）、Target が生きている相手の陣営のユニットで（ErrNoTarget）、
-// To から武器の射程に入っている（ErrOutOfRange）。
-func (b *Battle) validateAttack(cmd Command) error {
-	if b.units[cmd.Unit].Weapon.Type == Staff {
-		return ErrCannotAttack
+// selectWeapon は、コマンドで使う武器の列の添字を返す（DES-ITM-02）。Weapon が nil なら今の装備。
+// 添字が武器の列の外なら ErrNoWeapon、兵種が持てない種類なら ErrWeaponType を返す。状態は変えない。
+func (b *Battle) selectWeapon(cmd Command) (int, error) {
+	u := b.units[cmd.Unit]
+	w := u.Equipped
+	if cmd.Weapon != nil {
+		w = *cmd.Weapon
+	}
+	if w < 0 || w >= len(u.Weapons) {
+		return -1, ErrNoWeapon
+	}
+	for _, t := range u.AllowedWeaponTypes {
+		if t == u.Weapons[w].Type {
+			return w, nil
+		}
+	}
+	return -1, ErrWeaponType
+}
+
+// validateAttack は Attack の検証 6 を確かめ、攻撃に使う武器の添字を返す（DES-BTL-04、DES-ITM-02）。状態は変えない。
+// 武器がある（ErrNoWeapon）→ 持てる種類（ErrWeaponType）→ 攻撃に使える（杖でない。ErrCannotAttack。DES-HEL-01）→
+// Target が生きている相手の陣営のユニット（ErrNoTarget）→ To から選んだ武器の射程に入っている（ErrOutOfRange）の順。
+func (b *Battle) validateAttack(cmd Command) (int, error) {
+	w, err := b.selectWeapon(cmd)
+	if err != nil {
+		return -1, err
+	}
+	weapon := b.units[cmd.Unit].Weapons[w]
+	if weapon.Type == Staff {
+		return -1, ErrCannotAttack
 	}
 	if !b.validUnit(cmd.Target) {
-		return ErrNoTarget
+		return -1, ErrNoTarget
 	}
 	t := b.units[cmd.Target]
 	if !t.Alive || t.Side == b.units[cmd.Unit].Side {
-		return ErrNoTarget
+		return -1, ErrNoTarget
 	}
-	if !inRange(b.units[cmd.Unit].Weapon, distance(cmd.To, t.Pos)) {
-		return ErrOutOfRange
+	if !inRange(weapon, distance(cmd.To, t.Pos)) {
+		return -1, ErrOutOfRange
 	}
-	return nil
+	return w, nil
 }
 
 // Forecast は攻撃の予測（DES-BTL-07）。
@@ -264,20 +289,23 @@ func (b *Battle) Forecast(cmd Command) (Forecast, error) {
 	if err := b.validateCommand(cmd); err != nil {
 		return Forecast{}, err
 	}
-	if err := b.validateAttack(cmd); err != nil {
+	w, err := b.validateAttack(cmd)
+	if err != nil {
 		return Forecast{}, err
 	}
-	return b.forecast(cmd.Unit, cmd.Target, cmd.To), nil
+	return b.forecast(cmd.Unit, cmd.Target, cmd.To, w), nil
 }
 
-// forecast は、a が to に移動して d を攻撃するときの予測を返す（DES-BTL-07）。検証はせず、状態も変えない。
-// 敵の動き方（DES-AI-01）でも同じ値を使う。
-func (b *Battle) forecast(a, d int, to Pos) Forecast {
-	// ユニットの列を写した戦闘の上で、a を to に置いて計算する（乱数は引かない）。
+// forecast は、a が to に移動し、武器の列の w 番目で d を攻撃するときの予測を返す（DES-BTL-07、DES-ITM-02）。
+// 検証はせず、状態も変えない。敵の動き方（DES-AI-01）でも同じ値を使う。
+func (b *Battle) forecast(a, d int, to Pos, w int) Forecast {
+	// ユニットの列を写した戦闘の上で、a を to に置き、w を装備した仮の状態で計算する（乱数は引かない）。
+	// 写すのは列だけで、武器の列は共有するが、ここでは書き換えない。
 	sim := *b
 	sim.units = append([]Unit(nil), b.units...)
 	still := sim.units[a].Pos == to
 	sim.units[a].Pos = to
+	sim.units[a].Equipped = w
 
 	var counts [2]int
 	for _, s := range sim.strikeOrder(a, d) {
@@ -308,10 +336,10 @@ func (b *Battle) forecastSide(i, o int, still bool, count, oppCount int) Forecas
 	if u.Skill.Effect == Pavise && oppCount > 0 {
 		skills = append(skills, u.Skill)
 	}
-	eff := effective(u.Weapon, b.units[o].Tags)
+	eff := effective(u.weapon(), b.units[o].Tags)
 	effMight := 0
 	if eff {
-		effMight = u.Weapon.Might * 3
+		effMight = u.weapon().Might * 3
 	}
 	return ForecastSide{
 		WeightLoss:     u.Stats.Spd - attackSpeed(u),
@@ -324,13 +352,13 @@ func (b *Battle) forecastSide(i, o int, still bool, count, oppCount int) Forecas
 		CritRate:       critRate(u, b.units[o]),
 		AttackSpeed:    attackSpeed(u),
 		Effective:      eff,
-		Strikes:        max(1, u.Weapon.Strikes),
+		Strikes:        max(1, u.weapon().Strikes),
 		Skills:         skills,
 	}
 }
 
 // attackSpeed は武器の重さを力で支えた攻撃の速さ（DES-BTL-09）。
-func attackSpeed(u Unit) int { return max(0, u.Stats.Spd-max(0, u.Weapon.Weight-u.Stats.Str)) }
+func attackSpeed(u Unit) int { return max(0, u.Stats.Spd-max(0, u.weapon().Weight-u.Stats.Str)) }
 
 // effective は一致する分類が複数あっても 1 回だけ特効を適用する（DES-BTL-09）。
 func effective(w Weapon, tags []string) bool {
@@ -350,5 +378,5 @@ func critRate(a, d Unit) int {
 	if wrathful(a) {
 		bonus = a.Skill.Chance
 	}
-	return min(100, max(0, a.Stats.Skl/2+a.Weapon.Crit+bonus-d.Stats.Lck))
+	return min(100, max(0, a.Stats.Skl/2+a.weapon().Crit+bonus-d.Stats.Lck))
 }

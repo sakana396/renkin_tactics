@@ -72,7 +72,7 @@ FR-CMP-01・FR-CMP-07・FR-CMP-08・FR-UNT-02・FR-UNT-03 のうち、本体の�
 | TC-FR-SYS-04-32 | FR-SYS-04 / DES-DAT-03 規則 16 | 本体のデータ | エルザの `level` を 0、レオンに `level = 21` を書く。ミラの成長率の HP を -1、ブランの守備を 101 にする | 誤り `characters.toml: characters[4].level: 1 以上 20 以下にしてください（0）`、`characters[0].level: …（21）`、`characters[3].growth.hp: 0 以上 100 以下にしてください（-1）`、`characters[2].growth.def: …（101）` | 異常 |
 | TC-FR-SYS-04-33 | FR-SYS-04 / DES-DAT-03 規則 16 | 本体のデータ | エルザの `level` を 20、レオンに `level = 1` を書く。ミラの成長率の HP を 0、ブランの守備を 100 にする | 誤りがない | 境界 |
 | TC-FR-SYS-04-34 | FR-SYS-04 / DES-DAT-03 規則 17 | 本体のデータ | レオンの手持ちを回復薬 3 と 3（合計 6）にする。`stock` を回復薬 0 個にする。1 章の `reward` に回復薬を 2 回書く | 誤り `characters.toml: characters[0].items: 手持ちの数の合計 6 は 5 以下にしてください`、`game.toml: stock[0].count: 1 以上にしてください（0）`、`chapters.toml: chapters[0].reward[1].item: アイテム "potion" を 2 回書いています（chapters[0].reward[0] と同じ）` | 異常 |
-| TC-FR-SYS-04-35 | FR-SYS-04 / DES-DAT-03 規則 17 | 本体のデータ | レオンの手持ちを回復薬 2 と 3（合計 5）にする。`stock` を回復薬 1 個にする | 誤りがない（手持ちは要素ごとでなく数の合計で数える。上限ちょうどは通る） | 境界 |
+| TC-FR-SYS-04-35 | FR-SYS-04 / DES-DAT-03 規則 17、DES-ITM-02 | 本体のデータ | レオンの手持ちを回復薬 2 と 2（合計 4）にする。`stock` を回復薬 1 個にする | 誤りがない（手持ちは要素ごとでなく数の合計で数える。武器 1 本と合わせて 5 枠ちょうどは通る。反復 6 の 5 枠（DES-IT06 6.1 節）に合わせて #121 で回復薬 2 と 3 から改訂） | 境界 |
 | TC-FR-SYS-04-36 | FR-SYS-04 / DES-DAT-03 規則 18 | 本体のデータ | `ch01_after` の先頭に空の段落と 201 文字の段落を足す。段落が空の並び（`paragraphs = []`）の物語を足す | 誤り `story.toml: stories[1].paragraphs[0]: 段落が空です`、`stories[1].paragraphs[1]: 段落の長さ 201 文字は 200 文字以下にしてください`、`stories[2].paragraphs: 段落を 1 つ以上書いてください`（段落が空の物語は `ch02_before` の前に入れる。反復 5 の #102 で物語が増えても添字が変わらないよう、末尾に足すのをやめて `stories[6]` から改めた） | 異常 |
 | TC-FR-SYS-04-37 | FR-SYS-04 / DES-DAT-03 規則 18 | 本体のデータ | `ch01_after` の先頭に、複数バイトの文字（「あ」）200 文字の段落を足す | 誤りがない（rune で数える） | 境界 |
 | TC-FR-SYS-04-38 | FR-SYS-04 / DES-DAT-03 規則 19 | 本体のデータ | 1 章のボスの `name` を空にする。1 章の 3 番目の増援に `name = ""` を書く | 誤り `maps.toml: maps[0].enemies[7].name: 名前が空です…`、`maps[0].reinforcements[2].name: 名前が空です…` | 異常 |
@@ -89,7 +89,7 @@ FR-CMP-01・FR-CMP-07・FR-CMP-08・FR-UNT-02・FR-UNT-03 のうち、本体の�
 | TC-FR-CMP-03-02 | FR-CMP-03 / DES-CMP-05 | 検証済み目録のキャンペーン | 主人公だけ、枠いっぱいで出撃 | どちらも成功し、旧 StartBattle の主人公のみなら枠 0、枠いっぱいなら連番の座標。何度呼んでもキャンペーンは変わらない | 境界 |
 | TC-FR-CMP-03-03 | FR-CMP-03 / DES-CMP-08 | 検証済み目録のキャンペーン | 空・枠超過（全員生存の {0, 1, 2, 3}）・範囲外・重複・戦死・主人公が先頭でない出撃 | 旧 StartBattle は ErrInvalidDeployment。クリア済みはそれより先に ErrCleared。失敗時は Campaign と入力の並びが不変 | 異常 |
 | TC-FR-CMP-03-04 | FR-CMP-03 / DES-CMP-04 | 検証済み目録のキャンペーン | 在庫と手持ちを 1 個ずつ移す | 同じ ID は加算、新しい手持ちは末尾、0 の要素を削除。在庫は ID 順 | 正常 |
-| TC-FR-CMP-03-05 | FR-CMP-03 / DES-CMP-04 | 検証済み目録のキャンペーン | 合計 4 の手持ちに取り出し、さらに取り出す | 5 まで成功し、次は ErrHandFull。合計で数える | 境界 |
+| TC-FR-CMP-03-05 | FR-CMP-03 / DES-CMP-04、DES-ITM-02 | 検証済み目録のキャンペーン | 武器 1 本 ＋ 道具 2 個（3 枠）の手持ちに 2 個取り出し、さらに取り出す | 5 枠まで成功し、次は ErrHandFull。武器の本数と道具の個数の合計で数える（反復 6 の 5 枠（DES-IT06 6.1 節）に合わせて #121 で改訂） | 境界 |
 | TC-FR-CMP-03-06 | FR-CMP-03 / DES-CMP-08 | 検証済み目録のキャンペーン | クリア・不正添字・戦死・在庫なし・手持ちなしを組み合わせる | 検証の順に ErrCleared、ErrInvalidMember、ErrNoStock、ErrHandFull または ErrNoHandItem。状態不変 | 異常 |
 | TC-FR-CMP-01-02 | FR-CMP-01 / DES-CMP-06 | 検証済み目録のキャンペーン | 各章の勝利を反映 | 章が 1 ずつ進み、報酬を在庫に加算。最終章までは Cleared が偽（最後の章の添字は目録の章の数から求める。反復 5 の #102、DES-IT05 8.3 節） | 正常 |
 | TC-FR-CMP-02-01 | FR-CMP-02 / DES-CMP-06 | 検証済み目録のキャンペーン | 最後の章に勝利 | Cleared が真で Chapter は章数。結果にも Cleared が真 | 境界 |

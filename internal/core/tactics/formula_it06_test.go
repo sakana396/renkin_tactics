@@ -9,8 +9,8 @@ import (
 
 // DES-IT06 4.5 節 B1〜B7 の値から期待値を定める。
 func TestIT06Formula(t *testing.T) {
-	a := Unit{Stats: Stats{HP: 22, Str: 7, Skl: 11, Spd: 12}, HP: 22, Weapon: Weapon{Type: Sword, Might: 5, Hit: 90, Weight: 4}}
-	d := Unit{Stats: Stats{HP: 100, Str: 5, Spd: 4, Def: 4, Lck: 2}, HP: 100, Weapon: Weapon{Type: Lance, Weight: 5}, Tags: []string{"armor", "mounted"}, Pos: Pos{X: 1}}
+	a := Unit{Stats: Stats{HP: 22, Str: 7, Skl: 11, Spd: 12}, HP: 22, Weapons: []Weapon{{Type: Sword, Might: 5, Hit: 90, Weight: 4}}}
+	d := Unit{Stats: Stats{HP: 100, Str: 5, Spd: 4, Def: 4, Lck: 2}, HP: 100, Weapons: []Weapon{{Type: Lance, Weight: 5}}, Tags: []string{"armor", "mounted"}, Pos: Pos{X: 1}}
 	type formulaCase struct {
 		name                            string
 		a, d                            Unit
@@ -22,7 +22,7 @@ func TestIT06Formula(t *testing.T) {
 		{"B1", a, d, Terrain{Def: 1, Avoid: 20}, 6, 69, 3, 12, 2, false},
 	}
 	b2 := a
-	b2.Weapon = Weapon{Type: Sword, Might: 4, Hit: 80, Weight: 7, EffectiveTags: []string{"armor", "mounted"}}
+	b2.Weapons = []Weapon{{Type: Sword, Might: 4, Hit: 80, Weight: 7, EffectiveTags: []string{"armor", "mounted"}}}
 	d2 := d
 	d2.Stats.Str = 6
 	d2.Stats.Spd = 2
@@ -30,19 +30,18 @@ func TestIT06Formula(t *testing.T) {
 	cases = append(cases, formulaCase{"B2", b2, d2, Terrain{}, 7, 83, 3, 12, 2, true})
 	b3 := a
 	b3.Stats = Stats{Str: 2, Mag: 3, Skl: 5, Spd: 6}
-	b3.Weapon = Weapon{Type: Magic, Might: 5, Hit: 85, Weight: 2, DamageType: Magical}
+	b3.Weapons = []Weapon{{Type: Magic, Might: 5, Hit: 85, Weight: 2, DamageType: Magical}}
 	d3 := d2
 	d3.Stats.Res = 1
 	cases = append(cases, formulaCase{"B3", b3, d3, Terrain{Def: 2, Avoid: 20}, 5, 71, 0, 6, 2, false})
 	b6 := a
 	b6.Stats.Mag = 2
-	b6.Weapon = Weapon{Type: Sword, Might: 6, Hit: 80, Weight: 8, DamageType: Magical}
+	b6.Weapons = []Weapon{{Type: Sword, Might: 6, Hit: 80, Weight: 8, DamageType: Magical}}
 	d6 := d
-	d6.Weapon.Type = Axe
+	d6.Weapons = []Weapon{{Type: Axe, Weight: 7}}
 	d6.Stats.Str = 7
-	d6.Weapon.Weight = 7
 	cases = append(cases, formulaCase{"B6", b6, d6, Terrain{Def: 1, Avoid: 20}, 8, 89, 3, 11, 2, false})
-	b5 := Unit{Stats: Stats{HP: 22, Str: 11, Skl: 5, Spd: 5}, HP: 22, Weapon: Weapon{Type: Axe, Might: 6, Hit: 65, Weight: 14, Strikes: 2}}
+	b5 := Unit{Stats: Stats{HP: 22, Str: 11, Skl: 5, Spd: 5}, HP: 22, Weapons: []Weapon{{Type: Axe, Might: 6, Hit: 65, Weight: 14, Strikes: 2}}}
 	d5 := d
 	d5.Stats.Spd = 2
 	cases = append(cases, formulaCase{"B5", b5, d5, Terrain{}, 14, 86, 0, 2, 2, false})
@@ -59,7 +58,7 @@ func TestIT06Formula(t *testing.T) {
 	})
 	t.Run("TC-FR-BTL-04-08", func(t *testing.T) {
 		for _, tc := range []struct{ weight, speed int }{{7, 12}, {8, 11}, {99, 0}} {
-			a.Weapon.Weight = tc.weight
+			a.Weapons[0].Weight = tc.weight
 			if got := attackSpeed(a); got != tc.speed {
 				t.Fatalf("重さ %d: %d", tc.weight, got)
 			}
@@ -74,7 +73,7 @@ func TestIT06Formula(t *testing.T) {
 				t.Fatalf("HP %d: %d", tc.hp, got)
 			}
 		}
-		a.Weapon.Crit = 100
+		a.Weapons[0].Crit = 100
 		if critRate(a, d) != 100 {
 			t.Fatal("上限")
 		}
@@ -91,7 +90,7 @@ func TestIT06OrderAndRolls(t *testing.T) {
 			speedA, speedD int
 			want           []int
 		}{{8, 4, []int{0, 0, 1, 0, 0}}, {7, 4, []int{0, 0, 1}}, {4, 8, []int{0, 0, 1, 1}}} {
-			b := Battle{units: []Unit{{Stats: Stats{Spd: tc.speedA}, Weapon: Weapon{Strikes: 2}}, {Stats: Stats{Spd: tc.speedD}, Weapon: Weapon{Strikes: 2}}}}
+			b := Battle{units: []Unit{{Stats: Stats{Spd: tc.speedA}, Weapons: []Weapon{{Strikes: 2}}}, {Stats: Stats{Spd: tc.speedD}, Weapons: []Weapon{{Strikes: 2}}}}}
 			if got := b.strikeOrder(0, 1); !reflect.DeepEqual(got, tc.want) {
 				t.Fatalf("順=%v 期待=%v", got, tc.want)
 			}
@@ -152,15 +151,16 @@ func TestIT06ValidationAndGrowth(t *testing.T) {
 	})
 	t.Run("TC-FR-SYS-04-42 正しい分類・魔法の武器は受理し、New は武器の列の誤りを拒む", func(t *testing.T) {
 		ok := UnitSetup{Stats: Stats{HP: 1}, Tags: []string{"armor", "mounted"},
-			Weapon:  Weapon{Type: Magic, DamageType: Magical, MinRange: 1, MaxRange: 2, EffectiveTags: []string{"armor", "mounted"}},
-			Weapons: []Weapon{{Type: Sword, DamageType: Magical, MinRange: 1, MaxRange: 1}}}
+			Weapons:            []Weapon{{Type: Magic, DamageType: Magical, MinRange: 1, MaxRange: 2, EffectiveTags: []string{"armor", "mounted"}}, {Type: Sword, DamageType: Magical, MinRange: 1, MaxRange: 1}},
+			AllowedWeaponTypes: []WeaponType{Magic, Sword}}
 		if err := validateUnit(ok); err != nil {
 			t.Fatalf("正しい入力を拒んだ: %v", err)
 		}
 		terrain := [][]Terrain{{{Cost: 1}, {Cost: 1}}}
 		lord := UnitSetup{Side: Player, Lord: true, Stats: Stats{HP: 10}, Weapon: Weapon{MinRange: 1, MaxRange: 1}}
 		boss := UnitSetup{Side: Enemy, Boss: true, Pos: Pos{X: 1}, Stats: Stats{HP: 10}, Weapon: Weapon{MinRange: 1, MaxRange: 1}}
-		boss.Weapons = []Weapon{{Weight: -1, MinRange: 1, MaxRange: 1}}
+		boss.Weapon, boss.Weapons = Weapon{}, []Weapon{{Weight: -1, MinRange: 1, MaxRange: 1}}
+		boss.AllowedWeaponTypes = []WeaponType{Sword}
 		if b, events, err := New(Setup{Terrain: terrain, Units: []UnitSetup{lord, boss}}, 1); !errors.Is(err, ErrInvalidSetup) || b != nil || events != nil || !strings.Contains(err.Error(), "weapons[0]") {
 			t.Fatalf("武器の列の誤りを受理: %v", err)
 		}
@@ -180,7 +180,7 @@ func TestIT06ValidationAndGrowth(t *testing.T) {
 			rate, crit, r1, r2, r3 int
 			hit                    bool
 		}{{69, 0, 70, 68, 0, false}, {69, 0, 70, 67, 0, true}, {0, 100, 0, 0, 0, false}, {100, 100, 99, 99, 99, true}} {
-			b := Battle{units: []Unit{{Alive: true, Stats: Stats{HP: 1}, HP: 1, Weapon: Weapon{Hit: tc.rate, Crit: tc.crit}}, {Alive: true, Stats: Stats{HP: 1}, HP: 1}}, terrain: [][]Terrain{{{}}}}
+			b := Battle{units: []Unit{{Alive: true, Stats: Stats{HP: 1}, HP: 1, Weapons: []Weapon{{Hit: tc.rate, Crit: tc.crit}}}, {Alive: true, Stats: Stats{HP: 1}, HP: 1}}, terrain: [][]Terrain{{{}}}}
 			vals := []int{tc.r1, tc.r2, tc.r3}
 			n := 0
 			b.roll = func() int { v := vals[n]; n++; return v }
@@ -217,10 +217,10 @@ func TestIT06Rewind(t *testing.T) {
 			t.Fatal(err)
 		}
 		us := b.Units()
-		us[0].Weapon.EffectiveTags[0] = "変更"
+		us[0].Weapons[0].EffectiveTags[0] = "変更"
 		us[1].Tags[0] = "変更"
-		first[0].Units[0].Weapon.EffectiveTags[0] = "変更"
-		if b.units[0].Weapon.EffectiveTags[0] != "armor" || b.units[1].Tags[0] != "armor" {
+		first[0].Units[0].Weapons[0].EffectiveTags[0] = "変更"
+		if b.units[0].Weapons[0].EffectiveTags[0] != "armor" || b.units[1].Tags[0] != "armor" {
 			t.Fatal("返却値から本物が変化")
 		}
 		if err = b.Rewind(b.History()[0].ID); err != nil {
@@ -231,7 +231,7 @@ func TestIT06Rewind(t *testing.T) {
 			t.Fatal(err)
 		}
 		// 独立性を確かめるために書き換えた写しだけ元に戻して比べる。
-		first[0].Units[0].Weapon.EffectiveTags[0] = "armor"
+		first[0].Units[0].Weapons[0].EffectiveTags[0] = "armor"
 		if !reflect.DeepEqual(first, second) {
 			t.Fatalf("巻き戻しで結果が異なる\n%+v\n%+v", first, second)
 		}
@@ -311,7 +311,7 @@ func TestIT06BraveAxeForecastMatchesAct(t *testing.T) {
 	})
 	t.Run("TC-FR-BTL-08-25 予測に特効の効く威力を出す", func(t *testing.T) {
 		b := newBrave(t)
-		b.units[0].Weapon.EffectiveTags = []string{"armor"}
+		b.units[0].Weapons[0].EffectiveTags = []string{"armor"}
 		b.units[1].Tags = []string{"armor"}
 		f, err := b.Forecast(cmd)
 		if err != nil {

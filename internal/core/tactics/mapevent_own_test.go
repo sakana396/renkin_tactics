@@ -135,7 +135,7 @@ func TestEnemyCap(t *testing.T) {
 		// REV-068 の申し送り: #120 が UnitSetup に足したスライスの欄も、出来事の増援とターンの増援で深く写す。
 		weapon := Weapon{Name: "槍", Type: Lance, Might: 5, Hit: 90, MinRange: 1, MaxRange: 1, EffectiveTags: []string{"mounted"}}
 		mk := func(name string, side Side, x, y int) UnitSetup {
-			return UnitSetup{Name: name, Side: side, Stats: Stats{HP: 20, Str: 5, Skl: 5, Spd: 5, Def: 3, Mov: 3}, Pos: Pos{x, y}, Weapon: weapon.clone(), AI: Hold,
+			return UnitSetup{Name: name, Side: side, Stats: Stats{HP: 20, Str: 5, Skl: 5, Spd: 5, Def: 3, Mov: 3}, Pos: Pos{x, y}, AI: Hold, AllowedWeaponTypes: []WeaponType{Lance},
 				Tags: []string{"armor"}, Weapons: []Weapon{weapon.clone()}, Items: []ItemStack{{Item: Item{Name: "薬", Heal: 10}, Count: 1}}}
 		}
 		lord := mk("主人公", Player, 0, 0)
@@ -163,12 +163,11 @@ func TestEnemyCap(t *testing.T) {
 		}
 		for _, u := range []UnitSetup{s.Events[0].Enemies[0], s.Reinforcements[0].Unit} {
 			u.Tags[0] = "changed"
-			u.Weapon.EffectiveTags[0] = "changed"
 			u.Weapons[0].EffectiveTags[0] = "changed"
 			u.Items[0].Count = 9
 		}
 		for name, u := range map[string]UnitSetup{"出来事の増援": b.mapEvents[0].Enemies[0], "ターンの増援": b.reinforcements[0].Unit} {
-			if u.Tags[0] != "armor" || u.Weapon.EffectiveTags[0] != "mounted" || u.Weapons[0].EffectiveTags[0] != "mounted" || u.Items[0].Count != 1 {
+			if u.Tags[0] != "armor" || u.Weapons[0].EffectiveTags[0] != "mounted" || u.Items[0].Count != 1 {
 				t.Errorf("%s が入力に引きずられた: %+v", name, u)
 			}
 		}

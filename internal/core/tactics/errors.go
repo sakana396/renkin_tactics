@@ -38,6 +38,10 @@ var (
 	ErrCannotHeal = errors.New("tactics: 杖を持っていないので回復できません")
 	// ErrNoUses は、杖の使用回数が残っていないことを表す（DES-HEL-01、E-33）。
 	ErrNoUses = errors.New("tactics: 杖の使用回数が残っていません")
+	// ErrNoWeapon は、指定した武器の添字が武器の列の外であることを表す（DES-ITM-02）。
+	ErrNoWeapon = errors.New("tactics: その武器はありません")
+	// ErrWeaponType は、選んだ武器の種類を兵種が持てないことを表す（DES-ITM-02）。
+	ErrWeaponType = errors.New("tactics: その種類の武器は使えません")
 	// ErrInvalidSetup は、Setup が正しくないことを表す（New だけ）。
 	ErrInvalidSetup = errors.New("tactics: 戦闘の入力が正しくありません")
 )

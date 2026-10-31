@@ -45,8 +45,13 @@ func unitTile(u tactics.Unit) assets.Tile {
 	if u.ClassName == cavalierClassName {
 		return assets.Cavalier
 	}
+	// 絵は武器の列の先頭（初めの装備）の種類で選び、持ち替えでは変えない（DES-ITM-02）。
+	var first tactics.WeaponType
+	if len(u.Weapons) > 0 {
+		first = u.Weapons[0].Type
+	}
 	if u.Side == tactics.Player {
-		switch u.Weapon.Type {
+		switch first {
 		case tactics.Lance:
 			return assets.PlayerLance
 		case tactics.Axe:
@@ -61,7 +66,7 @@ func unitTile(u tactics.Unit) assets.Tile {
 	if u.Boss {
 		return assets.EnemyBoss
 	}
-	switch u.Weapon.Type {
+	switch first {
 	case tactics.Lance:
 		return assets.EnemyLance
 	case tactics.Axe:

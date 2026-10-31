@@ -30,7 +30,7 @@ func TestPreviewRewindBoard(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				b := snapshotBattle(t)
 				b.units[0].ClassName = "騎兵"
-				b.units[0].Weapon.Hit = 1000
+				b.units[0].Weapons[0].Hit = 1000
 				cmd := Command{Unit: 0, To: Pos{1, 0}, Action: Attack, Target: 2}
 				switch name {
 				case "薬":
@@ -38,7 +38,7 @@ func TestPreviewRewindBoard(t *testing.T) {
 					cmd = Command{Unit: 0, To: Pos{0, 0}, Action: UseItem, Item: 0}
 				case "杖":
 					b.units[1].HP = 40
-					b.units[0].Weapon = Weapon{Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 2, MaxUses: 3}
+					b.units[0].setWeapon(Weapon{Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 2, MaxUses: 3})
 					cmd = Command{Unit: 0, To: Pos{0, 0}, Action: Heal, Target: 1}
 				case "成長":
 					b.units[0].Growth = Growth{100, 100, 100, 100, 100, 0, 0, 0}
@@ -58,7 +58,7 @@ func TestPreviewRewindBoard(t *testing.T) {
 						t.Fatal("薬を通っていない")
 					}
 				case "杖":
-					if b.units[1].HP != 50 || b.units[0].Weapon.Uses != 1 {
+					if b.units[1].HP != 50 || b.units[0].Weapons[0].Uses != 1 {
 						t.Fatal("杖を通っていない")
 					}
 				case "成長":
@@ -240,9 +240,10 @@ func TestNewBoardView(t *testing.T) {
 		source := snapshotBattle(t)
 		setup := Setup{Terrain: source.terrain, Reinforcements: source.reinforcements}
 		for _, u := range source.Units() {
-			setup.Units = append(setup.Units, UnitSetup{Name: u.Name, ClassName: u.ClassName, Side: u.Side, Stats: u.Stats, Level: u.Level, Exp: u.Exp, Growth: u.Growth, Pos: u.Pos, Weapon: u.Weapon, Items: u.Items, Skill: u.Skill, Lord: u.Lord, Boss: u.Boss, AI: u.AI})
+			setup.Units = append(setup.Units, UnitSetup{Name: u.Name, ClassName: u.ClassName, Side: u.Side, Stats: u.Stats, Level: u.Level, Exp: u.Exp, Growth: u.Growth, Pos: u.Pos, Weapons: u.Weapons, AllowedWeaponTypes: u.AllowedWeaponTypes, Items: u.Items, Skill: u.Skill, Lord: u.Lord, Boss: u.Boss, AI: u.AI})
 		}
-		setup.Units[1].Weapon = Weapon{Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 1, MaxUses: 3}
+		setup.Units[1].Weapons = []Weapon{{Type: Staff, MinRange: 1, MaxRange: 1, Heal: 10, Uses: 1, MaxUses: 3}}
+		setup.Units[1].AllowedWeaponTypes = []WeaponType{Staff}
 		v, err := NewBoardView(setup)
 		if err != nil {
 			t.Fatal(err)
@@ -255,7 +256,7 @@ func TestNewBoardView(t *testing.T) {
 				t.Fatal("初期ユニットの変換が違う")
 			}
 		}
-		if v.Units()[1].Weapon.Uses != 3 {
+		if v.Units()[1].Weapons[0].Uses != 3 {
 			t.Fatal("杖が満タンでない")
 		}
 		for _, method := range []string{"Act", "EndPhase", "Resume", "Rewind"} {

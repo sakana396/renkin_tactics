@@ -79,12 +79,12 @@ func TestBaseData(t *testing.T) {
 			def   defs.CharacterDef
 			stats defs.Stats
 		}{
-			{defs.CharacterDef{ID: "leon", Name: "レオン", Class: "lord", Bonus: defs.Stats{HP: 1, Str: 2, Skl: 4, Spd: 4}, Level: 1, Growth: defs.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20, Lck: 40, Mag: 20, Res: 20}, Weapon: "iron_sword", Items: []defs.ItemCount{{Item: "potion", Count: 2}}, Skill: "inspire", Lord: true}, defs.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
-			{defs.CharacterDef{ID: "gald", Name: "ガルド", Class: "armor", Bonus: defs.Stats{HP: 2, Skl: -2, Def: 2}, Level: 1, Growth: defs.Growth{HP: 85, Str: 40, Skl: 20, Spd: 10, Def: 70, Lck: 20, Mag: 0, Res: 10}, Weapon: "iron_lance", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "pavise"}, defs.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
-			{defs.CharacterDef{ID: "bran", Name: "ブラン", Class: "fighter", Bonus: defs.Stats{HP: -2, Str: 4, Skl: 1, Spd: 1, Def: -1}, Level: 1, Growth: defs.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15, Lck: 25, Mag: 0, Res: 10}, Weapon: "iron_axe", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "wrath"}, defs.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
-			{defs.CharacterDef{ID: "mira", Name: "ミラ", Class: "archer", Bonus: defs.Stats{Skl: 2, Spd: 1}, Level: 1, Growth: defs.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20, Lck: 35, Mag: 5, Res: 15}, Weapon: "iron_bow", Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "snipe"}, defs.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}},
-			{defs.CharacterDef{ID: "elsa", Name: "エルザ", Class: "cavalier", Bonus: defs.Stats{HP: 1, Str: 1, Skl: 1, Spd: 1}, Level: 2, Growth: defs.Growth{HP: 65, Str: 45, Skl: 40, Spd: 40, Def: 35, Lck: 30, Mag: 5, Res: 20}, Weapon: "iron_lance", Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 21, Str: 7, Skl: 6, Spd: 7, Def: 5, Mov: 7, Lck: 3, Mag: 0, Res: 1}},
-			{defs.CharacterDef{ID: "rina", Name: "リナ", Class: "cleric", Level: 1, Growth: defs.Growth{HP: 55, Str: 0, Skl: 40, Spd: 60, Def: 30, Lck: 45, Mag: 50, Res: 45}, Weapon: "heal_staff", Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}},
+			{defs.CharacterDef{ID: "leon", Name: "レオン", Class: "lord", Bonus: defs.Stats{HP: 1, Str: 2, Skl: 4, Spd: 4}, Level: 1, Growth: defs.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20, Lck: 40, Mag: 20, Res: 20}, Weapons: []string{"iron_sword"}, Items: []defs.ItemCount{{Item: "potion", Count: 2}}, Skill: "inspire", Lord: true}, defs.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
+			{defs.CharacterDef{ID: "gald", Name: "ガルド", Class: "armor", Bonus: defs.Stats{HP: 2, Skl: -2, Def: 2}, Level: 1, Growth: defs.Growth{HP: 85, Str: 40, Skl: 20, Spd: 10, Def: 70, Lck: 20, Mag: 0, Res: 10}, Weapons: []string{"iron_lance"}, Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "pavise"}, defs.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
+			{defs.CharacterDef{ID: "bran", Name: "ブラン", Class: "fighter", Bonus: defs.Stats{HP: -2, Str: 4, Skl: 1, Spd: 1, Def: -1}, Level: 1, Growth: defs.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15, Lck: 25, Mag: 0, Res: 10}, Weapons: []string{"iron_axe"}, Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "wrath"}, defs.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
+			{defs.CharacterDef{ID: "mira", Name: "ミラ", Class: "archer", Bonus: defs.Stats{Skl: 2, Spd: 1}, Level: 1, Growth: defs.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20, Lck: 35, Mag: 5, Res: 15}, Weapons: []string{"iron_bow"}, Items: []defs.ItemCount{{Item: "potion", Count: 1}}, Skill: "snipe"}, defs.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}},
+			{defs.CharacterDef{ID: "elsa", Name: "エルザ", Class: "cavalier", Bonus: defs.Stats{HP: 1, Str: 1, Skl: 1, Spd: 1}, Level: 2, Growth: defs.Growth{HP: 65, Str: 45, Skl: 40, Spd: 40, Def: 35, Lck: 30, Mag: 5, Res: 20}, Weapons: []string{"iron_lance"}, Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 21, Str: 7, Skl: 6, Spd: 7, Def: 5, Mov: 7, Lck: 3, Mag: 0, Res: 1}},
+			{defs.CharacterDef{ID: "rina", Name: "リナ", Class: "cleric", Level: 1, Growth: defs.Growth{HP: 55, Str: 0, Skl: 40, Spd: 60, Def: 30, Lck: 45, Mag: 50, Res: 45}, Weapons: []string{"heal_staff"}, Items: []defs.ItemCount{{Item: "potion", Count: 1}}}, defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}},
 		}
 		for _, want := range chars {
 			got, ok := cat.Character(want.def.ID)
@@ -111,14 +111,14 @@ func TestBaseData(t *testing.T) {
 			t.Errorf("出撃の枠 = %+v", m.Slots)
 		}
 		enemies := []defs.EnemyPlacement{
-			{Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 6, Y: 10},
-			{Class: "soldier", Weapon: "iron_lance", AI: "hold", X: 7, Y: 4},
-			{Class: "myrmidon", Weapon: "iron_sword", AI: "hold", X: 9, Y: 8},
-			{Class: "myrmidon", Weapon: "iron_sword", AI: "hold", X: 11, Y: 3},
-			{Class: "fighter", Weapon: "iron_axe", AI: "charge", X: 10, Y: 11},
-			{Class: "fighter", Weapon: "iron_axe", AI: "hold", X: 13, Y: 8},
-			{Class: "archer", Weapon: "iron_bow", AI: "hold", X: 12, Y: 7},
-			{Name: "ハーゲン", Class: "soldier", Weapon: "iron_lance", Bonus: defs.Stats{HP: 8, Str: 3, Skl: 3, Spd: 2, Def: 3}, AI: "hold", Boss: true, X: 13, Y: 1},
+			{Class: "soldier", Weapons: []string{"iron_lance"}, AI: "charge", X: 6, Y: 10},
+			{Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", X: 7, Y: 4},
+			{Class: "myrmidon", Weapons: []string{"iron_sword"}, AI: "hold", X: 9, Y: 8},
+			{Class: "myrmidon", Weapons: []string{"iron_sword"}, AI: "hold", X: 11, Y: 3},
+			{Class: "fighter", Weapons: []string{"iron_axe"}, AI: "charge", X: 10, Y: 11},
+			{Class: "fighter", Weapons: []string{"iron_axe"}, AI: "hold", X: 13, Y: 8},
+			{Class: "archer", Weapons: []string{"iron_bow"}, AI: "hold", X: 12, Y: 7},
+			{Name: "ハーゲン", Class: "soldier", Weapons: []string{"iron_lance"}, Bonus: defs.Stats{HP: 8, Str: 3, Skl: 3, Spd: 2, Def: 3}, AI: "hold", Boss: true, X: 13, Y: 1},
 		}
 		if !reflect.DeepEqual(m.Enemies, enemies) {
 			t.Errorf("敵の配置 = %+v", m.Enemies)
@@ -130,9 +130,9 @@ func TestBaseData(t *testing.T) {
 			t.Errorf("ボスの能力 = %+v", s)
 		}
 		reinf := []defs.Reinforcement{
-			{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Class: "fighter", Weapon: "iron_axe", AI: "charge", X: 0, Y: 3}},
-			{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 0, Y: 4}},
-			{Turn: 5, EnemyPlacement: defs.EnemyPlacement{Class: "myrmidon", Weapon: "iron_sword", AI: "charge", X: 15, Y: 15}},
+			{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Class: "fighter", Weapons: []string{"iron_axe"}, AI: "charge", X: 0, Y: 3}},
+			{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapons: []string{"iron_lance"}, AI: "charge", X: 0, Y: 4}},
+			{Turn: 5, EnemyPlacement: defs.EnemyPlacement{Class: "myrmidon", Weapons: []string{"iron_sword"}, AI: "charge", X: 15, Y: 15}},
 		}
 		if !reflect.DeepEqual(m.Reinforcements, reinf) {
 			t.Errorf("増援 = %+v", m.Reinforcements)

@@ -61,7 +61,8 @@ func HitMenu(rects []image.Rectangle, x, y int) int {
 	return -1
 }
 
-// ClickMenu は、ボタンの i 番目を選んだときの処理（DES-UI-02）。Moved では行動、ItemMenu ではアイテムを選ぶ。
+// ClickMenu は、ボタンの i 番目を選んだときの処理（DES-UI-02）。Moved では行動、ItemMenu ではアイテム、
+// WeaponMenu・StaffMenu では武器・杖を選ぶ（DES-UI-26）。
 func (c *Controller) ClickMenu(i int) {
 	switch c.state {
 	case Moved:
@@ -70,10 +71,13 @@ func (c *Controller) ClickMenu(i int) {
 		}
 	case ItemMenu:
 		c.ChooseItem(i)
+	case WeaponMenu, StaffMenu:
+		c.ChooseWeapon(i)
 	}
 }
 
-// MenuLabels は、ボタンに出す文を返す（DES-UI-02）。Moved では行動、ItemMenu では手持ちのアイテム、ほかは空。
+// MenuLabels は、ボタンに出す文を返す（DES-UI-02）。Moved では行動、ItemMenu では手持ちのアイテム、
+// WeaponMenu・StaffMenu では武器・杖（DES-UI-26）、ほかは空。
 func (c *Controller) MenuLabels() []string {
 	var out []string
 	switch c.state {
@@ -84,6 +88,16 @@ func (c *Controller) MenuLabels() []string {
 	case ItemMenu:
 		for _, s := range c.battle.Units()[c.unit].Items {
 			out = append(out, itemLabel(s))
+		}
+	case WeaponMenu, StaffMenu:
+		// 武器の一覧は最大 5 行。選べない武器には印を付け、理由は案内欄に出す（DES-IT06 12.1 節）。
+		units := c.battle.Units()
+		for _, w := range c.menuWeapons() {
+			label := units[c.unit].Weapons[w].Name
+			if c.weaponReason(w) != "" {
+				label += "（使えない）"
+			}
+			out = append(out, label)
 		}
 	}
 	return out

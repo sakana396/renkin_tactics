@@ -761,16 +761,16 @@ func TestAssets(t *testing.T) {
 			u    tactics.Unit
 			want assets.Tile
 		}{
-			{tactics.Unit{Side: tactics.Player, Lord: true, Weapon: testSword}, assets.PlayerLord},
-			{tactics.Unit{Side: tactics.Player, Weapon: testSword}, assets.PlayerSword},
-			{tactics.Unit{Side: tactics.Player, Weapon: testLance}, assets.PlayerLance},
-			{tactics.Unit{Side: tactics.Player, Weapon: testAxe}, assets.PlayerAxe},
-			{tactics.Unit{Side: tactics.Player, Weapon: tactics.Weapon{Type: tactics.Bow}}, assets.PlayerBow},
-			{tactics.Unit{Side: tactics.Enemy, Boss: true, Weapon: testLance}, assets.EnemyBoss},
-			{tactics.Unit{Side: tactics.Enemy, Weapon: testSword}, assets.EnemySword},
-			{tactics.Unit{Side: tactics.Enemy, Weapon: testLance}, assets.EnemyLance},
-			{tactics.Unit{Side: tactics.Enemy, Weapon: testAxe}, assets.EnemyAxe},
-			{tactics.Unit{Side: tactics.Enemy, Weapon: tactics.Weapon{Type: tactics.Bow}}, assets.EnemyBow},
+			{tactics.Unit{Side: tactics.Player, Lord: true, Weapons: []tactics.Weapon{testSword}}, assets.PlayerLord},
+			{tactics.Unit{Side: tactics.Player, Weapons: []tactics.Weapon{testSword}}, assets.PlayerSword},
+			{tactics.Unit{Side: tactics.Player, Weapons: []tactics.Weapon{testLance}}, assets.PlayerLance},
+			{tactics.Unit{Side: tactics.Player, Weapons: []tactics.Weapon{testAxe}}, assets.PlayerAxe},
+			{tactics.Unit{Side: tactics.Player, Weapons: []tactics.Weapon{tactics.Weapon{Type: tactics.Bow}}}, assets.PlayerBow},
+			{tactics.Unit{Side: tactics.Enemy, Boss: true, Weapons: []tactics.Weapon{testLance}}, assets.EnemyBoss},
+			{tactics.Unit{Side: tactics.Enemy, Weapons: []tactics.Weapon{testSword}}, assets.EnemySword},
+			{tactics.Unit{Side: tactics.Enemy, Weapons: []tactics.Weapon{testLance}}, assets.EnemyLance},
+			{tactics.Unit{Side: tactics.Enemy, Weapons: []tactics.Weapon{testAxe}}, assets.EnemyAxe},
+			{tactics.Unit{Side: tactics.Enemy, Weapons: []tactics.Weapon{tactics.Weapon{Type: tactics.Bow}}}, assets.EnemyBow},
 		}
 		for i, tc := range units {
 			if got := unitTile(tc.u); got != tc.want {

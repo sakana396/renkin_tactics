@@ -40,7 +40,7 @@ func TestSnapshotState(t *testing.T) {
 		b := snapshotBattle(t)
 		b.units[1].Alive = false
 		b.units[1].HP = 0
-		b.units[0].Weapon = Weapon{Type: Staff, Heal: 10, Uses: 2, MaxUses: 5, MinRange: 1, MaxRange: 1}
+		b.units[0].setWeapon(Weapon{Type: Staff, Heal: 10, Uses: 2, MaxUses: 5, MinRange: 1, MaxRange: 1})
 		b.progress = phaseProgress{stage: enemyAction, nextEnemy: 2, enemyCount: 3}
 		before := b.snapshot()
 		want := b.Units()
@@ -72,7 +72,7 @@ func TestSnapshotState(t *testing.T) {
 		source := snapshotBattle(t)
 		setup := Setup{Terrain: source.terrain, Reinforcements: source.reinforcements}
 		for _, u := range source.units {
-			setup.Units = append(setup.Units, UnitSetup{Name: u.Name, Side: u.Side, Lord: u.Lord, Boss: u.Boss, Stats: u.Stats, Weapon: u.Weapon, Pos: u.Pos, Items: u.Items})
+			setup.Units = append(setup.Units, UnitSetup{Name: u.Name, Side: u.Side, Lord: u.Lord, Boss: u.Boss, Stats: u.Stats, Weapons: u.Weapons, AllowedWeaponTypes: u.AllowedWeaponTypes, Pos: u.Pos, Items: u.Items})
 		}
 		other, _, err := New(setup, 1)
 		if err != nil {

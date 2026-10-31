@@ -55,7 +55,7 @@ func healCmd(unit int, to tactics.Pos, target int) tactics.Command {
 }
 
 // uses は、ユニットの杖の残りと最大。
-func uses(u tactics.Unit) [2]int { return [2]int{u.Weapon.Uses, u.Weapon.MaxUses} }
+func uses(u tactics.Unit) [2]int { return [2]int{u.EquippedWeapon().Uses, u.EquippedWeapon().MaxUses} }
 
 // TestHeal は回復の行動を確かめる（DES-HEL-01、FR-BTL-03）。
 func TestHeal(t *testing.T) {

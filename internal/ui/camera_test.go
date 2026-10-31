@@ -296,14 +296,14 @@ func TestCameraDeploy(t *testing.T) {
 			[]defs.TerrainDef{{ID: "p", Name: "平地", Symbol: ".", Cost: 1}},
 			[]defs.ClassDef{{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 20, Mov: 3}}},
 			[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", MinRange: 1, MaxRange: 1}}, nil, nil,
-			[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "lord", Weapon: "s", Lord: true, Level: 1}, {ID: "friend", Name: "仲間", Class: "lord", Weapon: "s", Level: 1}},
+			[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "lord", Weapons: []string{"s"}, Lord: true, Level: 1}, {ID: "friend", Name: "仲間", Class: "lord", Weapons: []string{"s"}, Level: 1}},
 			[]defs.MapDef{{ID: "m", Rows: func() []string {
 				r := make([]string, 32)
 				for i := range r {
 					r[i] = strings.Repeat(".", 32)
 				}
 				return r
-			}(), Slots: []defs.Slot{{X: 31, Y: 31}, {X: 0, Y: 0}, {X: 31, Y: 0}, {X: 0, Y: 31}}, Enemies: []defs.EnemyPlacement{{Class: "lord", Weapon: "s", AI: "hold", Boss: true, X: 30, Y: 30}}}},
+			}(), Slots: []defs.Slot{{X: 31, Y: 31}, {X: 0, Y: 0}, {X: 31, Y: 0}, {X: 0, Y: 31}}, Enemies: []defs.EnemyPlacement{{Class: "lord", Weapons: []string{"s"}, AI: "hold", Boss: true, X: 30, Y: 30}}}},
 			[]defs.ChapterDef{{ID: "c", Map: "m"}}, nil)
 		campaign, err := core.NewCampaign(cat, core.Withdraw)
 		if err != nil {

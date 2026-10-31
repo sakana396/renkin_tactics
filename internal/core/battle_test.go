@@ -37,10 +37,10 @@ func newCh01(t *testing.T) (*tactics.Battle, []tactics.Event) {
 
 var (
 	potion  = tactics.Item{ID: "potion", Name: "回復薬", Heal: 10}
-	sword   = tactics.Weapon{Name: "鉄の剣", Type: tactics.Sword, Weight: 4, Strikes: 1, Might: 5, Hit: 90, MinRange: 1, MaxRange: 1}
-	lance   = tactics.Weapon{Name: "鉄の槍", Type: tactics.Lance, Weight: 5, Strikes: 1, Might: 7, Hit: 80, MinRange: 1, MaxRange: 1}
-	axe     = tactics.Weapon{Name: "鉄の斧", Type: tactics.Axe, Weight: 7, Strikes: 1, Might: 8, Hit: 70, MinRange: 1, MaxRange: 1}
-	bow     = tactics.Weapon{Name: "鉄の弓", Type: tactics.Bow, Weight: 5, Strikes: 1, Might: 6, Hit: 85, MinRange: 2, MaxRange: 2}
+	sword   = tactics.Weapon{ID: "iron_sword", Name: "鉄の剣", Type: tactics.Sword, Weight: 4, Strikes: 1, Might: 5, Hit: 90, MinRange: 1, MaxRange: 1}
+	lance   = tactics.Weapon{ID: "iron_lance", Name: "鉄の槍", Type: tactics.Lance, Weight: 5, Strikes: 1, Might: 7, Hit: 80, MinRange: 1, MaxRange: 1}
+	axe     = tactics.Weapon{ID: "iron_axe", Name: "鉄の斧", Type: tactics.Axe, Weight: 7, Strikes: 1, Might: 8, Hit: 70, MinRange: 1, MaxRange: 1}
+	bow     = tactics.Weapon{ID: "iron_bow", Name: "鉄の弓", Type: tactics.Bow, Weight: 5, Strikes: 1, Might: 6, Hit: 85, MinRange: 2, MaxRange: 2}
 	inspire = tactics.Skill{Name: "鼓舞", Effect: tactics.Inspire, Range: 2, Hit: 10, Avoid: 10}
 	pavise  = tactics.Skill{Name: "大盾", Effect: tactics.Pavise, Chance: 30}
 	wrath   = tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}
@@ -68,11 +68,11 @@ func TestNewBattleCh01(t *testing.T) {
 			t.Fatalf("ユニットの数 = %d（自軍 5、敵 8）", len(units))
 		}
 		want := []tactics.Unit{
-			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20, Lck: 40, Mag: 20, Res: 20}, Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: tactics.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}, HP: 19, Pos: tactics.Pos{X: 1, Y: 14}, Weapon: sword, Items: []tactics.ItemStack{{Item: potion, Count: 2}}, Skill: inspire, Lord: true, Alive: true},
-			{Level: 1, Growth: tactics.Growth{HP: 85, Str: 40, Skl: 20, Spd: 10, Def: 70, Lck: 20, Mag: 0, Res: 10}, Name: "ガルド", ClassName: "アーマー", Side: tactics.Player, Stats: tactics.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4, Lck: 2, Mag: 0, Res: 0}, HP: 24, Pos: tactics.Pos{X: 2, Y: 13}, Weapon: lance, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: pavise, Alive: true},
-			{Level: 1, Growth: tactics.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15, Lck: 25, Mag: 0, Res: 10}, Name: "ブラン", ClassName: "ファイター", Side: tactics.Player, Stats: tactics.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5, Lck: 2, Mag: 0, Res: 0}, HP: 22, Pos: tactics.Pos{X: 3, Y: 14}, Weapon: axe, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: wrath, Alive: true},
-			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20, Lck: 35, Mag: 5, Res: 15}, Name: "ミラ", ClassName: "アーチャー", Side: tactics.Player, Stats: tactics.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}, HP: 17, Pos: tactics.Pos{X: 1, Y: 15}, Weapon: bow, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: snipe, Alive: true},
-			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 0, Skl: 40, Spd: 60, Def: 30, Lck: 45, Mag: 50, Res: 45}, Name: "リナ", ClassName: "僧侶", Side: tactics.Player, Stats: tactics.Stats{HP: 16, Str: 0, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}, HP: 16, Pos: tactics.Pos{X: 2, Y: 15}, Weapon: tactics.Weapon{Name: "癒やしの杖", Type: tactics.Staff, Strikes: 1, Heal: 10, Uses: 15, MaxUses: 15, MinRange: 1, MaxRange: 1}, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20, Lck: 40, Mag: 20, Res: 20}, Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: tactics.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}, HP: 19, Pos: tactics.Pos{X: 1, Y: 14}, Weapons: []tactics.Weapon{sword}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Sword}, Items: []tactics.ItemStack{{Item: potion, Count: 2}}, Skill: inspire, Lord: true, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 85, Str: 40, Skl: 20, Spd: 10, Def: 70, Lck: 20, Mag: 0, Res: 10}, Name: "ガルド", ClassName: "アーマー", Side: tactics.Player, Stats: tactics.Stats{HP: 24, Str: 6, Skl: 1, Spd: 2, Def: 11, Mov: 4, Lck: 2, Mag: 0, Res: 0}, HP: 24, Pos: tactics.Pos{X: 2, Y: 13}, Weapons: []tactics.Weapon{lance}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Lance}, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: pavise, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 70, Str: 75, Skl: 35, Spd: 30, Def: 15, Lck: 25, Mag: 0, Res: 10}, Name: "ブラン", ClassName: "ファイター", Side: tactics.Player, Stats: tactics.Stats{HP: 22, Str: 11, Skl: 5, Spd: 5, Def: 2, Mov: 5, Lck: 2, Mag: 0, Res: 0}, HP: 22, Pos: tactics.Pos{X: 3, Y: 14}, Weapons: []tactics.Weapon{axe}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Axe}, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: wrath, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 40, Skl: 60, Spd: 45, Def: 20, Lck: 35, Mag: 5, Res: 15}, Name: "ミラ", ClassName: "アーチャー", Side: tactics.Player, Stats: tactics.Stats{HP: 17, Str: 5, Skl: 9, Spd: 7, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}, HP: 17, Pos: tactics.Pos{X: 1, Y: 15}, Weapons: []tactics.Weapon{bow}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Bow}, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Skill: snipe, Alive: true},
+			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 0, Skl: 40, Spd: 60, Def: 30, Lck: 45, Mag: 50, Res: 45}, Name: "リナ", ClassName: "僧侶", Side: tactics.Player, Stats: tactics.Stats{HP: 16, Str: 0, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}, HP: 16, Pos: tactics.Pos{X: 2, Y: 15}, Weapons: []tactics.Weapon{{ID: "heal_staff", Name: "癒やしの杖", Type: tactics.Staff, Strikes: 1, Heal: 10, Uses: 15, MaxUses: 15, MinRange: 1, MaxRange: 1}}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Staff}, Items: []tactics.ItemStack{{Item: potion, Count: 1}}, Alive: true},
 		}
 		for i, w := range want {
 			if !reflect.DeepEqual(units[i], w) {
@@ -105,7 +105,7 @@ func TestNewBattleCh01(t *testing.T) {
 		for i, w := range want {
 			u := units[5+i]
 			if u.Side != tactics.Enemy || u.ClassName != w.class || u.Stats != w.stats || u.HP != w.stats.HP ||
-				!reflect.DeepEqual(u.Weapon, w.weapon) || u.Pos != w.pos || u.AI != w.ai || u.Boss != w.boss || u.Lord ||
+				!reflect.DeepEqual(u.Weapons, []tactics.Weapon{w.weapon}) || u.Equipped != 0 || !reflect.DeepEqual(u.AllowedWeaponTypes, []tactics.WeaponType{w.weapon.Type}) || u.Pos != w.pos || u.AI != w.ai || u.Boss != w.boss || u.Lord ||
 				u.Skill != (tactics.Skill{}) || u.Items != nil || !u.Alive || u.Acted || u.Level != 0 || (w.boss && u.Name != "ハーゲン") {
 				t.Errorf("units[%d] = %+v", 5+i, u)
 			}
@@ -138,8 +138,8 @@ func TestNewBattleCh01(t *testing.T) {
 		// 敵に 1 体、増援に 1 体だけのクラスは、通して数えるので番号が付く。
 		// 敵だけに 1 体のクラスは番号が付かない。
 		cat := smallCatalog(func(m *defs.MapDef, _ *[]defs.CharacterDef) {
-			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 0, Y: 1}}}
-			m.Enemies = append(m.Enemies, defs.EnemyPlacement{Class: "fighter", Weapon: "iron_axe", AI: "hold", X: 2, Y: 1})
+			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapons: []string{"iron_lance"}, AI: "charge", X: 0, Y: 1}}}
+			m.Enemies = append(m.Enemies, defs.EnemyPlacement{Class: "fighter", Weapons: []string{"iron_axe"}, AI: "hold", X: 2, Y: 1})
 		})
 		setup, err = core.NewSetup(cat, "m")
 		if err != nil {
@@ -151,8 +151,8 @@ func TestNewBattleCh01(t *testing.T) {
 		named := smallCatalog(func(m *defs.MapDef, _ *[]defs.CharacterDef) {
 			m.Enemies[0].Name = "隊長"
 			m.Reinforcements = []defs.Reinforcement{
-				{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Name: "増援隊長", Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 0, Y: 1}},
-				{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapon: "iron_lance", AI: "charge", X: 2, Y: 1}},
+				{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Name: "増援隊長", Class: "soldier", Weapons: []string{"iron_lance"}, AI: "charge", X: 0, Y: 1}},
+				{Turn: 3, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapons: []string{"iron_lance"}, AI: "charge", X: 2, Y: 1}},
 			}
 		})
 		ns, err := core.NewSetup(named, "m")
@@ -172,8 +172,8 @@ func TestNewBattleCh01(t *testing.T) {
 			"僧侶": tactics.Staff, "アーチャー": tactics.Bow, "ソルジャー": tactics.Lance, "剣士": tactics.Sword,
 		}
 		for i, u := range b.Units() {
-			if wt, ok := classWeapon[u.ClassName]; !ok || u.Weapon.Type != wt {
-				t.Errorf("units[%d] %s（%s）の武器の種類 = %v", i, u.Name, u.ClassName, u.Weapon.Type)
+			if wt, ok := classWeapon[u.ClassName]; !ok || u.EquippedWeapon().Type != wt {
+				t.Errorf("units[%d] %s（%s）の武器の種類 = %v", i, u.Name, u.ClassName, u.EquippedWeapon().Type)
 			}
 			wantMov := 5
 			if u.ClassName == "アーマー" {
@@ -276,9 +276,9 @@ func TestNewBattleCh01(t *testing.T) {
 			t.Fatal(err)
 		}
 		want := []tactics.ReinforcementSetup{
-			{Turn: 3, Unit: tactics.UnitSetup{Name: "ファイター 3", ClassName: "ファイター", Side: tactics.Enemy, Stats: fighterBase, Pos: tactics.Pos{X: 0, Y: 3}, Weapon: axe, AI: tactics.Charge}},
-			{Turn: 3, Unit: tactics.UnitSetup{Name: "ソルジャー 3", ClassName: "ソルジャー", Side: tactics.Enemy, Stats: soldierBase, Pos: tactics.Pos{X: 0, Y: 4}, Weapon: lance, AI: tactics.Charge}},
-			{Turn: 5, Unit: tactics.UnitSetup{Name: "剣士 3", ClassName: "剣士", Side: tactics.Enemy, Stats: myrmidonBase, Pos: tactics.Pos{X: 15, Y: 15}, Weapon: sword, AI: tactics.Charge}},
+			{Turn: 3, Unit: tactics.UnitSetup{Name: "ファイター 3", ClassName: "ファイター", Side: tactics.Enemy, Stats: fighterBase, Pos: tactics.Pos{X: 0, Y: 3}, Weapons: []tactics.Weapon{axe}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Axe}, AI: tactics.Charge}},
+			{Turn: 3, Unit: tactics.UnitSetup{Name: "ソルジャー 3", ClassName: "ソルジャー", Side: tactics.Enemy, Stats: soldierBase, Pos: tactics.Pos{X: 0, Y: 4}, Weapons: []tactics.Weapon{lance}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Lance}, AI: tactics.Charge}},
+			{Turn: 5, Unit: tactics.UnitSetup{Name: "剣士 3", ClassName: "剣士", Side: tactics.Enemy, Stats: myrmidonBase, Pos: tactics.Pos{X: 15, Y: 15}, Weapons: []tactics.Weapon{sword}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Sword}, AI: tactics.Charge}},
 		}
 		if !reflect.DeepEqual(setup.Reinforcements, want) {
 			t.Errorf("増援 =\n%+v\nwant\n%+v", setup.Reinforcements, want)
@@ -327,10 +327,10 @@ func smallCatalogParty(party []string, edit func(m *defs.MapDef, chars *[]defs.C
 		Name:    "小さなマップ",
 		Rows:    []string{"...", ".森."},
 		Slots:   []defs.Slot{{X: 0, Y: 0}},
-		Enemies: []defs.EnemyPlacement{{Class: "soldier", Weapon: "iron_lance", AI: "hold", Boss: true, X: 2, Y: 0}},
+		Enemies: []defs.EnemyPlacement{{Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", Boss: true, X: 2, Y: 0}},
 	}
 	chars := []defs.CharacterDef{
-		{ID: "leon", Name: "レオン", Class: "lord", Weapon: "iron_sword", Skill: "inspire", Lord: true},
+		{ID: "leon", Name: "レオン", Class: "lord", Weapons: []string{"iron_sword"}, Skill: "inspire", Lord: true},
 	}
 	if edit != nil {
 		edit(&m, &chars)
@@ -386,19 +386,19 @@ func TestNewBattleErrors(t *testing.T) {
 	}{
 		{"名簿のキャラがない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].ID = "nobody" }, `slots[0]: party のキャラ "leon" がありません`},
 		{"キャラのクラスがない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].Class = "knight" }, `キャラ "leon" のクラス "knight" がありません`},
-		{"キャラの武器がない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].Weapon = "iron_rapier" }, `武器 "iron_rapier" がありません`},
+		{"キャラの武器がない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].Weapons = []string{"iron_rapier"} }, `武器 "iron_rapier" がありません`},
 		{"キャラのアイテムがない", func(_ *defs.MapDef, c *[]defs.CharacterDef) {
 			(*c)[0].Items = []defs.ItemCount{{Item: "elixir", Count: 1}}
 		}, `アイテム "elixir" がありません`},
 		{"キャラのスキルがない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].Skill = "luna" }, `スキル "luna" がありません`},
 		{"スキルの効果の種類が使えない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].Skill = "shield" }, `スキル "shield" の効果の種類 "shield" は使えません`},
-		{"武器の種類が使えない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].Weapon = "gun" }, `武器 "gun" の種類 "gun" は使えません`},
+		{"武器の種類が使えない", func(_ *defs.MapDef, c *[]defs.CharacterDef) { (*c)[0].Weapons = []string{"gun"} }, `武器 "gun" の種類 "gun" は使えません`},
 		{"敵のクラスがない", func(m *defs.MapDef, _ *[]defs.CharacterDef) { m.Enemies[0].Class = "dragon" }, `enemies[0]: クラス "dragon" がありません`},
 		{"増援のクラスがない", func(m *defs.MapDef, _ *[]defs.CharacterDef) {
-			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Class: "dragon", Weapon: "iron_lance", AI: "charge", X: 0, Y: 1}}}
+			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Class: "dragon", Weapons: []string{"iron_lance"}, AI: "charge", X: 0, Y: 1}}}
 		}, `reinforcements[0]: クラス "dragon" がありません`},
 		{"増援の武器がない", func(m *defs.MapDef, _ *[]defs.CharacterDef) {
-			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapon: "iron_rapier", AI: "charge", X: 0, Y: 1}}}
+			m.Reinforcements = []defs.Reinforcement{{Turn: 2, EnemyPlacement: defs.EnemyPlacement{Class: "soldier", Weapons: []string{"iron_rapier"}, AI: "charge", X: 0, Y: 1}}}
 		}, `reinforcements[0]: 武器 "iron_rapier" がありません`},
 		{"敵のアイテムがない", func(m *defs.MapDef, _ *[]defs.CharacterDef) {
 			m.Enemies[0].Items = []defs.ItemCount{{Item: "elixir", Count: 1}}

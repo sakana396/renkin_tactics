@@ -203,9 +203,9 @@ func dist(a, b tactics.Pos) int {
 // strikeOn は、敵 o が自軍 u（at に立つ）を攻撃するときの 1 撃のダメージ・命中率・回数（鼓舞は数えない）。
 func (p *autoPlayer) strikeOn(o, u tactics.Unit, at tactics.Pos) (dmg, hit, count int) {
 	tr := p.b.TerrainAt(at)
-	t := tri(o.Weapon.Type, u.Weapon.Type)
-	dmg = max(0, o.Stats.Str+o.Weapon.Might+t-(u.Stats.Def+tr.Def))
-	hit = min(100, max(0, o.Stats.Skl*2+o.Weapon.Hit+15*t-(u.Stats.Spd*2+tr.Avoid)))
+	t := tri(o.EquippedWeapon().Type, u.EquippedWeapon().Type)
+	dmg = max(0, o.Stats.Str+o.EquippedWeapon().Might+t-(u.Stats.Def+tr.Def))
+	hit = min(100, max(0, o.Stats.Skl*2+o.EquippedWeapon().Hit+15*t-(u.Stats.Spd*2+tr.Avoid)))
 	count = 1
 	if o.Stats.Spd-u.Stats.Spd >= 4 {
 		count = 2
@@ -237,7 +237,7 @@ func (p *autoPlayer) dangerOf(i int, at tactics.Pos, skip int, reach map[int]map
 	can := func(e int, at tactics.Pos) bool {
 		o := units[e]
 		for t := range reach[e] {
-			if d := dist(t, at); d >= o.Weapon.MinRange && d <= o.Weapon.MaxRange {
+			if d := dist(t, at); d >= o.EquippedWeapon().MinRange && d <= o.EquippedWeapon().MaxRange {
 				return true
 			}
 		}
@@ -440,7 +440,7 @@ func (p *autoPlayer) anchor(g int) int {
 			lord = j
 			continue
 		}
-		if o.Weapon.Type == tactics.Staff {
+		if o.EquippedWeapon().Type == tactics.Staff {
 			continue
 		}
 		if best < 0 || o.Stats.Def > units[best].Stats.Def {
@@ -462,7 +462,7 @@ func (p *autoPlayer) act(i int) {
 	er := p.enemyReach()
 	cost := p.pathCost(p.goal(i))
 
-	if u.Weapon.Type == tactics.Staff {
+	if u.EquippedWeapon().Type == tactics.Staff {
 		if p.tryHeal(i, tiles, er) {
 			return
 		}
@@ -474,14 +474,14 @@ func (p *autoPlayer) act(i int) {
 		score float64
 	}
 	var best, risky *option
-	if u.Weapon.Type != tactics.Staff {
+	if u.EquippedWeapon().Type != tactics.Staff {
 		for _, t := range tiles {
 			for e, o := range units {
 				if !o.Alive || o.Side != tactics.Enemy {
 					continue
 				}
 				d := dist(t, o.Pos)
-				if d < u.Weapon.MinRange || d > u.Weapon.MaxRange {
+				if d < u.EquippedWeapon().MinRange || d > u.EquippedWeapon().MaxRange {
 					continue
 				}
 				cmd := tactics.Command{Unit: i, To: t, Action: tactics.Attack, Target: e}
@@ -598,7 +598,7 @@ func (p *autoPlayer) safest(i int, tiles []tactics.Pos, er map[int]map[tactics.P
 		if !progress {
 			score = dg*10 - p.b.TerrainAt(t).HealPercent + c/8
 		}
-		if u.Weapon.Type == tactics.Staff && progress {
+		if u.EquippedWeapon().Type == tactics.Staff && progress {
 			score += 2 * p.behind(i, t)
 		}
 		if best == nil || score < best.c || score == best.c && dg < best.dg {
@@ -614,7 +614,7 @@ func (p *autoPlayer) safest(i int, tiles []tactics.Pos, er map[int]map[tactics.P
 // hasHealer は、隊 g に i 以外の回復役（使用回数の残る杖）がいるかを返す。
 func (p *autoPlayer) hasHealer(g, i int) bool {
 	for j, o := range p.b.Units() {
-		if j != i && o.Alive && o.Side == tactics.Player && p.group(j) == g && o.Weapon.Type == tactics.Staff && o.Weapon.Uses > 0 {
+		if j != i && o.Alive && o.Side == tactics.Player && p.group(j) == g && o.EquippedWeapon().Type == tactics.Staff && o.EquippedWeapon().Uses > 0 {
 			return true
 		}
 	}
@@ -654,7 +654,7 @@ func (p *autoPlayer) tryHeal(i int, tiles []tactics.Pos, er map[int]map[tactics.
 			continue
 		}
 		for _, t := range tiles {
-			if dist(t, o.Pos) < u.Weapon.MinRange || dist(t, o.Pos) > u.Weapon.MaxRange {
+			if dist(t, o.Pos) < u.EquippedWeapon().MinRange || dist(t, o.Pos) > u.EquippedWeapon().MaxRange {
 				continue
 			}
 			dg := p.danger(i, t, -1, er)
