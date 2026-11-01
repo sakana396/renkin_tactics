@@ -621,15 +621,24 @@ func (c *Controller) hoveredWeapon() int {
 // Overlay は移動範囲と武器の射程を返す（DES-UI-03、DES-UI-08、DES-UI-18）。
 // 第二戻り値の色は RangeStyle に従い、杖なら緑、攻撃なら赤になる。
 // 敵の範囲を出しているとき（shownEnemy）は、選んでいる自軍の範囲の代わりに、その敵の範囲を返す。
+// Idle では、カーソルを合わせた敵とクリックして出している敵（shownWatched）の範囲を合わせて返す（DES-UI-27）。
+// 自軍を選んでいる間のクリックして出している敵の範囲は、自軍の範囲と見分けられるよう WatchedFrames で枠として返す。
 // そうでなければ、Selected では選んだ自軍の範囲を返す。
 // 赤は、移動できるマスから武器が届くマスのうち、移動できないマス。
 // Moved・Targeting・HealTargeting では、移動先から武器が届くマスを第二戻り値で返す。
 func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
-	if e := c.shownEnemy(); e >= 0 {
-		return c.ranges(e)
+	e := c.shownEnemy()
+	if c.state == Idle {
+		ws := c.shownWatched()
+		if e >= 0 && !c.watched[e] {
+			ws = append(ws, e)
+		}
+		if len(ws) > 0 {
+			return c.unionRanges(ws)
+		}
 	}
-	if ws := c.shownWatched(); len(ws) > 0 {
-		return c.unionRanges(ws)
+	if e >= 0 {
+		return c.ranges(e)
 	}
 	switch c.state {
 	case Selected:
@@ -683,12 +692,27 @@ func (c *Controller) shownEnemy() int {
 }
 
 // shownWatched は、クリックして範囲を出している敵のうち、今の盤面で生きている敵の添字を、添字の順に返す（DES-UI-27）。
-// 出すのは Idle のときだけ。自軍を選んでいる間は自軍の範囲を出し、集まりは保って、Idle に戻ると出す。
+// 出すのは、敵の範囲を出す状態（Idle・Selected・Moved）のとき。自軍を選んで動かしている間も残す（E-60、DES-IT06 12.4 節）。
 func (c *Controller) shownWatched() []int {
-	if c.state != Idle {
-		return nil
+	switch c.state {
+	case Idle, Selected, Moved:
+		return c.aliveWatched()
 	}
-	return c.aliveWatched()
+	return nil
+}
+
+// WatchedFrames は、自軍を選んでいる間（Selected・Moved）に、クリックして出している敵の範囲を返す（DES-UI-27）。
+// 青は移動できるマス、赤は攻撃できるマス（unionRanges と同じ）。自軍の範囲の塗り（Overlay）と見分けられるよう、
+// 描画では塗らずにマスの内側の枠で描く。Idle では Overlay の塗りに入れるので nil。ほかの状態は shownWatched が空。
+func (c *Controller) WatchedFrames() (blue, red map[tactics.Pos]bool) {
+	if c.state == Idle {
+		return nil, nil
+	}
+	ws := c.shownWatched()
+	if len(ws) == 0 {
+		return nil, nil
+	}
+	return c.unionRanges(ws)
 }
 
 // aliveWatched は、watched のうち今の盤面で生きている敵の添字を、添字の順に返す（DES-UI-27）。
@@ -923,7 +947,7 @@ func (c *Controller) healTargetsWith(w int) []int {
 // RangeStyle は表示中の射程の色を返す。敵の射程は赤のままにする（DES-UI-18、DES-UI-08）。
 // 攻撃の武器の赤と、選んだ杖の緑を分ける（DES-IT06 6.1 節）。移動先を選ぶ前と行動の一覧では、攻撃の武器がなければ緑。
 func (c *Controller) RangeStyle() InfoStyle {
-	if c.shownEnemy() >= 0 || len(c.shownWatched()) > 0 {
+	if c.shownEnemy() >= 0 || c.state == Idle && len(c.shownWatched()) > 0 {
 		return StyleBad
 	}
 	switch c.state {

@@ -254,6 +254,10 @@ func TestUIControls(t *testing.T) {
 		// もう一度 A をクリックすると A だけ消える。
 		c.Click(tactics.Pos{X: 2})
 		overlayIs(t, c, "A を消す", rowSet(3, 4, 5), rowSet(2, 6))
+		// カーソルを合わせた A の範囲は、出している B の範囲と合わせて出す（B を隠さない）。
+		c.SetCursor(cellCenter(tactics.Pos{X: 2}))
+		overlayIs(t, c, "A に合わせる", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
+		c.SetCursor(-1, -1)
 		c.Click(tactics.Pos{X: 2})
 		// 空いたマスのクリック、スクロール、Q の切り替えでは集まりを変えない。Q の危険範囲は別に出す。
 		c.Click(tactics.Pos{X: 0})
@@ -282,6 +286,15 @@ func TestUIControls(t *testing.T) {
 		c.Click(tactics.Pos{X: 2})
 		own, ownRed := c.ranges(0)
 		overlayIs(t, c, "レオンを選ぶ", own, ownRed)
+		// 自軍を選んで動かしている間も、出している敵の範囲を枠（WatchedFrames）で残す（E-60）。
+		if blue, red := c.WatchedFrames(); !reflect.DeepEqual(blue, rowSet(0, 3, 4, 5)) || !reflect.DeepEqual(red, rowSet(1, 2, 6)) {
+			t.Errorf("Selected の敵の範囲の枠: 青 %v、赤 %v", blue, red)
+		}
+		c.Click(tactics.Pos{X: 1})
+		if blue, red := c.WatchedFrames(); !reflect.DeepEqual(blue, rowSet(0, 3, 4, 5)) || !reflect.DeepEqual(red, rowSet(1, 2, 6)) {
+			t.Errorf("Moved の敵の範囲の枠: 青 %v、赤 %v", blue, red)
+		}
+		c.Cancel()
 		c.Click(tactics.Pos{X: 1})
 		c.ChooseAction(tactics.Wait)
 		playOut(c)
