@@ -27,6 +27,10 @@ var (
 	ErrNoStock           = errors.New("core: 在庫にアイテムがありません")
 	ErrHandFull          = errors.New("core: 手持ちの上限は 5 枠です（武器の本数と道具の個数の合計）")
 	ErrNoHandItem        = errors.New("core: 手持ちにアイテムがありません")
+	ErrNoWeaponStock     = errors.New("core: 在庫に武器がありません")
+	ErrNoHandWeapon      = errors.New("core: 手持ちに武器がありません")
+	ErrWeaponType        = errors.New("core: この兵種は武器を持てません")
+	ErrLastWeapon        = errors.New("core: 最後の武器は外せません")
 	ErrInvalidDeployment = errors.New("core: 出撃の選び方が正しくありません")
 	ErrInvalidSortie     = errors.New("core: この章の未反映の出撃ではありません")
 	ErrNotWon            = errors.New("core: 戦闘に勝っていません")
@@ -125,7 +129,7 @@ func NewCampaignAt(cat *defs.Catalog, rule Rule, chapterID string) (*Campaign, e
 		c.Roster = append(c.Roster, m)
 	}
 	for _, ic := range cat.Game.Stock {
-		c.Stock = changeItem(c.Stock, ic.Item, ic.Count)
+		c.addReward(ic)
 	}
 	for i := 0; i <= target; i++ {
 		c.Chapter = i
@@ -134,12 +138,21 @@ func NewCampaignAt(cat *defs.Catalog, rule Rule, chapterID string) (*Campaign, e
 		}
 		if i < target {
 			for _, ic := range chapters[i].Reward {
-				c.Stock = changeItem(c.Stock, ic.Item, ic.Count)
+				c.addReward(ic)
 			}
 		}
 	}
 	c.sortStock()
 	return c, nil
+}
+
+// addReward は道具または武器の報酬を対応する在庫に足す（DES-ITM-02）。
+func (c *Campaign) addReward(ic defs.ItemCount) {
+	if ic.Weapon != "" {
+		c.StockWeapons = changeWeapon(c.StockWeapons, ic.Weapon, ic.Count)
+	} else {
+		c.Stock = changeItem(c.Stock, ic.Item, ic.Count)
+	}
 }
 
 // newMember はキャラの加入時の状態を作る。手持ちは定義から写す（DES-CMP-03）。
@@ -225,6 +238,91 @@ func (c *Campaign) StoreItem(member int, item string) error {
 	return nil
 }
 
+// TakeWeapon は武器を在庫から名簿の手持ちへ 1 本移す（DES-ITM-02、DES-IT06 6.2 節）。
+func (c *Campaign) TakeWeapon(member int, id string) error {
+	if err := c.prepareMember(member); err != nil {
+		return err
+	}
+	if weaponCount(c.StockWeapons, id) < 1 {
+		return ErrNoWeaponStock
+	}
+	m := &c.Roster[member]
+	ch, _ := c.cat.Character(m.Character)
+	cls, _ := c.cat.Class(ch.Class)
+	w, _ := c.cat.Weapon(id)
+	if w.Type != cls.WeaponType {
+		return ErrWeaponType
+	}
+	if handSlots(*m) >= maxHand {
+		return ErrHandFull
+	}
+	m.Weapons = append(m.Weapons, id)
+	c.StockWeapons = changeWeapon(c.StockWeapons, id, -1)
+	c.sortStock()
+	return nil
+}
+
+// StoreWeapon は名簿の武器を在庫へ戻す。最後の 1 本は外せない（DES-ITM-02）。
+func (c *Campaign) StoreWeapon(member, index int) error {
+	if err := c.prepareMember(member); err != nil {
+		return err
+	}
+	m := &c.Roster[member]
+	if index < 0 || index >= len(m.Weapons) {
+		return ErrNoHandWeapon
+	}
+	if len(m.Weapons) == 1 {
+		return ErrLastWeapon
+	}
+	id := m.Weapons[index]
+	m.Weapons = append(append([]string(nil), m.Weapons[:index]...), m.Weapons[index+1:]...)
+	c.StockWeapons = changeWeapon(c.StockWeapons, id, 1)
+	c.sortStock()
+	return nil
+}
+
+// MoveWeaponFirst は指定した武器を先頭に動かし、次の出撃の初めの装備にする（DES-ITM-02）。
+func (c *Campaign) MoveWeaponFirst(member, index int) error {
+	if err := c.prepareMember(member); err != nil {
+		return err
+	}
+	m := &c.Roster[member]
+	if index < 0 || index >= len(m.Weapons) {
+		return ErrNoHandWeapon
+	}
+	if index == 0 {
+		return nil
+	}
+	id := m.Weapons[index]
+	m.Weapons = append([]string{id}, append(append([]string(nil), m.Weapons[:index]...), m.Weapons[index+1:]...)...)
+	return nil
+}
+
+// weaponCount は指定した武器の在庫本数を返す（DES-ITM-02）。
+func weaponCount(stock []WeaponCount, id string) int {
+	for _, w := range stock {
+		if w.Weapon == id {
+			return w.Count
+		}
+	}
+	return 0
+}
+
+// changeWeapon は武器の在庫を 1 行だけ増減し、元の列は変更しない（DES-ITM-02）。
+func changeWeapon(stock []WeaponCount, id string, delta int) []WeaponCount {
+	out := append([]WeaponCount(nil), stock...)
+	for i := range out {
+		if out[i].Weapon == id {
+			out[i].Count += delta
+			if out[i].Count == 0 {
+				out = append(out[:i], out[i+1:]...)
+			}
+			return out
+		}
+	}
+	return append(out, WeaponCount{Weapon: id, Count: delta})
+}
+
 // prepareMember は準備の共通の検証を順に行う（DES-CMP-04）。
 func (c *Campaign) prepareMember(member int) error {
 	if c.Cleared {
@@ -265,6 +363,7 @@ func changeItem(items []defs.ItemCount, id string, delta int) []defs.ItemCount {
 // sortStock は在庫を ID 順にする（DES-CMP-01）。
 func (c *Campaign) sortStock() {
 	sort.Slice(c.Stock, func(i, j int) bool { return c.Stock[i].Item < c.Stock[j].Item })
+	sort.Slice(c.StockWeapons, func(i, j int) bool { return c.StockWeapons[i].Weapon < c.StockWeapons[j].Weapon })
 }
 
 // StartBattle は名簿を変えず、選択順に出撃の枠へ配置する（DES-CMP-05、DES-DEP-01）。
@@ -392,6 +491,7 @@ func (c *Campaign) FinishChapter(s *Sortie) (ChapterResult, error) {
 	next := *c
 	next.Roster = append([]Member(nil), c.Roster...)
 	next.Stock = append([]defs.ItemCount(nil), c.Stock...)
+	next.StockWeapons = append([]WeaponCount(nil), c.StockWeapons...)
 	chapter := c.cat.Chapters()[c.Chapter]
 	result := ChapterResult{Chapter: chapter.ID, Reward: append([]defs.ItemCount(nil), chapter.Reward...)}
 	units := s.Battle.Units()
@@ -419,7 +519,7 @@ func (c *Campaign) FinishChapter(s *Sortie) (ChapterResult, error) {
 		}
 	}
 	for _, ic := range chapter.Reward {
-		next.Stock = changeItem(next.Stock, ic.Item, ic.Count)
+		next.addReward(ic)
 	}
 	next.sortStock()
 	next.Chapter++

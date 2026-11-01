@@ -63,6 +63,7 @@ type SceneController struct {
 	paragraph        int
 	joined           int
 	prepareMember    int
+	prepareStockTop  int
 	deployMembers    []int
 	deploySlots      []int
 	deploySelected   int
