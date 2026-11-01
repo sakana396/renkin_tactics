@@ -65,7 +65,7 @@ func TestPrepare(t *testing.T) {
 		if len(v.Rows) != 4 || s.prepareMember != 2 || !reflect.DeepEqual(s.SelectedMembers(), []int{2, 0, 3, 4}) {
 			t.Fatal(v.Rows, s.SelectedMembers(), s.prepareMember)
 		}
-		if !strings.Contains(viewStrings(v), "出撃 4/5") || len(v.Icons) != 4 || v.Info == nil || v.Buttons[len(v.Buttons)-1].Label != "配置へ" {
+		if !strings.Contains(viewStrings(v), "出撃 4/6") || len(v.Icons) != 4 || v.Info == nil || v.Buttons[len(v.Buttons)-1].Label != "配置へ" {
 			t.Fatal(v)
 		}
 		for _, tx := range v.Info.Texts {
@@ -81,24 +81,27 @@ func TestPrepare(t *testing.T) {
 	})
 	t.Run("TC-FR-CMP-03-08 印の取消しと主人公と枠の上限", func(t *testing.T) {
 		s := prepareScenes(t)
-		s.campaign.Roster = append(s.campaign.Roster, core.Member{Character: "elsa", Alive: true, Level: 2})
+		// ch01 の枠は 6 つ（DES-IT06 13 章）。生存者を 7 人にして、7 人目で枠を超える。
+		s.campaign.Roster = append(s.campaign.Roster,
+			core.Member{Character: "elsa", Alive: true, Level: 2},
+			core.Member{Character: "noel", Alive: true, Level: 2})
 		s.enterPrepare()
 		clickMark := func(n int) { r := s.View().Rows[n].Mark; s.Click(r.Min.X, r.Min.Y) }
 		clickMark(0)
-		if !strings.Contains(viewStrings(s.View()), "主人公は必ず出撃します") || len(s.SelectedMembers()) != 5 {
+		if !strings.Contains(viewStrings(s.View()), "主人公は必ず出撃します") || len(s.SelectedMembers()) != 6 {
 			t.Fatal(s.View())
 		}
-		clickMark(5)
-		if !strings.Contains(viewStrings(s.View()), "出撃は 5 人までです") || len(s.SelectedMembers()) != 5 {
+		clickMark(6)
+		if !strings.Contains(viewStrings(s.View()), "出撃は 6 人までです") || len(s.SelectedMembers()) != 6 {
 			t.Fatal(s.View())
 		}
 		clickMark(1)
-		clickMark(5)
-		if !reflect.DeepEqual(s.SelectedMembers(), []int{0, 2, 3, 4, 5}) {
+		clickMark(6)
+		if !reflect.DeepEqual(s.SelectedMembers(), []int{0, 2, 3, 4, 5, 6}) {
 			t.Fatal(s.SelectedMembers())
 		}
-		clickMark(5)
-		if len(s.SelectedMembers()) != 4 {
+		clickMark(6)
+		if len(s.SelectedMembers()) != 5 {
 			t.Fatal(s.SelectedMembers())
 		}
 	})

@@ -184,7 +184,7 @@ func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, 
 	if err != nil {
 		return tactics.UnitSetup{}, err
 	}
-	allowed, err := convertWeaponType(cls.WeaponType)
+	allowed, err := convertAllowedWeaponTypes(cls)
 	if err != nil {
 		return tactics.UnitSetup{}, fmt.Errorf("クラス %q: %w", cls.ID, err)
 	}
@@ -212,7 +212,7 @@ func allyUnit(cat *defs.Catalog, id string, slot defs.Slot) (tactics.UnitSetup, 
 		Pos:          tactics.Pos{X: slot.X, Y: slot.Y},
 		// 初めの装備は武器の列の先頭（DES-ITM-02）。
 		Weapons:            weapons,
-		AllowedWeaponTypes: []tactics.WeaponType{allowed},
+		AllowedWeaponTypes: allowed,
 
 		Items:       items,
 		Skill:       skill,
@@ -232,7 +232,7 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 	if err != nil {
 		return tactics.UnitSetup{}, err
 	}
-	allowed, err := convertWeaponType(cls.WeaponType)
+	allowed, err := convertAllowedWeaponTypes(cls)
 	if err != nil {
 		return tactics.UnitSetup{}, fmt.Errorf("クラス %q: %w", cls.ID, err)
 	}
@@ -259,7 +259,7 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 		Pos:          tactics.Pos{X: e.X, Y: e.Y},
 		// 敵の武器は敵の定義から渡す（DES-ITM-02）。初めの装備は先頭。
 		Weapons:            weapons,
-		AllowedWeaponTypes: []tactics.WeaponType{allowed},
+		AllowedWeaponTypes: allowed,
 		Items:              items,
 		ClassSkills:        classSkills,
 		Boss:               e.Boss,
@@ -470,4 +470,18 @@ func convertApproach(a string) tactics.Approach {
 		return tactics.GroupApproach
 	}
 	return tactics.Direct
+}
+
+// convertAllowedWeaponTypes は兵種の武器の種類を戦闘の形に変える（DES-CMP-11）。
+func convertAllowedWeaponTypes(cls defs.ClassDef) ([]tactics.WeaponType, error) {
+	kinds := cls.AllowedWeaponTypes()
+	result := make([]tactics.WeaponType, 0, len(kinds))
+	for _, kind := range kinds {
+		t, err := convertWeaponType(kind)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, t)
+	}
+	return result, nil
 }

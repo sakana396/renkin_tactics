@@ -130,12 +130,13 @@ type (
 		Mov int `toml:"mov"`
 	}
 	rawClass struct {
-		ID         string   `toml:"id"`
-		Name       string   `toml:"name"`
-		WeaponType string   `toml:"weapon_type"`
-		Tags       []string `toml:"tags"`
-		Skills     []string `toml:"skills"`
-		Base       rawStats `toml:"base"`
+		ID          string   `toml:"id"`
+		Name        string   `toml:"name"`
+		WeaponType  string   `toml:"weapon_type"`
+		WeaponTypes []string `toml:"weapon_types"`
+		Tags        []string `toml:"tags"`
+		Skills      []string `toml:"skills"`
+		Base        rawStats `toml:"base"`
 		// StaffHealCap は杖の回復量の上限。省略は 0（上限なし）（DES-IT06 7.1 節）。
 		StaffHealCap int `toml:"staff_heal_cap"`
 	}
@@ -669,8 +670,27 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 	for i, r := range rd.classes {
 		p := fmt.Sprintf("classes[%d]", i)
 		cid.check(p, r.ID)
-		v.oneOf(FileClasses, p+".weapon_type", "武器の種類", r.WeaponType, weaponTypes...)
-		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponType: r.WeaponType, StaffHealCap: r.StaffHealCap, Base: toStats(r.Base), Tags: append([]string(nil), r.Tags...), Skills: append([]string(nil), r.Skills...)}
+		if r.WeaponType != "" && len(r.WeaponTypes) > 0 {
+			v.add(FileClasses, p+".weapon_types", "weapon_type と weapon_types は同時に書けません")
+		}
+		if len(r.WeaponTypes) == 0 {
+			v.oneOf(FileClasses, p+".weapon_type", "武器の種類", r.WeaponType, weaponTypes...)
+		}
+		seenTypes := map[string]bool{}
+		for j, kind := range r.WeaponTypes {
+			path := fmt.Sprintf("%s.weapon_types[%d]", p, j)
+			v.oneOf(FileClasses, path, "武器の種類", kind, weaponTypes...)
+			if seenTypes[kind] {
+				v.add(FileClasses, path, "武器の種類が重なっています")
+			}
+			seenTypes[kind] = true
+		}
+		// 古い書式の weapon_type は 1 要素の weapon_types に直す（DES-IT06 5.2 節）。
+		kinds := append([]string(nil), r.WeaponTypes...)
+		if len(kinds) == 0 {
+			kinds = []string{r.WeaponType}
+		}
+		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponTypes: kinds, StaffHealCap: r.StaffHealCap, Base: toStats(r.Base), Tags: append([]string(nil), r.Tags...), Skills: append([]string(nil), r.Skills...)}
 		v.tags(FileClasses, p+".tags", "兵種の分類", c.Tags)
 		v.atLeast(FileClasses, p+".staff_heal_cap", c.StaffHealCap, 0)
 		classes[i] = c
@@ -964,8 +984,8 @@ func (v *validator) unit(ref refs, file, path, class string, weapons []weaponRef
 		if !okW {
 			v.add(file, wr.path, "武器 %q がありません", wr.id)
 		}
-		if okC && okW && c.WeaponType != w.Type {
-			v.add(file, wr.path, "武器 %q の種類 %s が、クラス %q の武器の種類 %s と違います", wr.id, w.Type, class, c.WeaponType)
+		if okC && okW && !c.CanUseWeapon(w.Type) {
+			v.add(file, wr.path, "武器 %q の種類 %s が、クラス %q の武器の種類 %s と違います", wr.id, w.Type, class, strings.Join(c.AllowedWeaponTypes(), "・"))
 		}
 	}
 }

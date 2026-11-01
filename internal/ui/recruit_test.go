@@ -48,13 +48,13 @@ func TestRecruitPrepare(t *testing.T) {
 				if !reflect.DeepEqual(s.SelectedMembers(), want) {
 					t.Fatal(id, dead, s.SelectedMembers(), want)
 				}
-				if !dead && (s.deployment[6] || s.deployment[7]) {
+				if !dead && s.deployment[7] {
 					t.Fatal("加入者が初期出撃")
 				}
-				if dead && !s.deployment[6] {
+				if dead && !s.deployment[7] {
 					t.Fatal("ティオが空いた枠に入らない")
 				}
-				if dead && id == "ch09" && !s.deployment[7] {
+				if dead && id == "ch09" && !s.deployment[8] {
 					t.Fatal("ハンナが空いた枠に入らない")
 				}
 				s.toggleDeployment(0)
@@ -62,8 +62,8 @@ func TestRecruitPrepare(t *testing.T) {
 					t.Fatal(s.message)
 				}
 				if !dead {
-					s.toggleDeployment(6)
-					if s.deployment[6] || !strings.Contains(s.message, "まで") {
+					s.toggleDeployment(7)
+					if s.deployment[7] || !strings.Contains(s.message, "まで") {
 						t.Fatal(s.message)
 					}
 				}
@@ -118,7 +118,7 @@ func TestRecruitPrepare(t *testing.T) {
 			t.Fatal("案内の折り返し・内容", lines)
 		}
 	})
-	t.Run("TC-IF-01-38 6・7・8人と品0・1・2種類の配置とクリック", func(t *testing.T) {
+	t.Run("TC-IF-01-38 7・8・9人と品0・1・2種類の配置とクリック", func(t *testing.T) {
 		// 検証済みの目録に試験用の薬を足し、異なる2種類の品を表示する。
 		source := fstest.MapFS{}
 		if err := fs.WalkDir(data.Base(), ".", func(path string, d fs.DirEntry, err error) error {
@@ -227,7 +227,7 @@ func TestRecruitJoinedScenes(t *testing.T) {
 			for _, tc := range []struct {
 				id, name string
 				count    int
-			}{{"ch04", "ティオ", 7}, {"ch08", "ハンナ", 8}} {
+			}{{"ch04", "ティオ", 8}, {"ch08", "ハンナ", 9}} {
 				s := recruitScenes(t, tc.id, rule)
 				s.saveChapter()
 				s.enterTitle("")

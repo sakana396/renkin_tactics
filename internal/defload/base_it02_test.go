@@ -48,7 +48,7 @@ func TestBaseDataIt02(t *testing.T) {
 			reinf     []reinf
 		}{
 			{"ch02", "灰の街道",
-				[]defs.Slot{{X: 1, Y: 7}, {X: 1, Y: 6}, {X: 1, Y: 8}, {X: 0, Y: 6}, {X: 0, Y: 8}, {X: 2, Y: 7}},
+				[]defs.Slot{{X: 1, Y: 7}, {X: 1, Y: 6}, {X: 1, Y: 8}, {X: 0, Y: 6}, {X: 0, Y: 8}, {X: 2, Y: 7}, {X: 0, Y: 7}},
 				defs.Stats{HP: 2, Str: 1, Skl: 1, Spd: 1, Def: 1},
 				[]enemy{
 					{"", "soldier", "iron_lance", "charge", false, 8, 5, 3},
@@ -65,7 +65,7 @@ func TestBaseDataIt02(t *testing.T) {
 				[]reinf{{2, "soldier", "iron_lance", 0, 4, 3}, {3, "fighter", "iron_axe", 0, 10, 4}, {4, "cavalier", "iron_lance", 0, 7, 5}},
 			},
 			{"ch03", "王都の奪還",
-				[]defs.Slot{{X: 7, Y: 14}, {X: 6, Y: 15}, {X: 8, Y: 15}, {X: 7, Y: 15}, {X: 8, Y: 14}},
+				[]defs.Slot{{X: 7, Y: 14}, {X: 6, Y: 15}, {X: 8, Y: 15}, {X: 7, Y: 15}, {X: 8, Y: 14}, {X: 6, Y: 14}},
 				defs.Stats{HP: 3, Str: 2, Skl: 1, Spd: 1, Def: 1},
 				[]enemy{
 					{"", "soldier", "iron_lance", "hold", false, 4, 8, 5},
@@ -194,9 +194,9 @@ func TestBaseDataIt02(t *testing.T) {
 			reward          []defs.ItemCount
 			boss            string
 		}{
-			{"ch01", "国境の砦", "ch01", 5, []defs.ItemCount{{Item: "potion", Count: 2}, {Weapon: "armor_killer", Count: 1}}, "ハーゲン"},
-			{"ch02", "灰の街道", "ch02", 6, []defs.ItemCount{{Item: "potion", Count: 2}, {Weapon: "hammer", Count: 1}}, "ヴォルグ"},
-			{"ch03", "王都の奪還", "ch03", 5, []defs.ItemCount{{Weapon: "horse_killer", Count: 1}}, "グラウス"},
+			{"ch01", "国境の砦", "ch01", 6, []defs.ItemCount{{Item: "potion", Count: 2}, {Weapon: "armor_killer", Count: 1}}, "ハーゲン"},
+			{"ch02", "灰の街道", "ch02", 7, []defs.ItemCount{{Item: "potion", Count: 2}, {Weapon: "hammer", Count: 1}}, "ヴォルグ"},
+			{"ch03", "王都の奪還", "ch03", 6, []defs.ItemCount{{Weapon: "horse_killer", Count: 1}}, "グラウス"},
 		}
 		chapters := cat.Chapters()
 		if len(chapters) < len(want) {
@@ -232,7 +232,7 @@ func TestBaseDataIt02(t *testing.T) {
 
 	t.Run("TC-FR-CMP-07-01 各章の前後に物語があり、段落は 10.8 節の下書きのとおりで 200 文字以下", func(t *testing.T) {
 		// ch03_after は反復 5 で結末から次の章への橋渡しに書き換えた（DES-IT05 3.3 節）。反復 5 で足した章は TC-FR-CMP-07-05 で確かめる。
-		counts := map[string]int{"ch01_before": 6, "ch01_after": 5, "ch02_before": 5, "ch02_after": 4, "ch03_before": 4, "ch03_after": 5}
+		counts := map[string]int{"ch01_before": 6, "ch01_after": 5, "ch02_before": 6, "ch02_after": 4, "ch03_before": 4, "ch03_after": 5}
 		for _, c := range cat.Chapters()[:3] {
 			for _, id := range []string{c.Before, c.After} {
 				if id != c.ID+"_before" && id != c.ID+"_after" {
@@ -262,7 +262,7 @@ func TestBaseDataIt02(t *testing.T) {
 			{"ch01_before", 0, "小国アルケアは、錬金術の工房で知られる国だった。山と森に守られ、長く戦を知らなかった。"},
 			{"ch01_before", 3, "隊には、砦へ薬を届けに来ていた工房の見習い、リナもいた。癒やしの杖を握る手は震えていたが、引き返すとは言わなかった。"},
 			{"ch01_before", 5, "レオン「行こう。守将ハーゲンを討てば、先遣隊は崩れる」"},
-			{"ch02_before", 2, "エルザ「村を焼けという命令に、従えなかった。この戦は、錬金術の技を奪うための略奪だ。剣を向ける相手を、選び直したい」"},
+			{"ch02_before", 3, "エルザ「村を焼けという命令に、従えなかった。この戦は、錬金術の技を奪うための略奪だ。剣を向ける相手を、選び直したい」"},
 			{"ch03_before", 1, "捕らえた帝国兵の話では、総大将グラウスは城の奥の玉座の間にいる。自ら剣を取る男で、近づけば必ず出てくるという。"},
 			{"ch03_after", 4, "レオン「王都は取り戻した。だが、まだ何も終わっていない。援軍が着く前に、門を落とす」"},
 		}
@@ -277,7 +277,7 @@ func TestBaseDataIt02(t *testing.T) {
 	t.Run("TC-FR-CMP-08-01 エルザは名簿になく、2 章の始めに加わる（レベル 2）", func(t *testing.T) {
 		// 反復 5 の加入を含めてもエルザは ch02 の一度だけ（DES-CMP-10）。
 		for _, c := range cat.Chapters() {
-			want := map[string][]string{"ch02": {"elsa"}, "ch04": {"tio"}, "ch08": {"hanna"}}[c.ID]
+			want := map[string][]string{"ch02": {"noel", "elsa"}, "ch04": {"tio"}, "ch08": {"hanna"}}[c.ID]
 			if !reflect.DeepEqual(c.Joins, want) {
 				t.Errorf("章 %s の加入 = %q", c.ID, c.Joins)
 			}
@@ -325,7 +325,7 @@ func TestBaseDataIt02(t *testing.T) {
 		cs[1].Joins[0] = "nobody"
 		cs[0].ID = "changed"
 		again := cat.Chapters()
-		if again[0].ID != "ch01" || again[1].Joins[0] != "elsa" {
+		if again[0].ID != "ch01" || again[1].Joins[0] != "noel" {
 			t.Errorf("返した章を書き換えると目録が変わった: %+v", again)
 		}
 		for _, id := range []string{"ch99_before", "", "ch01"} {

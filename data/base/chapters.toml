@@ -16,7 +16,7 @@ name = "灰の街道"
 map = "ch02"
 before = "ch02_before"
 after = "ch02_after"
-joins = ["elsa"]
+joins = ["noel", "elsa"]
 reward = [{ item = "potion", count = 2 }, { weapon = "hammer", count = 1 }]
 
 [[chapters]]

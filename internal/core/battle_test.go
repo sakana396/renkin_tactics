@@ -342,10 +342,10 @@ func smallCatalogParty(party []string, edit func(m *defs.MapDef, chars *[]defs.C
 			{ID: "forest", Name: "森", Symbol: "森", Cost: 2, Avoid: 20, Def: 1},
 		},
 		[]defs.ClassDef{
-			{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 18, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
-			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5, Lck: 2, Mag: 0, Res: 1}},
-			{ID: "fighter", Name: "ファイター", WeaponType: "axe", Base: defs.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
-			{ID: "armor_knight", Name: "アーマー", WeaponType: "lance", Tags: []string{"armor"}, Base: defs.Stats{HP: 22, Str: 6, Skl: 3, Spd: 2, Def: 9, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
+			{ID: "lord", Name: "ロード", WeaponTypes: []string{"sword"}, Base: defs.Stats{HP: 18, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
+			{ID: "soldier", Name: "ソルジャー", WeaponTypes: []string{"lance"}, Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5, Lck: 2, Mag: 0, Res: 1}},
+			{ID: "fighter", Name: "ファイター", WeaponTypes: []string{"axe"}, Base: defs.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
+			{ID: "armor_knight", Name: "アーマー", WeaponTypes: []string{"lance"}, Tags: []string{"armor"}, Base: defs.Stats{HP: 22, Str: 6, Skl: 3, Spd: 2, Def: 9, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
 		},
 		[]defs.WeaponDef{
 			{ID: "iron_sword", Name: "鉄の剣", Type: "sword", Weight: 4, Strikes: 1, DamageType: "physical", Might: 5, Hit: 90, MinRange: 1, MaxRange: 1},

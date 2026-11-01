@@ -18,6 +18,7 @@ func (s *SceneController) enterPrepare() {
 	s.message = ""
 	s.deployment = map[int]bool{}
 	s.prepareStockTop = 0
+	s.prepareRosterTop = 0
 	for i, m := range s.campaign.Roster {
 		ch, _ := s.cfg.Catalog.Character(m.Character)
 		if m.Alive && ch.Lord {
@@ -72,6 +73,20 @@ func (s *SceneController) toggleDeployment(i int) {
 
 // prepareStockRows は準備の在庫の列に一度に出すボタンの数。超える分は「▲」「▼」で送る（DES-IT06 12.1 節）。
 const prepareStockRows = 5
+
+// prepareRosterRows は準備の名簿に一度に出す生存者の行の数（DES-IT06 12.1 節）。
+const prepareRosterRows = 8
+
+// livingMembers は名簿のうち生きている仲間の添字を名簿の順に返す。名簿の送りは戦死者を数えない（DES-IT06 12.1 節）。
+func (s *SceneController) livingMembers() []int {
+	var out []int
+	for i, m := range s.campaign.Roster {
+		if m.Alive {
+			out = append(out, i)
+		}
+	}
+	return out
+}
 
 // prepareButton は準備のボタンと、押したときの操作（DES-UI-13）。
 type prepareButton struct {
@@ -140,6 +155,10 @@ func (s *SceneController) prepareButtons(y int) ([]prepareButton, int) {
 			prepareButton{SceneButton{"▼ 次へ", image.Rect(r.Max.X-76, r.Min.Y, r.Max.X, r.Max.Y), end < total}, func() error { s.prepareStockTop++; return nil }})
 		rows = max(rows, prepareStockRows+1)
 	}
+	if living := len(s.livingMembers()); living > prepareRosterRows {
+		bs = append(bs, prepareButton{SceneButton{"▲ 名簿", image.Rect(352, 44, 424, 68), s.prepareRosterTop > 0}, func() error { s.prepareRosterTop--; return nil }})
+		bs = append(bs, prepareButton{SceneButton{"▼ 名簿", image.Rect(432, 44, 504, 68), s.prepareRosterTop < living-prepareRosterRows}, func() error { s.prepareRosterTop++; return nil }})
+	}
 	return bs, rows
 }
 
@@ -175,10 +194,9 @@ func (s *SceneController) prepareView() SceneView {
 	ch := s.cfg.Catalog.Chapters()[s.campaign.Chapter]
 	v.Texts = append(v.Texts, SceneText{Text: fmt.Sprintf("第 %d 章　%s　出撃 %d/%d", s.campaign.Chapter+1, ch.Name, len(s.SelectedMembers()), s.prepareSlots()), X: 16, Y: 24, Style: StyleTitle})
 	y := 72
-	for i, m := range s.campaign.Roster {
-		if !m.Alive {
-			continue
-		}
+	living := s.livingMembers()
+	for _, i := range living[min(s.prepareRosterTop, len(living)):min(s.prepareRosterTop+prepareRosterRows, len(living))] {
+		m := s.campaign.Roster[i]
 		u := s.prepareUnit(i)
 		mark := "[ ]"
 		if s.deployment[i] {
@@ -235,7 +253,14 @@ func (s *SceneController) prepareUnit(i int) tactics.Unit {
 	cls, _ := s.cfg.Catalog.Class(ch.Class)
 	wt := map[string]tactics.WeaponType{"sword": tactics.Sword, "lance": tactics.Lance, "axe": tactics.Axe, "bow": tactics.Bow, "staff": tactics.Staff, "magic": tactics.Magic}
 	u := tactics.Unit{Name: ch.Name, ClassName: cls.Name, Side: tactics.Player, Stats: m.Stats, HP: m.Stats.HP, Level: m.Level, Exp: m.Exp, Lord: ch.Lord, Alive: m.Alive,
-		AllowedWeaponTypes: []tactics.WeaponType{wt[cls.WeaponType]}}
+		AllowedWeaponTypes: func() []tactics.WeaponType {
+			kinds := cls.AllowedWeaponTypes()
+			out := make([]tactics.WeaponType, len(kinds))
+			for i, kind := range kinds {
+				out[i] = wt[kind]
+			}
+			return out
+		}()}
 	// 名簿の武器の列を順に写し、先頭（初めの装備）を装備にする（DES-ITM-02、REV-069 の申し送り）。
 	for _, id := range m.Weapons {
 		w, _ := s.cfg.Catalog.Weapon(id)

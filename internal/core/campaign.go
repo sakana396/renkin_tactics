@@ -250,7 +250,7 @@ func (c *Campaign) TakeWeapon(member int, id string) error {
 	ch, _ := c.cat.Character(m.Character)
 	cls, _ := c.cat.Class(ch.Class)
 	w, _ := c.cat.Weapon(id)
-	if w.Type != cls.WeaponType {
+	if !cls.CanUseWeapon(w.Type) {
 		return ErrWeaponType
 	}
 	if handSlots(*m) >= maxHand {

@@ -21,6 +21,9 @@ var tinyDungeonPNG []byte
 //go:embed original.png
 var originalPNG []byte
 
+//go:embed mages.png
+var magesPNG []byte
+
 // TileSize はタイル 1 枚の大きさ（ピクセル）。画面では 2 倍で描く（DES-UI-01）。
 const TileSize = 16
 
@@ -38,6 +41,8 @@ const (
 	Dungeon
 	// Original は自作の画像（original.png）。Kenney に騎乗の絵がないため描いた（DES-UI-22）。
 	Original
+	// Mages は自作の錬金術師と魔道士（DES-CMP-11）。
+	Mages
 )
 
 // Tile は画像の種類とタイルの番号の組（DES-UI-05）。
@@ -74,6 +79,12 @@ var (
 	PlayerStaff = Tile{Dungeon, 108}
 	// PlayerBow は自軍の弓の使い手（アーチャー）。
 	PlayerBow = Tile{Dungeon, 112}
+	// Alchemist は瓶を持つ錬金術師（DES-CMP-11）。
+	Alchemist = Tile{Mages, 0}
+	// Mage は杖を持つ魔道士（DES-CMP-11）。
+	Mage = Tile{Mages, 1}
+	// WeaponMagic は魔法の武器種の絵（DES-CMP-11）。
+	WeaponMagic = Tile{Mages, 2}
 	// EnemyBoss は敵のボス。
 	EnemyBoss = Tile{Dungeon, 97}
 	// EnemySword は敵の剣の使い手（剣士）。
@@ -104,7 +115,11 @@ var (
 
 // Rect は、画像の中でのタイルの範囲を返す（DES-UI-05）。
 func (t Tile) Rect() image.Rectangle {
-	x, y := (t.N%Columns)*TileSize, (t.N/Columns)*TileSize
+	columns := Columns
+	if t.Sheet == Mages {
+		columns = 3
+	}
+	x, y := (t.N%columns)*TileSize, (t.N/columns)*TileSize
 	return image.Rect(x, y, x+TileSize, y+TileSize)
 }
 
@@ -119,6 +134,7 @@ func Load() (map[Sheet]image.Image, error) {
 		{Town, "Tiny Town", tinyTownPNG},
 		{Dungeon, "Tiny Dungeon", tinyDungeonPNG},
 		{Original, "自作の画像", originalPNG},
+		{Mages, "自作の錬金術師・魔道士", magesPNG},
 	} {
 		img, err := png.Decode(bytes.NewReader(s.data))
 		if err != nil {
