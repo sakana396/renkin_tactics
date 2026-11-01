@@ -478,19 +478,23 @@ func TestGroupFullThreatIt06(t *testing.T) {
 		return UnitSetup{Name: name, Side: Enemy, Level: 1, AI: Charge, Approach: GroupApproach, Group: "g", Stats: Stats{HP: 20, Str: 5, Skl: 5, Spd: 5, Def: 3, Mov: 2}, Pos: Pos{x, 1}, Weapon: w}
 	}
 	for _, tc := range []struct {
-		name      string
-		width     int
-		positions []int
-		want      []int
+		name       string
+		width      int
+		positions  []int
+		want       []int
+		playerMove int
 	}{
-		{"境目を仲間がふさぐ", 8, []int{3, 4}, []int{5, 6}},
-		{"R-01 の一マス手前", 13, []int{8, 9}, []int{5, 6}},
-		{"三体の一団", 14, []int{8, 10, 12}, []int{5, 6, 7}},
+		{"境目を仲間がふさぐ", 8, []int{3, 4}, []int{5, 6}, 1},
+		{"R-01 の一マス手前", 13, []int{8, 9}, []int{5, 6}, 1},
+		{"三体の一団", 14, []int{8, 10, 12}, []int{5, 6, 7}, 1},
+		{"三体の一団・移動2", 14, []int{8, 10, 12}, []int{6, 7, 8}, 2},
 	} {
 		t.Run("TC-FR-BTL-07-21 "+tc.name, func(t *testing.T) {
 			boss := foe("ボス", tc.width-1)
 			boss.Group, boss.Approach, boss.AI, boss.Boss = "", Direct, Hold, true
-			units := []UnitSetup{player}
+			movingPlayer := player
+			movingPlayer.Stats.Mov = tc.playerMove
+			units := []UnitSetup{movingPlayer}
 			for i, x := range tc.positions {
 				units = append(units, foe(string(rune('A'+i)), x))
 			}
@@ -568,5 +572,78 @@ func TestGroupDangerVirtualRangeIt06(t *testing.T) {
 	b.units[0].Stats.Str = 20
 	if danger := b.dangerFor(1, reach, threats); !danger[Pos{4, 1}] {
 		t.Fatalf("地形防御・回避を外した比較にならない: %v", danger)
+	}
+	// 仮の攻撃位置にある地形も、敵の反撃の値に混ぜない。
+	wide := make([][]Terrain, 3)
+	for y := range wide {
+		wide[y] = make([]Terrain, 12)
+		for x := range wide[y] {
+			wide[y][x] = Terrain{Name: "平地", Cost: 1}
+		}
+	}
+	b.terrain = wide
+	b.units[0].Stats.Str = 5
+	b.units[0].Weapons[0].Might = 0
+	b.units[0].Weapons[0].MinRange, b.units[0].Weapons[0].MaxRange = 1, 1
+	b.units[1].HP = 30
+	b.units[1].Stats.Str = 0
+	b.units[1].Weapons[0].Might = 10
+	reach = map[int]map[Pos]int{0: b.Reachable(0)}
+	threats = b.playerThreats(reach)
+	var base int
+	for _, bonus := range []int{0, 99} {
+		b.terrain[1][9].Def, b.terrain[1][9].Avoid = bonus, bonus
+		got := len(b.dangerFor(1, reach, threats))
+		if bonus == 0 {
+			base = got
+		}
+		if got != base || got != 0 {
+			t.Fatalf("仮の攻撃位置の地形 %d: 危険なマス %d（基準 %d）", bonus, got, base)
+		}
+	}
+}
+
+// 同じ一団の現在位置を集まる先に使い、後ろの列の判定にも使う（TC-FR-BTL-07-21、DES-AI-02）。
+func TestGroupOccupiedMemberGoalsIt06(t *testing.T) {
+	road := make([][]Terrain, 3)
+	for y := range road {
+		road[y] = make([]Terrain, 10)
+		for x := range road[y] {
+			road[y][x] = Terrain{Name: "壁"}
+			if y == 1 {
+				road[y][x] = Terrain{Name: "道", Cost: 1}
+			}
+		}
+	}
+	playerWeapon := Weapon{Name: "長剣", Type: Sword, Might: 5, Hit: 100, MinRange: 1, MaxRange: 2}
+	enemyWeapon := Weapon{Name: "剣", Type: Sword, Might: 5, Hit: 100, MinRange: 1, MaxRange: 1}
+	player := UnitSetup{Name: "主人公", Side: Player, Lord: true, Stats: Stats{HP: 20, Str: 20, Skl: 5, Spd: 5, Def: 3, Mov: 1}, Pos: Pos{1, 1}, Weapon: playerWeapon}
+	foe := func(name string, x int) UnitSetup {
+		return UnitSetup{Name: name, Side: Enemy, Level: 1, AI: Charge, Approach: GroupApproach, Group: "g", Stats: Stats{HP: 20, Str: 5, Skl: 5, Spd: 5, Def: 3, Mov: 2}, Pos: Pos{x, 1}, Weapon: enemyWeapon}
+	}
+	boss := foe("ボス", 9)
+	boss.Group, boss.Approach, boss.AI, boss.Boss = "", Direct, Hold, true
+	guard := foe("番兵", 5)
+	guard.Group, guard.Approach, guard.AI = "", Direct, Hold
+	for _, tc := range []struct {
+		name        string
+		units       []UnitSetup
+		wantEntered bool
+		wantGoal    Pos
+	}{
+		{"後ろの列で仲間を認識", []UnitSetup{player, foe("B", 6), foe("A", 5), boss}, true, Pos{}},
+		{"番兵の先へ逃げ場を割り当て", []UnitSetup{player, foe("A", 4), guard, boss}, false, Pos{6, 1}},
+	} {
+		t.Run("TC-FR-BTL-07-21 "+tc.name, func(t *testing.T) {
+			b, _, err := New(Setup{Terrain: road, Units: tc.units}, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			key := b.groupKey("g", b.units[1].Pos)
+			b.planEnemyGroups(len(b.units))
+			if b.groupEntered[key] != tc.wantEntered || (tc.wantGoal != (Pos{}) && b.groupPlan[1] != tc.wantGoal) {
+				t.Fatalf("entered=%v plan=%v danger=%v", b.groupEntered[key], b.groupPlan, b.groupDanger)
+			}
+		})
 	}
 }

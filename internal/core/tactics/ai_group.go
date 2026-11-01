@@ -47,6 +47,11 @@ func (b *Battle) planEnemyGroups(count int) {
 	}
 	for _, key := range keys {
 		members := groups[key]
+		// 先が決まった仲間の現在位置は、空く予定のマスとして候補に含める。
+		member := make(map[int]bool, len(members))
+		for _, i := range members {
+			member[i] = true
+		}
 		active := b.mapState.charged[b.units[members[0]].Group]
 		for _, i := range members {
 			if b.units[i].AI == Charge {
@@ -108,7 +113,8 @@ func (b *Battle) planEnemyGroups(count int) {
 					for x, tile := range row {
 						p := Pos{x, y}
 						owner, taken := occupied[p]
-						if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i) {
+						_, ownerPlanned := b.groupPlan[owner]
+						if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i && (!member[owner] || !ownerPlanned)) {
 							continue
 						}
 						cost, ok := path[p]
@@ -137,7 +143,8 @@ func (b *Battle) planEnemyGroups(count int) {
 						for x, tile := range row {
 							p := Pos{x, y}
 							owner, taken := occupied[p]
-							if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i) {
+							_, ownerPlanned := b.groupPlan[owner]
+							if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i && (!member[owner] || !ownerPlanned)) {
 								continue
 							}
 							cost, ok := path[p]
@@ -291,6 +298,10 @@ func (b *Battle) dangerFor(enemy int, reach map[int]map[Pos]int, threats map[int
 				// 現在の到達可否とは独立に、武器の射程から攻撃を仮定する。
 				// 守る側の地形補正を外し、仮の位置は戦闘本体に書き込まない。
 				to := Pos{target.Pos.X + rangeDistance, target.Pos.Y}
+				if sim.inMap(to) {
+					sim.terrain[to.Y][to.X].Def = 0
+					sim.terrain[to.Y][to.X].Avoid = 0
+				}
 				sim.units[i].Pos = to
 				sim.units[i].Equipped = wi
 				attackCount, counterCount := 0, 0
