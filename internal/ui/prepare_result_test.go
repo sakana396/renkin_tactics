@@ -114,7 +114,7 @@ func TestPrepare(t *testing.T) {
 		s.campaign.Roster[0].Items[0].Count = 5
 		s.campaign.Stock = []defs.ItemCount{{Item: "potion", Count: 1}}
 		clickSceneButton(t, s, "手持ちへ: 回復薬")
-		if !strings.Contains(viewStrings(s.View()), "手持ちは 5 個までです") || s.campaign.Stock[0].Count != 1 || s.campaign.Roster[0].Items[0].Count != 5 {
+		if !strings.Contains(viewStrings(s.View()), "手持ちは 5 枠までです") || s.campaign.Stock[0].Count != 1 || s.campaign.Roster[0].Items[0].Count != 5 {
 			t.Fatal(s.View())
 		}
 	})

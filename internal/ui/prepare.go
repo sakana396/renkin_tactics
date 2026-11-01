@@ -75,14 +75,22 @@ func (s *SceneController) choosePrepare(i int) {
 		return
 	}
 	stock := s.campaign.Stock
+	stockWeapons := s.campaign.StockWeapons
 	hand := s.campaign.Roster[s.prepareMember].Items
+	handWeapons := s.campaign.Roster[s.prepareMember].Weapons
 	var err error
 	switch {
 	case i < len(stock):
 		err = s.campaign.TakeItem(s.prepareMember, stock[i].Item)
 	case i < len(stock)+len(hand):
 		err = s.campaign.StoreItem(s.prepareMember, hand[i-len(stock)].Item)
-	case i == len(stock)+len(hand):
+	case i < len(stock)+len(hand)+len(stockWeapons):
+		err = s.campaign.TakeWeapon(s.prepareMember, stockWeapons[i-len(stock)-len(hand)].Weapon)
+	case i < len(stock)+len(hand)+len(stockWeapons)+len(handWeapons):
+		err = s.campaign.StoreWeapon(s.prepareMember, i-len(stock)-len(hand)-len(stockWeapons))
+	case i < len(stock)+len(hand)+len(stockWeapons)+2*len(handWeapons):
+		err = s.campaign.MoveWeaponFirst(s.prepareMember, i-len(stock)-len(hand)-len(stockWeapons)-len(handWeapons))
+	case i == len(stock)+len(hand)+len(stockWeapons)+2*len(handWeapons):
 		s.enterDeploy()
 		return
 	default:
@@ -90,7 +98,7 @@ func (s *SceneController) choosePrepare(i int) {
 	}
 	s.message = ""
 	if errors.Is(err, core.ErrHandFull) {
-		s.message = "手持ちは 5 個までです"
+		s.message = "手持ちは 5 枠までです"
 	} else if err != nil {
 		s.message = err.Error()
 	}
@@ -118,10 +126,10 @@ func (s *SceneController) prepareView() SceneView {
 		if s.deployment[i] {
 			mark = "[✓]"
 		}
-		v.Rows = append(v.Rows, PrepareRow{Member: i, Rect: image.Rect(56, y, MapSize-8, y+32), Mark: image.Rect(16, y, 52, y+32), Selected: i == s.prepareMember})
-		v.Texts = append(v.Texts, SceneText{Text: mark, X: 20, Y: y + 8}, SceneText{Text: fmt.Sprintf("%s　%s　Lv %d　HP %d　手持ち %d", u.Name, u.ClassName, m.Level, m.Stats.HP, itemCount(m.Items)), X: 96, Y: y + 8})
+		v.Rows = append(v.Rows, PrepareRow{Member: i, Rect: image.Rect(56, y, MapSize-8, y+24), Mark: image.Rect(16, y, 52, y+24), Selected: i == s.prepareMember})
+		v.Texts = append(v.Texts, SceneText{Text: mark, X: 20, Y: y + 4}, SceneText{Text: fmt.Sprintf("%s　%s　Lv %d　HP %d　手持ち %d/5", u.Name, u.ClassName, m.Level, m.Stats.HP, len(m.Weapons)+itemCount(m.Items)), X: 96, Y: y + 4})
 		v.Icons = append(v.Icons, SceneIcon{unitTile(u), 60, y})
-		y += 36
+		y += 24
 	}
 	y += 12
 	var stock []string
@@ -129,12 +137,18 @@ func (s *SceneController) prepareView() SceneView {
 		it, _ := s.cfg.Catalog.Item(ic.Item)
 		stock = append(stock, fmt.Sprintf("%s ×%d", it.Name, ic.Count))
 	}
+	for _, wc := range s.campaign.StockWeapons {
+		w, _ := s.cfg.Catalog.Weapon(wc.Weapon)
+		stock = append(stock, fmt.Sprintf("%s ×%d", w.Name, wc.Count))
+	}
 	label := strings.Join(stock, "　")
 	if label == "" {
 		label = "なし"
+	} else if len([]rune(label)) > 45 {
+		label = fmt.Sprintf("道具 %d 種・武器 %d 種（下の一覧から選ぶ）", len(s.campaign.Stock), len(s.campaign.StockWeapons))
 	}
 	v.Texts = append(v.Texts, SceneText{Text: "在庫: " + label, X: 16, Y: y})
-	y += 28
+	y += 24
 	for col, items := range [][]defs.ItemCount{s.campaign.Stock, s.campaign.Roster[s.prepareMember].Items} {
 		for n, ic := range items {
 			it, _ := s.cfg.Catalog.Item(ic.Item)
@@ -142,13 +156,25 @@ func (s *SceneController) prepareView() SceneView {
 			if col == 1 {
 				prefix = "在庫へ: "
 			}
-			v.Buttons = append(v.Buttons, SceneButton{prefix + it.Name, image.Rect(16+col*248, y+n*40, 252+col*248, y+n*40+36), true})
+			v.Buttons = append(v.Buttons, SceneButton{prefix + it.Name, image.Rect(16+col*160, y+n*22, 172+col*160, y+n*22+20), true})
 		}
 	}
+	for n, wc := range s.campaign.StockWeapons {
+		w, _ := s.cfg.Catalog.Weapon(wc.Weapon)
+		v.Buttons = append(v.Buttons, SceneButton{"手持ちへ: " + w.Name, image.Rect(16, y+(len(s.campaign.Stock)+n)*22, 172, y+(len(s.campaign.Stock)+n)*22+20), true})
+	}
+	for n, id := range s.campaign.Roster[s.prepareMember].Weapons {
+		w, _ := s.cfg.Catalog.Weapon(id)
+		v.Buttons = append(v.Buttons, SceneButton{"在庫へ: " + w.Name, image.Rect(176, y+(len(s.campaign.Roster[s.prepareMember].Items)+n)*22, 332, y+(len(s.campaign.Roster[s.prepareMember].Items)+n)*22+20), true})
+	}
+	for n, id := range s.campaign.Roster[s.prepareMember].Weapons {
+		w, _ := s.cfg.Catalog.Weapon(id)
+		v.Buttons = append(v.Buttons, SceneButton{"先頭へ: " + w.Name, image.Rect(336, y+(len(s.campaign.Roster[s.prepareMember].Items)+n)*22, 492, y+(len(s.campaign.Roster[s.prepareMember].Items)+n)*22+20), true})
+	}
 	// 案内は品のボタンの最後から 8 px 下。品がないときは最初のボタンの位置（DES-UI-13）。
-	rows := max(len(s.campaign.Stock), len(s.campaign.Roster[s.prepareMember].Items))
+	rows := max(len(s.campaign.Stock)+len(s.campaign.StockWeapons), len(s.campaign.Roster[s.prepareMember].Items)+len(s.campaign.Roster[s.prepareMember].Weapons))
 	if rows > 0 {
-		y += (rows-1)*40 + 36 + 8
+		y += rows*22 + 4
 	}
 	if s.message != "" {
 		for i, line := range wrapSceneTextWidth(s.message, MapSize-48-8) {

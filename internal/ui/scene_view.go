@@ -165,8 +165,13 @@ func (s *SceneController) View() SceneView {
 		}
 		var rewards []string
 		for _, r := range s.result.Reward {
-			item, _ := s.cfg.Catalog.Item(r.Item)
-			rewards = append(rewards, fmt.Sprintf("%s ×%d", item.Name, r.Count))
+			if r.Weapon != "" {
+				weapon, _ := s.cfg.Catalog.Weapon(r.Weapon)
+				rewards = append(rewards, fmt.Sprintf("%s ×%d", weapon.Name, r.Count))
+			} else {
+				item, _ := s.cfg.Catalog.Item(r.Item)
+				rewards = append(rewards, fmt.Sprintf("%s ×%d", item.Name, r.Count))
+			}
 		}
 		if len(rewards) > 0 {
 			lines(strings.Join(rewards, "　")+" を在庫に入れた", 444, StylePlain)
