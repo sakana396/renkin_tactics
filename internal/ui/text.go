@@ -35,7 +35,8 @@ func actionName(a tactics.Action) string {
 const cantoEndLabel = "終える"
 
 // guideCantoWait は、再移動を待っている間はほかのユニットを操作できないことの案内（DES-IT06 12.3 節）。
-const guideCantoWait = "再移動を終えるまで、ほかのユニットの操作と番の終わりはできません（T: 巻き戻しは移動の前へ）"
+// 3 行目なので、右端の気配の案内（DES-UI-24）と重ならない幅にする。
+const guideCantoWait = "ほかのユニットの操作と番の終わりはできません（T: 巻き戻しは移動の前へ）"
 
 // itemLabel はアイテムの一覧に出す文を返す（DES-UI-02）。
 func itemLabel(s tactics.ItemStack) string {
@@ -224,7 +225,8 @@ func (c *Controller) Guide() []string {
 		if pc, ok := b.PendingCanto(); ok {
 			rest = pc.Remaining
 		}
-		lines = append(lines, fmt.Sprintf("再移動（残りの移動 %d）: 青いマスをクリックで移動　今の位置・「%s」・右クリック・Esc: その場で終える", rest, cantoEndLabel), guideCantoWait)
+		// 「終える」のボタンは盤面に出ているので、案内欄の幅（DES-UI-01）に収めるために文からは省く。
+		lines = append(lines, fmt.Sprintf("再移動（残りの移動 %d）: 青いマスで移動　今の位置・右クリック・Esc: その場で終える", rest), guideCantoWait)
 	case Playing:
 		// PhaseStart は 1 行目と同じ文になるので出さない。
 		if e, _, ok := c.Event(); ok && e.Kind != tactics.EventPhaseStart {
