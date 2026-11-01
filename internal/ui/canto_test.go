@@ -15,15 +15,7 @@ import (
 // ダメージはどちらも 0 で、戦死しない。主人公 (0, 5) とボス (5, 5) は離れている。
 func cantoController(t *testing.T, lordActed bool) *Controller {
 	t.Helper()
-	c := newIdleWith(t, func() tactics.Setup {
-		return tactics.Setup{Terrain: field(6, 6), Units: []tactics.UnitSetup{
-			{Name: "レオン", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Mov: 1}, Pos: tactics.Pos{X: 0, Y: 5}, Weapon: testSword, Lord: true},
-			{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Mov: 5}, Pos: tactics.Pos{X: 0, Y: 0}, Weapon: testLance,
-				ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}}},
-			{Name: "ソルジャー", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 2, Y: 0}, Weapon: testLance, AI: tactics.Hold},
-			{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 5, Y: 5}, Weapon: testSword, Boss: true, AI: tactics.Hold},
-		}}
-	})
+	c := newIdleWith(t, cantoSetup)
 	if lordActed {
 		c.Click(tactics.Pos{X: 0, Y: 5})
 		c.Click(tactics.Pos{X: 0, Y: 5})
@@ -40,6 +32,17 @@ func cantoController(t *testing.T, lordActed bool) *Controller {
 		t.Fatalf("状態 = %v、Canto になるはず", c.State())
 	}
 	return c
+}
+
+// cantoSetup は cantoController の盤面（6 × 6 の平地、騎兵 (0, 0)・敵 (2, 0)・主人公 (0, 5)・ボス (5, 5)）。
+func cantoSetup() tactics.Setup {
+	return tactics.Setup{Terrain: field(6, 6), Units: []tactics.UnitSetup{
+		{Name: "レオン", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Mov: 1}, Pos: tactics.Pos{X: 0, Y: 5}, Weapon: testSword, Lord: true},
+		{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20, Mov: 5}, Pos: tactics.Pos{X: 0, Y: 0}, Weapon: testLance,
+			ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}}},
+		{Name: "ソルジャー", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 2, Y: 0}, Weapon: testLance, AI: tactics.Hold},
+		{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 5, Y: 5}, Weapon: testSword, Boss: true, AI: tactics.Hold},
+	}}
 }
 
 func TestCantoUI(t *testing.T) {
@@ -149,6 +152,69 @@ func TestCantoUI(t *testing.T) {
 		}
 		if _, ok := c.Battle().PendingCanto(); ok {
 			t.Error("巻き戻しても待っている")
+		}
+	})
+
+	t.Run("TC-IF-01-45 画面のクリック（ボタン → 盤面の順の判定）で、青いマスへ再移動し、「終える」のボタンでその場で終える", func(t *testing.T) {
+		// 開発者の試遊で、再移動の状態で青いマスを押しても動かなかった（E-98）。
+		// 「終える」のボタンがあるとボタンの外のクリックを捨てていたので、Game の左クリックの経路で確かめる。
+		at := func(c *Controller, p tactics.Pos) (int, int) {
+			pt := c.Camera().Screen(p)
+			return pt.X + CellSize/2, pt.Y + CellSize/2
+		}
+		inMenu := func(c *Controller, x, y int) bool {
+			_, dest, _ := c.Selection()
+			return HitMenu(c.Camera().MenuRects(dest, len(c.MenuLabels())), x, y) >= 0
+		}
+
+		c := cantoController(t, false)
+		g := &Game{ctrl: c}
+		// 行けないマス（ボタンの外）は受け付けず、再移動を待ち続ける。
+		if x, y := at(c, tactics.Pos{X: 5, Y: 3}); inMenu(c, x, y) {
+			t.Fatal("前提: (5, 3) がボタンに重なる")
+		} else {
+			g.leftClick(x, y)
+		}
+		if _, ok := c.Battle().PendingCanto(); !ok || c.State() != Canto {
+			t.Fatalf("行けないマスのあと: 状態 %v・待っている %v", c.State(), ok)
+		}
+		// 青いマス (1, 3) を押すと再移動する。
+		x, y := at(c, tactics.Pos{X: 1, Y: 3})
+		if inMenu(c, x, y) {
+			t.Fatal("前提: (1, 3) がボタンに重なる")
+		}
+		g.leftClick(x, y)
+		playOut(c)
+		if u := c.Battle().Units()[1]; c.State() != Idle || u.Pos != (tactics.Pos{X: 1, Y: 3}) || !u.Acted {
+			t.Errorf("青いマスのクリックのあと: 状態 %v・位置 %v・行動済み %v", c.State(), u.Pos, u.Acted)
+		}
+		if _, ok := c.Battle().PendingCanto(); ok {
+			t.Error("再移動のあとも待っている")
+		}
+
+		// 「終える」のボタンを押すと、その場で終える（ボタンの下のマスより優先する）。
+		c = cantoController(t, false)
+		g = &Game{ctrl: c}
+		_, dest, _ := c.Selection()
+		r := c.Camera().MenuRects(dest, len(c.MenuLabels()))[0]
+		g.leftClick(r.Min.X+2, r.Min.Y+2)
+		playOut(c)
+		if u := c.Battle().Units()[1]; c.State() != Idle || u.Pos != (tactics.Pos{X: 1, Y: 0}) || !u.Acted {
+			t.Errorf("「終える」のあと: 状態 %v・位置 %v・行動済み %v", c.State(), u.Pos, u.Acted)
+		}
+
+		// 行動の一覧（Moved）では、今までどおりボタンの外のクリックを受け付けない。
+		c = newIdleWith(t, cantoSetup)
+		g = &Game{ctrl: c}
+		c.Click(tactics.Pos{X: 0, Y: 0})
+		c.Click(tactics.Pos{X: 1, Y: 0})
+		if c.State() != Moved {
+			t.Fatalf("前提: 状態 %v", c.State())
+		}
+		x, y = at(c, tactics.Pos{X: 1, Y: 3})
+		g.leftClick(x, y)
+		if _, dest, _ := c.Selection(); c.State() != Moved || dest != (tactics.Pos{X: 1, Y: 0}) {
+			t.Errorf("一覧の外のクリックのあと: 状態 %v・移動先 %v", c.State(), dest)
 		}
 	})
 
