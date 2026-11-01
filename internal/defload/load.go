@@ -683,7 +683,12 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 			}
 			seenTypes[kind] = true
 		}
-		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponType: r.WeaponType, WeaponTypes: append([]string(nil), r.WeaponTypes...), StaffHealCap: r.StaffHealCap, Base: toStats(r.Base), Tags: append([]string(nil), r.Tags...), Skills: append([]string(nil), r.Skills...)}
+		// 古い書式の weapon_type は 1 要素の weapon_types に直す（DES-IT06 5.2 節）。
+		kinds := append([]string(nil), r.WeaponTypes...)
+		if len(kinds) == 0 {
+			kinds = []string{r.WeaponType}
+		}
+		c := defs.ClassDef{ID: r.ID, Name: r.Name, WeaponTypes: kinds, StaffHealCap: r.StaffHealCap, Base: toStats(r.Base), Tags: append([]string(nil), r.Tags...), Skills: append([]string(nil), r.Skills...)}
 		v.tags(FileClasses, p+".tags", "兵種の分類", c.Tags)
 		v.atLeast(FileClasses, p+".staff_heal_cap", c.StaffHealCap, 0)
 		classes[i] = c

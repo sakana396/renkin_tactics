@@ -13,7 +13,7 @@ import (
 func deploymentCatalog(rows []string, enemies []defs.EnemyPlacement) *defs.Catalog {
 	return defs.NewCatalog(defs.GameDef{Party: []string{"hero", "friend"}},
 		[]defs.TerrainDef{{ID: "plain", Name: "平地", Symbol: ".", Cost: 1}, {ID: "forest", Name: "森", Symbol: "F", Cost: 2, Avoid: 20, Def: 1}, {ID: "wall", Name: "壁", Symbol: "#"}},
-		[]defs.ClassDef{{ID: "soldier", Name: "兵", WeaponType: "sword", Base: defs.Stats{HP: 20, Str: 3, Skl: 4, Spd: 5, Def: 6, Mov: 3}}, {ID: "bowman", Name: "兵", WeaponType: "bow", Base: defs.Stats{HP: 20, Str: 3, Skl: 4, Spd: 5, Def: 6, Mov: 3}}},
+		[]defs.ClassDef{{ID: "soldier", Name: "兵", WeaponTypes: []string{"sword"}, Base: defs.Stats{HP: 20, Str: 3, Skl: 4, Spd: 5, Def: 6, Mov: 3}}, {ID: "bowman", Name: "兵", WeaponTypes: []string{"bow"}, Base: defs.Stats{HP: 20, Str: 3, Skl: 4, Spd: 5, Def: 6, Mov: 3}}},
 		[]defs.WeaponDef{{ID: "sword", Name: "剣", Type: "sword", Might: 4, Hit: 1000, MinRange: 1, MaxRange: 1}, {ID: "bow", Name: "弓", Type: "bow", Might: 5, Hit: 80, MinRange: 2, MaxRange: 2}},
 		[]defs.ItemDef{{ID: "potion", Name: "薬", Heal: 10}}, nil,
 		[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "soldier", Weapons: []string{"sword"}, Level: 1, Lord: true}, {ID: "friend", Name: "仲間", Class: "soldier", Weapons: []string{"sword"}, Level: 2}},

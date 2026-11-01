@@ -1,8 +1,10 @@
 package defload_test
 
 import (
-	"github.com/sakana396/renkin_tactics/internal/defload"
+	"reflect"
 	"strings"
+
+	"github.com/sakana396/renkin_tactics/internal/defload"
 	"testing"
 	"testing/fstest"
 )
@@ -21,6 +23,26 @@ func TestClassWeaponTypesIT06(t *testing.T) {
 		lord, _ := cat.Class("lord")
 		if !lord.CanUseWeapon("sword") || lord.CanUseWeapon("staff") {
 			t.Fatal(lord)
+		}
+		// 古い書式の weapon_type は 1 要素の WeaponTypes に直す（DES-IT06 5.2 節）。
+		if !reflect.DeepEqual(cls.WeaponTypes, []string{"magic", "staff"}) || !reflect.DeepEqual(lord.WeaponTypes, []string{"sword"}) || !reflect.DeepEqual(lord.AllowedWeaponTypes(), []string{"sword"}) {
+			t.Fatal(cls.WeaponTypes, lord.WeaponTypes)
+		}
+		mage, _ := cat.Class("mage")
+		fs := baseFS(t)
+		const listForm = "id = \"mage\"\nname = \"魔道士\"\nweapon_types = [\"magic\"]"
+		before := string(fs["classes.toml"].Data)
+		if !strings.Contains(before, listForm) {
+			t.Fatal("魔道士が列の書式でない")
+		}
+		fs["classes.toml"] = &fstest.MapFile{Data: []byte(strings.Replace(before, listForm, "id = \"mage\"\nname = \"魔道士\"\nweapon_type = \"magic\"", 1))}
+		old, err := defload.Load(fs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		oldMage, _ := old.Class("mage")
+		if !reflect.DeepEqual(mage.WeaponTypes, []string{"magic"}) || !reflect.DeepEqual(oldMage, mage) {
+			t.Fatal(mage, oldMage)
 		}
 	})
 	for _, tc := range []struct{ name, old, replacement, want string }{

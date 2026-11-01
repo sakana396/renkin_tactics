@@ -19,9 +19,9 @@ func cavalierCatalog() *defs.Catalog {
 	return defs.NewCatalog(defs.GameDef{Party: []string{"hero", "elsa", "gard"}},
 		[]defs.TerrainDef{{ID: "plain", Name: "平地", Symbol: ".", Cost: 1}},
 		[]defs.ClassDef{
-			{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 20, Str: 20, Skl: 100, Def: 10, Mov: 2}},
-			{ID: "cavalier", Name: "騎兵", WeaponType: "lance", Base: defs.Stats{HP: 1, Str: 1, Skl: 1, Mov: 2}},
-			{ID: "armor", Name: "アーマー", WeaponType: "lance", Base: defs.Stats{HP: 1, Str: 1, Skl: 1, Mov: 2}},
+			{ID: "lord", Name: "ロード", WeaponTypes: []string{"sword"}, Base: defs.Stats{HP: 20, Str: 20, Skl: 100, Def: 10, Mov: 2}},
+			{ID: "cavalier", Name: "騎兵", WeaponTypes: []string{"lance"}, Base: defs.Stats{HP: 1, Str: 1, Skl: 1, Mov: 2}},
+			{ID: "armor", Name: "アーマー", WeaponTypes: []string{"lance"}, Base: defs.Stats{HP: 1, Str: 1, Skl: 1, Mov: 2}},
 		},
 		[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", Hit: 100, MinRange: 1, MaxRange: 1}, {ID: "l", Name: "槍", Type: "lance", Hit: 100, MinRange: 1, MaxRange: 1}},
 		nil, nil,

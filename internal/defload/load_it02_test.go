@@ -268,7 +268,7 @@ func TestLoadStaff(t *testing.T) {
 		if got, _ := cat.Weapon("iron_sword"); got.Heal != 0 || got.Uses != 0 {
 			t.Errorf("鉄の剣の回復量・使用回数 = %d, %d", got.Heal, got.Uses)
 		}
-		if got, ok := cat.Class("cleric"); !ok || got.WeaponType != defs.WeaponStaff {
+		if got, ok := cat.Class("cleric"); !ok || !reflect.DeepEqual(got.WeaponTypes, []string{defs.WeaponStaff}) {
 			t.Errorf("僧侶 = %+v, %v", got, ok)
 		}
 		// 僧侶はボーナスなし・レベルと成長率を省略したキャラ（レベル 1、成長率 0）。

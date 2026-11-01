@@ -66,5 +66,5 @@ base = { hp = 17, str = 2, skl = 5, spd = 6, def = 2, mov = 5, lck = 4, mag = 3,
 [[classes]]
 id = "mage"
 name = "魔道士"
-weapon_type = "magic"
+weapon_types = ["magic"]
 base = { hp = 16, str = 1, skl = 5, spd = 5, def = 1, mov = 5, lck = 2, mag = 4, res = 3 }

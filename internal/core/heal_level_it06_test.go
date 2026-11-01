@@ -16,9 +16,9 @@ func healCapCatalog(healCap int) *defs.Catalog {
 		defs.GameDef{Party: []string{"hero", "noel"}},
 		[]defs.TerrainDef{{ID: "plain", Name: "平地", Symbol: ".", Cost: 1}},
 		[]defs.ClassDef{
-			{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 24, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5}},
-			{ID: "alchemist", Name: "錬金術師", WeaponType: "staff", StaffHealCap: healCap, Base: defs.Stats{HP: 18, Mov: 5, Mag: 3}},
-			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5}},
+			{ID: "lord", Name: "ロード", WeaponTypes: []string{"sword"}, Base: defs.Stats{HP: 24, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5}},
+			{ID: "alchemist", Name: "錬金術師", WeaponTypes: []string{"staff"}, StaffHealCap: healCap, Base: defs.Stats{HP: 18, Mov: 5, Mag: 3}},
+			{ID: "soldier", Name: "ソルジャー", WeaponTypes: []string{"lance"}, Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5}},
 		},
 		[]defs.WeaponDef{
 			{ID: "iron_sword", Name: "鉄の剣", Type: "sword", Weight: 4, Strikes: 1, DamageType: "physical", Might: 5, Hit: 90, MinRange: 1, MaxRange: 1},
