@@ -21,7 +21,7 @@ func TestIT06MidChapters(t *testing.T) {
 		frontCavalier               defs.Slot
 	}{
 		{"ch06", 7, 14, 4, 2, map[string]int{"pass_center": 3, "pass_east": 2}, 6, defs.Slot{}},
-		{"ch07", 6, 10, 4, 2, map[string]int{"convoy_valley": 2, "convoy_east": 2}, 3, defs.Slot{X: 14, Y: 10}},
+		{"ch07", 6, 10, 4, 2, map[string]int{"convoy_valley": 2, "convoy_east": 6}, 4, defs.Slot{X: 14, Y: 10}},
 	} {
 		t.Run("TC-FR-MAP-04-17 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
@@ -62,6 +62,35 @@ func TestIT06MidChapters(t *testing.T) {
 			}
 			if tc.id == "ch07" && (m.Enemies[0].X != tc.frontCavalier.X || m.Enemies[0].Y != tc.frontCavalier.Y) {
 				t.Fatalf("初期の騎兵: (%d,%d)", m.Enemies[0].X, m.Enemies[0].Y)
+			}
+			if tc.id == "ch07" {
+				valley, east := m.Events[0], m.Events[1]
+				if valley.ID != "convoy_valley_falls" || valley.Trigger != defs.TriggerPlayerEntered || valley.Area != (defs.Area{MinX: 8, MinY: 4, MaxX: 9, MaxY: 6}) {
+					t.Fatalf("谷の出口のきっかけ: %+v", valley)
+				}
+				if east.ID != "convoy_east_entry" || east.Trigger != defs.TriggerPlayerEntered || east.Area != (defs.Area{MinX: 13, MinY: 8, MaxX: 15, MaxY: 12}) {
+					t.Fatalf("東の進入のきっかけ: %+v", east)
+				}
+				wantPos := map[string]defs.Slot{
+					"convoy_east_cavalier":       {X: 15, Y: 12},
+					"convoy_east_fighter":        {X: 15, Y: 13},
+					"convoy_east_mage":           {X: 15, Y: 11},
+					"convoy_east_archer":         {X: 15, Y: 14},
+					"convoy_east_front_mage":     {X: 14, Y: 7},
+					"convoy_east_front_cavalier": {X: 15, Y: 7},
+					"convoy_east_wood_archer":    {X: 14, Y: 9},
+					"convoy_east_flank_soldier":  {X: 15, Y: 9},
+				}
+				for _, enemy := range east.Enemies {
+					pos, ok := wantPos[enemy.ID]
+					if !ok || enemy.X != pos.X || enemy.Y != pos.Y || m.Rows[enemy.Y][enemy.X] == '^' {
+						t.Fatalf("東の増援 %s の地形・位置: (%d,%d)", enemy.ID, enemy.X, enemy.Y)
+					}
+					delete(wantPos, enemy.ID)
+				}
+				if len(wantPos) != 0 {
+					t.Fatalf("東の増援が足りない: %v", wantPos)
+				}
 			}
 			if tc.id == "ch07" {
 				abs := func(n int) int {
@@ -203,12 +232,12 @@ func TestIT06MidAutoplay(t *testing.T) {
 	}{
 		{"ch06", "平均・西", false, []string{"rina"}, []tactics.Pos{{X: 6, Y: 14}, {X: 6, Y: 10}, {X: 7, Y: 6}, {X: 10, Y: 3}}, []string{"gald", "mira", "noel", "bran", "elsa", "leon", "tio"}, 6},
 		{"ch06", "低め・東", true, []string{"rina"}, []tactics.Pos{{X: 13, Y: 14}, {X: 13, Y: 10}, {X: 13, Y: 6}, {X: 10, Y: 3}}, []string{"gald", "mira", "noel", "bran", "elsa", "leon", "tio"}, 26},
-		{"ch07", "平均・谷", false, []string{"rina", "elsa"}, []tactics.Pos{{X: 7, Y: 11}, {X: 7, Y: 8}, {X: 7, Y: 4}, {X: 9, Y: 2}}, []string{"gald", "mira", "noel", "bran", "leon", "tio"}, 1},
-		{"ch07", "低め・迂回", true, []string{"rina", "elsa"}, []tactics.Pos{{X: 13, Y: 12}, {X: 14, Y: 8}, {X: 13, Y: 4}, {X: 11, Y: 3}}, []string{"gald", "mira", "noel", "bran", "leon", "tio"}, 4},
+		{"ch07", "平均・谷", false, []string{"rina", "elsa"}, []tactics.Pos{{X: 7, Y: 11}, {X: 7, Y: 8}, {X: 7, Y: 4}, {X: 9, Y: 2}}, []string{"gald", "mira", "noel", "bran", "leon", "tio"}, 12},
+		{"ch07", "低め・迂回", true, []string{"rina", "elsa"}, []tactics.Pos{{X: 13, Y: 12}, {X: 14, Y: 8}, {X: 13, Y: 4}, {X: 11, Y: 3}}, []string{"gald", "mira", "noel", "bran", "leon", "tio"}, 3},
 		{"ch06", "ミラを失いティオを出す・平均", false, []string{"mira"}, []tactics.Pos{{X: 6, Y: 14}, {X: 6, Y: 10}, {X: 7, Y: 6}, {X: 10, Y: 3}}, []string{"gald", "noel", "bran", "elsa", "leon", "tio", "rina"}, 1},
 		{"ch06", "ミラを失いティオを出す・低め", true, []string{"mira"}, []tactics.Pos{{X: 13, Y: 14}, {X: 13, Y: 10}, {X: 13, Y: 6}, {X: 10, Y: 3}}, []string{"gald", "noel", "bran", "elsa", "leon", "tio", "rina"}, 36},
-		{"ch07", "ミラを失いティオを出す・平均", false, []string{"mira", "elsa"}, []tactics.Pos{{X: 7, Y: 11}, {X: 7, Y: 8}, {X: 7, Y: 4}, {X: 9, Y: 2}}, []string{"gald", "noel", "bran", "leon", "tio", "rina"}, 3},
-		{"ch07", "ミラを失いティオを出す・低め", true, []string{"mira", "elsa"}, []tactics.Pos{{X: 13, Y: 12}, {X: 14, Y: 8}, {X: 13, Y: 4}, {X: 11, Y: 3}}, []string{"gald", "noel", "bran", "leon", "tio", "rina"}, 4},
+		{"ch07", "ミラを失いティオを出す・平均・谷", false, []string{"mira", "elsa"}, []tactics.Pos{{X: 7, Y: 11}, {X: 7, Y: 8}, {X: 7, Y: 4}, {X: 9, Y: 2}}, []string{"gald", "noel", "bran", "leon", "tio", "rina"}, 3},
+		{"ch07", "ミラを失いティオを出す・低め・迂回", true, []string{"mira", "elsa"}, []tactics.Pos{{X: 13, Y: 12}, {X: 14, Y: 8}, {X: 13, Y: 4}, {X: 11, Y: 3}}, []string{"gald", "noel", "bran", "leon", "tio", "rina"}, 15},
 	} {
 		t.Run("TC-FR-MAP-04-18 "+tc.id+tc.name, func(t *testing.T) {
 			c := estimatedRosterIT06(t, cat, tc.id, tc.low)
@@ -242,7 +271,7 @@ func TestIT06MidAutoplay(t *testing.T) {
 					if e.Kind == tactics.EventTrigger {
 						triggers[e.MapEvent] = true
 					}
-					if e.Kind == tactics.EventReinforce && (e.Units[e.Unit].ID == "pass_group_mage" || e.Units[e.Unit].ID == "convoy_valley_mage") && mage == nil {
+					if e.Kind == tactics.EventReinforce && (e.Units[e.Unit].ID == "pass_group_mage" || e.Units[e.Unit].ID == "convoy_valley_mage" || e.Units[e.Unit].ID == "convoy_east_mage" || e.Units[e.Unit].ID == "convoy_east_front_mage") && mage == nil {
 						u := e.Units[e.Unit]
 						mage = &u
 					}
@@ -262,11 +291,19 @@ func TestIT06MidAutoplay(t *testing.T) {
 				t.Fatal("同時の敵が39体を超えた")
 			}
 			for _, event := range m.Events {
-				if tc.id == "ch07" && event.ID == "convoy_east_entry" && !strings.Contains(tc.name, "迂回") {
+				if tc.id == "ch07" && ((event.ID == "convoy_east_entry" && !strings.Contains(tc.name, "迂回")) || (event.ID == "convoy_valley_falls" && strings.Contains(tc.name, "迂回"))) {
 					continue
 				}
 				if !triggers[event.ID] {
 					t.Fatalf("出来事 %s が起きない", event.ID)
+				}
+			}
+			if tc.id == "ch07" {
+				if strings.Contains(tc.name, "迂回") && triggers["convoy_valley_falls"] {
+					t.Fatal("迂回だけの手順で谷の出来事が起きた")
+				}
+				if strings.Contains(tc.name, "谷") && triggers["convoy_east_entry"] {
+					t.Fatal("谷だけの手順で東の出来事が起きた")
 				}
 			}
 			if mage == nil {

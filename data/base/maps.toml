@@ -2039,11 +2039,11 @@ ai = "charge"
 x = 4
 y = 0
 
-# DES-MAP-08: 谷の剣士を倒すと、北側の兵が谷を押さえる。
+# DES-MAP-08: 谷の出口へ入ると、北側の兵が谷を押さえる。
 [[maps.events]]
 id = "convoy_valley_falls"
-trigger = "enemy_defeated"
-unit = "convoy_valley_guard"
+trigger = "player_entered"
+area = { min_x = 8, min_y = 4, max_x = 9, max_y = 6 }
 effect = "reinforce"
 [[maps.events.enemies]]
 id = "convoy_valley_soldier"
@@ -2068,11 +2068,11 @@ ai = "charge"
 x = 9
 y = 2
 
-# 東の迂回を選んだときは、陣の手前で騎兵を含む一団が出る。
+# 東の迂回を選んだときは、道の前後から一団と突撃の敵が出る。
 [[maps.events]]
 id = "convoy_east_entry"
 trigger = "player_entered"
-area = { min_x = 13, min_y = 4, max_x = 15, max_y = 9 }
+area = { min_x = 13, min_y = 8, max_x = 15, max_y = 12 }
 effect = "reinforce"
 [[maps.events.enemies]]
 id = "convoy_east_cavalier"
@@ -2084,7 +2084,7 @@ level = 10
 bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
 ai = "charge"
 x = 15
-y = 2
+y = 12
 [[maps.events.enemies]]
 id = "convoy_east_fighter"
 group = "convoy_east"
@@ -2094,8 +2094,70 @@ weapons = ["iron_axe"]
 level = 10
 bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
 ai = "charge"
+x = 15
+y = 13
+[[maps.events.enemies]]
+id = "convoy_east_mage"
+group = "convoy_east"
+approach = "group"
+class = "mage"
+weapons = ["fire"]
+level = 9
+bonus = { hp = 5, str = 0, skl = 4, spd = 4, def = 1, lck = 2, mag = 4, res = 3, mov = 0 }
+ai = "charge"
+x = 15
+y = 11
+[[maps.events.enemies]]
+id = "convoy_east_archer"
+group = "convoy_east"
+approach = "group"
+class = "archer"
+weapons = ["iron_bow"]
+level = 9
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 15
+y = 14
+[[maps.events.enemies]]
+id = "convoy_east_front_mage"
+group = "convoy_east"
+approach = "group"
+class = "mage"
+weapons = ["fire"]
+level = 9
+bonus = { hp = 5, str = 0, skl = 4, spd = 4, def = 1, lck = 2, mag = 4, res = 3, mov = 0 }
+ai = "charge"
 x = 14
-y = 2
+y = 7
+[[maps.events.enemies]]
+id = "convoy_east_front_cavalier"
+group = "convoy_east"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 15
+y = 7
+[[maps.events.enemies]]
+id = "convoy_east_wood_archer"
+class = "archer"
+weapons = ["iron_bow"]
+level = 9
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 14
+y = 9
+[[maps.events.enemies]]
+id = "convoy_east_flank_soldier"
+class = "soldier"
+weapons = ["iron_lance"]
+level = 9
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 15
+y = 9
 
 # 8 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it05/map-ch08.md）。24×24・出撃 5・敵 16＋6。
 # 敵のボーナスは、ボスを除き 5/3/3/2/3（増援も同じ）。ボスは 12/5/5/3/5
