@@ -164,9 +164,10 @@ slots = [
 ]
 
 [[maps.enemies]]
+id = "road_guard"
 class = "soldier"
 weapon = "iron_lance"
-level = 3
+level = 4
 bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
 ai = "charge"
 x = 8
@@ -221,7 +222,7 @@ y = 6
 [[maps.enemies]]
 class = "archer"
 weapon = "iron_bow"
-level = 3
+level = 4
 bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
 ai = "hold"
 x = 13
@@ -268,6 +269,119 @@ bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
 ai = "charge"
 x = 0
 y = 7
+
+# DES-MAP-08: 先頭の守りを崩すと魔法の追撃が来る。
+[[maps.events]]
+id = "road_guard_falls"
+trigger = "enemy_defeated"
+unit = "road_guard"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "road_mage"
+# 魔力・速さなどは DES-IT06 7.3 節の Lv4 の参考値（魔力 5.35・速さ 6.2）に寄せ、速さは切り上げる。
+class = "mage"
+weapons = ["fire"]
+level = 4
+bonus = { hp = 2, str = 0, skl = 1, spd = 2, def = 1, lck = 1, mag = 1, res = 1, mov = 0 }
+ai = "charge"
+x = 7
+y = 5
+
+# 東側まで進むと、後方の退路にも敵が現れる。
+[[maps.events]]
+id = "road_east_entry"
+trigger = "player_entered"
+area = { min_x = 10, min_y = 5, max_x = 14, max_y = 11 }
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "road_east_cavalier"
+class = "cavalier"
+weapons = ["iron_lance", "horse_killer"]
+level = 5
+bonus = { hp = 3, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 15
+y = 10
+# E-97（ch02 版 0.3）: 東の端から攻めて下がる騎兵をもう 1 体。
+[[maps.events.enemies]]
+id = "road_east_cavalier_2"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 5
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 15
+y = 5
+
+# E-96・E-97（ch02 版 0.3）: 先頭の守りを倒すと、北の道から一団（ソルジャー・ファイター・騎兵）が来る。
+# 魔道士の増援（road_guard_falls）とは別の出来事。足した敵の能力は既存の一般の敵と同じ bonus で、強めていない。
+[[maps.events]]
+id = "road_north_alarm"
+trigger = "enemy_defeated"
+unit = "road_guard"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "road_north_soldier"
+group = "road_north"
+approach = "group"
+class = "soldier"
+weapons = ["iron_lance"]
+level = 4
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 6
+y = 1
+[[maps.events.enemies]]
+id = "road_north_fighter"
+group = "road_north"
+approach = "group"
+class = "fighter"
+weapons = ["iron_axe"]
+level = 4
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 8
+y = 1
+[[maps.events.enemies]]
+id = "road_north_cavalier"
+group = "road_north"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 5
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 10
+y = 2
+
+# E-97（ch02 版 0.3）: 南の道へ入ると、南の端から騎兵と斧兵の一団が来る。
+[[maps.events]]
+id = "road_south_entry"
+trigger = "player_entered"
+area = { min_x = 4, min_y = 9, max_x = 9, max_y = 12 }
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "road_south_cavalier"
+group = "road_south"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 5
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 5
+y = 14
+[[maps.events.enemies]]
+id = "road_south_fighter"
+group = "road_south"
+approach = "group"
+class = "fighter"
+weapons = ["iron_axe"]
+level = 5
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 7
+y = 14
 
 # 3 章（設計書（反復 2）10.6 節）。敵のボーナスは、ボスを除き 3/2/1/1/1（増援も同じ）
 [[maps]]
@@ -1029,9 +1143,10 @@ slots = [
 ]
 
 [[maps.enemies]]
+id = "gate_guard"
 class = "soldier"
 weapon = "iron_lance"
-level = 5
+level = 6
 bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
 ai = "hold"
 x = 7
@@ -1047,6 +1162,9 @@ x = 10
 y = 10
 
 [[maps.enemies]]
+id = "gate_armor"
+group = "gate_north"
+approach = "group"
 class = "armor"
 weapon = "iron_lance"
 level = 7
@@ -1056,6 +1174,8 @@ x = 7
 y = 6
 
 [[maps.enemies]]
+group = "gate_north"
+approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 8
@@ -1065,9 +1185,11 @@ x = 8
 y = 5
 
 [[maps.enemies]]
+group = "gate_north"
+approach = "group"
 class = "myrmidon"
 weapon = "iron_sword"
-level = 5
+level = 6
 bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
 ai = "hold"
 x = 6
@@ -1130,6 +1252,126 @@ bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
 ai = "charge"
 x = 1
 y = 2
+
+# DES-MAP-08: 正面で受ける位置へ踏み込むと、北の一団が動く。
+[[maps.events]]
+id = "gate_entry"
+trigger = "player_entered"
+area = { min_x = 6, min_y = 8, max_x = 9, max_y = 10 }
+effect = "charge_group"
+group = "gate_north"
+
+# 南の守りを倒したあとに、背後の射程と魔法を増やす。
+[[maps.events]]
+id = "gate_guard_falls"
+trigger = "enemy_defeated"
+unit = "gate_guard"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "gate_rear_mage"
+# 魔力・速さなどは DES-IT06 7.3 節の Lv7 の参考値（魔力 6.7・速さ 7.4）に寄せ、速さは切り上げる。
+class = "mage"
+weapons = ["fire"]
+level = 7
+bonus = { hp = 3, str = 0, skl = 3, spd = 3, def = 1, lck = 2, mag = 3, res = 2, mov = 0 }
+ai = "charge"
+x = 12
+y = 12
+[[maps.events.enemies]]
+id = "gate_rear_archer"
+class = "archer"
+weapons = ["iron_bow", "long_bow"]
+level = 7
+bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 13
+y = 13
+
+# 正面のアーマーを崩した後も北側の戦力を補う。
+[[maps.events]]
+id = "gate_armor_falls"
+trigger = "enemy_defeated"
+unit = "gate_armor"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "gate_north_fighter"
+class = "fighter"
+weapons = ["iron_axe", "hammer"]
+level = 8
+bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 10
+y = 4
+
+# E-96・E-97（ch05 版 0.3）: 門のアーマーを倒すと、北東から騎兵 3 体の一団が来る（斧兵の増援とは別の出来事）。
+# 足した敵の能力は既存の一般の敵と同じ bonus で、強めていない。
+[[maps.events]]
+id = "gate_east_alarm"
+trigger = "enemy_defeated"
+unit = "gate_armor"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "gate_east_cavalier_1"
+group = "gate_east"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 6
+bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 12
+y = 2
+[[maps.events.enemies]]
+id = "gate_east_cavalier_2"
+group = "gate_east"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 7
+bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 13
+y = 3
+[[maps.events.enemies]]
+id = "gate_east_cavalier_3"
+group = "gate_east"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 6
+bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 14
+y = 4
+
+# E-97（ch05 版 0.3）: 門の内へ入ると、北の端から騎兵とソルジャーの一団が来る。
+[[maps.events]]
+id = "gate_inner_entry"
+trigger = "player_entered"
+area = { min_x = 3, min_y = 1, max_x = 12, max_y = 6 }
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "gate_reserve_cavalier"
+group = "gate_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 7
+bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 13
+y = 0
+[[maps.events.enemies]]
+id = "gate_reserve_soldier"
+group = "gate_reserve"
+approach = "group"
+class = "soldier"
+weapons = ["iron_lance"]
+level = 7
+bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "charge"
+x = 14
+y = 1
 
 [[maps]]
 id = "ch06"
