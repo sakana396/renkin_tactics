@@ -20,6 +20,31 @@ func TestIT06PrepareWeapons(t *testing.T) {
 		}
 		return c
 	}
+	t.Run("TC-FR-ITM-03-04 ch01 勝利の武器報酬は一度だけ在庫に入り保存後も保つ", func(t *testing.T) {
+		c, err := core.NewCampaign(cat, core.Withdraw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := c.FinishChapter(winByForce(t, c, 1)); err != nil {
+			t.Fatal(err)
+		}
+		check := func(c *core.Campaign) {
+			t.Helper()
+			if !reflect.DeepEqual(c.StockWeapons, []core.WeaponCount{{Weapon: "armor_killer", Count: 1}}) {
+				t.Fatalf("ch01 勝利後の武器在庫: %v", c.StockWeapons)
+			}
+		}
+		check(c)
+		var b bytes.Buffer
+		if err := c.Save(&b); err != nil {
+			t.Fatal(err)
+		}
+		again, err := core.LoadCampaign(cat, &b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		check(again)
+	})
 	t.Run("TC-FR-ITM-03-04 過去の報酬は開発用の開始で在庫へ入り同じIDは2本", func(t *testing.T) {
 		c := newCampaign(t)
 		if len(c.StockWeapons) != 7 {

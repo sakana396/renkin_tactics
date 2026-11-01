@@ -90,13 +90,17 @@ func (s *SceneController) prepareButtons(y int) ([]prepareButton, int) {
 	s.prepareStockTop = min(max(s.prepareStockTop, 0), max(total-prepareStockRows, 0))
 	top, end := s.prepareStockTop, min(total, s.prepareStockTop+prepareStockRows)
 	rect := func(col, row int) image.Rectangle {
-		return image.Rect(16+col*160, y+row*22, 172+col*160, y+row*22+20)
+		return image.Rect(16+col*164, y+row*22, 180+col*164, y+row*22+20)
 	}
 	var bs []prepareButton
 	for k := top; k < end && k < len(stock); k++ {
 		it, _ := s.cfg.Catalog.Item(stock[k].Item)
 		id := stock[k].Item
-		bs = append(bs, prepareButton{SceneButton{"手持ちへ: " + it.Name, rect(0, k-top), true}, func() error { return c.TakeItem(m, id) }})
+		label := "手持ちへ: " + it.Name
+		if stock[k].Count > 1 {
+			label += fmt.Sprintf(" ×%d", stock[k].Count)
+		}
+		bs = append(bs, prepareButton{SceneButton{label, rect(0, k-top), true}, func() error { return c.TakeItem(m, id) }})
 	}
 	for n, ic := range hand {
 		it, _ := s.cfg.Catalog.Item(ic.Item)
@@ -104,9 +108,14 @@ func (s *SceneController) prepareButtons(y int) ([]prepareButton, int) {
 		bs = append(bs, prepareButton{SceneButton{"在庫へ: " + it.Name, rect(1, n), true}, func() error { return c.StoreItem(m, id) }})
 	}
 	for k := max(top, len(stock)); k < end; k++ {
-		w, _ := s.cfg.Catalog.Weapon(stockWeapons[k-len(stock)].Weapon)
+		wc := stockWeapons[k-len(stock)]
+		w, _ := s.cfg.Catalog.Weapon(wc.Weapon)
 		id := w.ID
-		bs = append(bs, prepareButton{SceneButton{"手持ちへ: " + w.Name, rect(0, k-top), true}, func() error { return c.TakeWeapon(m, id) }})
+		label := "手持ちへ: " + w.Name
+		if wc.Count > 1 {
+			label += fmt.Sprintf(" ×%d", wc.Count)
+		}
+		bs = append(bs, prepareButton{SceneButton{label, rect(0, k-top), true}, func() error { return c.TakeWeapon(m, id) }})
 	}
 	for n, id := range handWeapons {
 		w, _ := s.cfg.Catalog.Weapon(id)
@@ -114,6 +123,10 @@ func (s *SceneController) prepareButtons(y int) ([]prepareButton, int) {
 		bs = append(bs, prepareButton{SceneButton{"在庫へ: " + w.Name, rect(1, len(hand)+n), true}, func() error { return c.StoreWeapon(m, n) }})
 	}
 	for n, id := range handWeapons {
+		if n == 0 {
+			bs = append(bs, prepareButton{SceneButton{"初めの装備", rect(2, len(hand)), false}, nil})
+			continue
+		}
 		w, _ := s.cfg.Catalog.Weapon(id)
 		n := n
 		bs = append(bs, prepareButton{SceneButton{"先頭へ: " + w.Name, rect(2, len(hand)+n), true}, func() error { return c.MoveWeaponFirst(m, n) }})

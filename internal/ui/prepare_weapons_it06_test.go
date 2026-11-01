@@ -25,9 +25,47 @@ func TestIT06PrepareWeaponView(t *testing.T) {
 		if !reflect.DeepEqual(s.campaign.Roster[0].Weapons, []string{"iron_sword", "armor_killer"}) {
 			t.Fatal(s.campaign.Roster[0].Weapons)
 		}
+		buttons := s.View().Buttons
+		var mark, iron image.Rectangle
+		for _, b := range buttons {
+			if b.Label == "初めの装備" {
+				if b.Enabled {
+					t.Fatal("初めの装備を押せる")
+				}
+				mark = b.Rect
+			}
+			if b.Label == "在庫へ: 鉄の剣" {
+				iron = b.Rect
+			}
+			if b.Label == "先頭へ: 鉄の剣" {
+				t.Fatal("先頭の武器に先頭へがある")
+			}
+		}
+		if mark.Empty() || iron.Empty() || mark.Min.Y != iron.Min.Y {
+			t.Fatal("先頭の武器の行に印がない", mark, iron)
+		}
+		s.Click(mark.Min.X, mark.Min.Y)
+		if !reflect.DeepEqual(s.campaign.Roster[0].Weapons, []string{"iron_sword", "armor_killer"}) {
+			t.Fatal("初めの装備を押して武器が変わった")
+		}
 		clickSceneButton(t, s, "先頭へ: アーマーキラー")
 		if got := s.prepareUnit(0).Weapons[0].ID; got != "armor_killer" {
 			t.Fatal(got)
+		}
+		mark, iron = image.Rectangle{}, image.Rectangle{}
+		for _, b := range s.View().Buttons {
+			if b.Label == "初めの装備" {
+				mark = b.Rect
+			}
+			if b.Label == "在庫へ: アーマーキラー" {
+				iron = b.Rect
+			}
+			if b.Label == "先頭へ: アーマーキラー" {
+				t.Fatal("新しい先頭の武器に先頭へが残った")
+			}
+		}
+		if mark.Empty() || iron.Empty() || mark.Min.Y != iron.Min.Y {
+			t.Fatal("先頭の印が移らない", mark, iron)
 		}
 		clickSceneButton(t, s, "在庫へ: 鉄の剣")
 		if !reflect.DeepEqual(s.campaign.Roster[0].Weapons, []string{"armor_killer"}) {
@@ -37,13 +75,22 @@ func TestIT06PrepareWeaponView(t *testing.T) {
 		if !strings.Contains(viewStrings(s.View()), core.ErrLastWeapon.Error()) {
 			t.Fatal("最後の武器の拒否が見えない")
 		}
+		for _, b := range s.View().Buttons {
+			if strings.HasPrefix(b.Label, "先頭へ:") {
+				t.Fatal("武器が 1 本でも先頭へがある")
+			}
+		}
 	})
 	t.Run("TC-FR-CMP-03-14 在庫が 5 行を超えると送りのボタンで残りを出す", func(t *testing.T) {
 		s := recruitScenes(t, "ch08", core.Withdraw)
 		s.campaign.Stock = []defs.ItemCount{{Item: "potion", Count: 1}}
 		s.campaign.StockWeapons = nil
 		for _, id := range []string{"armor_killer", "brave_axe", "hammer", "horse_killer", "killing_sword", "long_bow", "thunder_sword"} {
-			s.campaign.StockWeapons = append(s.campaign.StockWeapons, core.WeaponCount{Weapon: id, Count: 1})
+			count := 1
+			if id == "horse_killer" {
+				count = 2
+			}
+			s.campaign.StockWeapons = append(s.campaign.StockWeapons, core.WeaponCount{Weapon: id, Count: count})
 		}
 		s.message = "案内\n" + strings.Repeat("案内", 20)
 		stockLabels := func() ([]string, map[string]bool) {
@@ -51,6 +98,9 @@ func TestIT06PrepareWeaponView(t *testing.T) {
 			enabled := map[string]bool{}
 			for _, b := range s.View().Buttons {
 				if b.Rect.Min.X == 16 && strings.HasPrefix(b.Label, "手持ちへ: ") {
+					if textWidth(b.Label)+12 > b.Rect.Dx() {
+						t.Fatalf("在庫のボタンの文字が枠を越す: %q", b.Label)
+					}
 					got = append(got, strings.TrimPrefix(b.Label, "手持ちへ: "))
 				}
 				enabled[b.Label] = b.Enabled
@@ -58,7 +108,7 @@ func TestIT06PrepareWeaponView(t *testing.T) {
 			return got, enabled
 		}
 		got, en := stockLabels()
-		if !reflect.DeepEqual(got, []string{"回復薬", "アーマーキラー", "勇者の斧", "ハンマー", "ホースキラー"}) || en["▲ 前へ"] || !en["▼ 次へ"] {
+		if !reflect.DeepEqual(got, []string{"回復薬", "アーマーキラー", "勇者の斧", "ハンマー", "ホースキラー ×2"}) || en["▲ 前へ"] || !en["▼ 次へ"] {
 			t.Fatal(got, en)
 		}
 		if !strings.Contains(viewStrings(s.View()), "1〜5/8") {
@@ -68,7 +118,7 @@ func TestIT06PrepareWeaponView(t *testing.T) {
 			clickSceneButton(t, s, "▼ 次へ")
 		}
 		got, en = stockLabels()
-		if !reflect.DeepEqual(got, []string{"ハンマー", "ホースキラー", "キルソード", "長弓", "雷の剣"}) || !en["▲ 前へ"] || en["▼ 次へ"] {
+		if !reflect.DeepEqual(got, []string{"ハンマー", "ホースキラー ×2", "キルソード", "長弓", "雷の剣"}) || !en["▲ 前へ"] || en["▼ 次へ"] {
 			t.Fatal(got, en)
 		}
 		// 送ったあとのボタンも、表示した武器を持たせる。
