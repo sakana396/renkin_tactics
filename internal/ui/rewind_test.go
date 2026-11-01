@@ -96,7 +96,7 @@ func TestRewindUI(t *testing.T) {
 		c.RewindEnter()
 		c.RewindEnter()
 		c.RewindEnter()
-		if c.battle.RewindsLeft() != 9 || c.state != Idle || c.target != -1 || c.watched != -1 || c.confirmEnd || c.events != nil || len(c.record) != entry.EventStart || !c.danger || c.rewind.open {
+		if c.battle.RewindsLeft() != 9 || c.state != Idle || c.target != -1 || len(c.watched) != 0 || c.confirmEnd || c.events != nil || len(c.record) != entry.EventStart || !c.danger || c.rewind.open {
 			t.Fatal("成功時の破棄または二重消費", c)
 		}
 		for _, b := range c.RewindView().Buttons {
@@ -280,7 +280,7 @@ func TestRewindCancellation(t *testing.T) {
 			c.unit = 0
 			c.dest = tactics.Pos{X: 0, Y: 1}
 			c.target = 3
-			c.watched = 2
+			c.watched = map[int]bool{2: true}
 			c.confirmEnd = true
 			c.message = "保持する知らせ"
 			c.danger = true

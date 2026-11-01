@@ -65,17 +65,6 @@ func TestEnemyRange(t *testing.T) {
 	fighterBlue, fighterRed := posSet(fighter), posSet(tactics.Pos{X: 0, Y: 0}, tactics.Pos{X: 2, Y: 0}, tactics.Pos{X: 1, Y: 1})
 	bossBlue, bossRed := posSet(boss), posSet(tactics.Pos{X: 4, Y: 5}, tactics.Pos{X: 5, Y: 4})
 
-	overlayIs := func(t *testing.T, c *Controller, what string, wantBlue, wantRed map[tactics.Pos]bool) {
-		t.Helper()
-		blue, red := c.Overlay()
-		if len(blue) == 0 && len(wantBlue) == 0 && len(red) == 0 && len(wantRed) == 0 {
-			return
-		}
-		if !reflect.DeepEqual(blue, wantBlue) || !reflect.DeepEqual(red, wantRed) {
-			t.Errorf("%s: 青 %v、赤 %v\nwant 青 %v、赤 %v", what, blue, red, wantBlue, wantRed)
-		}
-	}
-
 	t.Run("TC-IF-01-18 Idle・Selected・Moved でカーソルを敵に合わせると、その敵の範囲を出し、離すと消える。行動の一覧の上やほかの状態では出さない", func(t *testing.T) {
 		c := newIdle(t)
 		overlayIs(t, c, "初め（カーソルはまだ盤面の外）", nil, nil)
@@ -186,7 +175,7 @@ func TestEnemyRange(t *testing.T) {
 		c.SetCursor(cellCenter(empty))
 		overlayIs(t, c, "もう一度クリックして離す", nil, nil)
 
-		// ボスを出し続けたまま主人公を選ぶと、出し続けるのをやめ、主人公の範囲を出す。
+		// ボスを出し続けたまま主人公を選ぶと、主人公の範囲を出す。ボスの範囲の設定は保つ（DES-UI-27。#128 で改訂）。
 		c.Click(boss)
 		c.Click(tactics.Pos{X: 0, Y: 0})
 		if c.State() != Selected {
@@ -197,12 +186,16 @@ func TestEnemyRange(t *testing.T) {
 		// 敵に合わせると、主人公の範囲の代わりに敵の範囲だけを出す（重ねない）。
 		c.SetCursor(cellCenter(fighter))
 		overlayIs(t, c, "Selected でファイターに合わせる", fighterBlue, fighterRed)
-		// Selected でボスをクリックしても、出し続けない（クリックは Idle の操作）。
+		// Selected でボスをクリックすると攻撃の操作になる。ボスを攻撃できる移動先はないので、理由を出して Selected のまま（DES-UI-27。#128 で改訂）。
 		c.Click(boss)
 		c.SetCursor(cellCenter(empty))
+		if c.State() != Selected || c.Message() == "" {
+			t.Errorf("Selected でボスをクリック: 状態 %v、知らせ %q", c.State(), c.Message())
+		}
 		overlayIs(t, c, "Selected でボスをクリックして離す", ownBlue, ownRed)
+		// 取り消して Idle に戻ると、保っていたボスの範囲をまた出す。
 		c.Cancel()
-		overlayIs(t, c, "取り消して Idle", nil, nil)
+		overlayIs(t, c, "取り消して Idle", bossBlue, bossRed)
 	})
 
 	t.Run("TC-IF-01-20 Q: Playing・Over 以外で危険範囲を出す・消す。番をまたいで残し、再生中と勝ち負けの画面では出さない", func(t *testing.T) {

@@ -103,6 +103,7 @@ func (s *SceneController) resetDeploy() {
 	s.deploySlots = nil
 	s.deploySelected = -1
 	s.deployCursor = tactics.Pos{X: -1, Y: -1}
+	s.deployLastCell, s.deployLastOK, s.deployOnInfo = tactics.Pos{}, false, false
 	s.deployDanger = false
 }
 
@@ -114,8 +115,35 @@ func (s *SceneController) SetDeployCursor(x, y int) {
 	p, ok := s.deployCamera.CellAt(x, y)
 	if !ok {
 		p = tactics.Pos{X: -1, Y: -1}
+	} else {
+		s.deployLastCell, s.deployLastOK = p, true
 	}
 	s.deployCursor = p
+	s.deployOnInfo = image.Pt(x, y).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight))
+}
+
+// deployInfoUnit は、配置の情報欄に出すユニットの添字を units から返す（DES-UI-27、DES-IT06 12.4 節）。なければ -1。
+// 優先の順は「カーソルの下の生きているユニット（初めの敵も含む）→ 選んでいる味方」。カーソルが情報欄の上にあって
+// 味方を選んでいなければ、ページの印をクリックできるよう、直前に盤面で見ていたマスのユニットを出し続ける。表示だけを変える。
+func (s *SceneController) deployInfoUnit(units []tactics.Unit, selected int) int {
+	at := func(p tactics.Pos) int {
+		for i, u := range units {
+			if u.Alive && u.Pos == p {
+				return i
+			}
+		}
+		return -1
+	}
+	if i := at(s.deployCursor); i >= 0 {
+		return i
+	}
+	if selected >= 0 {
+		return selected
+	}
+	if s.deployOnInfo && s.deployLastOK {
+		return at(s.deployLastCell)
+	}
+	return -1
 }
 
 // ToggleDeployDanger は配置だけの Q の押し始めを受ける（DES-UI-23）。
@@ -185,8 +213,9 @@ func (s *SceneController) deployView() SceneView {
 	}}
 	mm := s.deployMinimap(d)
 	v.Minimap = &mm
-	if d.Selected >= 0 {
-		info := (Panel{Unit: &d.Units[d.Selected], Page: s.infoPage, Tabs: true}).View()
+	if i := s.deployInfoUnit(d.Units, d.Selected); i >= 0 {
+		// 敵の能力も、味方と同じ 2 ページで出す（DES-UI-27、REV-071）。まだ出ていない増援は配置の盤面にいない。
+		info := (Panel{Unit: &d.Units[i], Page: s.infoPage, Tabs: true}).View()
 		v.Info = &info
 	} else {
 		v.Texts = append(v.Texts, SceneText{Text: "配置する味方を選んでください", X: 528, Y: 24, Style: StyleLabel})

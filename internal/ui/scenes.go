@@ -67,9 +67,13 @@ type SceneController struct {
 	deploySlots      []int
 	deploySelected   int
 	deployCursor     tactics.Pos
-	deployDanger     bool
-	deployCamera     Camera
-	deployment       map[int]bool
+	// deployLastCell は直前にカーソルを置いた配置の盤面のマス、deployOnInfo はカーソルが情報欄の上にあること（DES-UI-27、DES-UI-28）。
+	deployLastCell tactics.Pos
+	deployLastOK   bool
+	deployOnInfo   bool
+	deployDanger   bool
+	deployCamera   Camera
+	deployment     map[int]bool
 	// infoPage は準備と配置の情報欄のページ（DES-UI-28）。表示だけに使う。
 	infoPage InfoPage
 }

@@ -283,7 +283,7 @@ func TestMinimap(t *testing.T) {
 			k.Click(tactics.Pos{X: 30, Y: 30})
 			k.ToggleDanger()
 		}
-		if c.watched != 2 || !c.danger {
+		if !reflect.DeepEqual(c.watched, map[int]bool{2: true}) || !c.danger {
 			t.Fatal("前提: 敵の範囲")
 		}
 		for _, tc := range []struct {
@@ -302,8 +302,8 @@ func TestMinimap(t *testing.T) {
 			if c.camera.X != tc.want.X || c.camera.Y != tc.want.Y {
 				t.Errorf("%s: カメラ %+v、%v のはず", tc.name, c.camera, tc.want)
 			}
-			if c.State() != Idle || c.watched != 2 || !c.danger || c.message != "" {
-				t.Errorf("%s: 状態 %v、範囲 %d %v、知らせ %q", tc.name, c.State(), c.watched, c.danger, c.message)
+			if c.State() != Idle || !reflect.DeepEqual(c.watched, map[int]bool{2: true}) || !c.danger || c.message != "" {
+				t.Errorf("%s: 状態 %v、範囲 %v %v、知らせ %q", tc.name, c.State(), c.watched, c.danger, c.message)
 			}
 		}
 		// ミニマップの欄の外は受けない（盤面と情報欄に渡す）。
@@ -734,12 +734,15 @@ func TestInfoPagesLayout(t *testing.T) {
 		if got := rows(c.InfoView(x, y)); len(got) == 0 || got[0] != "ソルジャー 3　★ボス" {
 			t.Errorf("盤面の上: %q", got)
 		}
-		// ミニマップの上や窓の外では出し続けない。
+		// ミニマップの上や窓の外では、選んでいるユニットに戻る（DES-IT06 12.4 節。#128 で改訂）。
+		if got := rows(c.InfoView(650, 400)); len(got) == 0 || got[0] != "レオン" {
+			t.Errorf("選んでいるときのミニマップの上: %q", got)
+		}
+		// 選んでいなければ直前のマスに戻る。空きマスなら地形だけ。ミニマップの上では出し続けない。
+		c.Cancel()
 		if v := c.InfoView(650, 400); len(v.Texts) != 0 {
 			t.Errorf("ミニマップの上: %q", rows(v))
 		}
-		// 選んでいなければ直前のマスに戻る。空きマスなら地形だけ。
-		c.Cancel()
 		x, y = cellCenter(tactics.Pos{X: 0, Y: 0})
 		c.SetCursor(x, y)
 		if got := rows(c.InfoView(tx, ty)); len(got) == 0 || got[0] != "地形: 平地" {
@@ -781,8 +784,8 @@ func TestInfoPagesLayout(t *testing.T) {
 		c.Click(tactics.Pos{X: 30, Y: 30})
 		g.leftClick(r[1].Min.X+2, r[1].Min.Y+2)
 		c.ToggleInfoPage()
-		if c.watched != 2 || c.State() != Idle || c.infoPage != PageStats {
-			t.Errorf("敵の範囲 %d、状態 %v、ページ %d", c.watched, c.State(), c.infoPage)
+		if !reflect.DeepEqual(c.watched, map[int]bool{2: true}) || c.State() != Idle || c.infoPage != PageStats {
+			t.Errorf("敵の範囲 %v、状態 %v、ページ %d", c.watched, c.State(), c.infoPage)
 		}
 		// 巻き戻しの一覧を開いている間は、情報欄の代わりに一覧を出すので切り替えない。
 		c.OpenRewind()

@@ -147,27 +147,53 @@ func (c *Controller) panel(cursor tactics.Pos, onMap bool) Panel {
 	return p
 }
 
-// InfoView は、カーソルの画面の座標 (x, y) での情報欄の描くものを返す（DES-UI-01、DES-UI-28）。
-// カーソルが情報欄の上にあるときは、ページの印をクリックして中身を切り替えられるよう、
-// 選んでいるユニットがいればそのマス、いなければ直前に盤面で見ていたマスの情報を出し続ける（DES-IT06 12.2 節）。
+// InfoView は、カーソルの画面の座標 (x, y) での情報欄の描くものを返す（DES-UI-01、DES-UI-27、DES-UI-28）。
+// 出すものの優先の順は「予測などの専用の表示 → カーソルの下の生きているユニット → 選んでいるユニット → 地形」（DES-IT06 12.4 節）。
+// 予測は Panel が優先する。カーソルが盤の外や空いたマスにあるときは、選んでいるユニットのマスの情報に戻る。
+// 選んでいるユニットがいなくてカーソルが情報欄の上にあるときは、ページの印をクリックして中身を切り替えられるよう、
+// 直前に盤面で見ていたマスの情報を出し続ける（DES-IT06 12.2 節）。表示だけを変え、選択は変えない。
 func (c *Controller) InfoView(x, y int) InfoView {
-	cell, onMap := c.Camera().CellAt(x, y)
-	if !onMap && image.Pt(x, y).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
-		cell, onMap = c.infoCell()
-	}
+	cell, onMap := c.infoCell(x, y)
 	return c.panel(cell, onMap).View()
 }
 
-// infoCell は、カーソルが情報欄の上にあるときに情報を出すマスを返す（DES-UI-28）。
-// 選んでいるユニット（移動先を選んだあとは移動先）を優先し、いなければ直前に盤面で見ていたマス。どちらもなければ ok が偽。
-func (c *Controller) infoCell() (tactics.Pos, bool) {
+// infoCell は、カーソルの画面の座標 (x, y) で情報を出すマスを返す（DES-UI-27、DES-UI-28）。どれもなければ ok が偽。
+func (c *Controller) infoCell(x, y int) (tactics.Pos, bool) {
+	cell, onMap := c.Camera().CellAt(x, y)
+	if onMap && c.liveUnitAt(cell) {
+		return cell, true
+	}
+	if p, ok := c.selectedCell(); ok {
+		return p, true
+	}
+	if onMap {
+		return cell, true
+	}
+	if image.Pt(x, y).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
+		return c.lastCell, c.lastCellOK
+	}
+	return tactics.Pos{}, false
+}
+
+// selectedCell は、選んでいるユニットのマス（移動先を選んだあとは移動先）を返す（DES-UI-27）。選んでいなければ ok が偽。
+func (c *Controller) selectedCell() (tactics.Pos, bool) {
 	switch c.state {
 	case Selected, Moved, Targeting, HealTargeting, ItemMenu, WeaponMenu, StaffMenu, Canto:
 		if units := c.Units(); c.unit >= 0 && c.unit < len(units) && units[c.unit].Alive {
 			return units[c.unit].Pos, true
 		}
 	}
-	return c.lastCell, c.lastCellOK
+	return tactics.Pos{}, false
+}
+
+// liveUnitAt は、盤面に描くユニット（Units）のうち、マス p に生きているユニットがいるかを返す（DES-UI-27）。
+func (c *Controller) liveUnitAt(p tactics.Pos) bool {
+	for _, u := range c.Units() {
+		if u.Alive && u.Pos == p {
+			return true
+		}
+	}
+	return false
 }
 
 // ToggleInfoPage は Tab キーで情報欄のページを切り替える（DES-UI-28）。表示だけを変える。
