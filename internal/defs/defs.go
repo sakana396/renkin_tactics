@@ -121,10 +121,11 @@ type SkillDef struct {
 	Multiplier int
 }
 
-// ItemCount は手持ちのアイテムとその数（DES-DAT-01）。
+// ItemCount は道具の個数を表す。報酬と初めの在庫では武器も表す（DES-DAT-01、DES-ITM-02）。
 type ItemCount struct {
-	Item  string
-	Count int
+	Item   string
+	Weapon string // 報酬では Item と一方だけを使う（DES-ITM-02）。
+	Count  int
 }
 
 // Growth は成長率（%）（DES-DAT-01 の反復 2 の変更）。移動は成長しない。

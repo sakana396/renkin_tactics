@@ -35,12 +35,12 @@ func TestBaseData(t *testing.T) {
 		}
 		classes := []defs.ClassDef{
 			{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 18, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
-			{ID: "armor", Name: "アーマー", WeaponType: "lance", Base: defs.Stats{HP: 22, Str: 6, Skl: 3, Spd: 2, Def: 9, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
+			{ID: "armor", Name: "アーマー", WeaponType: "lance", Tags: []string{"armor"}, Base: defs.Stats{HP: 22, Str: 6, Skl: 3, Spd: 2, Def: 9, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
 			{ID: "fighter", Name: "ファイター", WeaponType: "axe", Base: defs.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
 			{ID: "archer", Name: "アーチャー", WeaponType: "bow", Base: defs.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}},
 			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5, Lck: 2, Mag: 0, Res: 1}},
 			{ID: "myrmidon", Name: "剣士", WeaponType: "sword", Base: defs.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5, Lck: 4, Mag: 1, Res: 1}},
-			{ID: "cavalier", Name: "騎兵", WeaponType: "lance", Skills: []string{"canto"}, Base: defs.Stats{HP: 20, Str: 6, Skl: 5, Spd: 6, Def: 5, Mov: 7, Lck: 3, Mag: 0, Res: 1}},
+			{ID: "cavalier", Name: "騎兵", WeaponType: "lance", Tags: []string{"mounted"}, Skills: []string{"canto"}, Base: defs.Stats{HP: 20, Str: 6, Skl: 5, Spd: 6, Def: 5, Mov: 7, Lck: 3, Mag: 0, Res: 1}},
 			{ID: "cleric", Name: "僧侶", WeaponType: "staff", Base: defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}},
 		}
 		for _, want := range classes {

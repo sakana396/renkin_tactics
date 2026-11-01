@@ -274,6 +274,13 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 			m.Stats.Res = cls.Base.Res + ch.Bonus.Res + levels*ch.Growth.Res/100
 			// 版 1 には武器の所持がないので、定義の初めの武器を渡す（DES-IT06 6.3 節）。
 			m.Weapons = append([]string(nil), ch.Weapons...)
+			// 初期武器が 5 本を超える定義でも先頭から残し、あふれを在庫へ戻す（DES-SAV-05）。
+			if len(m.Weapons) > maxHand {
+				for _, id := range m.Weapons[maxHand:] {
+					c.StockWeapons = changeWeapon(c.StockWeapons, id, 1)
+				}
+				m.Weapons = m.Weapons[:maxHand]
+			}
 		}
 		if len(m.Weapons) == 0 || len(m.Weapons) > 5 {
 			return nil, invalidSave(fmt.Sprintf("roster[%d].weapons", i), "武器は 1〜5 本必要です")
@@ -303,6 +310,14 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 		}
 		seenWeapons[w.Weapon] = true
 		c.StockWeapons = append(c.StockWeapons, WeaponCount{Weapon: w.Weapon, Count: w.Count})
+	}
+	if d.Version == 1 {
+		// 版 1 の武器在庫は初めの定義から作る。攻略済みの章の報酬は足さない（DES-SAV-05）。
+		for _, ic := range cat.Game.Stock {
+			if ic.Weapon != "" {
+				c.StockWeapons = changeWeapon(c.StockWeapons, ic.Weapon, ic.Count)
+			}
+		}
 	}
 	c.sortStock()
 	// 全検証後に、章の順で不足する加入だけを追いつかせる（DES-SAV-04）。

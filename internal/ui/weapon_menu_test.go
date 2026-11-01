@@ -149,7 +149,7 @@ func TestWeaponMenu(t *testing.T) {
 		}
 		killer := menuBlade
 		killer.Name, killer.EffectiveTags = "アーマーキラー", []string{"armor"}
-		if got := weaponDetail(killer); got != "アーマーキラー　物理　威力 5　命中 90　必殺 0　重さ 4　射程 1　特効 armor" {
+		if got := weaponDetail(killer); got != "アーマーキラー　物理　威力 5　命中 90　必殺 0　重さ 4　射程 1　特効 鎧" {
 			t.Errorf("特効 %q", got)
 		}
 		if got := weaponDetail(menuStaff); got != "癒やしの杖　回復 10　射程 1　残り 0/3" {

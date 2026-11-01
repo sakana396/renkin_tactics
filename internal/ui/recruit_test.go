@@ -148,6 +148,7 @@ func TestRecruitPrepare(t *testing.T) {
 						}
 						s.enterPrepare()
 						s.campaign.Stock = nil
+						s.campaign.StockWeapons = nil
 						s.campaign.Roster[0].Items = nil
 						for i := 0; i < stock; i++ {
 							s.campaign.Stock = append(s.campaign.Stock, defs.ItemCount{Item: []string{"potion", "test_potion"}[i], Count: 1})
@@ -160,7 +161,7 @@ func TestRecruitPrepare(t *testing.T) {
 						n := len(v.Rows)
 						var rects []image.Rectangle
 						for i, r := range v.Rows {
-							if r.Rect != image.Rect(56, 72+i*36, 504, 104+i*36) || r.Mark != image.Rect(16, 72+i*36, 52, 104+i*36) || v.Icons[i].Y != 72+i*36 {
+							if r.Rect != image.Rect(56, 72+i*24, 504, 96+i*24) || r.Mark != image.Rect(16, 72+i*24, 52, 96+i*24) || v.Icons[i].Y != 72+i*24 {
 								t.Fatal(r, v.Icons[i])
 							}
 							rects = append(rects, r.Rect, r.Mark)
@@ -184,10 +185,11 @@ func TestRecruitPrepare(t *testing.T) {
 						for _, b := range v.Buttons {
 							rects = append(rects, b.Rect)
 						}
-						inventoryY := 72 + n*36 + 12
-						messageY := inventoryY + 28
-						if rows := max(stock, hand); rows > 0 {
-							messageY += (rows-1)*40 + 44
+						// #122 で行を 24 px、品のボタンを 22 px ごとに詰め、手持ちの列に武器（鉄の剣）も並べた。
+						inventoryY := 72 + n*24 + 12
+						messageY := inventoryY + 24
+						if rows := max(stock, hand+len(s.campaign.Roster[0].Weapons)); rows > 0 {
+							messageY += rows*22 + 4
 						}
 						for _, tx := range v.Texts {
 							if strings.HasPrefix(tx.Text, "在庫:") {

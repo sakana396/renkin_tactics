@@ -172,8 +172,9 @@ type (
 		Multiplier int    `toml:"multiplier"`
 	}
 	rawItemCount struct {
-		Item  string `toml:"item"`
-		Count int    `toml:"count"`
+		Item   string `toml:"item"`
+		Weapon string `toml:"weapon"`
+		Count  int    `toml:"count"`
 	}
 	rawGrowth struct {
 		HP  int `toml:"hp"`
@@ -570,7 +571,7 @@ func toItems(raw []rawItemCount) []defs.ItemCount {
 	}
 	out := make([]defs.ItemCount, len(raw))
 	for i, r := range raw {
-		out[i] = defs.ItemCount{Item: r.Item, Count: r.Count}
+		out[i] = defs.ItemCount{Item: r.Item, Weapon: r.Weapon, Count: r.Count}
 	}
 	return out
 }
@@ -785,7 +786,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 			v.add(FileCharacters, fmt.Sprintf("characters[%d].lord", i), "lord = true のキャラ %q が party にいません", r.ID)
 		}
 	}
-	v.itemList(ref, FileGame, "stock", rd.game.Stock)
+	v.rewardList(ref, FileGame, "stock", rd.game.Stock)
 
 	// マップ（規則 2、3、4、8〜12、19、22）。
 	maps := make([]defs.MapDef, len(rd.maps))
@@ -858,7 +859,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 			}
 			joinedAt[id] = q
 		}
-		v.itemList(ref, FileChapters, p+".reward", r.Reward)
+		v.rewardList(ref, FileChapters, p+".reward", r.Reward)
 		chapters[i] = defs.ChapterDef{ID: r.ID, Name: r.Name, Map: r.Map, Before: r.Before, After: r.After, Joins: append([]string(nil), r.Joins...), Reward: toItems(r.Reward)}
 	}
 
@@ -974,6 +975,9 @@ func (v *validator) hand(ref refs, file, path string, list []rawItemCount, limit
 	total := 0
 	for j, it := range list {
 		q := fmt.Sprintf("%s.items[%d]", path, j)
+		if it.Weapon != "" {
+			v.add(file, q+".weapon", "道具の手持ちに武器は書けません")
+		}
 		if !ref.itemIDs[it.Item] {
 			v.add(file, q+".item", "アイテム %q がありません", it.Item)
 		}
@@ -993,6 +997,9 @@ func (v *validator) itemList(ref refs, file, path string, list []rawItemCount) {
 	seen := map[string]string{}
 	for j, it := range list {
 		q := fmt.Sprintf("%s[%d]", path, j)
+		if it.Weapon != "" {
+			v.add(file, q+".weapon", "道具の在庫に武器は書けません")
+		}
 		if !ref.itemIDs[it.Item] {
 			v.add(file, q+".item", "アイテム %q がありません", it.Item)
 		} else if first, dup := seen[it.Item]; dup {
@@ -1000,6 +1007,38 @@ func (v *validator) itemList(ref refs, file, path string, list []rawItemCount) {
 		} else {
 			seen[it.Item] = q
 		}
+		v.atLeast(file, q+".count", it.Count, 1)
+	}
+}
+
+// rewardList は報酬の道具または武器の参照と個数を確かめる（DES-ITM-02、DES-IT06 6.2 節）。
+func (v *validator) rewardList(ref refs, file, path string, list []rawItemCount) {
+	seen := map[string]string{}
+	for j, it := range list {
+		q := fmt.Sprintf("%s[%d]", path, j)
+		switch {
+		case it.Item != "" && it.Weapon != "":
+			v.add(file, q, "item と weapon の両方は書けません")
+		case it.Item == "" && it.Weapon == "":
+			v.add(file, q, "item または weapon を書いてください")
+		case it.Item != "":
+			if !ref.itemIDs[it.Item] {
+				v.add(file, q+".item", "アイテム %q がありません", it.Item)
+			}
+		case it.Weapon != "":
+			if _, ok := ref.weaponByID[it.Weapon]; !ok {
+				v.add(file, q+".weapon", "武器 %q がありません", it.Weapon)
+			}
+		}
+		key := it.Item + "/" + it.Weapon
+		if first, ok := seen[key]; ok && (it.Item != "" || it.Weapon != "") {
+			kind, label, id := "item", "アイテム", it.Item
+			if it.Weapon != "" {
+				kind, label, id = "weapon", "武器", it.Weapon
+			}
+			v.add(file, q+"."+kind, "%s %q を 2 回書いています（%s と同じ）", label, id, first)
+		}
+		seen[key] = q
 		v.atLeast(file, q+".count", it.Count, 1)
 	}
 }

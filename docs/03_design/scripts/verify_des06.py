@@ -150,8 +150,9 @@ eq('mage fire AS',AS(5,weights['fire'],1),4)
 for w in read_toml('weapons.toml')['weapons']:
     if w['id']=='heal_staff': eq('staff base',(w['heal'],w['uses']),(10,15))
     else:
-        expect={'iron_sword':(5,90),'iron_lance':(7,80),'iron_axe':(8,70),'iron_bow':(6,85)}[w['id']]
-        eq(w['id'],(w['might'],w['hit']),expect)
+        # 鉄の武器 4 本の値だけを確かめる（新しい武器は下の 188 行目からの表で確かめる）。
+        expect={'iron_sword':(5,90),'iron_lance':(7,80),'iron_axe':(8,70),'iron_bow':(6,85)}.get(w['id'])
+        if expect is not None: eq(w['id'],(w['might'],w['hit']),expect)
 
 # Lvの表の範囲を現行データ全件から再集計。
 expected_ranges={
