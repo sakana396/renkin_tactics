@@ -74,7 +74,7 @@ func TestTexts(t *testing.T) {
 		}
 		const enemyRange = "敵にカーソル: その敵の範囲　Q: 敵の危険範囲"
 		c := newIdle(t)
-		want := []string{"ターン 1　自軍の番", "左クリック: 自軍を選ぶ・敵の範囲を出し続ける（もう一度で消す）　E: 番を終える", enemyRange}
+		want := []string{"ターン 1　自軍の番", "左クリック: 自軍を選ぶ・敵の範囲を足す（もう一度で消す）　E: 番を終える", enemyRange}
 		if got := c.Guide(); !reflect.DeepEqual(got, want) {
 			t.Errorf("Idle = %q", got)
 		}
@@ -85,7 +85,7 @@ func TestTexts(t *testing.T) {
 		fits(c.Guide())
 		c.Cancel()
 		c.Click(tactics.Pos{X: 0, Y: 0})
-		if got := c.Guide(); !reflect.DeepEqual(got[1:], []string{"左クリック: 青いマスに移動する　右クリック・Esc: 取り消す", enemyRange}) {
+		if got := c.Guide(); !reflect.DeepEqual(got[1:], []string{"左クリック: 青いマスに移動・敵を攻撃　右クリック・Esc: 取り消す", enemyRange}) {
 			t.Errorf("Selected = %q", got)
 		}
 		c.Click(tactics.Pos{X: 0, Y: 0})

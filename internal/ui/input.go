@@ -72,8 +72,13 @@ type Controller struct {
 	// weaponMenu は武器・杖の一覧を出したこと（取り消しで一覧へ戻るか、行動の一覧へ戻るかを分ける。DES-IT06 12.1 節）。
 	weapon     int
 	weaponMenu bool
-	// watched は Idle でクリックして範囲を出し続けている敵（いなければ -1）。
-	watched int
+	// watched は、クリックして範囲を出している敵の添字の集まり（DES-UI-27、DES-IT06 12.4 節）。
+	// 自軍を選んだり行動したりしても保ち、戦死した敵は除く。別の Battle（新しい Controller）では空になる。
+	watched map[int]bool
+	// quickSpots は、移動先を選んでいる状態で敵 quickTarget をクリックしたときの、武器ごとの仮の移動先（DES-UI-27）。
+	// 武器の一覧（WeaponMenu）をこの操作で出している間だけ nil でない。届く移動先のない武器は入れない。
+	quickSpots  map[int]tactics.Pos
+	quickTarget int
 	// cursorX と cursorY は、カーソルの画面の座標（DES-UI-08）。まだ知らなければ盤面の外の (-1, -1)。
 	cursorX, cursorY int
 	// danger は、Q キーで敵の危険範囲を出していること（DES-UI-08）。もう一度押すまで、番をまたいでも残す。
@@ -106,7 +111,7 @@ type Controller struct {
 
 // NewController は、newBattle で戦闘を作り、初めの出来事の再生から始める（DES-UI-02、DES-UI-04）。
 func NewController(newBattle Factory) (*Controller, error) {
-	c := &Controller{target: -1, weapon: -1, watched: -1, cursorX: -1, cursorY: -1}
+	c := &Controller{target: -1, weapon: -1, cursorX: -1, cursorY: -1}
 	b, events, err := newBattle()
 	if err != nil {
 		return nil, err
@@ -148,21 +153,19 @@ func (c *Controller) Click(p tactics.Pos) {
 		i, ok := c.unitAt(p)
 		switch {
 		case ok && c.battle.Units()[i].Side == tactics.Player && !c.battle.Units()[i].Acted:
-			c.state, c.unit, c.watched = Selected, i, -1
+			// 出している敵の範囲は保つ（DES-IT06 12.4 節）。
+			c.state, c.unit = Selected, i
 		case ok && c.battle.Units()[i].Side == tactics.Enemy:
-			// 敵の移動と攻撃の範囲を出す・消す。
-			if c.watched == i {
-				c.watched = -1
-			} else {
-				c.watched = i
-			}
-		default:
-			c.watched = -1
+			// 敵の移動と攻撃の範囲を足す・消す（DES-UI-27）。
+			c.toggleWatched(i)
 		}
 	case Selected:
 		if _, ok := c.battle.Reachable(c.unit)[p]; ok {
 			c.state, c.dest = Moved, p
 			c.camera.Focus(p)
+		} else if i, ok := c.unitAt(p); ok && c.battle.Units()[i].Side == tactics.Enemy {
+			// 範囲を出すより、敵をクリックして攻撃する操作を優先する（DES-UI-27）。
+			c.quickAttack(i)
 		}
 	case Canto:
 		// 今の位置は「その場で終える」、ほかの行けるマスは再移動にする（DES-IT06 12.3 節）。
@@ -251,6 +254,11 @@ func (c *Controller) ChooseWeapon(k int) {
 		c.message = reason
 		return
 	}
+	if c.quickSpots != nil {
+		// 敵をクリックして出した一覧では、その武器の仮の移動先から相手を選んだ予測へ進む（DES-UI-27）。
+		c.startQuick(ws[k], true)
+		return
+	}
 	c.state, c.weapon, c.target, c.message = next, ws[k], -1, ""
 	targets := c.Targets()
 	if next == HealTargeting {
@@ -284,7 +292,7 @@ func (c *Controller) Cancel() {
 	}
 	switch c.state {
 	case Idle:
-		c.watched, c.confirmEnd, c.message = -1, false, ""
+		c.watched, c.confirmEnd, c.message = nil, false, ""
 	case Selected:
 		c.state = Idle
 	case Moved:
@@ -307,6 +315,12 @@ func (c *Controller) Cancel() {
 		c.target, c.weapon = -1, -1
 		c.camera.Focus(c.dest)
 	case WeaponMenu, StaffMenu:
+		if c.quickSpots != nil {
+			// 敵をクリックして出した一覧は、移動先の選択へ戻る（DES-UI-27）。
+			c.state, c.weapon, c.weaponMenu, c.message = Selected, -1, false, ""
+			c.quickSpots, c.quickTarget = nil, -1
+			return
+		}
 		c.state, c.weapon, c.weaponMenu, c.message = Moved, -1, false, ""
 	case ItemMenu:
 		c.state = Moved
@@ -508,10 +522,77 @@ func (c *Controller) weaponReason(w int) string {
 		}
 		return ""
 	}
+	if c.quickSpots != nil {
+		if _, ok := c.quickSpots[w]; !ok {
+			return fmt.Sprintf("%s では %s を攻撃できる移動先がありません", weapon.Name, c.battle.Units()[c.quickTarget].Name)
+		}
+		return ""
+	}
 	if len(c.targetsWith(w)) == 0 {
 		return fmt.Sprintf("%s の射程（%s）に届く敵がいません", weapon.Name, rangeText(weapon))
 	}
 	return ""
+}
+
+// quickAttack は、移動先を選んでいる状態で敵 e をクリックしたときの処理（DES-UI-27、DES-IT06 12.4 節）。
+// 攻撃の武器ごとに仮の移動先を求め、武器の一覧へ進む。攻撃の武器が 1 本だけなら一覧を省き、相手を選んだ予測へ進む。
+// どの武器でも届く移動先がなければ、理由を知らせて移動先の選択の状態を保つ。予測だけを使い、乱数は引かない。
+func (c *Controller) quickAttack(e int) {
+	ws := c.attackWeapons()
+	name := c.battle.Units()[e].Name
+	if len(ws) == 0 {
+		c.message = fmt.Sprintf("攻撃の武器がないので %s を攻撃できません", name)
+		return
+	}
+	spots := map[int]tactics.Pos{}
+	for _, w := range ws {
+		if p, ok := c.attackSpot(w, e); ok {
+			spots[w] = p
+		}
+	}
+	if len(spots) == 0 {
+		c.message = fmt.Sprintf("%s を攻撃できる移動先がありません", name)
+		return
+	}
+	c.quickSpots, c.quickTarget, c.message = spots, e, ""
+	if len(ws) == 1 {
+		c.startQuick(ws[0], false)
+		return
+	}
+	c.state, c.weapon, c.weaponMenu, c.target = WeaponMenu, -1, true, -1
+	c.dest = c.battle.Units()[c.unit].Pos
+}
+
+// startQuick は、武器の列の w 番目と仮の移動先で、敵をクリックした相手を選んだ予測（Targeting）へ進む（DES-UI-27）。
+// menu は武器の一覧を出したこと（取り消しで一覧へ戻るか、行動の一覧へ戻るか。DES-IT06 12.1 節）。
+func (c *Controller) startQuick(w int, menu bool) {
+	c.state, c.dest, c.weapon, c.target, c.weaponMenu = Targeting, c.quickSpots[w], w, c.quickTarget, menu
+	c.quickSpots, c.quickTarget, c.message = nil, -1, ""
+	c.camera.Focus(c.dest)
+}
+
+// attackSpot は、武器の列の w 番目で敵 e を攻撃できる仮の移動先を返す（DES-UI-27、DES-IT06 12.4 節）。
+// 今の位置から攻撃できれば今の位置、そうでなければ移動の費用が最も小さいマス、同じなら Y・X の小さいマス。
+// 攻撃できるかは core の予測の検証で決める（最小の射程や地形も core に任せる）。
+func (c *Controller) attackSpot(w, e int) (tactics.Pos, bool) {
+	can := func(p tactics.Pos) bool {
+		_, err := c.battle.Forecast(tactics.Command{Unit: c.unit, To: p, Action: tactics.Attack, Target: e, Weapon: &w})
+		return err == nil
+	}
+	if here := c.battle.Units()[c.unit].Pos; can(here) {
+		return here, true
+	}
+	var best tactics.Pos
+	bestCost, found := 0, false
+	for p, cost := range c.battle.Reachable(c.unit) {
+		if found && (cost > bestCost || cost == bestCost && (p.Y > best.Y || p.Y == best.Y && p.X > best.X)) {
+			continue
+		}
+		if can(p) {
+			best, bestCost, found = p, cost, true
+		}
+	}
+	return best, found
 }
 
 // menuWeapons は、今の一覧に並べる武器の添字を返す（WeaponMenu は攻撃の武器、StaffMenu は杖）。
@@ -540,11 +621,23 @@ func (c *Controller) hoveredWeapon() int {
 // Overlay は移動範囲と武器の射程を返す（DES-UI-03、DES-UI-08、DES-UI-18）。
 // 第二戻り値の色は RangeStyle に従い、杖なら緑、攻撃なら赤になる。
 // 敵の範囲を出しているとき（shownEnemy）は、選んでいる自軍の範囲の代わりに、その敵の範囲を返す。
+// Idle では、カーソルを合わせた敵とクリックして出している敵（shownWatched）の範囲を合わせて返す（DES-UI-27）。
+// 自軍を選んでいる間のクリックして出している敵の範囲は、自軍の範囲と見分けられるよう WatchedFrames で枠として返す。
 // そうでなければ、Selected では選んだ自軍の範囲を返す。
 // 赤は、移動できるマスから武器が届くマスのうち、移動できないマス。
 // Moved・Targeting・HealTargeting では、移動先から武器が届くマスを第二戻り値で返す。
 func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
-	if e := c.shownEnemy(); e >= 0 {
+	e := c.shownEnemy()
+	if c.state == Idle {
+		ws := c.shownWatched()
+		if e >= 0 && !c.watched[e] {
+			ws = append(ws, e)
+		}
+		if len(ws) > 0 {
+			return c.unionRanges(ws)
+		}
+	}
+	if e >= 0 {
 		return c.ranges(e)
 	}
 	switch c.state {
@@ -588,19 +681,74 @@ func (c *Controller) SetCursor(x, y int) {
 	}
 }
 
-// shownEnemy は、範囲を出す敵の添字を返す（DES-UI-08）。出さなければ -1。
-// Idle・Selected・Moved のときだけ出す。カーソルを合わせた敵を、クリックして出し続けている敵より優先する。
+// shownEnemy は、カーソルを合わせて範囲を出す敵の添字を返す（DES-UI-08）。出さなければ -1。
+// Idle・Selected・Moved のときだけ出す。カーソルを合わせた敵を、クリックして出している敵（shownWatched）より優先する。
 func (c *Controller) shownEnemy() int {
 	switch c.state {
 	case Idle, Selected, Moved:
-	default:
-		return -1
+		return c.hoveredEnemy()
 	}
-	if i := c.hoveredEnemy(); i >= 0 {
-		return i
+	return -1
+}
+
+// shownWatched は、クリックして範囲を出している敵のうち、今の盤面で生きている敵の添字を、添字の順に返す（DES-UI-27）。
+// 出すのは、敵の範囲を出す状態（Idle・Selected・Moved）のとき。自軍を選んで動かしている間も残す（E-60、DES-IT06 12.4 節）。
+func (c *Controller) shownWatched() []int {
+	switch c.state {
+	case Idle, Selected, Moved:
+		return c.aliveWatched()
 	}
-	// watched は Idle でだけ決まり、Selected に移るときに消える。
-	return c.watched
+	return nil
+}
+
+// WatchedFrames は、自軍を選んでいる間（Selected・Moved）に、クリックして出している敵の範囲を返す（DES-UI-27）。
+// 青は移動できるマス、赤は攻撃できるマス（unionRanges と同じ）。自軍の範囲の塗り（Overlay）と見分けられるよう、
+// 描画では塗らずにマスの内側の枠で描く。Idle では Overlay の塗りに入れるので nil。ほかの状態は shownWatched が空。
+func (c *Controller) WatchedFrames() (blue, red map[tactics.Pos]bool) {
+	if c.state == Idle {
+		return nil, nil
+	}
+	ws := c.shownWatched()
+	if len(ws) == 0 {
+		return nil, nil
+	}
+	return c.unionRanges(ws)
+}
+
+// aliveWatched は、watched のうち今の盤面で生きている敵の添字を、添字の順に返す（DES-UI-27）。
+func (c *Controller) aliveWatched() []int {
+	var out []int
+	for i, u := range c.battle.Units() {
+		if c.watched[i] && u.Alive && u.Side == tactics.Enemy {
+			out = append(out, i)
+		}
+	}
+	return out
+}
+
+// toggleWatched は、敵 i の範囲を出している集まりに足す。すでにあれば消す（DES-UI-27）。
+func (c *Controller) toggleWatched(i int) {
+	if c.watched[i] {
+		delete(c.watched, i)
+		return
+	}
+	if c.watched == nil {
+		c.watched = map[int]bool{}
+	}
+	c.watched[i] = true
+}
+
+// pruneWatched は、watched から今の盤面で生きていない敵を除く（DES-UI-27）。再生のあとと巻き戻しの成功のあとに呼ぶ。
+func (c *Controller) pruneWatched() {
+	alive := c.aliveWatched()
+	if len(alive) == 0 {
+		c.watched = nil
+		return
+	}
+	c.watched = map[int]bool{}
+	for _, i := range alive {
+		c.watched[i] = true
+	}
 }
 
 // hoveredEnemy は、カーソルのあるマスにいる生きている敵の添字を返す（DES-UI-08）。
@@ -618,6 +766,25 @@ func (c *Controller) hoveredEnemy() int {
 		return -1
 	}
 	return i
+}
+
+// unionRanges は、敵 ws の移動できるマスと攻撃できるマスを合わせて返す（DES-UI-27）。
+// 青はどれかの敵が移動できるマス、赤はどれかの敵が攻撃できて、どの敵も移動できないマス。
+func (c *Controller) unionRanges(ws []int) (blue, red map[tactics.Pos]bool) {
+	blue, red = map[tactics.Pos]bool{}, map[tactics.Pos]bool{}
+	for _, i := range ws {
+		b, r := c.ranges(i)
+		for p := range b {
+			blue[p] = true
+		}
+		for p := range r {
+			red[p] = true
+		}
+	}
+	for p := range blue {
+		delete(red, p)
+	}
+	return blue, red
 }
 
 // ToggleDanger は Q キーの処理（DES-UI-08）。Playing・Over 以外のとき、敵の危険範囲を出す・消す。
@@ -674,7 +841,7 @@ func (c *Controller) act(cmd tactics.Command) {
 	events, err := c.battle.Act(cmd)
 	if err != nil {
 		// 画面ではできる行動だけを出すので、ふつうは来ない。状態は変わっていない（DES-ERR-01）。
-		c.state = Idle
+		c.state, c.quickSpots, c.quickTarget = Idle, nil, -1
 		c.message = fmt.Sprintf("行動できません: %v", err)
 		return
 	}
@@ -685,7 +852,9 @@ func (c *Controller) act(cmd tactics.Command) {
 func (c *Controller) play(events []tactics.Event) {
 	c.record = append(c.record, events...)
 	c.state, c.events, c.index, c.frame = Playing, events, 0, 0
-	c.target, c.watched, c.confirmEnd, c.message = -1, -1, false, ""
+	// 出している敵の範囲（watched）は保ち、再生のあとで戦死した敵を除く（DES-UI-27）。
+	c.target, c.confirmEnd, c.message = -1, false, ""
+	c.quickSpots, c.quickTarget = nil, -1
 	if len(events) == 0 {
 		c.finish()
 		return
@@ -698,6 +867,7 @@ func (c *Controller) finish() {
 	// 画面に出すターンと番は、表示した PhaseStart で合わせてある（showPhase）。
 	c.events, c.index, c.frame = nil, 0, 0
 	c.refreshHints()
+	c.pruneWatched()
 	if c.battle.Result != tactics.Ongoing {
 		c.state = Over
 		return
@@ -777,7 +947,7 @@ func (c *Controller) healTargetsWith(w int) []int {
 // RangeStyle は表示中の射程の色を返す。敵の射程は赤のままにする（DES-UI-18、DES-UI-08）。
 // 攻撃の武器の赤と、選んだ杖の緑を分ける（DES-IT06 6.1 節）。移動先を選ぶ前と行動の一覧では、攻撃の武器がなければ緑。
 func (c *Controller) RangeStyle() InfoStyle {
-	if c.shownEnemy() >= 0 {
+	if c.shownEnemy() >= 0 || c.state == Idle && len(c.shownWatched()) > 0 {
 		return StyleBad
 	}
 	switch c.state {

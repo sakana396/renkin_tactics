@@ -22,6 +22,7 @@ type Battle struct {
 	groupEntered map[string]bool
 	groupPlan    map[int]Pos
 	groupDanger  map[int]map[Pos]bool
+	groupRegions map[Pos]Pos
 	// canto は待っている再移動（DES-BTL-10）。
 	canto cantoState
 

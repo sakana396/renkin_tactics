@@ -218,6 +218,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	hint := g.ctrl.ReinforcementHintView()
 	g.drawHint(board, hint)
 	g.drawUnits(board)
+	g.drawWatched(board)
 	g.drawDanger(board)
 	g.drawSelection(board)
 	g.drawTargetLabel(board)
@@ -335,6 +336,28 @@ func (g *Game) drawDanger(dst *ebiten.Image) {
 			continue
 		}
 		vector.StrokeRect(dst, float32(g.drawCamera.Screen(p).X)+3, float32(g.drawCamera.Screen(p).Y)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
+	}
+}
+
+// drawWatched は、自軍を選んでいる間のクリックして出している敵の範囲を、マスの内側の枠で描く（DES-UI-27）。
+// 自軍の範囲の塗りと重ねても見分けられるよう、塗らずに、暗い縁取りの付いた枠（移動は紫、攻撃は赤）にし、
+// 危険範囲の橙の枠（内側 3 px）より内側に描く。
+func (g *Game) drawWatched(dst *ebiten.Image) {
+	blue, red := g.ctrl.WatchedFrames()
+	for _, layer := range []struct {
+		cells map[tactics.Pos]bool
+		clr   color.Color
+	}{{blue, watchMoveColor}, {red, watchAttackColor}} {
+		for p := range layer.cells {
+			if !g.drawCamera.Visible(p) {
+				continue
+			}
+			pt := g.drawCamera.Screen(p)
+			x, y := float32(pt.X)+8, float32(pt.Y)+8
+			const side = CellSize - 16
+			vector.StrokeRect(dst, x, y, side, side, 4, watchEdge, false)
+			vector.StrokeRect(dst, x, y, side, side, 2, layer.clr, false)
+		}
 	}
 }
 

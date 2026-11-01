@@ -215,7 +215,10 @@ func (b *Battle) groupKey(group string, at Pos) string {
 	if group == "" {
 		return ""
 	}
-	// 同じ地形の連結領域の左上の座標を代表とする。
+	// 同じ地形の連結領域の左上の座標を代表とする。地形は戦闘中に変わらない。
+	if first, ok := b.groupRegions[at]; ok {
+		return group + ":" + strconv.Itoa(first.X) + ":" + strconv.Itoa(first.Y)
+	}
 	seen := map[Pos]bool{at: true}
 	queue := []Pos{at}
 	first := at
@@ -233,6 +236,12 @@ func (b *Battle) groupKey(group string, at Pos) string {
 			seen[next] = true
 			queue = append(queue, next)
 		}
+	}
+	if b.groupRegions == nil {
+		b.groupRegions = make(map[Pos]Pos, len(seen))
+	}
+	for p := range seen {
+		b.groupRegions[p] = first
 	}
 	return group + ":" + strconv.Itoa(first.X) + ":" + strconv.Itoa(first.Y)
 }
@@ -263,25 +272,50 @@ func (b *Battle) playerThreats(reach map[int]map[Pos]int) map[int]map[Pos]bool {
 func (b *Battle) dangerFor(enemy int, reach map[int]map[Pos]int, threats map[int]map[Pos]bool) map[Pos]bool {
 	out := make(map[Pos]bool)
 	target := b.units[enemy]
-	for i, places := range reach {
+	// 地形を外した仮の戦闘は敵ごとに一度だけ作る。
+	sim := *b
+	sim.terrain = append([][]Terrain(nil), b.terrain...)
+	sim.terrain[target.Pos.Y] = append([]Terrain(nil), b.terrain[target.Pos.Y]...)
+	sim.terrain[target.Pos.Y][target.Pos.X].Def = 0
+	sim.terrain[target.Pos.Y][target.Pos.X].Avoid = 0
+	sim.units = append([]Unit(nil), b.units...)
+	for i := range reach {
 		player := b.units[i]
 		found := false
 		var best candidate
-		for p := range places {
-			for wi, w := range player.Weapons {
-				if w.Type == Staff || !inRange(w, distance(p, target.Pos)) {
-					continue
+		for wi, w := range player.Weapons {
+			if w.Type == Staff {
+				continue
+			}
+			for rangeDistance := w.MinRange; rangeDistance <= w.MaxRange; rangeDistance++ {
+				// 現在の到達可否とは独立に、武器の射程から攻撃を仮定する。
+				// 守る側の地形補正を外し、仮の位置は戦闘本体に書き込まない。
+				to := Pos{target.Pos.X + rangeDistance, target.Pos.Y}
+				sim.units[i].Pos = to
+				sim.units[i].Equipped = wi
+				attackCount, counterCount := 0, 0
+				for _, striker := range sim.strikeOrder(i, enemy) {
+					if striker == i {
+						attackCount++
+					} else {
+						counterCount++
+					}
 				}
-				f := b.forecast(i, enemy, p, wi)
-				dealt := f.Attacker.Damage * f.Attacker.Count
-				value := dealt * f.Attacker.HitRate
-				reply := f.Defender.Damage * f.Defender.HitRate * f.Defender.Count
-				c := candidate{to: p, target: enemy, weapon: wi, kill: dealt >= target.HP, gain: value, risk: reply}
+				attackDamage, attackHit := sim.strikeValues(i, enemy, false)
+				dealt := attackDamage * attackCount
+				value := dealt * attackHit
+				reply := 0
+				if counterCount != 0 {
+					counterDamage, counterHit := sim.strikeValues(enemy, i, false)
+					reply = counterDamage * counterHit * counterCount
+				}
+				c := candidate{to: to, target: enemy, weapon: wi, kill: dealt >= target.HP, gain: value, risk: reply}
 				if !found || c.better(best) {
 					best, found = c, true
 				}
 			}
 		}
+		sim.units[i] = player
 		if !found || (!best.kill && best.gain < best.risk) {
 			continue
 		}
