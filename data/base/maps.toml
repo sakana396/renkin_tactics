@@ -1632,6 +1632,7 @@ x = 11
 y = 14
 
 [[maps.enemies]]
+id = "pass_vanguard"
 class = "soldier"
 weapon = "iron_lance"
 level = 7
@@ -1790,7 +1791,76 @@ ai = "charge"
 x = 3
 y = 1
 
-# 7 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it05/map-ch07.md）。16×16・出撃 5・敵 10＋4。
+# DES-MAP-08: 南の先兵を倒すと、中央の山道を守る一団が出る。
+[[maps.events]]
+id = "pass_vanguard_falls"
+trigger = "enemy_defeated"
+unit = "pass_vanguard"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "pass_group_soldier"
+group = "pass_center"
+approach = "group"
+class = "soldier"
+weapons = ["iron_lance"]
+level = 8
+bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 7
+y = 9
+[[maps.events.enemies]]
+id = "pass_group_fighter"
+group = "pass_center"
+approach = "group"
+class = "fighter"
+weapons = ["iron_axe"]
+level = 8
+bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 9
+y = 8
+[[maps.events.enemies]]
+id = "pass_group_mage"
+group = "pass_center"
+approach = "group"
+class = "mage"
+weapons = ["fire"]
+level = 8
+bonus = { hp = 4, str = 0, skl = 3, spd = 3, def = 1, lck = 2, mag = 3, res = 2, mov = 0 }
+ai = "charge"
+x = 11
+y = 9
+
+# 東の道を進むと、奥の騎兵が出る。序盤の背後からは出さない。
+[[maps.events]]
+id = "pass_east_entry"
+trigger = "player_entered"
+area = { min_x = 12, min_y = 6, max_x = 16, max_y = 11 }
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "pass_east_cavalier"
+group = "pass_east"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 9
+bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 16
+y = 5
+[[maps.events.enemies]]
+id = "pass_east_soldier"
+group = "pass_east"
+approach = "group"
+class = "soldier"
+weapons = ["iron_lance"]
+level = 9
+bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 15
+y = 4
+
+# 7 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it06/map-ch07.md）。16×16・出撃 6・敵 10＋4＋出来事。
 # 敵のボーナスは、ボスを除き 5/3/2/2/2（増援も同じ）。ボスは 12/5/4/3/4
 [[maps]]
 id = "ch07"
@@ -1830,10 +1900,11 @@ level = 7
 bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
 ai = "charge"
 x = 14
-y = 12
+y = 10
 
 # 近道（谷）をふさぐ剣士
 [[maps.enemies]]
+id = "convoy_valley_guard"
 class = "myrmidon"
 weapon = "iron_sword"
 level = 8
@@ -1967,6 +2038,64 @@ bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
 ai = "charge"
 x = 4
 y = 0
+
+# DES-MAP-08: 谷の剣士を倒すと、北側の兵が谷を押さえる。
+[[maps.events]]
+id = "convoy_valley_falls"
+trigger = "enemy_defeated"
+unit = "convoy_valley_guard"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "convoy_valley_soldier"
+group = "convoy_valley"
+approach = "group"
+class = "soldier"
+weapons = ["iron_lance"]
+level = 9
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 7
+y = 2
+[[maps.events.enemies]]
+id = "convoy_valley_mage"
+group = "convoy_valley"
+approach = "group"
+class = "mage"
+weapons = ["fire"]
+level = 9
+bonus = { hp = 5, str = 0, skl = 4, spd = 4, def = 1, lck = 2, mag = 4, res = 3, mov = 0 }
+ai = "charge"
+x = 9
+y = 2
+
+# 東の迂回を選んだときは、陣の手前で騎兵を含む一団が出る。
+[[maps.events]]
+id = "convoy_east_entry"
+trigger = "player_entered"
+area = { min_x = 13, min_y = 4, max_x = 15, max_y = 9 }
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "convoy_east_cavalier"
+group = "convoy_east"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 15
+y = 2
+[[maps.events.enemies]]
+id = "convoy_east_fighter"
+group = "convoy_east"
+approach = "group"
+class = "fighter"
+weapons = ["iron_axe"]
+level = 10
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "charge"
+x = 14
+y = 2
 
 # 8 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it05/map-ch08.md）。24×24・出撃 5・敵 16＋6。
 # 敵のボーナスは、ボスを除き 5/3/3/2/3（増援も同じ）。ボスは 12/5/5/3/5
