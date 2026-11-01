@@ -2,6 +2,7 @@ package core_test
 
 import (
 	"math"
+	"reflect"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core"
@@ -22,9 +23,12 @@ func TestIT06BaseChapters(t *testing.T) {
 		// 出来事の魔道士の ID と、DES-IT06 5.3 節の式で求めた攻撃の速さ（制作記録の点検表）。
 		mage      string
 		mageSpeed int
+		// 初めの敵・ターンの増援・出来事の増援を通した一団ごとの人数と、ボスを除く敵の騎兵の数（E-97 の版 0.3）。
+		groups    map[string]int
+		cavaliers int
 	}{
-		{"ch02", 8, 3, 2, "", 0, "road_mage", 6},
-		{"ch05", 9, 2, 3, "gate_north", 3, "gate_rear_mage", 7},
+		{"ch02", 8, 3, 4, "", 0, "road_mage", 6, map[string]int{"road_north": 3, "road_south": 2}, 6},
+		{"ch05", 9, 2, 5, "gate_north", 3, "gate_rear_mage", 7, map[string]int{"gate_north": 3, "gate_east": 3, "gate_reserve": 2}, 4},
 	} {
 		t.Run("TC-FR-MAP-04-10 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
@@ -67,6 +71,60 @@ func TestIT06BaseChapters(t *testing.T) {
 			}
 			if mage != 1 || group != tc.groupCount || direct == 0 {
 				t.Fatalf("魔道士または一団の設定が不足: mage=%d group=%d direct=%d", mage, group, direct)
+			}
+			// 一団と敵の騎兵（再移動あり）を、初めの敵・ターンの増援・出来事の増援を通して数える（E-97）。
+			all := append([]defs.EnemyPlacement(nil), m.Enemies...)
+			for _, r := range m.Reinforcements {
+				all = append(all, r.EnemyPlacement)
+			}
+			for _, event := range m.Events {
+				all = append(all, event.Enemies...)
+			}
+			groups := map[string]int{}
+			cavaliers := 0
+			for _, e := range all {
+				if e.Group != "" {
+					if e.Approach != defs.ApproachGroup {
+						t.Fatalf("一団 %s の %s が一団の寄り方でない", e.Group, e.ID)
+					}
+					groups[e.Group]++
+				}
+				if e.Class == "cavalier" && !e.Boss {
+					cavaliers++
+				}
+			}
+			if !reflect.DeepEqual(groups, tc.groups) || cavaliers != tc.cavaliers {
+				t.Fatalf("一団 %v・敵の騎兵 %d（期待 %v・%d）", groups, cavaliers, tc.groups, tc.cavaliers)
+			}
+			// 出撃枠の安全: 1 ターン目の初めの敵の攻撃は、どの枠にも届かない（DES-IT06 13 章、DES-IT05 の制作の検査）。
+			// 版 0.3 で足した敵はすべて出来事の増援で、1 ターン目にはいない。ch05 の初めの敵（正面の守り・門のアーマーなど、
+			// 待ちで穴の前を守る）は反復 5 から 1 ターン目に正面の枠へ届く配置（ch05 の制作記録 6.1 節）なので、ch02 だけを確かめる。
+			if tc.id != "ch02" {
+				return
+			}
+			c, err := core.NewCampaignAt(cat, core.Withdraw, tc.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			s, _, err := c.StartBattle([]int{0}, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			slots := map[tactics.Pos]bool{}
+			for _, slot := range m.Slots {
+				slots[tactics.Pos{X: slot.X, Y: slot.Y}] = true
+			}
+			for j, u := range s.Battle.Units() {
+				if u.Side != tactics.Enemy {
+					continue
+				}
+				for pos := range s.Battle.Reachable(j) {
+					for _, target := range s.Battle.AttackRange(j, pos) {
+						if slots[target] {
+							t.Fatalf("1 ターン目の敵 %s %v の攻撃が枠 %v に届く", u.Name, u.Pos, target)
+						}
+					}
+				}
 			}
 		})
 		t.Run("TC-FR-MAP-04-11 "+tc.id, func(t *testing.T) {
@@ -180,31 +238,36 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 // DES-IT06 5.3 節の攻撃の速さを持つことを確かめる（core の enemyUnit の変換を通る）。
 func TestIT06BaseChapterAutoplay(t *testing.T) {
 	cat := baseCatalog(t)
-	order := []string{"gald", "mira", "noel", "bran", "elsa", "leon", "rina", "tio"}
 	routes := map[string][][]tactics.Pos{
 		// ch02 の中央 (7,7) → 東 (12,8) → ボス (14,8)。
 		"中央": {{{X: 7, Y: 7}, {X: 12, Y: 8}, {X: 14, Y: 8}}},
+		// ch02 の手前 (4,7) で整えてから中央・東へ進み、ボス (14,8) へ。
+		"整える": {{{X: 4, Y: 7}, {X: 7, Y: 7}, {X: 10, Y: 8}, {X: 12, Y: 8}, {X: 14, Y: 8}}},
 		// ch05 の正面 (7,9) → 門 (7,6) → ボス (8,2)。
 		"正面": {{{X: 7, Y: 9}, {X: 7, Y: 6}, {X: 8, Y: 2}}},
 		// ch05 の森 x2 を北へ回り、ボス (8,2) へ。
 		"森": {{{X: 2, Y: 10}, {X: 2, Y: 6}, {X: 4, Y: 3}, {X: 8, Y: 2}}},
 	}
+	// 行動順 A・C は版 0.2 の正面・森の順、B は受け役を先に動かす順（ch02・ch05 版 0.3 の測り直しで足した）。
+	order := []string{"gald", "mira", "noel", "bran", "elsa", "leon", "rina", "tio"}
 	forestOrder := []string{"mira", "gald", "leon", "bran", "noel", "elsa", "rina", "tio"}
+	guardOrder := []string{"gald", "bran", "mira", "tio", "noel", "elsa", "leon", "rina"}
 	for _, tc := range []struct {
 		id, name  string
 		low       bool
 		bench     []string // 出撃させない仲間（ch05 は 8 人から 6 人を出す）
 		route     string
+		order     []string
 		seed      uint64
 		mage      string
 		mageSpeed int
 	}{
-		{"ch02", "平均", false, nil, "中央", 1, "road_mage", 6},
-		{"ch02", "低め", true, nil, "中央", 10, "road_mage", 6},
-		{"ch05", "平均", false, []string{"rina", "tio"}, "正面", 10, "gate_rear_mage", 7},
-		{"ch05", "低め", true, []string{"rina", "tio"}, "森", 19, "gate_rear_mage", 7},
-		{"ch05", "ミラを失いティオを出す・平均", false, []string{"rina", "mira"}, "正面", 1, "gate_rear_mage", 7},
-		{"ch05", "ミラを失いティオを出す・低め", true, []string{"rina", "mira"}, "森", 34, "gate_rear_mage", 7},
+		{"ch02", "平均", false, nil, "中央", order, 3, "road_mage", 6},
+		{"ch02", "低め", true, nil, "整える", guardOrder, 13, "road_mage", 6},
+		{"ch05", "平均", false, []string{"rina", "tio"}, "正面", guardOrder, 1, "gate_rear_mage", 7},
+		{"ch05", "低め", true, []string{"rina", "tio"}, "森", order, 151, "gate_rear_mage", 7},
+		{"ch05", "ミラを失いティオを出す・平均", false, []string{"rina", "mira"}, "森", forestOrder, 5, "gate_rear_mage", 7},
+		{"ch05", "ミラを失いティオを出す・低め", true, []string{"rina", "mira"}, "森", forestOrder, 119, "gate_rear_mage", 7},
 	} {
 		t.Run("TC-FR-MAP-04-12 "+tc.id+" "+tc.name, func(t *testing.T) {
 			c := estimatedRosterIT06(t, cat, tc.id, tc.low)
@@ -226,10 +289,7 @@ func TestIT06BaseChapterAutoplay(t *testing.T) {
 			for i, n := range members {
 				ids[i] = c.Roster[n].Character
 			}
-			plan := autoPlan{Order: order, Routes: routes[tc.route]}
-			if tc.route == "森" {
-				plan.Order = forestOrder
-			}
+			plan := autoPlan{Order: tc.order, Routes: routes[tc.route]}
 			m, _ := cat.Map(tc.id)
 			maxLive := len(m.Enemies)
 			triggers := map[string]bool{}

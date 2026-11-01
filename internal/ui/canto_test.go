@@ -66,6 +66,20 @@ func TestCantoUI(t *testing.T) {
 				t.Errorf("案内に %q がない: %s", s, guide)
 			}
 		}
+		// 案内欄の行は盤面の幅から左右の余白を除いた幅に収まり（DES-UI-01）、
+		// 3 行目は右端の気配の案内（DES-UI-24）の左で終わる（#130 の試遊で見つけた重なり）。
+		lines := c.Guide()
+		if len(lines) > GuideHeight/lineHeight {
+			t.Errorf("行の数 %d が案内欄に収まらない: %q", len(lines), lines)
+		}
+		for j, l := range lines {
+			if w := textWidth(l); w > MapSize-16 {
+				t.Errorf("%q の幅 %d px が案内欄に収まらない", l, w)
+			}
+			if hintX := MapSize - 8 - textWidth(hintText); j == 2 && 8+textWidth(l) > hintX {
+				t.Errorf("3 行目 %q の右端 %d px が気配の案内の左端 %d px と重なる", l, 8+textWidth(l), hintX)
+			}
+		}
 		// 番を終える・ほかの自軍を選ぶ・行けないマスは受け付けない。
 		c.EndPhase()
 		c.Click(tactics.Pos{X: 0, Y: 5})
