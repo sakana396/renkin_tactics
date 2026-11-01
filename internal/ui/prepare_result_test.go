@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -176,11 +177,28 @@ func TestPrepare(t *testing.T) {
 			t.Fatalf("レベルと経験は共通の情報欄に1行だけ表示する: %q", levelLines)
 		}
 		info := strings.Join(texts, "\n")
-		for _, want := range []string{"ガルド", "アーマー", "Lv 20　経験 ―", "HP 24/24", "鉄の槍", "大盾"} {
+		for _, want := range []string{"ガルド", "アーマー", "Lv 20　経験 ―", "HP 24/24"} {
 			if !strings.Contains(info, want) {
 				t.Fatal(want, info)
 			}
 		}
+		// 武器とスキルは「装備・スキル」のページ。Tab で切り替えても、選んでいる仲間と出撃の印は変わらない（DES-UI-28）。
+		before := fmt.Sprint(s.prepareMember, s.SelectedMembers())
+		s.ToggleInfoPage()
+		texts = nil
+		for _, tx := range s.View().Info.Texts {
+			texts = append(texts, tx.Text)
+		}
+		info = strings.Join(texts, "\n")
+		for _, want := range []string{"ガルド", "鉄の槍", "大盾"} {
+			if !strings.Contains(info, want) {
+				t.Fatal(want, info)
+			}
+		}
+		if fmt.Sprint(s.prepareMember, s.SelectedMembers()) != before {
+			t.Fatal("ページの切り替えで選択が変わった")
+		}
+		s.ToggleInfoPage()
 		s.Click(row.Mark.Min.X, row.Mark.Min.Y)
 		clickSceneButton(t, s, "在庫へ: 回復薬")
 		if len(s.campaign.Roster[1].Items) != 0 || s.campaign.Roster[0].Items[0].Count != 2 {

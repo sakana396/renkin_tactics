@@ -108,7 +108,7 @@ func (b *Battle) planEnemyGroups(count int) {
 					for x, tile := range row {
 						p := Pos{x, y}
 						owner, taken := occupied[p]
-						if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i) || (len(danger) == 0 && p == u.Pos) {
+						if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i) {
 							continue
 						}
 						cost, ok := path[p]
@@ -137,7 +137,7 @@ func (b *Battle) planEnemyGroups(count int) {
 						for x, tile := range row {
 							p := Pos{x, y}
 							owner, taken := occupied[p]
-							if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i) || (len(danger) == 0 && p == u.Pos) {
+							if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i) {
 								continue
 							}
 							cost, ok := path[p]
@@ -146,12 +146,27 @@ func (b *Battle) planEnemyGroups(count int) {
 							}
 							adjacent := false
 							for _, d := range directions {
-								if groupGoals[Pos{p.X + d.X, p.Y + d.Y}] {
+								neighbor := Pos{p.X + d.X, p.Y + d.Y}
+								if groupGoals[neighbor] || (len(danger) != 0 && b.groupMemberAt(neighbor, members)) {
 									adjacent = true
 									break
 								}
 							}
 							if !adjacent {
+								continue
+							}
+							n := near(p)
+							if !found || (len(danger) == 0 && n > bestNear) || (len(danger) != 0 && n < bestNear) || (n == bestNear && (cost < bestCost || (cost == bestCost && posLess(p, goal)))) {
+								goal, bestNear, bestCost, found = p, n, cost, true
+							}
+						}
+					}
+				}
+				if !found {
+					// 境目を仲間がふさいでいても、逃げられる安全なマスを割り当てる。
+					if len(danger) != 0 && danger[u.Pos] {
+						for p, cost := range b.Reachable(i) {
+							if danger[p] || assigned[p] {
 								continue
 							}
 							n := near(p)
@@ -183,6 +198,16 @@ func (b *Battle) planEnemyGroups(count int) {
 			}
 		}
 	}
+}
+
+// groupMemberAt は同じ一団の一員が現在いるマスを調べる（DES-AI-02）。
+func (b *Battle) groupMemberAt(p Pos, members []int) bool {
+	for _, i := range members {
+		if b.units[i].Pos == p {
+			return true
+		}
+	}
+	return false
 }
 
 // groupKey は一団の到達できる領域ごとの状態の鍵（DES-AI-02）。

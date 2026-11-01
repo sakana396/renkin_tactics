@@ -130,6 +130,10 @@ func TestGroupGatherAfterApproachIt06(t *testing.T) {
 		t.Helper()
 		front := foe("前衛", frontX, 4)
 		rear := foe("後衛", rearX, 1)
+		if width == 13 {
+			front.Stats.Mov, rear.Stats.Mov = 2, 2
+			player.Stats.Mov = 1
+		}
 		boss := foe("ボス", width-1, 1)
 		boss.Group, boss.Approach, boss.AI, boss.Boss = "", Direct, Hold, true
 		s := Setup{Terrain: road(width), Units: []UnitSetup{player, front, boss}}
@@ -148,7 +152,7 @@ func TestGroupGatherAfterApproachIt06(t *testing.T) {
 		name               string
 		width, front, rear int
 	}{
-		{"R-01 遠い一団", 13, 8, 10},
+		{"R-01 遠い一団", 13, 9, 10},
 		{"R-02 危険域のない後衛", 12, 4, 9},
 	} {
 		t.Run("TC-FR-BTL-07-21 "+tc.name, func(t *testing.T) {
@@ -159,10 +163,10 @@ func TestGroupGatherAfterApproachIt06(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if turn == 1 && tc.front == 8 && (b.groupEntered[key] || len(b.groupPlan) != 0) {
+				if turn == 1 && tc.front == 9 && (b.groupEntered[key] || len(b.groupPlan) != 0) {
 					t.Fatalf("危険域のない番に集合を始めた: entered=%v plan=%v", b.groupEntered, b.groupPlan)
 				}
-				if turn == 1 && tc.front == 8 && b.units[1].Pos.X >= tc.front {
+				if turn == 1 && tc.front == 9 && b.units[1].Pos.X >= tc.front {
 					t.Fatalf("危険域のない前衛が自軍へ寄らない: %v", b.units[1].Pos)
 				}
 				for _, e := range events {
@@ -171,14 +175,36 @@ func TestGroupGatherAfterApproachIt06(t *testing.T) {
 					}
 				}
 			}
-			if tc.front == 4 && (len(b.groupPlan) != 2 || b.groupPlan[3] == b.units[3].Pos) {
+			if tc.front == 4 && len(b.groupPlan) != 2 {
 				t.Fatalf("後衛の集合先がない: %v / %v", b.groupPlan, b.units[3].Pos)
 			}
 			if tc.front == 4 && distance(b.groupPlan[1], b.groupPlan[3]) != 1 {
 				t.Fatalf("後衛の先が前衛に隣接しない: %v", b.groupPlan)
 			}
+			if tc.front == 4 && b.groupPlan[3].X <= b.groupPlan[1].X {
+				t.Fatalf("後衛の先が前衛より自軍側にある: %v", b.groupPlan)
+			}
 			if tc.front == 4 && b.groupEntered[key] {
 				t.Fatalf("後衛の到着前に突入した: %v", b.groupEntered)
+			}
+			previous := [2]Pos{b.units[1].Pos, b.units[3].Pos}
+			entered := false
+			for turn := 3; turn <= 12; turn++ {
+				if _, err := b.EndPhase(); err != nil {
+					t.Fatal(err)
+				}
+				if b.groupEntered[key] {
+					entered = true
+					break
+				}
+				current := [2]Pos{b.units[1].Pos, b.units[3].Pos}
+				if current == previous {
+					t.Fatalf("%d 番目に一団が止まった: %v、先=%v", turn, current, b.groupPlan)
+				}
+				previous = current
+			}
+			if !entered {
+				t.Fatalf("12 番目までに一団がそろわない: %v、先=%v", previous, b.groupPlan)
 			}
 		})
 	}
@@ -194,8 +220,84 @@ func TestGroupGatherAfterApproachIt06(t *testing.T) {
 		if b.groupPlan[1] != frontGoal || len(b.groupPlan) != 2 {
 			t.Fatalf("増援に割り当てられない: %v", b.groupPlan)
 		}
-		if distance(frontGoal, b.groupPlan[3]) != 1 || b.groupPlan[3] == b.units[3].Pos {
+		if distance(frontGoal, b.groupPlan[3]) != 1 {
 			t.Fatalf("増援の先が不適切: %v / %v", b.groupPlan, b.units[3].Pos)
+		}
+	})
+	t.Run("TC-FR-BTL-07-21 前後両側の候補は後ろ側", func(t *testing.T) {
+		b := makeBattle(12, 4, 7, false)
+		b.groupPlan = map[int]Pos{1: {4, 1}}
+		b.planEnemyGroups(len(b.units))
+		if b.groupPlan[3] != (Pos{5, 1}) {
+			t.Fatalf("後衛の先は前衛の後ろ側 (5,1): %v", b.groupPlan)
+		}
+	})
+}
+
+// 危険がない間の攻撃と、集合中の無計画の一員の待機・退避を確かめる（TC-FR-BTL-07-21、DES-AI-02）。
+func TestGroupDangerBranchIt06(t *testing.T) {
+	plain := Terrain{Name: "平地", Cost: 1}
+	terrain := make([][]Terrain, 3)
+	for y := range terrain {
+		terrain[y] = make([]Terrain, 8)
+		for x := range terrain[y] {
+			terrain[y][x] = plain
+		}
+	}
+	w := Weapon{Name: "剣", Type: Sword, Might: 5, Hit: 100, MinRange: 1, MaxRange: 1}
+	player := UnitSetup{Name: "主人公", Side: Player, Lord: true, Stats: Stats{HP: 20, Str: 0, Skl: 5, Spd: 5, Def: 3, Mov: 0}, Pos: Pos{1, 1}, Weapon: w}
+	foe := func(name string, x int) UnitSetup {
+		return UnitSetup{Name: name, Side: Enemy, Level: 1, AI: Charge, Approach: GroupApproach, Group: "g", Stats: Stats{HP: 20, Str: 5, Skl: 5, Spd: 5, Def: 3, Mov: 2}, Pos: Pos{x, 1}, Weapon: w}
+	}
+	boss := foe("ボス", 7)
+	boss.Group, boss.Approach, boss.AI, boss.Boss = "", Direct, Hold, true
+	makeBattle := func() *Battle {
+		t.Helper()
+		b, _, err := New(Setup{Terrain: terrain, Units: []UnitSetup{player, foe("前衛", 4), foe("後衛", 5), boss}}, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return b
+	}
+	t.Run("TC-FR-BTL-07-21 弱い自軍には通常どおり攻撃", func(t *testing.T) {
+		b := makeBattle()
+		attacked := false
+		for turn := 1; turn <= 3; turn++ {
+			events, err := b.EndPhase()
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, e := range events {
+				if e.Kind == EventStrike && e.Unit == 1 {
+					attacked = true
+				}
+			}
+			if b.groupEntered[b.groupKey("g", Pos{4, 1})] {
+				t.Fatal("危険がないのに入った状態になった")
+			}
+			if attacked {
+				break
+			}
+		}
+		if !attacked {
+			t.Fatal("通常の攻撃候補に進まない")
+		}
+	})
+	t.Run("TC-FR-BTL-07-21 集合中の安全な後衛は寄らない", func(t *testing.T) {
+		b := makeBattle()
+		b.groupDanger = map[int]map[Pos]bool{1: {{2, 1}: true}, 2: {}}
+		from := b.units[2].Pos
+		if events := b.actEnemy(nil, 2); len(events) != 0 || b.units[2].Pos != from {
+			t.Fatalf("集合中の後衛が通常の経路を進んだ: %v / %v", events, b.units[2].Pos)
+		}
+	})
+	t.Run("TC-FR-BTL-07-21 危険域から安全なマスへ退避", func(t *testing.T) {
+		b := makeBattle()
+		from := b.units[1].Pos
+		b.groupDanger = map[int]map[Pos]bool{1: {from: true}, 2: {{5, 1}: true}}
+		events := b.actEnemy(nil, 1)
+		if len(events) == 0 || b.units[1].Pos == from || b.groupDanger[1][b.units[1].Pos] {
+			t.Fatalf("安全な逃げ場があるのに待った: %v / %v", events, b.units[1].Pos)
 		}
 	})
 }

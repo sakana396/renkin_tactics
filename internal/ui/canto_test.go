@@ -153,7 +153,8 @@ func TestCantoUI(t *testing.T) {
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				u := tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, HP: 20, Weapons: []tactics.Weapon{testLance}, Skill: tc.skill, ClassSkills: tc.class, Alive: true}
-				v := (Panel{Unit: &u}).View()
+				// スキルは情報欄の「装備・スキル」のページに出す（DES-UI-28、#129）。
+				v := (Panel{Unit: &u, Page: PageEquip}).View()
 				var texts []string
 				for _, x := range v.Texts {
 					texts = append(texts, x.Text)

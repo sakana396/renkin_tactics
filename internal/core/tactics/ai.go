@@ -68,20 +68,40 @@ func (b *Battle) actEnemy(events []Event, unit int) []Event {
 		goal, planned := b.groupPlan[unit]
 		if !planned {
 			danger := b.groupDanger[unit]
-			if len(danger) == 0 {
-				if to, ok := b.approach(unit, reach); ok {
-					return b.moveEnemy(events, unit, to)
+			gathering := false
+			for i, other := range b.units {
+				if other.Alive && other.Side == Enemy && other.Approach == GroupApproach && b.groupKey(other.Group, other.Pos) == b.groupKey(u.Group, u.Pos) {
+					if len(b.groupDanger[i]) != 0 {
+						gathering = true
+						break
+					}
+					if _, ok := b.groupPlan[i]; ok {
+						gathering = true
+						break
+					}
 				}
-				return events
 			}
-			if !danger[b.units[unit].Pos] {
-				return events
-			}
-			for p := range reach {
-				if !danger[p] {
+			if gathering {
+				if !danger[b.units[unit].Pos] {
 					return events
 				}
-			}
+				near := b.closeness()
+				var escape Pos
+				bestNear, bestCost := unreachable, unreachable
+				found := false
+				for p, cost := range reach {
+					if danger[p] {
+						continue
+					}
+					n := near(p)
+					if !found || n < bestNear || (n == bestNear && (cost < bestCost || (cost == bestCost && posLess(p, escape)))) {
+						escape, bestNear, bestCost, found = p, n, cost, true
+					}
+				}
+				if found {
+					return b.moveEnemy(events, unit, escape)
+				}
+			} // 一団の誰にも危険がなければ通常の候補で攻撃・接近する。
 		}
 		if planned {
 			if to, ok := b.groupMove(unit, reach, goal); ok {
