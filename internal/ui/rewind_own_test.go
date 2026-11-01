@@ -44,7 +44,7 @@ func TestRewindOwnView(t *testing.T) {
 					v := c.RewindView()
 					found := false
 					for _, tx := range v.Texts {
-						if tx.Y == rewindRowTop+i*rewindRowH+6 {
+						if tx.Y == rewindRowTop+i*rewindRowH+rewindRowText {
 							found = true
 							if tx.Style != want {
 								t.Fatalf("行%dの色 %v、期待 %v", i, tx.Style, want)

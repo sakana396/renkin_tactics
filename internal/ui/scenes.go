@@ -63,6 +63,7 @@ type SceneController struct {
 	paragraph        int
 	joined           int
 	prepareMember    int
+	prepareStockTop  int
 	deployMembers    []int
 	deploySlots      []int
 	deploySelected   int
@@ -70,6 +71,8 @@ type SceneController struct {
 	deployDanger     bool
 	deployCamera     Camera
 	deployment       map[int]bool
+	// infoPage は準備と配置の情報欄のページ（DES-UI-28）。表示だけに使う。
+	infoPage InfoPage
 }
 
 // NewSceneController はタイトルでセーブを調べる（DES-UI-10）。

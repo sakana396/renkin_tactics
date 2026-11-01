@@ -98,9 +98,9 @@ func TestWeaponMenu(t *testing.T) {
 		if u := c.Battle().Units()[0]; u.Equipped != 1 || !u.Acted {
 			t.Fatalf("決定のあと 装備 %d、行動 %v", u.Equipped, u.Acted)
 		}
-		// 情報欄は装備（ファイア）と、ほかに持っている武器を列の順に出す。
+		// 情報欄の「装備・スキル」のページ（DES-UI-28、#129）は、装備（ファイア）と、ほかに持っている武器を列の順に出す。
 		u := c.Battle().Units()[0]
-		v := (Panel{Unit: &u}).View()
+		v := (Panel{Unit: &u, Page: PageEquip}).View()
 		textOf(t, v, "武器: ファイア（魔法）")
 		textOf(t, v, "ほかの武器: 癒やしの杖、鉄の剣、癒やしの杖")
 	})

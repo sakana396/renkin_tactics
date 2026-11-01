@@ -30,7 +30,76 @@ type Panel struct {
 	Unit *tactics.Unit
 	// Terrain は、カーソルのあるマスの地形（FR-UNT-09、FR-MAP-01）。カーソルが盤面の外なら nil。
 	Terrain *tactics.Terrain
+	// Page はユニットの情報のページ（DES-UI-26、DES-UI-28）。Tabs が真なら、ページの切り替えの印を出す。
+	Page InfoPage
+	Tabs bool
 }
+
+// InfoPage は情報欄のユニットのページ（DES-IT06 12.2 節、DES-UI-28）。ページの切り替えは表示だけで、選択や状態を変えない。
+type InfoPage int
+
+const (
+	// PageStats は「能力」のページ（絵・名前・クラス・レベル・HP・能力・移動）。
+	PageStats InfoPage = iota
+	// PageEquip は「装備・スキル」のページ（武器・手持ち・スキル）。
+	PageEquip
+)
+
+// InfoTab はページを切り替える印の 1 つ（DES-UI-28）。描画とクリックで同じ範囲を使う。
+type InfoTab struct {
+	Rect     image.Rectangle
+	Label    string
+	Page     InfoPage
+	Selected bool
+}
+
+// 情報欄の下端のページの印の配置（DES-UI-28）。情報欄（y < 360）の中の下端に置き、ミニマップと重ねない。
+const (
+	infoTabTop    = InfoHeight - 24
+	infoTabHeight = 20
+	// infoTabsBottom は、ページの中身を置いてよい一番下の y（印の上端）。
+	infoTabsBottom = infoTabTop
+)
+
+// InfoTabRects はページの印の範囲を、ページの順に返す（DES-UI-28）。
+func InfoTabRects() []image.Rectangle {
+	x := MapSize + infoMargin
+	return []image.Rectangle{
+		image.Rect(x, infoTabTop, x+80, infoTabTop+infoTabHeight),
+		image.Rect(x+84, infoTabTop, x+204, infoTabTop+infoTabHeight),
+	}
+}
+
+// infoTabs はページの印を返す（DES-UI-28）。
+func infoTabs(page InfoPage) []InfoTab {
+	rects := InfoTabRects()
+	tabs := []InfoTab{
+		{Rect: rects[0], Label: "能力", Page: PageStats},
+		{Rect: rects[1], Label: "装備・スキル", Page: PageEquip},
+	}
+	for i := range tabs {
+		tabs[i].Selected = tabs[i].Page == page
+	}
+	return tabs
+}
+
+// InfoTabGuide はページの印の右に出す Tab キーの案内（DES-UI-28）。印と一緒に描く。
+func InfoTabGuide() InfoText {
+	return InfoText{X: InfoTabRects()[1].Max.X + 8, Y: infoTabTop + 2, Text: "Tab: 切替", Style: StyleLabel}
+}
+
+// HitInfoTab は、画面の座標がページの印のどれかにあればそのページを返す（DES-UI-28）。
+func HitInfoTab(x, y int) (InfoPage, bool) {
+	for i, r := range InfoTabRects() {
+		if image.Pt(x, y).In(r) {
+			return InfoPage(i), true
+		}
+	}
+	return 0, false
+}
+
+// next は次のページを返す（Tab キー。DES-UI-28）。
+func (p InfoPage) next() InfoPage { return (p + 1) % 2 }
 
 // ForecastRow は予測の表の 1 行（DES-BTL-07）。項目の名前、攻撃する側の値、守る側の値を並べる。
 type ForecastRow struct {
@@ -71,6 +140,63 @@ func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 	return p
 }
 
+// panel は、今のカーソルとページで情報欄の中身を作る（DES-UI-01、DES-UI-28）。戦闘の情報欄には、いつもページの印を出す。
+func (c *Controller) panel(cursor tactics.Pos, onMap bool) Panel {
+	p := c.Panel(cursor, onMap)
+	p.Page, p.Tabs = c.infoPage, true
+	return p
+}
+
+// InfoView は、カーソルの画面の座標 (x, y) での情報欄の描くものを返す（DES-UI-01、DES-UI-28）。
+// カーソルが情報欄の上にあるときは、ページの印をクリックして中身を切り替えられるよう、
+// 選んでいるユニットがいればそのマス、いなければ直前に盤面で見ていたマスの情報を出し続ける（DES-IT06 12.2 節）。
+func (c *Controller) InfoView(x, y int) InfoView {
+	cell, onMap := c.Camera().CellAt(x, y)
+	if !onMap && image.Pt(x, y).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
+		cell, onMap = c.infoCell()
+	}
+	return c.panel(cell, onMap).View()
+}
+
+// infoCell は、カーソルが情報欄の上にあるときに情報を出すマスを返す（DES-UI-28）。
+// 選んでいるユニット（移動先を選んだあとは移動先）を優先し、いなければ直前に盤面で見ていたマス。どちらもなければ ok が偽。
+func (c *Controller) infoCell() (tactics.Pos, bool) {
+	switch c.state {
+	case Selected, Moved, Targeting, HealTargeting, ItemMenu, WeaponMenu, StaffMenu, Canto:
+		if units := c.Units(); c.unit >= 0 && c.unit < len(units) && units[c.unit].Alive {
+			return units[c.unit].Pos, true
+		}
+	}
+	return c.lastCell, c.lastCellOK
+}
+
+// ToggleInfoPage は Tab キーで情報欄のページを切り替える（DES-UI-28）。表示だけを変える。
+// ページの印を出していないとき（攻撃の予測・巻き戻しの一覧）は切り替えない（REV-071 F-01）。勝敗が決まった Over でも受ける。
+func (c *Controller) ToggleInfoPage() {
+	if c.rewind.open {
+		return
+	}
+	if _, ok := c.attackForecast(); ok {
+		return
+	}
+	c.infoPage = c.infoPage.next()
+}
+
+// InfoClick は情報欄のページの印のクリックを受ける（DES-UI-28）。印を出していないとき（予測・巻き戻しの一覧）は受けない。
+func (c *Controller) InfoClick(x, y int) bool {
+	if c.rewind.open {
+		return false
+	}
+	if _, ok := c.attackForecast(); ok {
+		return false
+	}
+	page, ok := HitInfoTab(x, y)
+	if ok {
+		c.infoPage = page
+	}
+	return ok
+}
+
 // 情報欄の見せ方（DES-UI-06）の大きさと位置（px）。x は情報欄の左端（余白 infoMargin の内側）から数える。
 const (
 	// PortraitSize はユニットの絵の大きさ。タイルの 4 倍。
@@ -81,6 +207,8 @@ const (
 	WeaponIconSize = 2 * assets.TileSize
 	// weaponTextX は、武器の絵の右に並べる文の位置。
 	weaponTextX = WeaponIconSize + 4
+	// weaponSideX は武器の必殺・重さを置く右の桁（DES-UI-28）。
+	weaponSideX = 232
 	// skillNameX はスキルの名前の位置（「スキル:」の右）。
 	skillNameX = 48
 	// barX は能力の棒の左端。
@@ -97,6 +225,9 @@ const (
 	forecastAttackX = 80
 	forecastDefendX = 200
 )
+
+// weaponCols は武器の 2 行目の 3 つの値の桁（情報欄の左端から。DES-UI-28）。攻撃の武器と杖で同じ桁を使う。
+var weaponCols = [3]int{weaponTextX, weaponTextX + 60, weaponTextX + 120}
 
 // InfoStyle は情報欄の文の色の種類（DES-UI-06）。描画の側で色に読み替える。
 type InfoStyle int
@@ -151,7 +282,9 @@ type InfoView struct {
 	Texts  []InfoText
 	Bars   []InfoBar
 	Icons  []InfoIcon
-	// Bottom は描くものの一番下の y（画面の座標）。
+	// Tabs はページの印（DES-UI-28）。予測を出しているときと、印を求めないときは空。
+	Tabs []InfoTab
+	// Bottom は描くものの一番下の y（画面の座標）。ページの印は含めない。
 	Bottom int
 }
 
@@ -174,16 +307,24 @@ func (p Panel) View() InfoView {
 		y += lineHeight
 	}
 	if len(p.Forecast) > 0 {
-		// 予測の表は速さと特効を分けて 10 行になったので、表のあとの空き行を省いて情報欄の高さを保つ（REV-069 F-03）。
-		y = v.addForecast(p, x, y)
+		// 予測を開いている間は、予測の表示を優先し、ユニットと地形とページの印は出さない（DES-IT06 12.2 節、DES-UI-28）。
+		// 情報欄は 320×360 で、予測（帯ありで y = 260 まで）とユニットの情報を並べると収まらないため。
+		v.Bottom = v.addForecast(p, x, y)
+		return v
+	}
+	if p.Tabs {
+		v.Tabs = infoTabs(p.Page)
 	}
 	if p.Unit != nil {
-		y = v.addUnit(*p.Unit, x, y)
-		if len(p.Forecast) == 0 {
-			y += lineHeight
+		if p.Page == PageEquip {
+			y = v.addEquip(*p.Unit, x, y)
+		} else {
+			y = v.addStats(*p.Unit, x, y)
 		}
+		y += lineHeight
 	}
-	if p.Terrain != nil {
+	// 回復の予測を開いている間は、地形を出さずに予測とユニットのページを 320×360 に収める（DES-UI-28）。
+	if p.Terrain != nil && p.Heal == nil {
 		for _, s := range TerrainLines(*p.Terrain) {
 			v.text(x, y, s, StylePlain)
 			y += lineHeight
@@ -250,9 +391,9 @@ func (v *InfoView) text(x, y int, s string, st InfoStyle) {
 	v.Texts = append(v.Texts, InfoText{X: x, Y: y, Text: s, Style: st})
 }
 
-// addUnit は、ユニットの絵・名前・クラス・HP と能力の棒・移動・武器・手持ち・スキルを (x, y) から並べ、
-// 使った一番下の y を返す。自軍のレベルと経験は名前・クラスの下に置く（FR-UNT-09、DES-UI-06、DES-UI-16）。
-func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
+// addStats は「能力」のページ。ユニットの絵・名前・クラス・HP と能力の棒・移動を (x, y) から並べ、
+// 使った一番下の y を返す。自軍のレベルと経験は名前・クラスの下に置く（FR-UNT-09、DES-UI-06、DES-UI-16、DES-UI-28）。
+func (v *InfoView) addStats(u tactics.Unit, x, y int) int {
 	// 名前の横に、盤面と同じタイルを 4 倍で描く。レベルがある自軍は絵の横に3行で並べる。
 	v.Icons = append(v.Icons, InfoIcon{X: x, Y: y, Size: PortraitSize, Tile: unitTile(u)})
 	lines := 2
@@ -272,48 +413,67 @@ func (v *InfoView) addUnit(u tactics.Unit, x, y int) int {
 	}
 	y += PortraitSize + blockGap
 
-	// HP は枠に割合で塗り、力・技・速さ・守備は値に比例した棒にする。移動は数字だけ。
+	// HP は枠に割合で塗り、力・魔力・技・速さ・幸運・守備・魔防の 7 つは、同じ式（StatBarLen）で値に比例した棒にして
+	// 1 列に並べる（DES-UI-06。開発者の確認（2026-11-01）で、魔力・幸運・魔防にも棒を付けた）。移動は数字だけ。
 	s := u.Stats
 	v.text(x, y, fmt.Sprintf("HP %d/%d", u.HP, s.HP), StylePlain)
 	v.Bars = append(v.Bars, InfoBar{X: x + barX, Y: y + (lineHeight-barHeight)/2, Fill: HPBarLen(u.HP, s.HP), Frame: BarMax})
 	y += lineHeight
-	for i, st := range []struct {
+	for _, st := range []struct {
 		name  string
 		value int
-	}{{"力", s.Str}, {"技", s.Skl}, {"速さ", s.Spd}, {"守備", s.Def}} {
+	}{{"力", s.Str}, {"魔力", s.Mag}, {"技", s.Skl}, {"速さ", s.Spd}, {"幸運", s.Lck}, {"守備", s.Def}, {"魔防", s.Res}} {
 		v.text(x, y, fmt.Sprintf("%s %d", st.name, st.value), StylePlain)
 		v.Bars = append(v.Bars, InfoBar{X: x + barX, Y: y + (lineHeight-barHeight)/2, Fill: StatBarLen(st.value)})
-		if i < 3 {
-			labels := []string{"魔力", "幸運", "魔防"}
-			values := []int{s.Mag, s.Lck, s.Res}
-			v.text(x+200, y, fmt.Sprintf("%s %d", labels[i], values[i]), StylePlain)
-		}
 		y += lineHeight
 	}
 	v.text(x, y, fmt.Sprintf("移動 %d", s.Mov), StylePlain)
+	return y + lineHeight
+}
+
+// addEquip は「装備・スキル」のページ。名前の下に武器・手持ち・スキルを (x, y) から並べ、使った一番下の y を返す
+// （FR-UNT-09、DES-UI-06、DES-UI-28）。
+func (v *InfoView) addEquip(u tactics.Unit, x, y int) int {
+	v.text(x, y, unitName(u), StyleTitle)
 	y += lineHeight + blockGap
 
-	// 武器の行は、種類の絵を左に置き、右に名前と威力・命中・射程の 2 行を並べる。
+	// 武器の行は、種類の絵を左に置き、右の 1 行目に名前と種類、2 行目に 3 つの値を決まった桁（weaponCols）に並べる。
+	// 攻撃の武器は「威力」「命中」「射程」、杖は「回復」「射程」「残り」を同じ桁に置く。右の桁（weaponSideX）には、
+	// 攻撃の武器なら 1 行目に必殺（2 回攻撃なら「×2」を添える。回数 1 の「×1」は予測と同じく省く）、2 行目に重さを出す。
+	// 杖には必殺と攻撃の回数を出さない（開発者の確認（2026-11-01）で直した）。
 	w := u.EquippedWeapon()
 	if t, ok := weaponTile(w.Type); ok {
 		v.Icons = append(v.Icons, InfoIcon{X: x, Y: y, Size: WeaponIconSize, Tile: t})
 	}
 	v.text(x+weaponTextX, y, fmt.Sprintf("武器: %s（%s）", w.Name, weaponTypeName(w.Type)), StylePlain)
+	cols := []string{fmt.Sprintf("威力 %d", w.Might), fmt.Sprintf("命中 %d", w.Hit), "射程 " + rangeText(w)}
 	if w.Type == tactics.Staff {
-		v.text(x+weaponTextX, y+lineHeight, fmt.Sprintf("回復 %d　射程 %s　残り %d/%d", w.Heal, rangeText(w), w.Uses, w.MaxUses), StylePlain)
+		// 杖の重さは使わないので出さない。
+		cols = []string{fmt.Sprintf("回復 %d", w.Heal), "射程 " + rangeText(w), fmt.Sprintf("残り %d/%d", w.Uses, w.MaxUses)}
 	} else {
-		v.text(x+weaponTextX, y+lineHeight, fmt.Sprintf("威力 %d　命中 %d　射程 %s", w.Might, w.Hit, rangeText(w)), StylePlain)
+		crit := fmt.Sprintf("必殺 %d", w.Crit)
+		if w.Strikes > 1 {
+			crit += fmt.Sprintf(" ×%d", w.Strikes)
+		}
+		v.text(x+weaponSideX, y, crit, StylePlain)
 	}
-	v.text(x+200, y, fmt.Sprintf("必殺 %d ×%d", w.Crit, max(1, w.Strikes)), StylePlain)
-	v.text(x+200, y+lineHeight, fmt.Sprintf("重さ %d", w.Weight), StylePlain)
+	for i, c := range cols {
+		v.text(x+weaponCols[i], y+lineHeight, c, StylePlain)
+	}
+	if w.Type != tactics.Staff {
+		v.text(x+weaponSideX, y+lineHeight, fmt.Sprintf("重さ %d", w.Weight), StylePlain)
+	}
 	y += WeaponIconSize
 
 	v.text(x, y, "手持ち: "+itemsText(u.Items), StylePlain)
 	y += lineHeight
 	// 装備のほかに持っている武器を、武器の列の順に出す（DES-UI-26、DES-IT06 12.2 節）。1 本だけなら出さない。
+	// 長い名前が並んで欄の幅を超えるときは折り返す（5 本を持っても欄に収める。DES-UI-28）。
 	if others := otherWeapons(u); others != "" {
-		v.text(x, y, "ほかの武器: "+others, StylePlain)
-		y += lineHeight
+		for _, line := range wrapWidth("ほかの武器: "+others, InfoWidth-2*infoMargin) {
+			v.text(x, y, line, StylePlain)
+			y += lineHeight
+		}
 	}
 
 	// スキルは名前を黄で 1 行に出し、次の行に効果の文を出す。キャラのスキルのあとに兵種のスキルを並べる（DES-IT06 12.2 節）。
@@ -353,7 +513,7 @@ func unitName(u tactics.Unit) string {
 	return u.Name
 }
 
-// StatBarLen は、力・技・速さ・守備の棒の長さ（px）を返す（DES-UI-06）。値 × 6 で、BarMax（値 20）で止める。
+// StatBarLen は、力・魔力・技・速さ・幸運・守備・魔防の棒の長さ（px）を返す（DES-UI-06）。値 × 6 で、BarMax（値 20）で止める。
 func StatBarLen(value int) int {
 	return min(max(value, 0)*statBarUnit, BarMax)
 }

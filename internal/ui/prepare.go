@@ -17,6 +17,7 @@ func (s *SceneController) enterPrepare() {
 	s.saveWarning = ""
 	s.message = ""
 	s.deployment = map[int]bool{}
+	s.prepareStockTop = 0
 	for i, m := range s.campaign.Roster {
 		ch, _ := s.cfg.Catalog.Character(m.Character)
 		if m.Alive && ch.Lord {
@@ -69,33 +70,77 @@ func (s *SceneController) toggleDeployment(i int) {
 	}
 }
 
+// prepareStockRows は準備の在庫の列に一度に出すボタンの数。超える分は「▲」「▼」で送る（DES-IT06 12.1 節）。
+const prepareStockRows = 5
+
+// prepareButton は準備のボタンと、押したときの操作（DES-UI-13）。
+type prepareButton struct {
+	SceneButton
+	act func() error
+}
+
+// prepareButtons は在庫・手持ちの道具と武器、配置へ、在庫を送るボタンを描画順に作る（DES-UI-13、DES-IT06 12.1 節）。
+// 返す y は品のボタンの列の下端の行数（案内の位置に使う）。
+func (s *SceneController) prepareButtons(y int) ([]prepareButton, int) {
+	c := s.campaign
+	m := s.prepareMember
+	stock, stockWeapons := c.Stock, c.StockWeapons
+	hand, handWeapons := c.Roster[m].Items, c.Roster[m].Weapons
+	total := len(stock) + len(stockWeapons)
+	s.prepareStockTop = min(max(s.prepareStockTop, 0), max(total-prepareStockRows, 0))
+	top, end := s.prepareStockTop, min(total, s.prepareStockTop+prepareStockRows)
+	rect := func(col, row int) image.Rectangle {
+		return image.Rect(16+col*160, y+row*22, 172+col*160, y+row*22+20)
+	}
+	var bs []prepareButton
+	for k := top; k < end && k < len(stock); k++ {
+		it, _ := s.cfg.Catalog.Item(stock[k].Item)
+		id := stock[k].Item
+		bs = append(bs, prepareButton{SceneButton{"手持ちへ: " + it.Name, rect(0, k-top), true}, func() error { return c.TakeItem(m, id) }})
+	}
+	for n, ic := range hand {
+		it, _ := s.cfg.Catalog.Item(ic.Item)
+		id := ic.Item
+		bs = append(bs, prepareButton{SceneButton{"在庫へ: " + it.Name, rect(1, n), true}, func() error { return c.StoreItem(m, id) }})
+	}
+	for k := max(top, len(stock)); k < end; k++ {
+		w, _ := s.cfg.Catalog.Weapon(stockWeapons[k-len(stock)].Weapon)
+		id := w.ID
+		bs = append(bs, prepareButton{SceneButton{"手持ちへ: " + w.Name, rect(0, k-top), true}, func() error { return c.TakeWeapon(m, id) }})
+	}
+	for n, id := range handWeapons {
+		w, _ := s.cfg.Catalog.Weapon(id)
+		n := n
+		bs = append(bs, prepareButton{SceneButton{"在庫へ: " + w.Name, rect(1, len(hand)+n), true}, func() error { return c.StoreWeapon(m, n) }})
+	}
+	for n, id := range handWeapons {
+		w, _ := s.cfg.Catalog.Weapon(id)
+		n := n
+		bs = append(bs, prepareButton{SceneButton{"先頭へ: " + w.Name, rect(2, len(hand)+n), true}, func() error { return c.MoveWeaponFirst(m, n) }})
+	}
+	rows := max(end-top, len(hand)+len(handWeapons))
+	bs = append(bs, prepareButton{SceneButton{"配置へ", image.Rect(360, 528, 504, 568), true}, nil})
+	if total > prepareStockRows {
+		r := rect(0, prepareStockRows)
+		bs = append(bs,
+			prepareButton{SceneButton{"▲ 前へ", image.Rect(r.Min.X, r.Min.Y, r.Min.X+76, r.Max.Y), top > 0}, func() error { s.prepareStockTop--; return nil }},
+			prepareButton{SceneButton{"▼ 次へ", image.Rect(r.Max.X-76, r.Min.Y, r.Max.X, r.Max.Y), end < total}, func() error { s.prepareStockTop++; return nil }})
+		rows = max(rows, prepareStockRows+1)
+	}
+	return bs, rows
+}
+
 // choosePrepare は描画順の在庫・手持ちボタンを操作する（DES-UI-13）。
 func (s *SceneController) choosePrepare(i int) {
-	if i < 0 {
+	bs, _ := s.prepareButtons(0)
+	if i < 0 || i >= len(bs) || !bs[i].Enabled {
 		return
 	}
-	stock := s.campaign.Stock
-	stockWeapons := s.campaign.StockWeapons
-	hand := s.campaign.Roster[s.prepareMember].Items
-	handWeapons := s.campaign.Roster[s.prepareMember].Weapons
-	var err error
-	switch {
-	case i < len(stock):
-		err = s.campaign.TakeItem(s.prepareMember, stock[i].Item)
-	case i < len(stock)+len(hand):
-		err = s.campaign.StoreItem(s.prepareMember, hand[i-len(stock)].Item)
-	case i < len(stock)+len(hand)+len(stockWeapons):
-		err = s.campaign.TakeWeapon(s.prepareMember, stockWeapons[i-len(stock)-len(hand)].Weapon)
-	case i < len(stock)+len(hand)+len(stockWeapons)+len(handWeapons):
-		err = s.campaign.StoreWeapon(s.prepareMember, i-len(stock)-len(hand)-len(stockWeapons))
-	case i < len(stock)+len(hand)+len(stockWeapons)+2*len(handWeapons):
-		err = s.campaign.MoveWeaponFirst(s.prepareMember, i-len(stock)-len(hand)-len(stockWeapons)-len(handWeapons))
-	case i == len(stock)+len(hand)+len(stockWeapons)+2*len(handWeapons):
+	if bs[i].act == nil {
 		s.enterDeploy()
 		return
-	default:
-		return
 	}
+	err := bs[i].act()
 	s.message = ""
 	if errors.Is(err, core.ErrHandFull) {
 		s.message = "手持ちは 5 枠までです"
@@ -147,32 +192,13 @@ func (s *SceneController) prepareView() SceneView {
 	} else if len([]rune(label)) > 45 {
 		label = fmt.Sprintf("道具 %d 種・武器 %d 種（下の一覧から選ぶ）", len(s.campaign.Stock), len(s.campaign.StockWeapons))
 	}
+	bs, rows := s.prepareButtons(y + 24)
+	if total := len(stock); total > prepareStockRows {
+		label += fmt.Sprintf("　%d〜%d/%d", s.prepareStockTop+1, s.prepareStockTop+prepareStockRows, total)
+	}
 	v.Texts = append(v.Texts, SceneText{Text: "在庫: " + label, X: 16, Y: y})
 	y += 24
-	for col, items := range [][]defs.ItemCount{s.campaign.Stock, s.campaign.Roster[s.prepareMember].Items} {
-		for n, ic := range items {
-			it, _ := s.cfg.Catalog.Item(ic.Item)
-			prefix := "手持ちへ: "
-			if col == 1 {
-				prefix = "在庫へ: "
-			}
-			v.Buttons = append(v.Buttons, SceneButton{prefix + it.Name, image.Rect(16+col*160, y+n*22, 172+col*160, y+n*22+20), true})
-		}
-	}
-	for n, wc := range s.campaign.StockWeapons {
-		w, _ := s.cfg.Catalog.Weapon(wc.Weapon)
-		v.Buttons = append(v.Buttons, SceneButton{"手持ちへ: " + w.Name, image.Rect(16, y+(len(s.campaign.Stock)+n)*22, 172, y+(len(s.campaign.Stock)+n)*22+20), true})
-	}
-	for n, id := range s.campaign.Roster[s.prepareMember].Weapons {
-		w, _ := s.cfg.Catalog.Weapon(id)
-		v.Buttons = append(v.Buttons, SceneButton{"在庫へ: " + w.Name, image.Rect(176, y+(len(s.campaign.Roster[s.prepareMember].Items)+n)*22, 332, y+(len(s.campaign.Roster[s.prepareMember].Items)+n)*22+20), true})
-	}
-	for n, id := range s.campaign.Roster[s.prepareMember].Weapons {
-		w, _ := s.cfg.Catalog.Weapon(id)
-		v.Buttons = append(v.Buttons, SceneButton{"先頭へ: " + w.Name, image.Rect(336, y+(len(s.campaign.Roster[s.prepareMember].Items)+n)*22, 492, y+(len(s.campaign.Roster[s.prepareMember].Items)+n)*22+20), true})
-	}
-	// 案内は品のボタンの最後から 8 px 下。品がないときは最初のボタンの位置（DES-UI-13）。
-	rows := max(len(s.campaign.Stock)+len(s.campaign.StockWeapons), len(s.campaign.Roster[s.prepareMember].Items)+len(s.campaign.Roster[s.prepareMember].Weapons))
+	// 案内は品のボタンの最後から 4 px 下。品がないときは最初のボタンの位置（DES-UI-13）。
 	if rows > 0 {
 		y += rows*22 + 4
 	}
@@ -181,7 +207,9 @@ func (s *SceneController) prepareView() SceneView {
 			v.Texts = append(v.Texts, SceneText{Text: line, X: 48, Y: y + i*20, Style: StyleBad})
 		}
 	}
-	v.Buttons = append(v.Buttons, SceneButton{"配置へ", image.Rect(360, 528, 504, 568), true})
+	for _, b := range bs {
+		v.Buttons = append(v.Buttons, b.SceneButton)
+	}
 	info := s.prepareInfo()
 	v.Info = &info
 	return v
@@ -224,7 +252,7 @@ func (s *SceneController) prepareUnit(i int) tactics.Unit {
 // prepareInfo は戦闘の情報欄と同じ部品で能力・装備を表示する（DES-UI-13）。
 func (s *SceneController) prepareInfo() InfoView {
 	u := s.prepareUnit(s.prepareMember)
-	return (Panel{Unit: &u}).View()
+	return (Panel{Unit: &u, Page: s.infoPage, Tabs: true}).View()
 }
 
 func itemCount(items []defs.ItemCount) int {

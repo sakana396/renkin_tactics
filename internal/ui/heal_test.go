@@ -193,10 +193,21 @@ func TestHealUI(t *testing.T) {
 		c := healController(t, 15)
 		u := c.Units()[0]
 		u.Weapons[0].Uses = 12
-		v := (Panel{Unit: &u}).View()
+		// 杖は「装備・スキル」のページ、絵は「能力」のページに出す（DES-UI-28）。
+		v := (Panel{Unit: &u, Page: PageEquip}).View()
 		textOf(t, v, "武器: 癒やしの杖（杖）")
-		textOf(t, v, "回復 10　射程 1　残り 12/15")
-		if portraitOf(t, v).Tile != (assets.Tile{Sheet: assets.Dungeon, N: 108}) {
+		// 2 行目の回復・射程・残りは、攻撃の武器の威力・命中・射程と同じ桁に置き、必殺と回数は出さない（開発者の確認（2026-11-01）で直した。#129）。
+		for i, s := range []string{"回復 10", "射程 1", "残り 12/15"} {
+			if tx := textOf(t, v, s); tx.X != MapSize+infoMargin+weaponCols[i] {
+				t.Errorf("%q の x = %d、%d のはず", s, tx.X, MapSize+infoMargin+weaponCols[i])
+			}
+		}
+		for _, tx := range v.Texts {
+			if strings.Contains(tx.Text, "必殺") || strings.Contains(tx.Text, "×") && !strings.HasPrefix(tx.Text, "手持ち") {
+				t.Errorf("杖に必殺・回数 %q", tx.Text)
+			}
+		}
+		if portraitOf(t, (Panel{Unit: &u}).View()).Tile != (assets.Tile{Sheet: assets.Dungeon, N: 108}) {
 			t.Fatal(v.Icons)
 		}
 		for _, tx := range v.Texts {

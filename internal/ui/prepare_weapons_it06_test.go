@@ -1,12 +1,14 @@
 package ui
 
 import (
+	"image"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core"
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
+	"github.com/sakana396/renkin_tactics/internal/defs"
 )
 
 // 準備のボタンで武器と道具を扱い、特効を表示名で案内する（DES-ITM-02、DES-UI-13）。
@@ -34,6 +36,66 @@ func TestIT06PrepareWeaponView(t *testing.T) {
 		clickSceneButton(t, s, "在庫へ: アーマーキラー")
 		if !strings.Contains(viewStrings(s.View()), core.ErrLastWeapon.Error()) {
 			t.Fatal("最後の武器の拒否が見えない")
+		}
+	})
+	t.Run("TC-FR-CMP-03-14 在庫が 5 行を超えると送りのボタンで残りを出す", func(t *testing.T) {
+		s := recruitScenes(t, "ch08", core.Withdraw)
+		s.campaign.Stock = []defs.ItemCount{{Item: "potion", Count: 1}}
+		s.campaign.StockWeapons = nil
+		for _, id := range []string{"armor_killer", "brave_axe", "hammer", "horse_killer", "killing_sword", "long_bow", "thunder_sword"} {
+			s.campaign.StockWeapons = append(s.campaign.StockWeapons, core.WeaponCount{Weapon: id, Count: 1})
+		}
+		s.message = "案内\n" + strings.Repeat("案内", 20)
+		stockLabels := func() ([]string, map[string]bool) {
+			var got []string
+			enabled := map[string]bool{}
+			for _, b := range s.View().Buttons {
+				if b.Rect.Min.X == 16 && strings.HasPrefix(b.Label, "手持ちへ: ") {
+					got = append(got, strings.TrimPrefix(b.Label, "手持ちへ: "))
+				}
+				enabled[b.Label] = b.Enabled
+			}
+			return got, enabled
+		}
+		got, en := stockLabels()
+		if !reflect.DeepEqual(got, []string{"回復薬", "アーマーキラー", "勇者の斧", "ハンマー", "ホースキラー"}) || en["▲ 前へ"] || !en["▼ 次へ"] {
+			t.Fatal(got, en)
+		}
+		if !strings.Contains(viewStrings(s.View()), "1〜5/8") {
+			t.Fatal("在庫の位置の表示がない")
+		}
+		for range 3 {
+			clickSceneButton(t, s, "▼ 次へ")
+		}
+		got, en = stockLabels()
+		if !reflect.DeepEqual(got, []string{"ハンマー", "ホースキラー", "キルソード", "長弓", "雷の剣"}) || !en["▲ 前へ"] || en["▼ 次へ"] {
+			t.Fatal(got, en)
+		}
+		// 送ったあとのボタンも、表示した武器を持たせる。
+		clickSceneButton(t, s, "手持ちへ: 雷の剣")
+		if w := s.campaign.Roster[0].Weapons; w[len(w)-1] != "thunder_sword" {
+			t.Fatal(w)
+		}
+		// 送りのボタン・品のボタン・案内・配置へが重ならず、窓と盤面の幅に収まる。
+		v := s.View()
+		var rects []image.Rectangle
+		for _, b := range v.Buttons {
+			rects = append(rects, b.Rect)
+		}
+		for _, tx := range v.Texts {
+			if tx.Style == StyleBad {
+				rects = append(rects, image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+16))
+			}
+		}
+		for i, r := range rects {
+			if !r.In(image.Rect(0, 0, MapSize, ScreenHeight)) {
+				t.Fatal("窓外", r)
+			}
+			for _, o := range rects[i+1:] {
+				if r.Overlaps(o) {
+					t.Fatal("重複", r, o)
+				}
+			}
 		}
 	})
 	t.Run("TC-FR-ITM-01-06 特効の分類を日本語で表示", func(t *testing.T) {
