@@ -39,7 +39,7 @@ type Panel struct {
 type InfoPage int
 
 const (
-	// PageStats は「能力」のページ（絵・名前・クラス・レベル・HP・能力・移動）。
+	// PageStats は「能力」のページ（絵・名前・クラス・レベル・HP・能力・移動と、武器の種類と名前の行）。
 	PageStats InfoPage = iota
 	// PageEquip は「装備・スキル」のページ（武器・手持ち・スキル）。
 	PageEquip
@@ -346,6 +346,10 @@ func (p Panel) View() InfoView {
 			y = v.addEquip(*p.Unit, x, y)
 		} else {
 			y = v.addStats(*p.Unit, x, y)
+			// 回復の予測を開いている間は、予測を優先して武器の行を出さない（予測とユニットの能力で欄が埋まるため。DES-IT06 12.2 節）。
+			if p.Heal == nil {
+				y = v.addWeaponRows(*p.Unit, x, y)
+			}
 		}
 		y += lineHeight
 	}
@@ -418,24 +422,20 @@ func (v *InfoView) text(x, y int, s string, st InfoStyle) {
 }
 
 // addStats は「能力」のページ。ユニットの絵・名前・クラス・HP と能力の棒・移動を (x, y) から並べ、
-// 使った一番下の y を返す。自軍のレベルと経験は名前・クラスの下に置く（FR-UNT-09、DES-UI-06、DES-UI-16、DES-UI-28）。
+// 使った一番下の y を返す。レベル（自軍は経験も）は名前・クラスの下に置く（FR-UNT-09、DES-UI-06、DES-UI-16、DES-UI-28）。
 func (v *InfoView) addStats(u tactics.Unit, x, y int) int {
 	// 名前の横に、盤面と同じタイルを 4 倍で描く。レベルがある自軍は絵の横に3行で並べる。
 	v.Icons = append(v.Icons, InfoIcon{X: x, Y: y, Size: PortraitSize, Tile: unitTile(u)})
 	lines := 2
-	showLevel := u.Side == tactics.Player && u.Level > 0
-	if showLevel {
+	lv := levelText(u)
+	if lv != "" {
 		lines = 3
 	}
 	ty := y + (PortraitSize-lines*lineHeight)/2
 	v.text(x+portraitTextX, ty, unitName(u), StyleTitle)
 	v.text(x+portraitTextX, ty+lineHeight, "クラス: "+u.ClassName, StylePlain)
-	if showLevel {
-		exp := fmt.Sprint(u.Exp)
-		if u.Level == 20 {
-			exp = "―"
-		}
-		v.text(x+portraitTextX, ty+2*lineHeight, fmt.Sprintf("Lv %d　経験 %s", u.Level, exp), StylePlain)
+	if lv != "" {
+		v.text(x+portraitTextX, ty+2*lineHeight, lv, StylePlain)
 	}
 	y += PortraitSize + blockGap
 
@@ -455,6 +455,57 @@ func (v *InfoView) addStats(u tactics.Unit, x, y int) int {
 	}
 	v.text(x, y, fmt.Sprintf("移動 %d", s.Mov), StylePlain)
 	return y + lineHeight
+}
+
+// levelText は「能力」のページの名前・クラスの下に出すレベルの行を返す（FR-UNT-09、DES-IT06 7.3・12.2 節）。
+// 自軍は「Lv 2　経験 40」（Lv 20 の経験は「―」）、敵は育たないので「Lv 5」だけを出す。レベルが 0 なら出さない（空を返す）。
+func levelText(u tactics.Unit) string {
+	if u.Level <= 0 {
+		return ""
+	}
+	if u.Side != tactics.Player {
+		return fmt.Sprintf("Lv %d", u.Level)
+	}
+	exp := fmt.Sprint(u.Exp)
+	if u.Level == 20 {
+		exp = "―"
+	}
+	return fmt.Sprintf("Lv %d　経験 %s", u.Level, exp)
+}
+
+// 「能力」のページの武器の行の配置（DES-IT06 12.2 節）。欄の幅を 2 列に分け、1 本ずつ左の列から右の列へ、
+// 上の行から下の行へ並べる。5 本でも 3 行（48 px）で、配置の画面のボタン（y = 296〜）と情報欄の下端の印に重ならない。
+const (
+	// weaponRowColWidth は武器の行の 1 列の幅。
+	weaponRowColWidth = (InfoWidth - 2*infoMargin) / 2
+	// weaponRowIconX は列の左端から種類の絵（タイルと同じ 16 px）までの位置。左に装備の印「E」を置く。
+	weaponRowIconX = 10
+	// weaponRowTextX は列の左端から武器の名前までの位置。
+	weaponRowTextX = weaponRowIconX + assets.TileSize + 4
+	// weaponRowMark は装備している武器に付ける印。
+	weaponRowMark = "E"
+)
+
+// addWeaponRows は「能力」のページの下に、持っている武器を種類の絵と名前の短い行で並べ、装備している武器に印を付ける
+// （DES-IT06 12.2 節、E-97）。杖も種類の絵で同じように並べる。詳しい値は「装備・スキル」のページに出す。
+// 武器がなければ何も足さない。使った一番下の y を返す。
+func (v *InfoView) addWeaponRows(u tactics.Unit, x, y int) int {
+	if len(u.Weapons) == 0 {
+		return y
+	}
+	y += blockGap
+	for k, w := range u.Weapons {
+		cx, cy := x+(k%2)*weaponRowColWidth, y+(k/2)*lineHeight
+		if k == u.Equipped {
+			v.text(cx, cy, weaponRowMark, StyleTitle)
+		}
+		if t, ok := weaponTile(w.Type); ok {
+			v.Icons = append(v.Icons, InfoIcon{X: cx + weaponRowIconX, Y: cy, Size: assets.TileSize, Tile: t})
+		}
+		// 長い名前は列の幅で省く。全文は「装備・スキル」のページで読める（DES-IT06 12.2 節）。
+		v.text(cx+weaponRowTextX, cy, fitRewind(w.Name, weaponRowColWidth-weaponRowTextX-4), StylePlain)
+	}
+	return y + (len(u.Weapons)+1)/2*lineHeight
 }
 
 // addEquip は「装備・スキル」のページ。名前の下に武器・手持ち・スキルを (x, y) から並べ、使った一番下の y を返す
