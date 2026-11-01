@@ -17,8 +17,12 @@ type Battle struct {
 	units          []Unit
 	reinforcements []ReinforcementSetup
 	// mapEvents は出来事の定義（New が入力から独立させ、戦闘中に変えない）。mapState はその状態（DES-MAP-07）。
-	mapEvents []MapEventSetup
-	mapState  eventState
+	mapEvents    []MapEventSetup
+	mapState     eventState
+	groupEntered map[string]bool
+	groupPlan    map[int]Pos
+	groupDanger  map[int]map[Pos]bool
+	groupRegions map[Pos]Pos
 	// canto は待っている再移動（DES-BTL-10）。
 	canto cantoState
 
@@ -64,6 +68,7 @@ func New(setup Setup, seed uint64) (*Battle, []Event, error) {
 	}
 	b.mapEvents = cloneMapEvents(setup.Events)
 	b.mapState = eventState{fired: make([]bool, len(b.mapEvents))}
+	b.groupEntered = make(map[string]bool)
 	return b, b.startPlayerPhase(nil), nil
 }
 
@@ -93,6 +98,7 @@ func newUnit(us UnitSetup) Unit {
 		Lord:               us.Lord,
 		Boss:               us.Boss,
 		AI:                 us.AI,
+		Approach:           us.Approach,
 		Alive:              true,
 		ID:                 us.ID,
 		Group:              us.Group,
@@ -300,6 +306,9 @@ func validateUnit(u UnitSetup) error {
 	}
 	if u.AI < Charge || u.AI > Hold {
 		return fmt.Errorf("動き方 %d が正しくありません", u.AI)
+	}
+	if u.Approach < Direct || u.Approach > GroupApproach || (u.Approach == GroupApproach && (u.Side != Enemy || u.Group == "")) {
+		return fmt.Errorf("寄り方 %d と一団 %q が正しくありません", u.Approach, u.Group)
 	}
 	// 規則 6: スキルの数値（DES-DAT-03 の規則 6 と同じ範囲）。
 	if err := validateSkill(u.Skill); err != nil {

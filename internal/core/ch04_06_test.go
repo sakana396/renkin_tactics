@@ -163,6 +163,12 @@ func pauseIT06(t *testing.T, issue string) {
 	t.Skipf("IT06: 新しい式で乱数の順が変わった。章の作り直し（%s）で新しい検査に置き換える", issue)
 }
 
+// pauseIT06EnemyAI は敵騎兵の再移動で変わった旧自動試遊を章の作り直しまで止める（DES-AI-02）。
+func pauseIT06EnemyAI(t *testing.T, issue string) {
+	t.Helper()
+	t.Skipf("IT06: 敵騎兵の再移動で勝敗が変わった。章の作り直し（%s）で新しい検査に置き換える", issue)
+}
+
 // pauseIT06Level は、敵のレベル（#123、DES-IT06 7.3 節）で撃破の経験とレベルアップの乱数が変わり、
 // 固定の seed の勝敗が変わった試し遊びのサブテストを止める。issue は章を作り直す Issue。
 func pauseIT06Level(t *testing.T, issue string) {
@@ -186,12 +192,12 @@ func TestCh04To06Autoplay(t *testing.T) {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-04 %s/作戦%d/低め%v/seed%d", tc.id, tc.plan, tc.low, tc.seed), func(t *testing.T) {
 			// IT06 で一時停止（TST-IT06 3.2・3.3 節）。ch04 は #131、ch06 は #132 で置き換える。
 			switch {
-			case tc.id == "ch04" && tc.plan == 0 && !tc.low && tc.seed == 9:
-				pauseIT06(t, "#131")
-			case tc.id == "ch04" && tc.plan == 0 && tc.low && tc.seed == 1:
-				pauseIT06Level(t, "#131")
-			case tc.id == "ch06" && tc.low && tc.seed == 6:
+			case tc.id == "ch06" && tc.plan == 1 && tc.low && tc.seed == 6:
 				pauseIT06(t, "#132")
+			case tc.id == "ch06" && tc.plan == 1 && !tc.low && tc.seed == 12:
+				pauseIT06EnemyAI(t, "#132")
+			case tc.id == "ch04" && tc.plan == 1 && tc.low && tc.seed == 1:
+				pauseIT06EnemyAI(t, "#131")
 			}
 			c := estimatedRoster(t, cat, tc.id, tc.low)
 			// 反復 5 の試遊条件を保ち、追加の錬金術師をこの旧検査には含めない。

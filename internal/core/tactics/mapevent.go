@@ -121,9 +121,14 @@ func validateMapEvents(s Setup, passable func(Pos) bool, width, height int) erro
 	}
 	ids := map[string]string{}
 	groups := map[string]bool{}
+	approaches := map[string]Approach{}
 	addEnemy := func(where string, u UnitSetup) error {
 		if u.Group != "" {
 			groups[u.Group] = true
+			if first, ok := approaches[u.Group]; ok && first != u.Approach {
+				return bad("%s: 一団 %q の寄り方がそろっていません", where, u.Group)
+			}
+			approaches[u.Group] = u.Approach
 		}
 		if u.ID == "" {
 			return nil

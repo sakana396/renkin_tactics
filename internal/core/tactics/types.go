@@ -85,6 +85,14 @@ const (
 	Hold
 )
 
+// Approach は敵が自軍へ寄る方式（DES-AI-02）。
+type Approach int
+
+const (
+	Direct        Approach = iota // まっすぐ寄る（省略値）。
+	GroupApproach                 // 一団でそろってから入る。
+)
+
 // Action は移動のあとの行動（DES-BTL-01、DES-BTL-04）。
 type Action int
 
@@ -215,6 +223,7 @@ type UnitSetup struct {
 	Lord        bool
 	Boss        bool
 	AI          AI
+	Approach    Approach
 	// ID・Group は敵の識別子と一団の名前（DES-MAP-07）。戦闘の中で比べるだけで、定義を引く手がかりにしない。
 	ID    string
 	Group string
@@ -263,6 +272,7 @@ type Unit struct {
 	Lord        bool
 	Boss        bool
 	AI          AI
+	Approach    Approach
 	Acted       bool
 	Alive       bool
 	// ID・Group は UnitSetup から写す敵の識別子と一団の名前（DES-MAP-07）。

@@ -64,13 +64,77 @@ func posLess(a, b Pos) bool {
 // 動かない敵は出来事を出さない。
 func (b *Battle) actEnemy(events []Event, unit int) []Event {
 	reach := b.Reachable(unit)
+	if u := b.units[unit]; u.Approach == GroupApproach && !b.groupEntered[b.groupKey(u.Group, u.Pos)] {
+		goal, planned := b.groupPlan[unit]
+		if !planned {
+			danger := b.groupDanger[unit]
+			gathering := false
+			for i, other := range b.units {
+				if other.Alive && other.Side == Enemy && other.Approach == GroupApproach && b.groupKey(other.Group, other.Pos) == b.groupKey(u.Group, u.Pos) {
+					if len(b.groupDanger[i]) != 0 {
+						gathering = true
+						break
+					}
+					if _, ok := b.groupPlan[i]; ok {
+						gathering = true
+						break
+					}
+				}
+			}
+			if gathering {
+				if !danger[b.units[unit].Pos] {
+					return events
+				}
+				near := b.closeness()
+				var escape Pos
+				bestNear, bestCost := unreachable, unreachable
+				found := false
+				for p, cost := range reach {
+					if danger[p] {
+						continue
+					}
+					n := near(p)
+					if !found || n < bestNear || (n == bestNear && (cost < bestCost || (cost == bestCost && posLess(p, escape)))) {
+						escape, bestNear, bestCost, found = p, n, cost, true
+					}
+				}
+				if found {
+					return b.moveEnemy(events, unit, escape)
+				}
+			} // 一団の誰にも危険がなければ通常の候補で攻撃・接近する。
+		}
+		if planned {
+			if to, ok := b.groupMove(unit, reach, goal); ok {
+				return b.moveEnemy(events, unit, to)
+			}
+		}
+		// 安全な逃げ場がないときだけ、通常の攻撃候補を使う。
+	}
 	if best, ok := b.bestCandidate(unit, reach); ok {
 		b.units[unit].AI = Charge
 		from := b.units[unit].Pos
+		start := len(events)
 		events = b.moveEnemy(events, unit, best.to)
 		// 攻撃に使った武器を装備する（DES-ITM-02）。
 		b.units[unit].Equipped = best.weapon
-		return b.attack(events, unit, best.target, best.to == from)
+		events = b.attack(events, unit, best.target, best.to == from)
+		remaining := b.units[unit].Stats.Mov - reach[best.to]
+		if !b.canCanto(unit, Attack, remaining) {
+			return events
+		}
+		// 攻撃と再移動は別の観測の区切り（DES-IT06 9.2 節）。
+		events = b.evaluateMapEvents(events, events[start:])
+		if b.Result != Ongoing {
+			return events
+		}
+		if to, ok := b.enemyRetreat(unit, remaining); ok {
+			from = b.units[unit].Pos
+			events = b.moveEnemy(events, unit, to)
+			if to != from {
+				events = b.evaluateMapEvents(events, events[len(events)-1:])
+			}
+		}
+		return events
 	}
 	if b.units[unit].AI != Charge {
 		return events

@@ -264,6 +264,7 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 		ClassSkills:        classSkills,
 		Boss:               e.Boss,
 		AI:                 ai,
+		Approach:           convertApproach(e.Approach),
 		ID:                 e.ID,
 		Group:              e.Group,
 	}, nil
@@ -461,6 +462,14 @@ func convertAI(ai string) (tactics.AI, error) {
 	default:
 		return 0, fmt.Errorf("動き方 %q は使えません", ai)
 	}
+}
+
+// convertApproach は定義の寄り方を戦闘へ写す（DES-AI-02）。
+func convertApproach(a string) tactics.Approach {
+	if a == defs.ApproachGroup {
+		return tactics.GroupApproach
+	}
+	return tactics.Direct
 }
 
 // convertAllowedWeaponTypes は兵種の武器の種類を戦闘の形に変える（DES-CMP-11）。

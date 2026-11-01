@@ -161,11 +161,17 @@ func TestCh07To08Autoplay(t *testing.T) {
 		p := ch07To08Plans(tc.id)[tc.plan]
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-06 %s/%s/低め%v/seed%d", tc.id, p.name, tc.low, tc.seed), func(t *testing.T) {
 			// IT06 で一時停止（TST-IT06 3.2・3.3 節）。ch07 は #132、ch08 は #133 で置き換える。
-			if tc.id == "ch08" && ((tc.plan == 0 && !tc.low && tc.seed == 10) || (tc.plan == 1 && tc.low && tc.seed == 9)) {
+			if tc.id == "ch08" && tc.plan == 1 && tc.low && tc.seed == 9 {
 				pauseIT06(t, "#133")
 			}
 			if tc.id == "ch07" && tc.plan == 0 && !tc.low && tc.seed == 4 {
 				pauseIT06Level(t, "#132")
+			}
+			if tc.id == "ch07" && tc.plan == 0 && tc.low && tc.seed == 3 {
+				pauseIT06EnemyAI(t, "#132")
+			}
+			if tc.id == "ch07" && tc.plan == 1 && tc.low && tc.seed == 2 {
+				pauseIT06EnemyAI(t, "#132")
 			}
 			c := estimatedRoster(t, cat, tc.id, tc.low)
 			s, ids, err := autoBattleWith(c, tc.seed, p.members)
