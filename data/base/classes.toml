@@ -1,5 +1,5 @@
 # クラス（DES-DAT-02、設計書 10.1 節）
-# weapon_type は sword・lance・axe・bow・staff のどれか
+# weapon_type は sword・lance・axe・bow・staff・magic のどれか。複数種は weapon_types に書く
 # skills は兵種のスキルの ID の列（DES-IT06 8.1 節）。再移動（canto）は騎兵だけが持つ
 
 [[classes]]
@@ -54,3 +54,17 @@ id = "cleric"
 name = "僧侶"
 weapon_type = "staff"
 base = { hp = 16, str = 0, skl = 2, spd = 6, def = 2, mov = 5, lck = 6, mag = 0, res = 5 }
+
+# 錬金術師と魔道士（DES-CMP-11）。
+[[classes]]
+id = "alchemist"
+name = "錬金術師"
+weapon_types = ["magic", "staff"]
+staff_heal_cap = 8
+base = { hp = 17, str = 2, skl = 5, spd = 6, def = 2, mov = 5, lck = 4, mag = 3, res = 3 }
+
+[[classes]]
+id = "mage"
+name = "魔道士"
+weapon_type = "magic"
+base = { hp = 16, str = 1, skl = 5, spd = 5, def = 1, mov = 5, lck = 2, mag = 4, res = 3 }

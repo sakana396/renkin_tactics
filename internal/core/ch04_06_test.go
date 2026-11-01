@@ -21,7 +21,7 @@ func TestCh04To06Maps(t *testing.T) {
 		boss                                 string
 		x                                    int
 	}{
-		{"ch04", 18, 6, 12, 3, "オスカー", 9}, {"ch05", 16, 5, 9, 2, "ディートリヒ", 8}, {"ch06", 20, 6, 14, 4, "ロルフ", 10},
+		{"ch04", 18, 7, 12, 3, "オスカー", 9}, {"ch05", 16, 6, 9, 2, "ディートリヒ", 8}, {"ch06", 20, 7, 14, 4, "ロルフ", 10},
 	} {
 		t.Run("TC-FR-MAP-04-03 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
@@ -116,17 +116,17 @@ func TestCh04To08Deployment(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if len(c.Roster) != map[bool]int{true: 8, false: 7}[id == "ch08"] {
+				if len(c.Roster) != map[bool]int{true: 9, false: 8}[id == "ch08"] {
 					t.Fatal("名簿は ch04〜ch07 が7人、ch08 が8人")
 				}
 				five := map[string]bool{"ch05": true, "ch07": true, "ch08": true}[id]
-				if m, _ := cat.Map(id); len(m.Slots) != map[bool]int{true: 5, false: 6}[five] {
+				if m, _ := cat.Map(id); len(m.Slots) != map[bool]int{true: 6, false: 7}[five] {
 					t.Fatalf("枠の数 %d", len(m.Slots))
 				}
 				for _, tc := range []struct {
 					members []int
 					bad     bool
-				}{{[]int{0}, false}, {[]int{1, 2}, true}, {nil, true}, {[]int{0, 1, 2, 3, 4, 5}, five}, {[]int{0, 1, 2, 3, 4, 5, 6}, true}, {[]int{0, 1, 2, 3, 5}, false}} {
+				}{{[]int{0}, false}, {[]int{1, 2}, true}, {nil, true}, {[]int{0, 1, 2, 3, 4, 5}, false}, {[]int{0, 1, 2, 3, 4, 5, 6}, five}, {[]int{0, 1, 2, 3, 4, 5, 6, 7}, true}, {[]int{0, 1, 2, 3, 5}, false}} {
 					before := campaignSnapshot(c)
 					s, _, err := c.StartBattle(tc.members, 1)
 					if tc.bad {
@@ -194,6 +194,8 @@ func TestCh04To06Autoplay(t *testing.T) {
 				pauseIT06(t, "#132")
 			}
 			c := estimatedRoster(t, cat, tc.id, tc.low)
+			// 反復 5 の試遊条件を保ち、追加の錬金術師をこの旧検査には含めない。
+			c.Roster = append(c.Roster[:5], c.Roster[6:]...)
 			slots := 6
 			if tc.id == "ch05" {
 				slots = 5
@@ -282,7 +284,7 @@ func checkCh04To06Definition(t *testing.T, m defs.MapDef) {
 				"..................",
 				"..................",
 			},
-			slots:          []defs.Slot{{X: 8, Y: 16}, {X: 9, Y: 16}, {X: 7, Y: 17}, {X: 8, Y: 17}, {X: 9, Y: 17}, {X: 10, Y: 17}},
+			slots:          []defs.Slot{{X: 8, Y: 16}, {X: 9, Y: 16}, {X: 7, Y: 17}, {X: 8, Y: 17}, {X: 9, Y: 17}, {X: 10, Y: 17}, {X: 7, Y: 16}},
 			enemies:        "soldier:4,12:charge fighter:13,12:charge archer:3,10:hold myrmidon:5,9:hold soldier:12,9:hold cavalier:14,10:hold armor:5,6:hold archer:4,4:hold fighter:12,5:hold archer:13,4:hold myrmidon:9,4:hold armor:9,2:hold",
 			reinforcements: []reinforcement{{3, "fighter", 0, 15}, {4, "soldier", 17, 14}, {6, "cavalier", 13, 1}},
 			bonus:          defs.Stats{HP: 2, Str: 1, Skl: 1, Spd: 1, Def: 1},
@@ -307,7 +309,7 @@ func checkCh04To06Definition(t *testing.T, m defs.MapDef) {
 				"^..............^",
 				"^..............^",
 			},
-			slots:          []defs.Slot{{X: 7, Y: 12}, {X: 7, Y: 11}, {X: 6, Y: 12}, {X: 8, Y: 12}, {X: 7, Y: 13}},
+			slots:          []defs.Slot{{X: 7, Y: 12}, {X: 7, Y: 11}, {X: 6, Y: 12}, {X: 8, Y: 12}, {X: 7, Y: 13}, {X: 6, Y: 15}},
 			enemies:        "soldier:7,9:hold fighter:10,10:hold armor:7,6:hold archer:8,5:hold myrmidon:6,4:hold soldier:2,5:hold archer:3,3:hold fighter:10,4:hold soldier:8,2:hold",
 			reinforcements: []reinforcement{{4, "myrmidon", 14, 12}, {6, "fighter", 1, 2}},
 			bonus:          defs.Stats{HP: 3, Str: 2, Skl: 2, Spd: 1, Def: 1},
@@ -336,7 +338,7 @@ func checkCh04To06Definition(t *testing.T, m defs.MapDef) {
 				"^^^..............^^^",
 				"^^^..............^^^",
 			},
-			slots:          []defs.Slot{{X: 9, Y: 18}, {X: 10, Y: 18}, {X: 8, Y: 19}, {X: 9, Y: 19}, {X: 10, Y: 19}, {X: 11, Y: 19}},
+			slots:          []defs.Slot{{X: 9, Y: 18}, {X: 10, Y: 18}, {X: 8, Y: 19}, {X: 9, Y: 19}, {X: 10, Y: 19}, {X: 11, Y: 19}, {X: 16, Y: 19}},
 			enemies:        "cavalier:11,14:charge soldier:6,15:charge archer:4,13:hold fighter:7,12:hold myrmidon:10,12:hold cavalier:14,10:hold archer:15,10:hold soldier:12,8:hold archer:5,7:hold armor:7,6:hold cavalier:13,5:hold fighter:10,4:hold archer:12,3:hold armor:10,2:hold",
 			reinforcements: []reinforcement{{3, "cavalier", 19, 17}, {4, "fighter", 0, 14}, {6, "cavalier", 18, 7}, {7, "myrmidon", 3, 1}},
 			bonus:          defs.Stats{HP: 4, Str: 2, Skl: 2, Spd: 2, Def: 2},

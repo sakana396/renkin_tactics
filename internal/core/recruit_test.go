@@ -17,7 +17,7 @@ import (
 func TestRecruitDefinitions(t *testing.T) {
 	cat := baseCatalog(t)
 	t.Run("TC-FR-CMP-08-04 加入の時機と能力", func(t *testing.T) {
-		joins := map[string][]string{"ch02": {"elsa"}, "ch04": {"tio"}, "ch08": {"hanna"}}
+		joins := map[string][]string{"ch02": {"noel", "elsa"}, "ch04": {"tio"}, "ch08": {"hanna"}}
 		for _, ch := range cat.Chapters() {
 			if !reflect.DeepEqual(ch.Joins, joins[ch.ID]) {
 				t.Errorf("%s joins=%v", ch.ID, ch.Joins)
@@ -27,7 +27,7 @@ func TestRecruitDefinitions(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(c.Roster) != 8 {
+		if len(c.Roster) != 9 {
 			t.Fatalf("名簿 %d", len(c.Roster))
 		}
 		for _, tc := range []struct {
@@ -65,9 +65,9 @@ func TestRecruitDefinitions(t *testing.T) {
 			}
 			for i := 0; i < 8; i++ {
 				if i == 4 && rule == core.Permadeath {
-					c.Roster[6].Alive = false
+					c.Roster[7].Alive = false
 				}
-				want := []int{5, 6, 6, 7, 7, 7, 7, 8}[i]
+				want := []int{5, 7, 7, 8, 8, 8, 8, 9}[i]
 				if len(c.Roster) != want {
 					t.Fatalf("章%d 名簿%d", i+1, len(c.Roster))
 				}
@@ -83,7 +83,7 @@ func TestRecruitDefinitions(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if len(c.Roster) != 8 || c.Roster[6].Character != "tio" || c.Roster[7].Character != "hanna" || c.Roster[6].Alive != (rule == core.Withdraw) {
+			if len(c.Roster) != 9 || c.Roster[7].Character != "tio" || c.Roster[8].Character != "hanna" || c.Roster[7].Alive != (rule == core.Withdraw) {
 				t.Fatal(c.Roster)
 			}
 		}
@@ -110,6 +110,8 @@ func TestRecruitLoad(t *testing.T) {
 							}
 						}
 					}
+					// 旧版の 2 章名簿には錬金術師がいない（DES-SAV-04）。
+					c.Roster = append(c.Roster[:5], c.Roster[6:]...)
 					c.Roster[1].Exp = 23
 					c.Roster[1].Stats.HP = 31
 					c.Roster[2].Alive = false
@@ -123,18 +125,21 @@ func TestRecruitLoad(t *testing.T) {
 						t.Fatal(err)
 					}
 					want := 6
-					if id != "clear" && id >= "ch04" {
+					if id != "clear" {
 						want = 7
 					}
-					if id != "clear" && id >= "ch08" {
+					if id != "clear" && id >= "ch04" {
 						want = 8
+					}
+					if id != "clear" && id >= "ch08" {
+						want = 9
 					}
 					if len(got.Roster) != want || !reflect.DeepEqual(got.Roster[:6], c.Roster) || got.Rule != rule || got.Chapter != c.Chapter || got.Cleared != c.Cleared || !reflect.DeepEqual(got.Stock, c.Stock) {
 						t.Fatalf("読み込み %+v", got)
 					}
 					for i, st := range []tactics.Stats{{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Mag: 0, Res: 1}, {HP: 20, Skl: 4, Spd: 7, Def: 6, Mov: 5, Lck: 6, Mag: 3, Res: 7}} {
-						if 6+i < want {
-							m := got.Roster[6+i]
+						if 7+i < want {
+							m := got.Roster[7+i]
 							if m.Stats != st || m.Level != []int{4, 7}[i] || m.Exp != 0 || !m.Alive || len(m.Items) != 0 {
 								t.Fatal(m)
 							}
@@ -218,10 +223,10 @@ func TestRecruitEstimatedRoster(t *testing.T) {
 			for k, low := range []bool{false, true} {
 				grew := estimatedRosterWithRecruits(t, cat, tc.id, low, false)
 				bench := estimatedRosterWithRecruits(t, cat, tc.id, low, true)
-				if m := grew.Roster[6]; m.Level != tc.level[k] || m.Stats != tc.stats[k] || m.Exp != 0 {
+				if m := grew.Roster[7]; m.Level != tc.level[k] || m.Stats != tc.stats[k] || m.Exp != 0 {
 					t.Fatal(tc.id, low, m)
 				}
-				if m := bench.Roster[6]; m.Level != 4 || m.Stats != (tactics.Stats{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Mag: 0, Res: 1}) || m.Exp != 0 {
+				if m := bench.Roster[7]; m.Level != 4 || m.Stats != (tactics.Stats{HP: 20, Str: 8, Skl: 9, Spd: 7, Def: 4, Mov: 5, Lck: 4, Mag: 0, Res: 1}) || m.Exp != 0 {
 					t.Fatal(m)
 				}
 				if tc.id >= "ch08" {
@@ -232,10 +237,10 @@ func TestRecruitEstimatedRoster(t *testing.T) {
 						st.HP = 21
 						st.Def = 7
 					}
-					if m := grew.Roster[7]; m.Level != level || m.Stats != st || m.Exp != 0 {
+					if m := grew.Roster[8]; m.Level != level || m.Stats != st || m.Exp != 0 {
 						t.Fatal(m)
 					}
-					if m := bench.Roster[7]; m.Level != 7 || m.Stats != (tactics.Stats{HP: 20, Skl: 4, Spd: 7, Def: 6, Mov: 5, Lck: 6, Mag: 3, Res: 7}) || m.Exp != 0 {
+					if m := bench.Roster[8]; m.Level != 7 || m.Stats != (tactics.Stats{HP: 20, Skl: 4, Spd: 7, Def: 6, Mov: 5, Lck: 6, Mag: 3, Res: 7}) || m.Exp != 0 {
 						t.Fatal(m)
 					}
 				}

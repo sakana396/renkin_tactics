@@ -288,7 +288,7 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 		cls, _ := cat.Class(ch.Class)
 		for j, id := range m.Weapons {
 			w, ok := cat.Weapon(id)
-			if !ok || w.Type != cls.WeaponType {
+			if !ok || !cls.CanUseWeapon(w.Type) {
 				return nil, invalidSave(fmt.Sprintf("roster[%d].weapons[%d]", i, j), "持てない武器です")
 			}
 		}

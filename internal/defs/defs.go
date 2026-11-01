@@ -72,14 +72,36 @@ type Stats struct {
 
 // ClassDef はクラスの定義（DES-DAT-01）。
 type ClassDef struct {
-	ID         string
-	Name       string
-	WeaponType string
+	ID          string
+	Name        string
+	WeaponType  string
+	WeaponTypes []string // 複数の武器の種類（DES-CMP-11）。旧定義は WeaponType を使う。
 	// StaffHealCap は杖の回復量の上限（キー staff_heal_cap）。0 なら上限なし（DES-HEL-01、DES-IT06 7.1 節）。
 	StaffHealCap int
 	Tags         []string // 特効の分類（DES-DAT-04）。
 	Skills       []string // 兵種のスキルの ID（DES-DAT-04、DES-BTL-10）。
 	Base         Stats
+}
+
+// CanUseWeapon は兵種が指定の武器の種類を持てるかを返す（DES-CMP-11）。
+func (c ClassDef) CanUseWeapon(kind string) bool {
+	if len(c.WeaponTypes) == 0 {
+		return c.WeaponType == kind
+	}
+	for _, t := range c.WeaponTypes {
+		if t == kind {
+			return true
+		}
+	}
+	return false
+}
+
+// AllowedWeaponTypes は兵種の武器の種類を定義順に返す（DES-CMP-11）。
+func (c ClassDef) AllowedWeaponTypes() []string {
+	if len(c.WeaponTypes) > 0 {
+		return append([]string(nil), c.WeaponTypes...)
+	}
+	return []string{c.WeaponType}
 }
 
 // WeaponDef は武器の定義（DES-DAT-01、DES-DAT-04、DES-BTL-09）。
@@ -279,6 +301,7 @@ func NewCatalog(game GameDef, terrains []TerrainDef, classes []ClassDef, weapons
 		c.terrains = append(c.terrains, t)
 	}
 	for _, v := range classes {
+		v.WeaponTypes = append([]string(nil), v.WeaponTypes...)
 		v.Tags = append([]string(nil), v.Tags...)
 		v.Skills = append([]string(nil), v.Skills...)
 		c.classes[v.ID] = v
@@ -323,6 +346,7 @@ func (c *Catalog) Terrains() []TerrainDef {
 // Class は ID でクラスを引く（DES-DAT-01）。
 func (c *Catalog) Class(id string) (ClassDef, bool) {
 	v, ok := c.classes[id]
+	v.WeaponTypes = append([]string(nil), v.WeaponTypes...)
 	v.Tags = append([]string(nil), v.Tags...)
 	v.Skills = append([]string(nil), v.Skills...)
 	return v, ok

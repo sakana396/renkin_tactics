@@ -41,7 +41,7 @@ func TestLoadIt02(t *testing.T) {
 			[]edit{
 				replace("chapters.toml", `before = "ch01_before"`, `before = "ch01_intro"`),
 				replace("chapters.toml", `after = "ch02_after"`, `after = "ch02_end"`),
-				replace("chapters.toml", `joins = ["elsa"]`, `joins = ["nobody"]`),
+				replace("chapters.toml", `joins = ["noel", "elsa"]`, `joins = ["nobody"]`),
 				replace("chapters.toml", `reward = [{ item = "potion", count = 2 }, { weapon = "armor_killer", count = 1 }]`, `reward = [{ item = "elixir", count = 2 }]`),
 				appendTo("game.toml", `stock = [{ item = "elixir", count = 1 }]`),
 			},
@@ -107,15 +107,15 @@ func TestLoadIt02(t *testing.T) {
 			[]edit{func(t *testing.T, m fstest.MapFS) { m["chapters.toml"].Data = []byte("# 章なし\n") }},
 			[]string{"chapters.toml: chapters: 章を 1 つ以上書いてください"}},
 		{"TC-FR-SYS-04-30 章のマップに出撃の枠がない",
-			[]edit{replace("maps.toml", "slots = [\n  { x = 1, y = 7 },\n  { x = 1, y = 6 },\n  { x = 1, y = 8 },\n  { x = 0, y = 6 },\n  { x = 0, y = 8 },\n  { x = 2, y = 7 },\n]", "slots = []")},
+			[]edit{replace("maps.toml", "slots = [\n  { x = 1, y = 7 },\n  { x = 1, y = 6 },\n  { x = 1, y = 8 },\n  { x = 0, y = 6 },\n  { x = 0, y = 8 },\n  { x = 2, y = 7 },\n  { x = 0, y = 7 },\n]", "slots = []")},
 			[]string{`chapters.toml: chapters[1].map: マップ "ch02" に出撃の枠（slots）がありません`}},
 		// 規則 15
 		{"TC-FR-SYS-04-31 加入のキャラが名簿にもいる",
 			[]edit{replace("game.toml", `"rina"]`, `"rina", "elsa"]`)},
-			[]string{`chapters.toml: chapters[1].joins[0]: キャラ "elsa" は party にもいます`}},
+			[]string{`chapters.toml: chapters[1].joins[1]: キャラ "elsa" は party にもいます`}},
 		{"TC-FR-SYS-04-31 同じキャラがほかの章でも加わる",
 			[]edit{replace("chapters.toml", "after = \"ch03_after\"", "after = \"ch03_after\"\njoins = [\"elsa\"]")},
-			[]string{`chapters.toml: chapters[2].joins[0]: キャラ "elsa" は chapters[1].joins[0] でも加わります`}},
+			[]string{`chapters.toml: chapters[2].joins[0]: キャラ "elsa" は chapters[1].joins[1] でも加わります`}},
 		// 規則 16
 		{"TC-FR-SYS-04-32 レベルが 0・21、成長率が -1・101",
 			[]edit{

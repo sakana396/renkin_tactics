@@ -4,7 +4,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/sakana396/renkin_tactics/data"
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
+	"github.com/sakana396/renkin_tactics/internal/defload"
 )
 
 // 反復 6 の杖の回復 ＋ 魔力（DES-HEL-01・02 の改訂）、撃破の経験のレベル差（DES-GRW-04）、
@@ -57,6 +59,31 @@ func TestIT06StaffHeal(t *testing.T) {
 			assertEqual(t, "回復役の経験", exps(events), []expEvent{{Unit: 0, Amount: 10}})
 		})
 	}
+
+	t.Run("TC-FR-BTL-03-19 本体のノエルは18/24まで回復", func(t *testing.T) {
+		cat, err := defload.Load(data.Base())
+		if err != nil {
+			t.Fatal(err)
+		}
+		noel, _ := cat.Character("noel")
+		class, _ := cat.Class(noel.Class)
+		staff, _ := cat.Weapon("heal_staff")
+		if class.Base.Mag != 3 || class.StaffHealCap != 8 || staff.Heal != 10 {
+			t.Fatalf("本体の魔力・上限・杖 = %d・%d・%d", class.Base.Mag, class.StaffHealCap, staff.Heal)
+		}
+		setup := staffSetup(class.Base.Mag, class.StaffHealCap)
+		setup.Units[0].Weapon.Heal = staff.Heal
+		b := mustNew(t, setup)
+		b.SetHP(1, 10)
+		cmd := healCmd(0, pos(0, 0), 1)
+		forecast, err := b.HealForecast(cmd)
+		if err != nil || forecast.Amount != 8 || forecast.After != 18 || forecast.MaxHP != 24 {
+			t.Fatalf("予測 = %+v, err = %v", forecast, err)
+		}
+		if _, err := b.Act(cmd); err != nil || b.Units()[1].HP != 18 {
+			t.Fatalf("実際の回復 = %d, err = %v", b.Units()[1].HP, err)
+		}
+	})
 
 	t.Run("TC-FR-BTL-03-19 満タンと回数 0 は予測も行動も拒み、状態を変えない", func(t *testing.T) {
 		b := mustNew(t, staffSetup(3, 8))

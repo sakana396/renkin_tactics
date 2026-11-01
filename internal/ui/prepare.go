@@ -18,6 +18,7 @@ func (s *SceneController) enterPrepare() {
 	s.message = ""
 	s.deployment = map[int]bool{}
 	s.prepareStockTop = 0
+	s.prepareRosterTop = 0
 	for i, m := range s.campaign.Roster {
 		ch, _ := s.cfg.Catalog.Character(m.Character)
 		if m.Alive && ch.Lord {
@@ -140,6 +141,10 @@ func (s *SceneController) prepareButtons(y int) ([]prepareButton, int) {
 			prepareButton{SceneButton{"▼ 次へ", image.Rect(r.Max.X-76, r.Min.Y, r.Max.X, r.Max.Y), end < total}, func() error { s.prepareStockTop++; return nil }})
 		rows = max(rows, prepareStockRows+1)
 	}
+	if len(c.Roster) > 8 {
+		bs = append(bs, prepareButton{SceneButton{"▲ 名簿", image.Rect(352, 44, 424, 68), s.prepareRosterTop > 0}, func() error { s.prepareRosterTop--; return nil }})
+		bs = append(bs, prepareButton{SceneButton{"▼ 名簿", image.Rect(432, 44, 504, 68), s.prepareRosterTop < len(c.Roster)-8}, func() error { s.prepareRosterTop++; return nil }})
+	}
 	return bs, rows
 }
 
@@ -176,7 +181,7 @@ func (s *SceneController) prepareView() SceneView {
 	v.Texts = append(v.Texts, SceneText{Text: fmt.Sprintf("第 %d 章　%s　出撃 %d/%d", s.campaign.Chapter+1, ch.Name, len(s.SelectedMembers()), s.prepareSlots()), X: 16, Y: 24, Style: StyleTitle})
 	y := 72
 	for i, m := range s.campaign.Roster {
-		if !m.Alive {
+		if i < s.prepareRosterTop || i >= s.prepareRosterTop+8 || !m.Alive {
 			continue
 		}
 		u := s.prepareUnit(i)
@@ -235,7 +240,14 @@ func (s *SceneController) prepareUnit(i int) tactics.Unit {
 	cls, _ := s.cfg.Catalog.Class(ch.Class)
 	wt := map[string]tactics.WeaponType{"sword": tactics.Sword, "lance": tactics.Lance, "axe": tactics.Axe, "bow": tactics.Bow, "staff": tactics.Staff, "magic": tactics.Magic}
 	u := tactics.Unit{Name: ch.Name, ClassName: cls.Name, Side: tactics.Player, Stats: m.Stats, HP: m.Stats.HP, Level: m.Level, Exp: m.Exp, Lord: ch.Lord, Alive: m.Alive,
-		AllowedWeaponTypes: []tactics.WeaponType{wt[cls.WeaponType]}}
+		AllowedWeaponTypes: func() []tactics.WeaponType {
+			kinds := cls.AllowedWeaponTypes()
+			out := make([]tactics.WeaponType, len(kinds))
+			for i, kind := range kinds {
+				out[i] = wt[kind]
+			}
+			return out
+		}()}
 	// 名簿の武器の列を順に写し、先頭（初めの装備）を装備にする（DES-ITM-02、REV-069 の申し送り）。
 	for _, id := range m.Weapons {
 		w, _ := s.cfg.Catalog.Weapon(id)

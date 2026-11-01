@@ -106,7 +106,7 @@ func TestBaseData(t *testing.T) {
 			t.Errorf("マップの名前 = %q", m.Name)
 		}
 		// 出撃の枠は、反復 1 の自軍の配置と同じ座標を同じ順に並べ、5 番目に (2, 15) を足したもの（設計書（反復 2）10.4 節）。
-		slots := []defs.Slot{{X: 1, Y: 14}, {X: 2, Y: 13}, {X: 3, Y: 14}, {X: 1, Y: 15}, {X: 2, Y: 15}}
+		slots := []defs.Slot{{X: 1, Y: 14}, {X: 2, Y: 13}, {X: 3, Y: 14}, {X: 1, Y: 15}, {X: 2, Y: 15}, {X: 3, Y: 15}}
 		if !reflect.DeepEqual(m.Slots, slots) {
 			t.Errorf("出撃の枠 = %+v", m.Slots)
 		}
