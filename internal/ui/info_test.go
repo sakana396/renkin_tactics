@@ -138,6 +138,7 @@ func TestInfoPanel(t *testing.T) {
 		"守備 4",
 		"魔防 0",
 		"移動 5",
+		"E 鉄の剣",
 		"地形: 平地",
 		"回避 0　守備 0　回復 0%",
 	}
@@ -187,6 +188,7 @@ func TestInfoPanel(t *testing.T) {
 		want := []string{
 			"ソルジャー 3　★ボス",
 			"クラス: ソルジャー",
+			"Lv 1",
 			"HP 18/18",
 			"力 5",
 			"魔力 0",
@@ -196,6 +198,7 @@ func TestInfoPanel(t *testing.T) {
 			"守備 4",
 			"魔防 0",
 			"移動 5",
+			"E 鉄の槍",
 			"地形: 森",
 			"回避 20　守備 1　回復 0%",
 		}
@@ -237,6 +240,7 @@ func TestInfoPanel(t *testing.T) {
 			"魔防 0",
 
 			"移動 5",
+			"E 長弓",
 		}
 		equip := []string{
 			"ミラ",
@@ -315,7 +319,7 @@ func TestInfoPanel(t *testing.T) {
 		if got := panelRows(c.Panel(tactics.Pos{X: 0, Y: 0}, true)); got[2] != "HP 20/20" {
 			t.Errorf("再生中の主人公 = %q", got)
 		}
-		if got := panelRows(c.Panel(tactics.Pos{X: 1, Y: 0}, true)); got[2] != "HP 29/30" {
+		if got := panelRows(c.Panel(tactics.Pos{X: 1, Y: 0}, true)); got[3] != "HP 29/30" {
 			t.Errorf("再生中のファイター = %q", got)
 		}
 		playOut(c)
