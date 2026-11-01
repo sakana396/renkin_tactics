@@ -71,7 +71,7 @@ func TestCh09Map(t *testing.T) {
 			}
 		}
 		// 出撃の枠は南の出発地の 6 つ（1 番目は主人公）。
-		wantSlots := []defs.Slot{{X: 15, Y: 29}, {X: 16, Y: 29}, {X: 14, Y: 30}, {X: 15, Y: 30}, {X: 16, Y: 30}, {X: 17, Y: 30}}
+		wantSlots := []defs.Slot{{X: 15, Y: 29}, {X: 16, Y: 29}, {X: 14, Y: 30}, {X: 15, Y: 30}, {X: 16, Y: 30}, {X: 17, Y: 30}, {X: 14, Y: 29}}
 		if !reflect.DeepEqual(m.Slots, wantSlots) {
 			t.Errorf("出撃の枠 = %v", m.Slots)
 		}
@@ -131,7 +131,7 @@ func TestCh09Map(t *testing.T) {
 		for _, r := range setup.Reinforcements {
 			turns = append(turns, r.Turn)
 		}
-		if !reflect.DeepEqual(turns, []int{3, 3, 5, 5, 7, 7, 9, 9}) || len(m.Slots)+len(m.Enemies)+len(m.Reinforcements) != 40 {
+		if !reflect.DeepEqual(turns, []int{3, 3, 5, 5, 7, 7, 9, 9}) || len(m.Slots)+len(m.Enemies)+len(m.Reinforcements) != 41 {
 			t.Errorf("増援のターン = %v、総数 = %d", turns, len(m.Slots)+len(m.Enemies)+len(m.Reinforcements))
 		}
 		// 敵の能力のボーナス（E-52 で ch08 の後の名簿に合わせて強くし直した。#102 は 4/2/2/1/1・ボス 12/4/4/3/4）。
@@ -234,6 +234,8 @@ func TestCh09Autoplay(t *testing.T) {
 				pauseIT06(t, "#133")
 			}
 			c := ch09Roster(t, cat, tc.low)
+			// 反復 5 の試遊条件を保つ。
+			c.Roster = append(c.Roster[:5], c.Roster[6:]...)
 			s, ids, err := autoCampaignBattle(c, tc.seed, 6)
 			if err != nil {
 				t.Fatal(err)
@@ -326,15 +328,15 @@ func TestCh09ChapterFlow(t *testing.T) {
 			slots    int
 			boss     string
 		}{
-			{"ch01", "国境の砦", 5, "ハーゲン"},
-			{"ch02", "灰の街道", 6, "ヴォルグ"},
-			{"ch03", "王都の奪還", 5, "グラウス"},
-			{"ch04", "焼け野の村", 6, "オスカー"},
-			{"ch05", "狭間の関所", 5, "ディートリヒ"},
-			{"ch06", "山道の突破", 6, "ロルフ"},
-			{"ch07", "補給の荷駄", 5, "ベルント"},
-			{"ch08", "黒い森", 5, "クラウス"},
-			{"ch09", "ヴァルトの門", 6, "ゲルハルト"},
+			{"ch01", "国境の砦", 6, "ハーゲン"},
+			{"ch02", "灰の街道", 7, "ヴォルグ"},
+			{"ch03", "王都の奪還", 6, "グラウス"},
+			{"ch04", "焼け野の村", 7, "オスカー"},
+			{"ch05", "狭間の関所", 6, "ディートリヒ"},
+			{"ch06", "山道の突破", 7, "ロルフ"},
+			{"ch07", "補給の荷駄", 6, "ベルント"},
+			{"ch08", "黒い森", 6, "クラウス"},
+			{"ch09", "ヴァルトの門", 7, "ゲルハルト"},
 		}
 		chapters := cat.Chapters()
 		if len(chapters) != len(want) {
@@ -394,7 +396,7 @@ func TestCh09ChapterFlow(t *testing.T) {
 			// 挿入した章の勝利・保存を経て ch09 まで進み、報酬と加入の重複なしを確かめる。
 			for i, id := range []string{"ch04", "ch05", "ch06", "ch07", "ch08"} {
 				r, err = c.FinishChapter(winByForce(t, c, uint64(4+i)))
-				if err != nil || r.Chapter != id || r.Cleared || c.Cleared || c.Chapter != 4+i || len(c.Roster) != map[bool]int{true: 8, false: 7}[i >= 3] {
+				if err != nil || r.Chapter != id || r.Cleared || c.Cleared || c.Chapter != 4+i || len(c.Roster) != map[bool]int{true: 9, false: 8}[i >= 3] {
 					t.Fatalf("%s の勝利後 = %+v, %v", id, r, err)
 				}
 				if !reflect.DeepEqual(c.Stock, []defs.ItemCount{{Item: "potion", Count: 6 + 2*i}}) {
@@ -452,7 +454,7 @@ func TestNineChapterRun(t *testing.T) {
 						t.Fatalf("%s の物語 %q がない", id, sid)
 					}
 				}
-				if want := []int{5, 6, 6, 7, 7, 7, 7, 8, 8}[i]; len(c.Roster) != want {
+				if want := []int{5, 7, 7, 8, 8, 8, 8, 9, 9}[i]; len(c.Roster) != want {
 					t.Fatalf("%s の名簿 %d 人", id, len(c.Roster))
 				}
 				r, err := c.FinishChapter(winByForce(t, c, uint64(11+i)))

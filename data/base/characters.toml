@@ -82,3 +82,12 @@ bonus = { hp = 4, str = 0, skl = 2, spd = 1, def = 4, mov = 0, mag = 3, res = 2 
 level = 7
 growth = { hp = 60, str = 0, skl = 40, spd = 35, def = 50, lck = 45, mag = 40, res = 50 }
 weapon = "heal_staff"
+
+# 王都の工房の錬金術士（DES-CMP-11）。2 章の始めに加わる。
+[[characters]]
+id = "noel"
+name = "ノエル"
+class = "alchemist"
+level = 2
+growth = { hp = 50, str = 10, skl = 45, spd = 40, def = 15, lck = 30, mag = 45, res = 35 }
+weapons = ["fire", "heal_staff"]

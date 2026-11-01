@@ -45,6 +45,12 @@ func unitTile(u tactics.Unit) assets.Tile {
 	if u.ClassName == cavalierClassName {
 		return assets.Cavalier
 	}
+	if u.ClassName == "錬金術師" {
+		return assets.Alchemist
+	}
+	if u.ClassName == "魔道士" {
+		return assets.Mage
+	}
 	// 絵は武器の列の先頭（初めの装備）の種類で選び、持ち替えでは変えない（DES-ITM-02）。
 	var first tactics.WeaponType
 	if len(u.Weapons) > 0 {
@@ -90,6 +96,8 @@ func weaponTile(t tactics.WeaponType) (assets.Tile, bool) {
 		return assets.WeaponStaff, true
 	case tactics.Bow:
 		return assets.WeaponBow, true
+	case tactics.Magic:
+		return assets.WeaponMagic, true
 	}
 	return assets.Tile{}, false
 }

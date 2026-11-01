@@ -21,8 +21,8 @@ func TestCh07To08Maps(t *testing.T) {
 		boss                                 string
 		bossAt                               defs.Slot
 	}{
-		{"ch07", 16, 5, 10, 4, "ベルント", defs.Slot{X: 11, Y: 1}},
-		{"ch08", 24, 5, 16, 6, "クラウス", defs.Slot{X: 12, Y: 1}},
+		{"ch07", 16, 6, 10, 4, "ベルント", defs.Slot{X: 11, Y: 1}},
+		{"ch08", 24, 6, 16, 6, "クラウス", defs.Slot{X: 12, Y: 1}},
 	} {
 		t.Run("TC-FR-MAP-04-05 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
@@ -259,7 +259,7 @@ func checkCh07To08Definition(t *testing.T, m defs.MapDef) {
 				".F...........F..",
 				"................",
 			},
-			slots:          []defs.Slot{{X: 7, Y: 13}, {X: 8, Y: 13}, {X: 6, Y: 14}, {X: 7, Y: 14}, {X: 8, Y: 14}},
+			slots:          []defs.Slot{{X: 7, Y: 13}, {X: 8, Y: 13}, {X: 6, Y: 14}, {X: 7, Y: 14}, {X: 8, Y: 14}, {X: 6, Y: 15}},
 			enemies:        "cavalier:14,12:charge myrmidon:7,9:hold archer:5,7:hold myrmidon:8,6:hold archer:10,6:hold armor:8,3:hold fighter:14,8:hold soldier:13,4:hold archer:6,1:hold soldier:11,1:hold",
 			reinforcements: []reinforcement{{3, "cavalier", 0, 13}, {3, "fighter", 15, 15}, {5, "soldier", 15, 3}, {6, "myrmidon", 4, 0}},
 			bonus:          defs.Stats{HP: 5, Str: 3, Skl: 2, Spd: 2, Def: 2},
@@ -292,7 +292,7 @@ func checkCh07To08Definition(t *testing.T, m defs.MapDef) {
 				".....FF..........FF.....",
 				"^^^^................^^^^",
 			},
-			slots:          []defs.Slot{{X: 11, Y: 20}, {X: 12, Y: 20}, {X: 10, Y: 21}, {X: 11, Y: 21}, {X: 12, Y: 21}},
+			slots:          []defs.Slot{{X: 11, Y: 20}, {X: 12, Y: 20}, {X: 10, Y: 21}, {X: 11, Y: 21}, {X: 12, Y: 21}, {X: 10, Y: 20}},
 			enemies:        "myrmidon:10,11:charge fighter:13,10:charge cavalier:12,7:charge myrmidon:3,14:charge armor:5,11:hold archer:3,10:hold soldier:6,9:hold fighter:18,11:hold archer:20,12:hold myrmidon:17,9:hold archer:12,8:hold soldier:11,6:hold cavalier:8,3:hold armor:14,2:hold archer:15,1:hold myrmidon:12,1:hold",
 			reinforcements: []reinforcement{{4, "fighter", 0, 7}, {4, "soldier", 0, 8}, {5, "cavalier", 23, 7}, {5, "cavalier", 23, 8}, {7, "myrmidon", 5, 23}, {7, "myrmidon", 18, 23}},
 			bonus:          defs.Stats{HP: 5, Str: 3, Skl: 3, Spd: 2, Def: 3},

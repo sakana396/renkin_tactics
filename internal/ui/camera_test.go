@@ -294,7 +294,7 @@ func TestCameraDeploy(t *testing.T) {
 	t.Run("TC-FR-MAP-06-03 / TC-FR-CMP-11-05 / TC-FR-CMP-11-06 / TC-FR-CMP-11-10 配置の四隅と主人公と初期化", func(t *testing.T) {
 		cat := defs.NewCatalog(defs.GameDef{Party: []string{"hero", "friend"}},
 			[]defs.TerrainDef{{ID: "p", Name: "平地", Symbol: ".", Cost: 1}},
-			[]defs.ClassDef{{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 20, Mov: 3}}},
+			[]defs.ClassDef{{ID: "lord", Name: "ロード", WeaponTypes: []string{"sword"}, Base: defs.Stats{HP: 20, Mov: 3}}},
 			[]defs.WeaponDef{{ID: "s", Name: "剣", Type: "sword", MinRange: 1, MaxRange: 1}}, nil, nil,
 			[]defs.CharacterDef{{ID: "hero", Name: "主人公", Class: "lord", Weapons: []string{"s"}, Lord: true, Level: 1}, {ID: "friend", Name: "仲間", Class: "lord", Weapons: []string{"s"}, Level: 1}},
 			[]defs.MapDef{{ID: "m", Rows: func() []string {

@@ -34,14 +34,14 @@ func TestBaseData(t *testing.T) {
 			t.Errorf("地形 = %+v", got)
 		}
 		classes := []defs.ClassDef{
-			{ID: "lord", Name: "ロード", WeaponType: "sword", Base: defs.Stats{HP: 18, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
-			{ID: "armor", Name: "アーマー", WeaponType: "lance", Tags: []string{"armor"}, Base: defs.Stats{HP: 22, Str: 6, Skl: 3, Spd: 2, Def: 9, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
-			{ID: "fighter", Name: "ファイター", WeaponType: "axe", Base: defs.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
-			{ID: "archer", Name: "アーチャー", WeaponType: "bow", Base: defs.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}},
-			{ID: "soldier", Name: "ソルジャー", WeaponType: "lance", Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5, Lck: 2, Mag: 0, Res: 1}},
-			{ID: "myrmidon", Name: "剣士", WeaponType: "sword", Base: defs.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5, Lck: 4, Mag: 1, Res: 1}},
-			{ID: "cavalier", Name: "騎兵", WeaponType: "lance", Tags: []string{"mounted"}, Skills: []string{"canto"}, Base: defs.Stats{HP: 20, Str: 6, Skl: 5, Spd: 6, Def: 5, Mov: 7, Lck: 3, Mag: 0, Res: 1}},
-			{ID: "cleric", Name: "僧侶", WeaponType: "staff", Base: defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}},
+			{ID: "lord", Name: "ロード", WeaponTypes: []string{"sword"}, Base: defs.Stats{HP: 18, Str: 5, Skl: 7, Spd: 8, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}},
+			{ID: "armor", Name: "アーマー", WeaponTypes: []string{"lance"}, Tags: []string{"armor"}, Base: defs.Stats{HP: 22, Str: 6, Skl: 3, Spd: 2, Def: 9, Mov: 4, Lck: 2, Mag: 0, Res: 0}},
+			{ID: "fighter", Name: "ファイター", WeaponTypes: []string{"axe"}, Base: defs.Stats{HP: 24, Str: 7, Skl: 4, Spd: 4, Def: 3, Mov: 5, Lck: 2, Mag: 0, Res: 0}},
+			{ID: "archer", Name: "アーチャー", WeaponTypes: []string{"bow"}, Base: defs.Stats{HP: 17, Str: 5, Skl: 7, Spd: 6, Def: 3, Mov: 5, Lck: 4, Mag: 0, Res: 1}},
+			{ID: "soldier", Name: "ソルジャー", WeaponTypes: []string{"lance"}, Base: defs.Stats{HP: 18, Str: 5, Skl: 4, Spd: 4, Def: 4, Mov: 5, Lck: 2, Mag: 0, Res: 1}},
+			{ID: "myrmidon", Name: "剣士", WeaponTypes: []string{"sword"}, Base: defs.Stats{HP: 17, Str: 4, Skl: 8, Spd: 9, Def: 2, Mov: 5, Lck: 4, Mag: 1, Res: 1}},
+			{ID: "cavalier", Name: "騎兵", WeaponTypes: []string{"lance"}, Tags: []string{"mounted"}, Skills: []string{"canto"}, Base: defs.Stats{HP: 20, Str: 6, Skl: 5, Spd: 6, Def: 5, Mov: 7, Lck: 3, Mag: 0, Res: 1}},
+			{ID: "cleric", Name: "僧侶", WeaponTypes: []string{"staff"}, Base: defs.Stats{HP: 16, Skl: 2, Spd: 6, Def: 2, Mov: 5, Lck: 6, Mag: 0, Res: 5}},
 		}
 		for _, want := range classes {
 			if got, ok := cat.Class(want.ID); !ok || !reflect.DeepEqual(got, want) {
@@ -106,7 +106,7 @@ func TestBaseData(t *testing.T) {
 			t.Errorf("マップの名前 = %q", m.Name)
 		}
 		// 出撃の枠は、反復 1 の自軍の配置と同じ座標を同じ順に並べ、5 番目に (2, 15) を足したもの（設計書（反復 2）10.4 節）。
-		slots := []defs.Slot{{X: 1, Y: 14}, {X: 2, Y: 13}, {X: 3, Y: 14}, {X: 1, Y: 15}, {X: 2, Y: 15}}
+		slots := []defs.Slot{{X: 1, Y: 14}, {X: 2, Y: 13}, {X: 3, Y: 14}, {X: 1, Y: 15}, {X: 2, Y: 15}, {X: 3, Y: 15}}
 		if !reflect.DeepEqual(m.Slots, slots) {
 			t.Errorf("出撃の枠 = %+v", m.Slots)
 		}

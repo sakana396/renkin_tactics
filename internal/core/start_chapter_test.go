@@ -35,15 +35,15 @@ func TestNewCampaignAt(t *testing.T) {
 			stock  []defs.ItemCount
 		}{
 			{"本体の最初", base, "ch01", 0, []string{"leon", "gald", "bran", "mira", "rina"}, nil},
-			{"本体の加入章", base, "ch02", 1, []string{"leon", "gald", "bran", "mira", "rina", "elsa"}, []defs.ItemCount{{Item: "potion", Count: 2}}},
-			{"本体の ch03", base, "ch03", 2, []string{"leon", "gald", "bran", "mira", "rina", "elsa"}, []defs.ItemCount{{Item: "potion", Count: 4}}},
-			{"本体の ch04", base, "ch04", 3, []string{"leon", "gald", "bran", "mira", "rina", "elsa", "tio"}, []defs.ItemCount{{Item: "potion", Count: 4}}},
-			{"本体の ch05", base, "ch05", 4, []string{"leon", "gald", "bran", "mira", "rina", "elsa", "tio"}, []defs.ItemCount{{Item: "potion", Count: 6}}},
-			{"本体の ch06", base, "ch06", 5, []string{"leon", "gald", "bran", "mira", "rina", "elsa", "tio"}, []defs.ItemCount{{Item: "potion", Count: 8}}},
-			{"本体の ch07", base, "ch07", 6, []string{"leon", "gald", "bran", "mira", "rina", "elsa", "tio"}, []defs.ItemCount{{Item: "potion", Count: 10}}},
-			{"本体の ch08", base, "ch08", 7, []string{"leon", "gald", "bran", "mira", "rina", "elsa", "tio", "hanna"}, []defs.ItemCount{{Item: "potion", Count: 12}}},
+			{"本体の加入章", base, "ch02", 1, []string{"leon", "gald", "bran", "mira", "rina", "noel", "elsa"}, []defs.ItemCount{{Item: "potion", Count: 2}}},
+			{"本体の ch03", base, "ch03", 2, []string{"leon", "gald", "bran", "mira", "rina", "noel", "elsa"}, []defs.ItemCount{{Item: "potion", Count: 4}}},
+			{"本体の ch04", base, "ch04", 3, []string{"leon", "gald", "bran", "mira", "rina", "noel", "elsa", "tio"}, []defs.ItemCount{{Item: "potion", Count: 4}}},
+			{"本体の ch05", base, "ch05", 4, []string{"leon", "gald", "bran", "mira", "rina", "noel", "elsa", "tio"}, []defs.ItemCount{{Item: "potion", Count: 6}}},
+			{"本体の ch06", base, "ch06", 5, []string{"leon", "gald", "bran", "mira", "rina", "noel", "elsa", "tio"}, []defs.ItemCount{{Item: "potion", Count: 8}}},
+			{"本体の ch07", base, "ch07", 6, []string{"leon", "gald", "bran", "mira", "rina", "noel", "elsa", "tio"}, []defs.ItemCount{{Item: "potion", Count: 10}}},
+			{"本体の ch08", base, "ch08", 7, []string{"leon", "gald", "bran", "mira", "rina", "noel", "elsa", "tio", "hanna"}, []defs.ItemCount{{Item: "potion", Count: 12}}},
 			// 本体の最後の章（#102、#104 で添字 8）。ch03 に報酬はなく、ch01・ch02・ch04〜ch08 の薬は合計 14。加入は ch02 のエルザ・ch04 のティオ・ch08 のハンナ。
-			{"本体の ch09", base, "ch09", 8, []string{"leon", "gald", "bran", "mira", "rina", "elsa", "tio", "hanna"}, []defs.ItemCount{{Item: "potion", Count: 14}}},
+			{"本体の ch09", base, "ch09", 8, []string{"leon", "gald", "bran", "mira", "rina", "noel", "elsa", "tio", "hanna"}, []defs.ItemCount{{Item: "potion", Count: 14}}},
 			{"試験の最初", startChapterCatalog(), "c1", 0, []string{"hero", "past"}, []defs.ItemCount{{Item: "z", Count: 2}}},
 			{"試験の途中", startChapterCatalog(), "c3", 2, []string{"hero", "past", "current"}, []defs.ItemCount{{Item: "a", Count: 3}, {Item: "z", Count: 6}}},
 			{"試験の最後", startChapterCatalog(), "c4", 3, []string{"hero", "past", "current", "future"}, []defs.ItemCount{{Item: "a", Count: 11}, {Item: "z", Count: 6}}},

@@ -41,7 +41,7 @@ func TestDeploy(t *testing.T) {
 					t.Fatal("配置へ入れない", s.Scene())
 				}
 				view := s.View()
-				if view.Deploy == nil || len(view.Deploy.Slots) != 5 || len(view.Deploy.Units) != count+len(s.deployMap().Enemies) || len(view.Deploy.Terrain) != 16 {
+				if view.Deploy == nil || len(view.Deploy.Slots) != 6 || len(view.Deploy.Units) != count+len(s.deployMap().Enemies) || len(view.Deploy.Terrain) != 16 {
 					t.Fatal("マップ・敵・枠がない", view.Deploy)
 				}
 				board, err := s.campaign.DeploymentView(s.deployMembers, s.deploySlots)
@@ -122,7 +122,8 @@ func TestDeploy(t *testing.T) {
 				}
 				clickSceneButton(t, s, "配置へ")
 				// core の開始失敗では、仮配置とキャンペーンを保って理由を表示する。
-				s.deploySlots[0] = 5
+				// ch01 の枠は 6 つ（添字 0〜5）なので、添字 6 は範囲外（DES-IT06 13 章）。
+				s.deploySlots[0] = len(slots)
 				invalid := append([]int(nil), s.deploySlots...)
 				clickSceneButton(t, s, "戦闘開始")
 				if s.Scene() != Deploy || s.message == "" || !reflect.DeepEqual(s.deploySlots, invalid) || !bytes.Equal(campaignBytes(t, s), baseline) {
@@ -188,7 +189,12 @@ func TestDeployLayout(t *testing.T) {
 	t.Run("TC-FR-UNT-09-12 配置の情報・ボタン・案内が画面に収まる", func(t *testing.T) {
 		s := prepareScenes(t)
 		clickSceneButton(t, s, "配置へ")
-		for _, p := range s.View().Deploy.Slots {
+		// ch01 は名簿 5 人・枠 6 つで、6 つ目の枠は空く（DES-IT06 13 章）。味方のいる枠を順に選ぶ。
+		slots := s.View().Deploy.Slots
+		if len(slots) != 6 || len(s.deployMembers) != 5 {
+			t.Fatal("ch01 の枠と出撃の人数", len(slots), len(s.deployMembers))
+		}
+		for _, p := range slots[:len(s.deployMembers)] {
 			clickDeployCell(s, p)
 			s.ToggleDeployDanger()
 			// Q と枠外の理由も、既存の案内・情報・ボタンと重ねない（DES-UI-23）。
