@@ -278,10 +278,11 @@ unit = "road_guard"
 effect = "reinforce"
 [[maps.events.enemies]]
 id = "road_mage"
+# 魔力・速さなどは DES-IT06 7.3 節の Lv4 の参考値（魔力 5.35・速さ 6.2）に寄せ、速さは切り上げる。
 class = "mage"
 weapons = ["fire"]
 level = 4
-bonus = { hp = 2, str = 0, skl = 1, spd = -1, def = 1, mov = 0 }
+bonus = { hp = 2, str = 0, skl = 1, spd = 2, def = 1, lck = 1, mag = 1, res = 1, mov = 0 }
 ai = "charge"
 x = 7
 y = 5
@@ -1188,10 +1189,11 @@ unit = "gate_guard"
 effect = "reinforce"
 [[maps.events.enemies]]
 id = "gate_rear_mage"
+# 魔力・速さなどは DES-IT06 7.3 節の Lv7 の参考値（魔力 6.7・速さ 7.4）に寄せ、速さは切り上げる。
 class = "mage"
 weapons = ["fire"]
 level = 7
-bonus = { hp = 3, str = 0, skl = 2, spd = -1, def = 1, mov = 0 }
+bonus = { hp = 3, str = 0, skl = 3, spd = 3, def = 1, lck = 2, mag = 3, res = 2, mov = 0 }
 ai = "charge"
 x = 12
 y = 12
