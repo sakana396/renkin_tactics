@@ -176,8 +176,13 @@ func (g *Game) leftClick(x, y int) {
 		_, dest, _ := c.Selection()
 		if i := HitMenu(c.Camera().MenuRects(dest, len(labels)), x, y); i >= 0 {
 			c.ClickMenu(i)
+			return
 		}
-		return
+		// 再移動の状態では、「終える」のボタンの外のクリックを盤面のマスの操作にする（青いマスで再移動。DES-IT06 12.3 節、E-98）。
+		// ほかの一覧の状態では、ボタンの外のクリックを受け付けない。
+		if c.State() != Canto {
+			return
+		}
 	}
 	if p, ok := c.Camera().CellAt(x, y); ok {
 		c.Click(p)

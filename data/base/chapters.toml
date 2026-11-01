@@ -17,6 +17,7 @@ map = "ch02"
 before = "ch02_before"
 after = "ch02_after"
 joins = ["noel", "elsa"]
+# DES-MAP-08: 反復 6 の基準の章でも、加入の順と報酬のハンマーを保つ。
 reward = [{ item = "potion", count = 2 }, { weapon = "hammer", count = 1 }]
 
 [[chapters]]
@@ -44,6 +45,7 @@ name = "狭間の関所"
 map = "ch05"
 before = "ch05_before"
 after = "ch05_after"
+# DES-MAP-08: 門と背後の出来事を足しても、報酬の長弓は次章の選択肢に残す。
 reward = [{ item = "potion", count = 2 }, { weapon = "long_bow", count = 1 }]
 
 # DES-CMP-09、DES-MAP-06
