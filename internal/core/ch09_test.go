@@ -348,7 +348,7 @@ func TestCh09ChapterFlow(t *testing.T) {
 				continue
 			}
 			if c.ID >= "ch04" && c.ID <= "ch08" {
-				if c.Before != c.ID+"_before" || c.After != c.ID+"_after" || !reflect.DeepEqual(c.Joins, map[string][]string{"ch04": {"tio"}, "ch08": {"hanna"}}[c.ID]) || !reflect.DeepEqual(c.Reward, []defs.ItemCount{{Item: "potion", Count: 2}}) {
+				if c.Before != c.ID+"_before" || c.After != c.ID+"_after" || !reflect.DeepEqual(c.Joins, map[string][]string{"ch04": {"tio"}, "ch08": {"hanna"}}[c.ID]) || !reflect.DeepEqual(c.Reward, []defs.ItemCount{{Item: "potion", Count: 2}, {Weapon: map[string]string{"ch04": "killing_sword", "ch05": "long_bow", "ch06": "thunder_sword", "ch07": "brave_axe", "ch08": "horse_killer"}[c.ID], Count: 1}}) {
 					t.Errorf("追加章の定義 %+v", c)
 				}
 			}

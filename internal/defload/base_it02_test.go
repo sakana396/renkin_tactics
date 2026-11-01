@@ -188,16 +188,15 @@ func TestBaseDataIt02(t *testing.T) {
 
 	// 反復 5 で章が増えた（DES-IT05 3.3 節）。ここでは先頭の 3 章を確かめ、章の数と並びは TC-FR-CMP-01-05 で確かめる（8.3 節）。
 	t.Run("TC-FR-CMP-01-01 先頭の 3 章の順・名前・マップ・出撃の枠の数・報酬・ボスが 10.4 節のとおり", func(t *testing.T) {
-		potion2 := []defs.ItemCount{{Item: "potion", Count: 2}}
 		want := []struct {
 			id, name, mapID string
 			slots           int
 			reward          []defs.ItemCount
 			boss            string
 		}{
-			{"ch01", "国境の砦", "ch01", 5, potion2, "ハーゲン"},
-			{"ch02", "灰の街道", "ch02", 6, potion2, "ヴォルグ"},
-			{"ch03", "王都の奪還", "ch03", 5, nil, "グラウス"},
+			{"ch01", "国境の砦", "ch01", 5, []defs.ItemCount{{Item: "potion", Count: 2}, {Weapon: "armor_killer", Count: 1}}, "ハーゲン"},
+			{"ch02", "灰の街道", "ch02", 6, []defs.ItemCount{{Item: "potion", Count: 2}, {Weapon: "hammer", Count: 1}}, "ヴォルグ"},
+			{"ch03", "王都の奪還", "ch03", 5, []defs.ItemCount{{Weapon: "horse_killer", Count: 1}}, "グラウス"},
 		}
 		chapters := cat.Chapters()
 		if len(chapters) < len(want) {
@@ -349,6 +348,7 @@ func TestLoadDefaults(t *testing.T) {
 			replace("characters.toml", "growth = { hp = 55, str = 40, skl = 60, spd = 45, def = 20, lck = 35, mag = 5, res = 15 }", "growth = { hp = 50 }"),
 			replace("characters.toml", "growth = { hp = 70, str = 75, skl = 35, spd = 30, def = 15, lck = 25, mag = 0, res = 10 }\n", ""),
 			replace("chapters.toml", `before = "ch03_before"`+"\n", ""),
+			replace("chapters.toml", `reward = [{ weapon = "horse_killer", count = 1 }]`+"\n", ""),
 		} {
 			e(t, m)
 		}

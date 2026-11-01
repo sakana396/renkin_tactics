@@ -212,7 +212,7 @@ func TestCh07To08Autoplay(t *testing.T) {
 			if err != nil || res.Chapter != tc.id || res.Cleared || c.Cleared || cat.Chapters()[c.Chapter].ID != next {
 				t.Fatalf("勝利の反映 %+v: %v", res, err)
 			}
-			if !reflect.DeepEqual(res.Reward, []defs.ItemCount{{Item: "potion", Count: 2}}) || len(before) != 1 || !reflect.DeepEqual(c.Stock, []defs.ItemCount{{Item: "potion", Count: before[0].Count + 2}}) {
+			if !reflect.DeepEqual(res.Reward, []defs.ItemCount{{Item: "potion", Count: 2}, {Weapon: map[string]string{"ch07": "brave_axe", "ch08": "horse_killer"}[tc.id], Count: 1}}) || len(c.StockWeapons) == 0 || len(before) != 1 || !reflect.DeepEqual(c.Stock, []defs.ItemCount{{Item: "potion", Count: before[0].Count + 2}}) {
 				t.Fatalf("報酬 %+v 在庫 %v", res.Reward, c.Stock)
 			}
 		})

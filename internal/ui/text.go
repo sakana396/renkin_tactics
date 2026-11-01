@@ -54,7 +54,18 @@ func weaponDetail(w tactics.Weapon) string {
 	}
 	eff := "なし"
 	if len(w.EffectiveTags) > 0 {
-		eff = strings.Join(w.EffectiveTags, "・")
+		var names []string
+		for _, tag := range w.EffectiveTags {
+			switch tag {
+			case "armor":
+				names = append(names, "鎧")
+			case "mounted":
+				names = append(names, "騎馬")
+			default:
+				names = append(names, tag)
+			}
+		}
+		eff = strings.Join(names, "・")
 	}
 	return fmt.Sprintf("%s　%s　威力 %d　命中 %d　必殺 %d　重さ %d　射程 %s　特効 %s", w.Name, kind, w.Might, w.Hit, w.Crit, w.Weight, rangeText(w), eff)
 }

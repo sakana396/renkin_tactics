@@ -8,7 +8,7 @@ name = "国境の砦"
 map = "ch01"
 before = "ch01_before"
 after = "ch01_after"
-reward = [{ item = "potion", count = 2 }]
+reward = [{ item = "potion", count = 2 }, { weapon = "armor_killer", count = 1 }]
 
 [[chapters]]
 id = "ch02"
@@ -17,7 +17,7 @@ map = "ch02"
 before = "ch02_before"
 after = "ch02_after"
 joins = ["elsa"]
-reward = [{ item = "potion", count = 2 }]
+reward = [{ item = "potion", count = 2 }, { weapon = "hammer", count = 1 }]
 
 [[chapters]]
 id = "ch03"
@@ -25,6 +25,7 @@ name = "王都の奪還"
 map = "ch03"
 before = "ch03_before"
 after = "ch03_after"
+reward = [{ weapon = "horse_killer", count = 1 }]
 
 # DES-CMP-09、DES-MAP-06
 [[chapters]]
@@ -34,7 +35,7 @@ name = "焼け野の村"
 map = "ch04"
 before = "ch04_before"
 after = "ch04_after"
-reward = [{ item = "potion", count = 2 }]
+reward = [{ item = "potion", count = 2 }, { weapon = "killing_sword", count = 1 }]
 
 # DES-CMP-09、DES-MAP-06
 [[chapters]]
@@ -43,7 +44,7 @@ name = "狭間の関所"
 map = "ch05"
 before = "ch05_before"
 after = "ch05_after"
-reward = [{ item = "potion", count = 2 }]
+reward = [{ item = "potion", count = 2 }, { weapon = "long_bow", count = 1 }]
 
 # DES-CMP-09、DES-MAP-06
 [[chapters]]
@@ -52,7 +53,7 @@ name = "山道の突破"
 map = "ch06"
 before = "ch06_before"
 after = "ch06_after"
-reward = [{ item = "potion", count = 2 }]
+reward = [{ item = "potion", count = 2 }, { weapon = "thunder_sword", count = 1 }]
 
 # DES-CMP-09、DES-MAP-06
 [[chapters]]
@@ -61,7 +62,7 @@ name = "補給の荷駄"
 map = "ch07"
 before = "ch07_before"
 after = "ch07_after"
-reward = [{ item = "potion", count = 2 }]
+reward = [{ item = "potion", count = 2 }, { weapon = "brave_axe", count = 1 }]
 
 # DES-CMP-09、DES-MAP-06
 [[chapters]]
@@ -71,7 +72,7 @@ name = "黒い森"
 map = "ch08"
 before = "ch08_before"
 after = "ch08_after"
-reward = [{ item = "potion", count = 2 }]
+reward = [{ item = "potion", count = 2 }, { weapon = "horse_killer", count = 1 }]
 
 # 9 章（DES-IT05 3.3 節、DES-CMP-09）。最後の章で、勝つとクリア
 [[chapters]]

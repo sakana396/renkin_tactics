@@ -11,6 +11,7 @@ base = { hp = 18, str = 5, skl = 7, spd = 8, def = 4, mov = 5, lck = 6, mag = 2,
 [[classes]]
 id = "armor"
 name = "アーマー"
+tags = ["armor"]
 weapon_type = "lance"
 base = { hp = 22, str = 6, skl = 3, spd = 2, def = 9, mov = 4, lck = 2, mag = 0, res = 0 }
 
@@ -42,6 +43,7 @@ base = { hp = 17, str = 4, skl = 8, spd = 9, def = 2, mov = 5, lck = 4, mag = 1,
 [[classes]]
 id = "cavalier"
 name = "騎兵"
+tags = ["mounted"]
 weapon_type = "lance"
 skills = ["canto"]
 base = { hp = 20, str = 6, skl = 5, spd = 6, def = 5, mov = 7, lck = 3, mag = 0, res = 1 }

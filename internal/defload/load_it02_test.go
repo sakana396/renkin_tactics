@@ -42,7 +42,7 @@ func TestLoadIt02(t *testing.T) {
 				replace("chapters.toml", `before = "ch01_before"`, `before = "ch01_intro"`),
 				replace("chapters.toml", `after = "ch02_after"`, `after = "ch02_end"`),
 				replace("chapters.toml", `joins = ["elsa"]`, `joins = ["nobody"]`),
-				replace("chapters.toml", `reward = [{ item = "potion", count = 2 }]`, `reward = [{ item = "elixir", count = 2 }]`),
+				replace("chapters.toml", `reward = [{ item = "potion", count = 2 }, { weapon = "armor_killer", count = 1 }]`, `reward = [{ item = "elixir", count = 2 }]`),
 				appendTo("game.toml", `stock = [{ item = "elixir", count = 1 }]`),
 			},
 			[]string{
@@ -56,7 +56,7 @@ func TestLoadIt02(t *testing.T) {
 			[]edit{
 				replace("chapters.toml", `before = "ch01_before"`+"\n", ``),
 				replace("chapters.toml", `after = "ch01_after"`, `after = ""`),
-				replace("chapters.toml", `reward = [{ item = "potion", count = 2 }]`, ``),
+				replace("chapters.toml", `reward = [{ item = "potion", count = 2 }, { weapon = "armor_killer", count = 1 }]`, ``),
 				appendTo("game.toml", `stock = [{ item = "potion", count = 1 }]`),
 			},
 			nil},
@@ -143,7 +143,7 @@ func TestLoadIt02(t *testing.T) {
 			[]edit{
 				replace("characters.toml", `items = [{ item = "potion", count = 2 }]`, `items = [{ item = "potion", count = 3 }, { item = "potion", count = 3 }]`),
 				appendTo("game.toml", `stock = [{ item = "potion", count = 0 }]`),
-				replace("chapters.toml", `reward = [{ item = "potion", count = 2 }]`, `reward = [{ item = "potion", count = 2 }, { item = "potion", count = 1 }]`),
+				replace("chapters.toml", `reward = [{ item = "potion", count = 2 }, { weapon = "armor_killer", count = 1 }]`, `reward = [{ item = "potion", count = 2 }, { item = "potion", count = 1 }]`),
 			},
 			[]string{
 				"characters.toml: characters[0].items: 手持ちの数の合計 6 は 5 以下にしてください",
@@ -198,7 +198,7 @@ func TestLoadIt02(t *testing.T) {
 			[]edit{
 				appendTo("game.toml", `start_map = "ch01"`),
 				replace("maps.toml", "slots = [\n  { x = 1, y = 14 },", "allies = [{ character = \"leon\", x = 1, y = 14 }]\nslots = [\n  { x = 1, y = 14 },"),
-				replace("chapters.toml", `reward = [{ item = "potion", count = 2 }]`, `rewards = [{ item = "potion", count = 2 }]`),
+				replace("chapters.toml", `reward = [{ item = "potion", count = 2 }, { weapon = "armor_killer", count = 1 }]`, `rewards = [{ item = "potion", count = 2 }]`),
 				replace("story.toml", "id = \"ch01_before\"\nparagraphs", "id = \"ch01_before\"\nparagraph = \"\"\nparagraphs"),
 				replace("characters.toml", "spd = 70, def = 20, lck = 40, mag = 20, res = 20 }", "spd = 70, def = 20, mov = 10 }"),
 			},
