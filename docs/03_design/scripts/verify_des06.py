@@ -179,11 +179,16 @@ design_text=(ROOT/'docs/03_design/design-it06.md').read_text()
 def table_row(key):
     line=next(x for x in design_text.splitlines() if x.startswith('| '+key+' |'))
     return [x.strip() for x in line.strip('|').split('|')]
+def first_row(*keys):
+    # 新しい兵種・仲間の行は「alchemist（新）」「ノエル（錬金術師）」の形で書かれている（3.2・3.3 節）。
+    for key in keys:
+        if any(x.startswith('| '+key+' |') for x in design_text.splitlines()): return table_row(key)
+    return table_row(keys[0])
 for cid,c in classes.items():
-    row=table_row(cid)
+    row=first_row(cid,cid+'（新）')
     eq(cid+' full base table',row[1],'/'.join(str(c['base'][k]) for k in ['hp','str','skl','spd','def','mov']))
 for ch in chars.values():
-    row=table_row(ch['name']); base=classes[ch['class']]['base']; bonus=ch.get('bonus',{})
+    row=first_row(ch['name']+'（'+classes[ch['class']]['name']+'）',ch['name']); base=classes[ch['class']]['base']; bonus=ch.get('bonus',{})
     eq(ch['id']+' full stats table',row[2],'/'.join(str(base[k]+bonus.get(k,0)) for k in ['hp','str','skl','spd','def','mov']))
     eq(ch['id']+' full growth table',row[4],'/'.join(str(ch['growth'][k]) for k in ['hp','str','skl','spd','def']))
 for ident in ['iron_sword','iron_lance','iron_axe','iron_bow','armor_killer','hammer','horse_killer','killing_sword','brave_axe','long_bow','thunder_sword','fire','heal_staff']:
@@ -231,13 +236,15 @@ chapters_data=read_toml('chapters.toml')['chapters']
 party=read_toml('game.toml')['party']
 roster=list(party); max_live_enemies=39
 for ch in chapters_data:
-    # data にはまだノエルがいないので、ch02 の joins は設計どおり ["noel", "elsa"] として数える。
-    joins=['noel','elsa'] if ch['id']=='ch02' else ch.get('joins',[])
+    # #125 で data の ch02 の joins は設計どおり ["noel", "elsa"] になった。
+    joins=ch.get('joins',[])
+    if ch['id']=='ch02': eq('ch02 joins in data',joins,['noel','elsa'])
     roster+=[j for j in joins if j not in roster]
     row=next([x.strip() for x in line.strip('|').split('|')] for line in design_text.splitlines() if line.startswith('| '+ch['id']+' | ') and len(line.split('|'))==7)
     m=maps[ch['map']]; enemies=len(m['enemies'])+len(m.get('reinforcements',[]))
-    eq(ch['id']+' slots now',int(row[1]),len(m['slots']))
-    eq(ch['id']+' slots +1',int(row[2]),len(m['slots'])+1)
+    # #125 で data の枠は新しい出撃枠（今 + 1）になった。
+    eq(ch['id']+' slots in data = new',int(row[2]),len(m['slots']))
+    eq(ch['id']+' slots +1',int(row[2]),int(row[1])+1)
     eq(ch['id']+' enemies now',int(row[4]),enemies)
     eq(ch['id']+' roster size',int(row[3]),len(roster))
     if ch['id'] in ('ch01','ch02'): eq(ch['id']+' everyone deploys',len(roster)<=int(row[2]),True)

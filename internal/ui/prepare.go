@@ -74,6 +74,20 @@ func (s *SceneController) toggleDeployment(i int) {
 // prepareStockRows は準備の在庫の列に一度に出すボタンの数。超える分は「▲」「▼」で送る（DES-IT06 12.1 節）。
 const prepareStockRows = 5
 
+// prepareRosterRows は準備の名簿に一度に出す生存者の行の数（DES-IT06 12.1 節）。
+const prepareRosterRows = 8
+
+// livingMembers は名簿のうち生きている仲間の添字を名簿の順に返す。名簿の送りは戦死者を数えない（DES-IT06 12.1 節）。
+func (s *SceneController) livingMembers() []int {
+	var out []int
+	for i, m := range s.campaign.Roster {
+		if m.Alive {
+			out = append(out, i)
+		}
+	}
+	return out
+}
+
 // prepareButton は準備のボタンと、押したときの操作（DES-UI-13）。
 type prepareButton struct {
 	SceneButton
@@ -141,9 +155,9 @@ func (s *SceneController) prepareButtons(y int) ([]prepareButton, int) {
 			prepareButton{SceneButton{"▼ 次へ", image.Rect(r.Max.X-76, r.Min.Y, r.Max.X, r.Max.Y), end < total}, func() error { s.prepareStockTop++; return nil }})
 		rows = max(rows, prepareStockRows+1)
 	}
-	if len(c.Roster) > 8 {
+	if living := len(s.livingMembers()); living > prepareRosterRows {
 		bs = append(bs, prepareButton{SceneButton{"▲ 名簿", image.Rect(352, 44, 424, 68), s.prepareRosterTop > 0}, func() error { s.prepareRosterTop--; return nil }})
-		bs = append(bs, prepareButton{SceneButton{"▼ 名簿", image.Rect(432, 44, 504, 68), s.prepareRosterTop < len(c.Roster)-8}, func() error { s.prepareRosterTop++; return nil }})
+		bs = append(bs, prepareButton{SceneButton{"▼ 名簿", image.Rect(432, 44, 504, 68), s.prepareRosterTop < living-prepareRosterRows}, func() error { s.prepareRosterTop++; return nil }})
 	}
 	return bs, rows
 }
@@ -180,10 +194,9 @@ func (s *SceneController) prepareView() SceneView {
 	ch := s.cfg.Catalog.Chapters()[s.campaign.Chapter]
 	v.Texts = append(v.Texts, SceneText{Text: fmt.Sprintf("第 %d 章　%s　出撃 %d/%d", s.campaign.Chapter+1, ch.Name, len(s.SelectedMembers()), s.prepareSlots()), X: 16, Y: 24, Style: StyleTitle})
 	y := 72
-	for i, m := range s.campaign.Roster {
-		if i < s.prepareRosterTop || i >= s.prepareRosterTop+8 || !m.Alive {
-			continue
-		}
+	living := s.livingMembers()
+	for _, i := range living[min(s.prepareRosterTop, len(living)):min(s.prepareRosterTop+prepareRosterRows, len(living))] {
+		m := s.campaign.Roster[i]
 		u := s.prepareUnit(i)
 		mark := "[ ]"
 		if s.deployment[i] {

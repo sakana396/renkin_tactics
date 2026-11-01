@@ -81,5 +81,31 @@ func TestNoelScenesIT06(t *testing.T) {
 		if s.prepareMember != 8 {
 			t.Fatal(s.prepareMember)
 		}
+		// 名簿の行・印と、名簿や品のボタン・見出しは重ならない（DES-IT06 12.1 節）。
+		for _, r := range v.Rows {
+			for _, b := range v.Buttons {
+				if r.Rect.Overlaps(b.Rect) || r.Mark.Overlaps(b.Rect) {
+					t.Fatal("名簿とボタンが重なる", r, b)
+				}
+			}
+		}
+		title := v.Texts[0]
+		for _, b := range v.Buttons {
+			if image.Rect(title.X, title.Y, title.X+textWidth(title.Text), title.Y+lineHeight).Overlaps(b.Rect) {
+				t.Fatal("見出しとボタンが重なる", b)
+			}
+		}
+		// 戦死者は送りに数えない。生存者が 8 人なら送りのボタンを出さず、8 人とも表示する。
+		s.campaign.Roster[3].Alive = false
+		s.enterPrepare()
+		v = s.View()
+		if len(v.Rows) != 8 || v.Rows[3].Member != 4 || v.Rows[7].Member != 8 {
+			t.Fatal(v.Rows)
+		}
+		for _, b := range v.Buttons {
+			if strings.HasSuffix(b.Label, "名簿") {
+				t.Fatal("生存者 8 人で送りのボタンがある", b)
+			}
+		}
 	})
 }
