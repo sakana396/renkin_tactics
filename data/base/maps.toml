@@ -665,7 +665,7 @@ ai = "charge"
 x = 15
 y = 11
 
-# 9 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it05/map-ch09.md）。
+# 9 章（DES-MAP-08。反復 6 の制作記録は docs/iterations/it06/map-ch09.md）。初期敵 26＋ターン増援 8。
 # 敵のボーナスは、ボスを除き 6/3/3/2/3（増援も同じ）。ボスは 14/5/5/4/6。#104 で ch08 の後の名簿に合わせて強くし直した（E-52。#102 は 4/2/2/1/1・ボス 12/4/4/3/4）
 [[maps]]
 id = "ch09"
@@ -704,7 +704,7 @@ rows = [
   "................................", # y 30
   "^^^^......................^^^^^^", # y 31
 ]
-# 出撃の枠（6 つ）。南の出発地
+# 出撃の枠（7 つ）。南の出発地
 slots = [
   { x = 15, y = 29 },
   { x = 16, y = 29 },
@@ -717,6 +717,7 @@ slots = [
 
 # 本営の玉座の手前の守り（内の門の内側）
 [[maps.enemies]]
+id = "inner_gate_armor"
 class = "armor"
 weapon = "iron_lance"
 level = 9
@@ -865,6 +866,7 @@ y = 19
 
 # 西の道: 南の入口
 [[maps.enemies]]
+id = "west_entrance_soldier"
 class = "soldier"
 weapon = "iron_lance"
 level = 12
@@ -885,6 +887,7 @@ y = 12
 
 # 東の道: 突っ込んでくる騎兵
 [[maps.enemies]]
+id = "east_vanguard_cavalier"
 class = "cavalier"
 weapon = "iron_lance"
 level = 10
@@ -1057,6 +1060,159 @@ ai = "charge"
 x = 20
 y = 2
 
+
+# DES-MAP-08: gate_west_alarm。倒された分を出来事の増援で補う。
+[[maps.events]]
+id = "gate_west_alarm"
+trigger = "enemy_defeated"
+unit = "west_entrance_soldier"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "gate_west_cavalier_1"
+group = "gate_west_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 2
+y = 20
+[[maps.events.enemies]]
+id = "gate_west_cavalier_2"
+group = "gate_west_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 3
+y = 20
+[[maps.events.enemies]]
+id = "gate_west_fighter"
+group = "gate_west_reserve"
+approach = "group"
+class = "fighter"
+weapons = ["iron_axe"]
+level = 12
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 2
+y = 18
+
+# DES-MAP-08: gate_east_alarm。倒された分を出来事の増援で補う。
+[[maps.events]]
+id = "gate_east_alarm"
+trigger = "enemy_defeated"
+unit = "east_vanguard_cavalier"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "gate_east_cavalier_1"
+group = "gate_east_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 29
+y = 20
+[[maps.events.enemies]]
+id = "gate_east_cavalier_2"
+group = "gate_east_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 30
+y = 20
+[[maps.events.enemies]]
+id = "gate_east_archer"
+group = "gate_east_reserve"
+approach = "group"
+class = "archer"
+weapons = ["iron_bow"]
+level = 12
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 29
+y = 18
+
+# DES-MAP-08: gate_inner_alarm。倒された分を出来事の増援で補う。
+[[maps.events]]
+id = "gate_inner_alarm"
+trigger = "enemy_defeated"
+unit = "inner_gate_armor"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "gate_inner_armor"
+group = "gate_inner_reserve"
+approach = "group"
+class = "armor"
+weapons = ["iron_lance"]
+level = 12
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 16
+y = 3
+[[maps.events.enemies]]
+id = "gate_inner_cavalier_1"
+group = "gate_inner_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 12
+y = 4
+[[maps.events.enemies]]
+id = "gate_inner_cavalier_2"
+group = "gate_inner_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 12
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 19
+y = 4
+[[maps.events.enemies]]
+id = "gate_inner_fighter"
+group = "gate_inner_reserve"
+approach = "group"
+class = "fighter"
+weapons = ["iron_axe"]
+level = 11
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 14
+y = 3
+[[maps.events.enemies]]
+id = "gate_inner_archer"
+group = "gate_inner_reserve"
+approach = "group"
+class = "archer"
+weapons = ["iron_bow"]
+level = 12
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 18
+y = 3
+[[maps.events.enemies]]
+id = "gate_inner_soldier"
+group = "gate_inner_reserve"
+approach = "group"
+class = "soldier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 15
+y = 4
 # ch04〜ch06（DES-MAP-06、DES-CMP-09）。制作記録は docs/iterations/it05/map-ch04.md〜map-ch06.md
 
 [[maps]]
@@ -1968,7 +2124,7 @@ ai = "charge"
 x = 4
 y = 0
 
-# 8 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it05/map-ch08.md）。24×24・出撃 5・敵 16＋6。
+# 8 章（DES-MAP-08。反復 6 の制作記録は docs/iterations/it06/map-ch08.md）。24×24・出撃 6・初期敵 16＋ターン増援 6。
 # 敵のボーナスは、ボスを除き 5/3/3/2/3（増援も同じ）。ボスは 12/5/5/3/5
 [[maps]]
 id = "ch08"
@@ -2030,6 +2186,7 @@ y = 10
 
 # 森の道を突っ込んでくる
 [[maps.enemies]]
+id = "forest_road_cavalier"
 class = "cavalier"
 weapon = "iron_lance"
 level = 10
@@ -2140,6 +2297,7 @@ y = 3
 
 # 北の陣
 [[maps.enemies]]
+id = "forest_north_armor"
 class = "armor"
 weapon = "iron_lance"
 level = 9
@@ -2235,3 +2393,94 @@ bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 18
 y = 23
+
+# DES-MAP-08: forest_road_alarm。倒された分を出来事の増援で補う。
+[[maps.events]]
+id = "forest_road_alarm"
+trigger = "enemy_defeated"
+unit = "forest_road_cavalier"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "forest_road_cavalier_1"
+group = "forest_road_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 11
+y = 17
+[[maps.events.enemies]]
+id = "forest_road_cavalier_2"
+group = "forest_road_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 12
+y = 17
+[[maps.events.enemies]]
+id = "forest_road_soldier"
+group = "forest_road_reserve"
+approach = "group"
+class = "soldier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 13
+y = 17
+
+# DES-MAP-08: forest_north_alarm。倒された分を出来事の増援で補う。
+[[maps.events]]
+id = "forest_north_alarm"
+trigger = "enemy_defeated"
+unit = "forest_north_armor"
+effect = "reinforce"
+[[maps.events.enemies]]
+id = "forest_north_cavalier_1"
+group = "forest_north_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 8
+y = 2
+[[maps.events.enemies]]
+id = "forest_north_cavalier_2"
+group = "forest_north_reserve"
+approach = "group"
+class = "cavalier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 16
+y = 2
+[[maps.events.enemies]]
+id = "forest_north_fighter"
+group = "forest_north_reserve"
+approach = "group"
+class = "fighter"
+weapons = ["iron_axe"]
+level = 11
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 11
+y = 3
+[[maps.events.enemies]]
+id = "forest_north_archer"
+group = "forest_north_reserve"
+approach = "group"
+class = "archer"
+weapons = ["iron_bow"]
+level = 10
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "charge"
+x = 15
+y = 3
