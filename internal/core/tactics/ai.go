@@ -68,18 +68,19 @@ func (b *Battle) actEnemy(events []Event, unit int) []Event {
 		goal, planned := b.groupPlan[unit]
 		if !planned {
 			danger := b.groupDanger[unit]
+			if len(danger) == 0 {
+				if to, ok := b.approach(unit, reach); ok {
+					return b.moveEnemy(events, unit, to)
+				}
+				return events
+			}
 			if !danger[b.units[unit].Pos] {
 				return events
 			}
-			safe := false
 			for p := range reach {
 				if !danger[p] {
-					safe = true
-					break
+					return events
 				}
-			}
-			if safe {
-				return events
 			}
 		}
 		if planned {

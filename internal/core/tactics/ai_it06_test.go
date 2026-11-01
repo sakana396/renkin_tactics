@@ -52,7 +52,7 @@ func TestEnemyGroupIt06(t *testing.T) {
 			})
 		}
 	})
-	t.Run("TC-FR-BTL-07-21 集合した次の番に入る", func(t *testing.T) {
+	t.Run("TC-FR-BTL-07-21 隣の集合先で後衛が前をふさぐ", func(t *testing.T) {
 		p := lord(1, 1, 1)
 		p.Stats.Str = 20
 		front := enemy("前衛", 3, 1, 2)
@@ -67,7 +67,7 @@ func TestEnemyGroupIt06(t *testing.T) {
 				t.Fatalf("そろう前に入った: %v", kinds(first))
 			}
 		}
-		if b.Units()[1].Pos != pos(4, 1) || b.Units()[2].Pos != pos(5, 1) {
+		if b.Units()[1].Pos != pos(4, 1) || b.Units()[2].Pos != pos(3, 1) {
 			t.Fatalf("集まる先 = %v / %v", b.Units()[1].Pos, b.Units()[2].Pos)
 		}
 		second := mustEndPhase(t, b)
@@ -77,8 +77,8 @@ func TestEnemyGroupIt06(t *testing.T) {
 				entered = true
 			}
 		}
-		if !entered {
-			t.Fatalf("そろった次の番に入らなかった: %v", kinds(second))
+		if entered {
+			t.Fatalf("後衛が前をふさいだまま攻撃した: %v", kinds(second))
 		}
 	})
 	t.Run("TC-FR-BTL-07-21 戦死と未出現の仲間を待たない", func(t *testing.T) {

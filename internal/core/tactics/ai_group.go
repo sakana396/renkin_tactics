@@ -39,6 +39,12 @@ func (b *Battle) planEnemyGroups(count int) {
 	sort.Slice(keys, func(i, j int) bool { return groups[keys[i]][0] < groups[keys[j]][0] })
 	threats := b.playerThreats(playerReach)
 	assigned := make(map[Pos]bool)
+	// 先に全一団の生存者の集合先を予約する。処理順が後の一団も例外にしない。
+	for i, goal := range b.groupPlan {
+		if i < len(b.units) && b.units[i].Alive {
+			assigned[goal] = true
+		}
+	}
 	for _, key := range keys {
 		members := groups[key]
 		active := b.mapState.charged[b.units[members[0]].Group]
@@ -66,97 +72,57 @@ func (b *Battle) planEnemyGroups(count int) {
 		for _, i := range members {
 			b.groupDanger[i] = b.dangerFor(i, playerReach, threats)
 		}
-		if planned {
-			allReady := true
-			for _, i := range members {
-				goal, ok := b.groupPlan[i]
-				if !ok || b.units[i].Pos != goal {
-					allReady = false
-				}
-				if ok {
-					assigned[goal] = true
-				}
-			}
-			if allReady {
-				b.groupEntered[key] = true
-				for _, i := range members {
-					delete(b.groupPlan, i)
-				}
-			}
-			continue
-		}
 		anyDanger := false
 		for _, i := range members {
 			if len(b.groupDanger[i]) != 0 {
 				anyDanger = true
 			}
 		}
-		if !anyDanger {
-			b.groupEntered[key] = true
+		if !planned && !anyDanger {
 			continue
 		}
 
-		allReady := true
+		groupGoals := make(map[Pos]bool)
 		for _, i := range members {
-			u := b.units[i]
-			danger := b.groupDanger[i]
-			if len(danger) == 0 {
-				b.groupPlan[i] = u.Pos
-				assigned[u.Pos] = true
-				continue
+			if goal, ok := b.groupPlan[i]; ok {
+				groupGoals[goal] = true
 			}
-			path := b.terrainDistances(u.Pos, false)
-			var goal Pos
-			found := false
-			bestNear, bestCost := unreachable, unreachable
-			for y, row := range b.terrain {
-				for x, tile := range row {
-					p := Pos{x, y}
-					owner, taken := occupied[p]
-					if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i) {
-						continue
-					}
-					cost, ok := path[p]
-					if !ok {
-						continue
-					}
-					boundary := false
-					for _, d := range directions {
-						if danger[Pos{p.X + d.X, p.Y + d.Y}] {
-							boundary = true
-							break
-						}
-					}
-					if !boundary {
-						continue
-					}
-					n := near(p)
-					if !found || n < bestNear || (n == bestNear && (cost < bestCost || (cost == bestCost && posLess(p, goal)))) {
-						goal, bestNear, bestCost, found = p, n, cost, true
-					}
+		}
+		allReady := true
+		// 危険範囲の境目を先に決め、危険範囲のない仲間の隣接先を作る。
+		for pass := 0; pass < 2; pass++ {
+			for _, i := range members {
+				if _, ok := b.groupPlan[i]; ok {
+					continue
 				}
-			}
-			if !found {
-				// 狭い道では、前の列に隣り合う安全なマスを後ろの列へ割り当てる。
+				u := b.units[i]
+				danger := b.groupDanger[i]
+				if (len(danger) == 0) != (pass == 1) {
+					continue
+				}
+				path := b.terrainDistances(u.Pos, false)
+				var goal Pos
+				found := false
+				bestNear, bestCost := unreachable, unreachable
 				for y, row := range b.terrain {
 					for x, tile := range row {
 						p := Pos{x, y}
 						owner, taken := occupied[p]
-						if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i) {
+						if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i) || (len(danger) == 0 && p == u.Pos) {
 							continue
 						}
 						cost, ok := path[p]
 						if !ok {
 							continue
 						}
-						adjacent := false
+						boundary := false
 						for _, d := range directions {
-							if assigned[Pos{p.X + d.X, p.Y + d.Y}] {
-								adjacent = true
+							if danger[Pos{p.X + d.X, p.Y + d.Y}] {
+								boundary = true
 								break
 							}
 						}
-						if !adjacent {
+						if !boundary || len(danger) == 0 {
 							continue
 						}
 						n := near(p)
@@ -165,14 +131,48 @@ func (b *Battle) planEnemyGroups(count int) {
 						}
 					}
 				}
+				if !found {
+					// 狭い道では、前の列に隣り合う安全なマスを後ろの列へ割り当てる。
+					for y, row := range b.terrain {
+						for x, tile := range row {
+							p := Pos{x, y}
+							owner, taken := occupied[p]
+							if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i) || (len(danger) == 0 && p == u.Pos) {
+								continue
+							}
+							cost, ok := path[p]
+							if !ok {
+								continue
+							}
+							adjacent := false
+							for _, d := range directions {
+								if groupGoals[Pos{p.X + d.X, p.Y + d.Y}] {
+									adjacent = true
+									break
+								}
+							}
+							if !adjacent {
+								continue
+							}
+							n := near(p)
+							if !found || n < bestNear || (n == bestNear && (cost < bestCost || (cost == bestCost && posLess(p, goal)))) {
+								goal, bestNear, bestCost, found = p, n, cost, true
+							}
+						}
+					}
+				}
+				if !found {
+					allReady = false
+					continue
+				}
+				b.groupPlan[i] = goal
+				assigned[goal] = true
+				groupGoals[goal] = true
 			}
-			if !found {
-				allReady = false
-				continue
-			}
-			b.groupPlan[i] = goal
-			assigned[goal] = true
-			if u.Pos != goal {
+		}
+		for _, i := range members {
+			goal, ok := b.groupPlan[i]
+			if !ok || b.units[i].Pos != goal {
 				allReady = false
 			}
 		}
