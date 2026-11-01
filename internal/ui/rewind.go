@@ -121,7 +121,10 @@ func (c *Controller) RewindEnter() {
 	focusHistoryEntry(&c.camera, entry, c.battle.Units())
 	c.rewind = rewindMenu{}
 	c.events, c.index, c.frame = nil, 0, 0
-	c.unit, c.target, c.watched = -1, -1, -1
+	// 出している敵の範囲は、同じ添字の集まりを戻った盤面に照らし、生きている敵だけを残す（DES-UI-27）。
+	c.unit, c.target = -1, -1
+	c.quickSpots, c.quickTarget = nil, -1
+	c.pruneWatched()
 	c.dest = tactics.Pos{}
 	c.confirmEnd, c.fast, c.message = false, false, ""
 	c.shownTurn, c.shownSide = c.battle.Turn, c.battle.Phase

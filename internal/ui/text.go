@@ -187,9 +187,9 @@ func (c *Controller) Guide() []string {
 	lines := []string{fmt.Sprintf("ターン %d　%sの番", c.shownTurn, sideName(c.shownSide))}
 	switch c.state {
 	case Idle:
-		lines = append(lines, "左クリック: 自軍を選ぶ・敵の範囲を出し続ける（もう一度で消す）　E: 番を終える", guideEnemyRange)
+		lines = append(lines, "左クリック: 自軍を選ぶ・敵の範囲を足す（もう一度で消す）　E: 番を終える", guideEnemyRange)
 	case Selected:
-		lines = append(lines, "左クリック: 青いマスに移動する　右クリック・Esc: 取り消す", guideEnemyRange)
+		lines = append(lines, "左クリック: 青いマスに移動・敵を攻撃　右クリック・Esc: 取り消す", guideEnemyRange)
 	case Moved:
 		lines = append(lines, "左クリック: 行動を選ぶ　右クリック・Esc: 移動を取り消す", guideEnemyRange)
 	case Targeting:

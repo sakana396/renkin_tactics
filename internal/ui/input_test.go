@@ -234,10 +234,11 @@ func TestControllerTransitions(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-IF-01-05 Selected で移動できないマス・敵のマスをクリックしても Selected のまま", func(t *testing.T) {
+	t.Run("TC-IF-01-05 Selected で移動できないマス・攻撃できる移動先のない敵のマスをクリックしても Selected のまま", func(t *testing.T) {
 		c := newIdle(t)
 		c.Click(tactics.Pos{X: 0, Y: 2})
-		for _, p := range []tactics.Pos{{X: 5, Y: 5}, {X: 1, Y: 0}, {X: 4, Y: 2}, {X: 0, Y: 0}} {
+		// 届く敵 (1, 0) のクリックは攻撃の操作になる（DES-UI-27。#128 で改訂。TC-IF-01-43）。
+		for _, p := range []tactics.Pos{{X: 5, Y: 5}, {X: 4, Y: 2}, {X: 0, Y: 0}} {
 			c.Click(p)
 			if c.State() != Selected {
 				t.Errorf("%v: 状態 = %v", p, c.State())

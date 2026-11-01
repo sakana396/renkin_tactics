@@ -19,14 +19,18 @@ var (
 	cursorColor  = color.NRGBA{255, 230, 80, 255}
 	targetColor  = color.NRGBA{240, 80, 80, 255}
 	dangerColor  = color.NRGBA{255, 150, 30, 255}
-	bandColor    = color.NRGBA{0, 0, 0, 170}
-	menuColor    = color.NRGBA{30, 36, 48, 235}
-	menuBorder   = color.NRGBA{200, 210, 220, 255}
-	strikeHit    = color.NRGBA{255, 240, 120, 255}
-	strikeMiss   = color.NRGBA{200, 200, 200, 255}
-	healTextClr  = color.NRGBA{120, 255, 150, 255}
-	overShade    = color.NRGBA{0, 0, 0, 150}
-	textShadow   = color.NRGBA{0, 0, 0, 255}
+	// watchMoveColor と watchAttackColor は、自軍を選んでいる間に枠で描く、クリックして出している敵の移動と攻撃の範囲（DES-UI-27）。
+	watchMoveColor   = color.NRGBA{200, 120, 255, 255}
+	watchAttackColor = color.NRGBA{255, 70, 90, 255}
+	watchEdge        = color.NRGBA{20, 10, 40, 230}
+	bandColor        = color.NRGBA{0, 0, 0, 170}
+	menuColor        = color.NRGBA{30, 36, 48, 235}
+	menuBorder       = color.NRGBA{200, 210, 220, 255}
+	strikeHit        = color.NRGBA{255, 240, 120, 255}
+	strikeMiss       = color.NRGBA{200, 200, 200, 255}
+	healTextClr      = color.NRGBA{120, 255, 150, 255}
+	overShade        = color.NRGBA{0, 0, 0, 150}
+	textShadow       = color.NRGBA{0, 0, 0, 255}
 	// hintColor は増援の気配の黄土色。破線は hintAlpha を掛けて薄く描く（DES-UI-24）。
 	hintColor = color.NRGBA{200, 160, 80, 255}
 )

@@ -65,17 +65,6 @@ func TestEnemyRange(t *testing.T) {
 	fighterBlue, fighterRed := posSet(fighter), posSet(tactics.Pos{X: 0, Y: 0}, tactics.Pos{X: 2, Y: 0}, tactics.Pos{X: 1, Y: 1})
 	bossBlue, bossRed := posSet(boss), posSet(tactics.Pos{X: 4, Y: 5}, tactics.Pos{X: 5, Y: 4})
 
-	overlayIs := func(t *testing.T, c *Controller, what string, wantBlue, wantRed map[tactics.Pos]bool) {
-		t.Helper()
-		blue, red := c.Overlay()
-		if len(blue) == 0 && len(wantBlue) == 0 && len(red) == 0 && len(wantRed) == 0 {
-			return
-		}
-		if !reflect.DeepEqual(blue, wantBlue) || !reflect.DeepEqual(red, wantRed) {
-			t.Errorf("%s: 青 %v、赤 %v\nwant 青 %v、赤 %v", what, blue, red, wantBlue, wantRed)
-		}
-	}
-
 	t.Run("TC-IF-01-18 Idle・Selected・Moved でカーソルを敵に合わせると、その敵の範囲を出し、離すと消える。行動の一覧の上やほかの状態では出さない", func(t *testing.T) {
 		c := newIdle(t)
 		overlayIs(t, c, "初め（カーソルはまだ盤面の外）", nil, nil)
@@ -167,16 +156,30 @@ func TestEnemyRange(t *testing.T) {
 		overlayIs(t, o, "Over でファイターに合わせる", nil, nil)
 	})
 
-	t.Run("TC-IF-01-19 敵をクリックして範囲を出し続け、もう一度で消す。カーソルを合わせた敵を優先し、自軍の範囲の代わりに敵の範囲を出す", func(t *testing.T) {
+	t.Run("TC-IF-01-19 敵をクリックして範囲を出し続け、もう一度で消す。Idle ではカーソルを合わせた敵と合わせ、自軍を選んでいる間は自軍の範囲と見分けられる枠で残す", func(t *testing.T) {
 		c := newIdle(t)
+		framesAre := func(what string, wantBlue, wantRed map[tactics.Pos]bool) {
+			t.Helper()
+			blue, red := c.WatchedFrames()
+			if len(blue) == 0 && len(wantBlue) == 0 && len(red) == 0 && len(wantRed) == 0 {
+				return
+			}
+			if !reflect.DeepEqual(blue, wantBlue) || !reflect.DeepEqual(red, wantRed) {
+				t.Errorf("%s: 枠の青 %v、赤 %v\nwant 青 %v、赤 %v", what, blue, red, wantBlue, wantRed)
+			}
+		}
+		// ファイターとボスの範囲を合わせたもの（重なるマスはない）。
+		bothBlue := posSet(tactics.Pos{X: 1, Y: 0}, tactics.Pos{X: 5, Y: 5})
+		bothRed := posSet(tactics.Pos{X: 0, Y: 0}, tactics.Pos{X: 2, Y: 0}, tactics.Pos{X: 1, Y: 1}, tactics.Pos{X: 4, Y: 5}, tactics.Pos{X: 5, Y: 4})
 		// ボスに合わせてクリックし、カーソルを離しても出し続ける。
 		c.SetCursor(cellCenter(boss))
 		c.Click(boss)
 		c.SetCursor(cellCenter(empty))
 		overlayIs(t, c, "ボスをクリックして離す", bossBlue, bossRed)
-		// 出し続けているボスより、カーソルを合わせたファイターを優先する。
+		framesAre("Idle の枠", nil, nil)
+		// カーソルを合わせたファイターの範囲は、出し続けているボスの範囲と合わせて出す（DES-UI-27）。
 		c.SetCursor(cellCenter(fighter))
-		overlayIs(t, c, "ファイターに合わせる", fighterBlue, fighterRed)
+		overlayIs(t, c, "ファイターに合わせる", bothBlue, bothRed)
 		c.SetCursor(cellCenter(empty))
 		overlayIs(t, c, "ファイターから離す", bossBlue, bossRed)
 		// もう一度ボスをクリックすると、出し続けるのをやめる。カーソルがボスの上にある間は、カーソルの分だけ出る。
@@ -186,7 +189,7 @@ func TestEnemyRange(t *testing.T) {
 		c.SetCursor(cellCenter(empty))
 		overlayIs(t, c, "もう一度クリックして離す", nil, nil)
 
-		// ボスを出し続けたまま主人公を選ぶと、出し続けるのをやめ、主人公の範囲を出す。
+		// ボスを出し続けたまま主人公を選ぶと、主人公の範囲を塗り、ボスの範囲は枠で残す（E-60、DES-UI-27）。
 		c.Click(boss)
 		c.Click(tactics.Pos{X: 0, Y: 0})
 		if c.State() != Selected {
@@ -194,15 +197,37 @@ func TestEnemyRange(t *testing.T) {
 		}
 		ownBlue, ownRed := c.ranges(0)
 		overlayIs(t, c, "Selected（カーソルは空きマス）", ownBlue, ownRed)
-		// 敵に合わせると、主人公の範囲の代わりに敵の範囲だけを出す（重ねない）。
+		framesAre("Selected の枠", bossBlue, bossRed)
+		if c.RangeStyle() != StyleBad {
+			t.Error("Selected の主人公の射程の色が赤でない")
+		}
+		// 敵に合わせると、塗りは主人公の範囲の代わりにその敵の範囲になる。ボスの枠は残す。
 		c.SetCursor(cellCenter(fighter))
 		overlayIs(t, c, "Selected でファイターに合わせる", fighterBlue, fighterRed)
-		// Selected でボスをクリックしても、出し続けない（クリックは Idle の操作）。
+		framesAre("Selected でファイターに合わせたときの枠", bossBlue, bossRed)
+		// Selected でボスをクリックすると攻撃の操作になる。ボスを攻撃できる移動先はないので、理由を出して Selected のまま。
 		c.Click(boss)
 		c.SetCursor(cellCenter(empty))
+		if c.State() != Selected || c.Message() == "" {
+			t.Errorf("Selected でボスをクリック: 状態 %v、知らせ %q", c.State(), c.Message())
+		}
 		overlayIs(t, c, "Selected でボスをクリックして離す", ownBlue, ownRed)
+		// 移動先 (0, 1) を選んだ Moved でも枠で残す。相手を選ぶ状態では出さない。
+		c.Click(tactics.Pos{X: 0, Y: 1})
+		framesAre("Moved の枠", bossBlue, bossRed)
 		c.Cancel()
-		overlayIs(t, c, "取り消して Idle", nil, nil)
+		c.Click(tactics.Pos{X: 0, Y: 0})
+		c.ChooseAction(tactics.Attack)
+		if c.State() != Targeting {
+			t.Fatalf("状態 = %v", c.State())
+		}
+		framesAre("Targeting の枠", nil, nil)
+		c.Cancel()
+		c.Cancel()
+		// 取り消して Idle に戻ると、ボスの範囲を塗りで出す。
+		c.Cancel()
+		overlayIs(t, c, "取り消して Idle", bossBlue, bossRed)
+		framesAre("Idle に戻った枠", nil, nil)
 	})
 
 	t.Run("TC-IF-01-20 Q: Playing・Over 以外で危険範囲を出す・消す。番をまたいで残し、再生中と勝ち負けの画面では出さない", func(t *testing.T) {
