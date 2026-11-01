@@ -105,6 +105,9 @@ func TestBaseDataIt02(t *testing.T) {
 				if tt.id == "ch02" && e.x == 8 && e.y == 5 {
 					placement.ID = "road_guard" // DES-MAP-08: 敗北時の増援のきっかけ。
 				}
+				if tt.id == "ch03" && e.x == 4 && e.y == 8 {
+					placement.ID = "wall_west_guard" // DES-MAP-08（#131）: 撃破で西の一団が来るきっかけ。
+				}
 				want = append(want, placement)
 			}
 			if !reflect.DeepEqual(m.Enemies, want) {

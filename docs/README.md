@@ -44,6 +44,9 @@
 | 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch02 の制作記録（反復 6） | [iterations/it06/map-ch02.md](iterations/it06/map-ch02.md) | v0.3（#130、REV-079、E-96・E-97。自動の下限は確認、開発者の短い試遊は 1 回目（版 0.2）を実施し、版 0.3 は未実施） |
 | 制作 | ch05 の制作記録（反復 6） | [iterations/it06/map-ch05.md](iterations/it06/map-ch05.md) | v0.3（#130、REV-079、E-96・E-97。自動の下限は確認、開発者の短い試遊は未実施） |
+| 制作 | ch01 の制作記録（反復 6） | [iterations/it06/map-ch01.md](iterations/it06/map-ch01.md) | v0.1（#131。自動の下限は確認、開発者の短い試遊は未実施） |
+| 制作 | ch03 の制作記録（反復 6） | [iterations/it06/map-ch03.md](iterations/it06/map-ch03.md) | v0.1（#131。自動の下限は確認、壁の外の増援の候補を記録、開発者の短い試遊は未実施） |
+| 制作 | ch04 の制作記録（反復 6） | [iterations/it06/map-ch04.md](iterations/it06/map-ch04.md) | v0.1（#131。自動の下限は確認、開発者の短い試遊は未実施） |
 | 制作 | ch06 の制作記録（反復 5） | [iterations/it05/map-ch06.md](iterations/it05/map-ch06.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch07 の制作記録（反復 5） | [iterations/it05/map-ch07.md](iterations/it05/map-ch07.md) | v0.1（#104。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch08 の制作記録（反復 5） | [iterations/it05/map-ch08.md](iterations/it05/map-ch08.md) | v0.1（#104。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
