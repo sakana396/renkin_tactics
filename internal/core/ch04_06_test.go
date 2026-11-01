@@ -190,6 +190,9 @@ func TestCh04To06Autoplay(t *testing.T) {
 		{"ch06", 0, false, 5}, {"ch06", 1, false, 12}, {"ch06", 0, true, 6}, {"ch06", 1, true, 6},
 	} {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-04 %s/作戦%d/低め%v/seed%d", tc.id, tc.plan, tc.low, tc.seed), func(t *testing.T) {
+			if tc.id == "ch05" {
+				t.Skip("反復 5 の固定の打ち手は DES-MAP-08 の ch05 に対応しない。TC-FR-MAP-04-12 で置き換える")
+			}
 			// IT06 で一時停止（TST-IT06 3.2・3.3 節）。ch04 は #131、ch06 は #132 で置き換える。
 			switch {
 			case tc.id == "ch06" && tc.plan == 1 && tc.low && tc.seed == 6:

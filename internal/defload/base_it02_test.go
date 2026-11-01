@@ -51,13 +51,13 @@ func TestBaseDataIt02(t *testing.T) {
 				[]defs.Slot{{X: 1, Y: 7}, {X: 1, Y: 6}, {X: 1, Y: 8}, {X: 0, Y: 6}, {X: 0, Y: 8}, {X: 2, Y: 7}, {X: 0, Y: 7}},
 				defs.Stats{HP: 2, Str: 1, Skl: 1, Spd: 1, Def: 1},
 				[]enemy{
-					{"", "soldier", "iron_lance", "charge", false, 8, 5, 3},
+					{"", "soldier", "iron_lance", "charge", false, 8, 5, 4},
 					{"", "fighter", "iron_axe", "charge", false, 7, 9, 4},
 					{"", "archer", "iron_bow", "hold", false, 9, 3, 5},
 					{"", "myrmidon", "iron_sword", "hold", false, 10, 7, 3},
 					{"", "cavalier", "iron_lance", "hold", false, 12, 11, 4},
 					{"", "soldier", "iron_lance", "hold", false, 12, 6, 5},
-					{"", "archer", "iron_bow", "hold", false, 13, 9, 3},
+					{"", "archer", "iron_bow", "hold", false, 13, 9, 4},
 					{"ヴォルグ", "cavalier", "iron_lance", "hold", true, 14, 8, 8},
 				},
 				defs.Stats{HP: 8, Str: 2, Skl: 3, Spd: 2, Def: 1},
@@ -101,7 +101,11 @@ func TestBaseDataIt02(t *testing.T) {
 				if e.boss {
 					b = tt.bossBonus
 				}
-				want = append(want, defs.EnemyPlacement{Name: e.name, Class: e.class, Weapons: []string{e.weapon}, Bonus: b, AI: e.ai, Boss: e.boss, Level: e.level, X: e.x, Y: e.y})
+				placement := defs.EnemyPlacement{Name: e.name, Class: e.class, Weapons: []string{e.weapon}, Bonus: b, AI: e.ai, Boss: e.boss, Level: e.level, X: e.x, Y: e.y}
+				if tt.id == "ch02" && e.x == 8 && e.y == 5 {
+					placement.ID = "road_guard" // DES-MAP-08: 敗北時の増援のきっかけ。
+				}
+				want = append(want, placement)
 			}
 			if !reflect.DeepEqual(m.Enemies, want) {
 				t.Errorf("%s の敵 =\n%+v\nwant\n%+v", tt.id, m.Enemies, want)
