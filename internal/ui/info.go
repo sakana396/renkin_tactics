@@ -346,7 +346,7 @@ func (p Panel) View() InfoView {
 			y = v.addEquip(*p.Unit, x, y)
 		} else {
 			y = v.addStats(*p.Unit, x, y)
-			// 回復の予測を開いている間は、予測を優先して武器の行を出さない（予測とユニットの能力で欄が埋まるため。DES-IT06 12.2 節）。
+			// 回復の予測を開いている間は、予測を優先して武器の行を出さない（予測とユニットの能力で欄が埋まるため。DES-IT06 12.2 節、#149 の P-05）。
 			if p.Heal == nil {
 				y = v.addWeaponRows(*p.Unit, x, y)
 			}
@@ -458,7 +458,7 @@ func (v *InfoView) addStats(u tactics.Unit, x, y int) int {
 }
 
 // levelText は「能力」のページの名前・クラスの下に出すレベルの行を返す（FR-UNT-09、DES-IT06 7.3・12.2 節）。
-// 自軍は「Lv 2　経験 40」（Lv 20 の経験は「―」）、敵は育たないので「Lv 5」だけを出す。レベルが 0 なら出さない（空を返す）。
+// 自軍は「Lv 2　経験 40」（Lv 20 の経験は「―」）、敵は育たないので「Lv 5」だけを出す（#149 の P-06）。レベルが 0 なら出さない（空を返す）。
 func levelText(u tactics.Unit) string {
 	if u.Level <= 0 {
 		return ""
@@ -473,8 +473,9 @@ func levelText(u tactics.Unit) string {
 	return fmt.Sprintf("Lv %d　経験 %s", u.Level, exp)
 }
 
-// 「能力」のページの武器の行の配置（DES-IT06 12.2 節）。欄の幅を 2 列に分け、1 本ずつ左の列から右の列へ、
-// 上の行から下の行へ並べる。5 本でも 3 行（48 px）で、配置の画面のボタン（y = 296〜）と情報欄の下端の印に重ならない。
+// 「能力」のページの武器の行の配置（DES-IT06 12.2 節、E-97）。並べ方・絵の大きさ・印の形は設計への提案（#149 の PR の
+// P-01〜P-03。開発者の確認待ち）。欄の幅を 2 列に分け、1 本ずつ左の列から右の列へ、上の行から下の行へ並べる。
+// 5 本でも 3 行（48 px）で、配置の画面のボタン（y = 296〜）と情報欄の下端の印に重ならない。
 const (
 	// weaponRowColWidth は武器の行の 1 列の幅。
 	weaponRowColWidth = (InfoWidth - 2*infoMargin) / 2
@@ -487,8 +488,8 @@ const (
 )
 
 // addWeaponRows は「能力」のページの下に、持っている武器を種類の絵と名前の短い行で並べ、装備している武器に印を付ける
-// （DES-IT06 12.2 節、E-97）。杖も種類の絵で同じように並べる。詳しい値は「装備・スキル」のページに出す。
-// 武器がなければ何も足さない。使った一番下の y を返す。
+// （DES-IT06 12.2 節、E-97）。杖も種類の絵で同じように並べる（#149 の P-03）。詳しい値は「装備・スキル」のページに出す。
+// 武器がなければ何も足さない（#149 の P-07）。使った一番下の y を返す。
 func (v *InfoView) addWeaponRows(u tactics.Unit, x, y int) int {
 	if len(u.Weapons) == 0 {
 		return y
@@ -502,7 +503,7 @@ func (v *InfoView) addWeaponRows(u tactics.Unit, x, y int) int {
 		if t, ok := weaponTile(w.Type); ok {
 			v.Icons = append(v.Icons, InfoIcon{X: cx + weaponRowIconX, Y: cy, Size: assets.TileSize, Tile: t})
 		}
-		// 長い名前は列の幅で省く。全文は「装備・スキル」のページで読める（DES-IT06 12.2 節）。
+		// 長い名前は列の幅で省く（#149 の P-04）。全文は「装備・スキル」のページで読める（DES-IT06 12.2 節）。
 		v.text(cx+weaponRowTextX, cy, fitRewind(w.Name, weaponRowColWidth-weaponRowTextX-4), StylePlain)
 	}
 	return y + (len(u.Weapons)+1)/2*lineHeight
