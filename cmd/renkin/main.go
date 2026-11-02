@@ -84,8 +84,10 @@ func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.
 		return 1
 	}
 	// 行動の記録は、セーブのディレクトリの下の logs に、出撃ごとに 1 つ作る（DES-LOG-02）。
+	// 同じ時計で、記録の経過の秒も測る（DES-LOG-01、E-106）。詳しい誤りは stderr へ出す。
 	logs := savefile.PlayLogs{Dir: dir, Now: now}
-	if err := start(ui.Config{Catalog: cat, Store: savefile.Store{Dir: dir}, NextSeed: nextSeed, StartChapter: *chapter, PlayLog: logs.Create}); err != nil {
+	if err := start(ui.Config{Catalog: cat, Store: savefile.Store{Dir: dir}, NextSeed: nextSeed, StartChapter: *chapter,
+		PlayLog: logs.Create, Now: now, Stderr: stderr}); err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}

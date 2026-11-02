@@ -57,11 +57,16 @@ func TestRun(t *testing.T) {
 			}
 		}
 	})
-	t.Run("TC-IF-04-09 遊ぶ版は -savedir の下の logs に出撃ごとの行動の記録を作る", func(t *testing.T) {
+	t.Run("TC-NFR-06-14 遊ぶ版は -savedir の下の logs に出撃ごとの行動の記録を作り、時計と標準エラーを渡す", func(t *testing.T) {
 		var cfg ui.Config
 		dir := t.TempDir()
-		if code := run([]string{"-savedir", dir}, &bytes.Buffer{}, data.Base(), fixedNow, func(c ui.Config) error { cfg = c; return nil }); code != 0 || cfg.PlayLog == nil {
+		var stderr bytes.Buffer
+		if code := run([]string{"-savedir", dir}, &stderr, data.Base(), fixedNow, func(c ui.Config) error { cfg = c; return nil }); code != 0 || cfg.PlayLog == nil {
 			t.Fatal(code, cfg.PlayLog == nil)
+		}
+		// 経過の秒は起動の時計で測り、詳しい誤りは起動の stderr へ出す（DES-LOG-01・02、E-106）。
+		if cfg.Now == nil || !cfg.Now().Equal(fixedNow()) || cfg.Stderr != &stderr {
+			t.Fatalf("Now があるか %v、Stderr %v", cfg.Now != nil, cfg.Stderr)
 		}
 		w, err := cfg.PlayLog("ch01")
 		if err != nil {

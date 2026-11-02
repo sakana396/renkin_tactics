@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/sakana396/renkin_tactics/internal/core"
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
@@ -100,8 +101,10 @@ type Controller struct {
 
 	message string
 	// log は行動の記録（DES-LOG-01）。nil なら記録しない。logFailed は書けなかったことを一度知らせたこと。
+	// logErr は詳しい誤りの出し先（DES-LOG-02）。
 	log       *core.PlayLog
 	logFailed bool
+	logErr    io.Writer
 
 	// hints は通常の盤面に出す増援の予兆領域。再生の完了後と巻き戻しの成功後だけ取り直す（DES-UI-24）。
 	hints []tactics.ReinforcementHint
@@ -858,7 +861,11 @@ func (c *Controller) act(cmd tactics.Command) {
 func (c *Controller) checkLog() {
 	if err := c.log.Err(); err != nil && !c.logFailed {
 		c.logFailed = true
-		c.message = fmt.Sprintf("行動の記録を書けません（遊ぶのは続けられます）: %v", err)
+		// 案内は短くし、詳しい誤り（パスなど）は標準エラーへ出す（DES-LOG-02）。
+		c.message = "行動の記録を書けません（遊ぶのは続けられます）"
+		if c.logErr != nil {
+			fmt.Fprintf(c.logErr, "行動の記録を書けません: %v\n", err)
+		}
 	}
 }
 

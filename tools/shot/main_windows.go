@@ -59,7 +59,7 @@ func main() {
 	cfg := ui.Config{Catalog: cat, Store: memoryStore{}, NextSeed: func() uint64 { return 1 }, StartChapter: *chapter}
 	if *logdir != "" {
 		// 遊ぶ版と同じ書き出し先を使う（DES-LOG-02）。
-		cfg.PlayLog = savefile.PlayLogs{Dir: *logdir, Now: time.Now}.Create
+		cfg.PlayLog, cfg.Now, cfg.Stderr = savefile.PlayLogs{Dir: *logdir, Now: time.Now}.Create, time.Now, os.Stderr
 	}
 	err = ui.RunShot(cfg, ui.ShotOptions{Scene: *scene, Steps: actions, Path: *out})
 	if err != nil {

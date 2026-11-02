@@ -26,14 +26,27 @@ var ErrInvalidPlayLog = errors.New("core: 行動の記録が正しくありま�
 // 書けなかったら以後は書かず、最初の誤りを Err で返す。戦闘の状態は書けたかどうかで変わらない。
 //
 // Act・EndPhase・Rewind は、nil の PlayLog でも戦闘の操作だけを行う。
+//
+// core は実時間を扱わない（NFR-05）。経過の秒は、呼び出し元（画面）が時計を読む関数 elapsed として渡す。
 type PlayLog struct {
-	w     io.Writer
-	err   error
-	ended bool
+	w       io.Writer
+	elapsed func() int
+	err     error
+	ended   bool
 }
 
 // NewPlayLog は w へ書く PlayLog を作る（DES-LOG-01）。
-func NewPlayLog(w io.Writer) *PlayLog { return &PlayLog{w: w} }
+// elapsed は出撃してからの経過の秒を返す関数で、操作の行（start・action・end_phase・rewind）の elapsed に入れる。
+// nil なら elapsed を書かない。
+func NewPlayLog(w io.Writer, elapsed func() int) *PlayLog { return &PlayLog{w: w, elapsed: elapsed} }
+
+// now は操作の行に入れる経過の秒（DES-LOG-01）。時計がなければ nil。
+func (l *PlayLog) now() *int {
+	if l.elapsed == nil {
+		return nil
+	}
+	return intPtr(l.elapsed())
+}
 
 // Err は最初に書けなかった誤りを返す（DES-LOG-02）。
 func (l *PlayLog) Err() error {
@@ -114,6 +127,8 @@ type logCommand struct {
 type logRecord struct {
 	Type string `json:"type"`
 	V    int    `json:"v,omitempty"`
+	// 操作の行（start・action・end_phase・rewind）の、出撃してからの経過の秒（E-106）。
+	Elapsed *int `json:"elapsed,omitempty"`
 	// start の項目。
 	Chapter  string          `json:"chapter,omitempty"`
 	Map      string          `json:"map,omitempty"`
@@ -125,8 +140,9 @@ type logRecord struct {
 	// 番とターン。
 	Turn *int   `json:"turn,omitempty"`
 	Side string `json:"side,omitempty"`
+	// action・end_phase の項目。巻き戻しの戻り先になる履歴の ID。
+	History *uint64 `json:"history,omitempty"`
 	// action の項目。
-	History    *uint64     `json:"history,omitempty"`
 	Cmd        *logCommand `json:"cmd,omitempty"`
 	Name       string      `json:"name,omitempty"`
 	From       *logPos     `json:"from,omitempty"`
@@ -266,7 +282,7 @@ func (l *PlayLog) Start(c *Campaign, s *Sortie, slots []int, seed uint64, events
 		return
 	}
 	ch := c.cat.Chapters()[s.chapter]
-	r := logRecord{Type: "start", V: PlayLogVersion, Chapter: ch.ID, Map: ch.Map, Seed: &seed,
+	r := logRecord{Type: "start", V: PlayLogVersion, Elapsed: l.now(), Chapter: ch.ID, Map: ch.Map, Seed: &seed,
 		Members: append([]int{}, s.members...), Slots: append([]int{}, slots...), Campaign: compact.Bytes()}
 	for i, u := range s.Battle.Units() {
 		lu := logUnit{I: i, Name: u.Name, Side: sideNames[u.Side], Class: u.ClassName, ID: u.ID, Group: u.Group, Level: u.Level,
@@ -299,7 +315,7 @@ func (l *PlayLog) Act(b *tactics.Battle, cmd tactics.Command) ([]tactics.Event, 
 	if cmd.Weapon != nil {
 		lc.Weapon = intPtr(*cmd.Weapon)
 	}
-	r := logRecord{Type: "action", Turn: intPtr(turn), Cmd: lc}
+	r := logRecord{Type: "action", Elapsed: l.now(), Turn: intPtr(turn), Cmd: lc}
 	// 巻き戻しの戻り先になる履歴の ID。再移動は前の行動と同じ 1 手なので持たない（DES-BTL-10）。
 	for _, h := range b.History()[min(start, len(b.History())):] {
 		if h.Side == tactics.Player && h.Kind == tactics.HistoryAction {
@@ -329,7 +345,7 @@ func (l *PlayLog) Act(b *tactics.Battle, cmd tactics.Command) ([]tactics.Event, 
 }
 
 // EndPhase は b.EndPhase() を行い、成功したら end_phase の記録を書く（DES-LOG-01）。
-// Unacted は番を終えたときにまだ行動していなかった自軍の数。
+// Unacted は番を終えたときにまだ行動していなかった自軍の数。History はこの番の終わりの履歴 ID（巻き戻しの戻り先）。
 func (l *PlayLog) EndPhase(b *tactics.Battle) ([]tactics.Event, error) {
 	if l == nil {
 		return b.EndPhase()
@@ -340,11 +356,20 @@ func (l *PlayLog) EndPhase(b *tactics.Battle) ([]tactics.Event, error) {
 			unacted++
 		}
 	}
+	start := len(b.History())
 	events, err := b.EndPhase()
 	if err != nil {
 		return events, err
 	}
-	l.writeEvents(b, logRecord{Type: "end_phase", Turn: intPtr(turn), Unacted: intPtr(unacted)}, events)
+	r := logRecord{Type: "end_phase", Elapsed: l.now(), Turn: intPtr(turn), Unacted: intPtr(unacted)}
+	for _, h := range b.History()[min(start, len(b.History())):] {
+		if h.Kind == tactics.HistoryEndPhase && !h.Automatic {
+			id := h.ID
+			r.History = &id
+			break
+		}
+	}
+	l.writeEvents(b, r, events)
 	return events, nil
 }
 
@@ -359,7 +384,7 @@ func (l *PlayLog) Rewind(b *tactics.Battle, id uint64) error {
 	if err := b.Rewind(id); err != nil {
 		return err
 	}
-	r := logRecord{Type: "rewind", Turn: intPtr(turn), To: &id, RewindsLeft: intPtr(b.RewindsLeft())}
+	r := logRecord{Type: "rewind", Elapsed: l.now(), Turn: intPtr(turn), To: &id, RewindsLeft: intPtr(b.RewindsLeft())}
 	for i, e := range h {
 		if e.ID != id {
 			continue
@@ -394,13 +419,16 @@ type ReplayReport struct {
 // ReplayPlayLog は記録の start から同じ戦闘を作り、action・end_phase・rewind の操作を順に入れ直す（DES-LOG-03）。
 //
 // 流し直しの間も同じ PlayLog で記録を書き、元の記録と行ごとに比べる。同じ種と操作なら同じ結果になる（NFR-06）ので、
+// 経過の秒（elapsed）は比べない。流し直しの行には、元の行の elapsed をそのまま入れる（E-106）。
 // 定義データを変えていなければ食い違いはない。章を直したあとなら、最初に結果が変わった行が分かる。
 // 操作が受け付けられなかったら、そこで止めて行の番号つきの誤りを返す（それまでの報告も返す）。
 func ReplayPlayLog(cat *defs.Catalog, r io.Reader) (ReplayReport, error) {
 	var rep ReplayReport
 	var want []string
 	var got bytes.Buffer
-	log := NewPlayLog(&got)
+	// elapsed は今読んでいる元の行の経過の秒。
+	var elapsed *int
+	log := NewPlayLog(&got, nil)
 	var b *tactics.Battle
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 64*1024), 64*1024*1024)
@@ -417,6 +445,10 @@ func ReplayPlayLog(cat *defs.Catalog, r io.Reader) (ReplayReport, error) {
 		}
 		if n == 1 && rec.Type != "start" {
 			return rep.finish(want, got.String(), b, false), fail(n, "最初の行が start ではありません")
+		}
+		log.elapsed = nil
+		if elapsed = rec.Elapsed; elapsed != nil {
+			log.elapsed = func() int { return *elapsed }
 		}
 		var err error
 		switch rec.Type {

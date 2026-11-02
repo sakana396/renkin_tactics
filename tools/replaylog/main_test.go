@@ -29,7 +29,7 @@ func writeLog(t *testing.T, path string) {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
-	l := core.NewPlayLog(&buf)
+	l := core.NewPlayLog(&buf, nil)
 	l.Start(c, s, []int{0}, 3, events)
 	u := s.Battle.Units()[0]
 	if _, err := l.Act(s.Battle, tactics.Command{Unit: 0, To: u.Pos, Action: tactics.Wait}); err != nil {
@@ -48,6 +48,12 @@ func TestRun(t *testing.T) {
 		b, _ := os.ReadFile(good)
 		bad := filepath.Join(dir, "bad.jsonl")
 		os.WriteFile(bad, []byte(strings.Replace(string(b), `"kind":"wait"`, `"kind":"move"`, 1)), 0o644)
+		// 食い違いのあとに受け付けられない操作がある記録は、食い違いを優先して 1（DES-LOG-03）。
+		diffThenBad := filepath.Join(dir, "diff-then-bad.jsonl")
+		os.WriteFile(diffThenBad, []byte(strings.Replace(string(b), `"kind":"wait"`, `"kind":"move"`, 1)+
+			`{"type":"action","turn":1,"cmd":{"unit":99,"to":[0,0],"action":"wait","target":0,"item":0,"weapon":null}}`+"\n"), 0o644)
+		badOnly := filepath.Join(dir, "bad-only.jsonl")
+		os.WriteFile(badOnly, []byte(string(b)+`{"type":"action","turn":1,"cmd":{"unit":99,"to":[0,0],"action":"wait","target":0,"item":0,"weapon":null}}`+"\n"), 0o644)
 		broken := filepath.Join(dir, "broken.jsonl")
 		os.WriteFile(broken, []byte("{\n"), 0o644)
 		cases := []struct {
@@ -57,6 +63,10 @@ func TestRun(t *testing.T) {
 		}{
 			{[]string{good}, 0, "すべて同じ（決まっていない）"},
 			{[]string{bad}, 1, "行目で食い違い"},
+			{[]string{diffThenBad}, 1, "行目で食い違い"},
+			{[]string{badOnly}, 2, ""},
+			{[]string{good, diffThenBad}, 1, "行目で食い違い"},
+			{[]string{diffThenBad, broken}, 2, "行目で食い違い"},
 			{[]string{broken}, 2, ""},
 			{[]string{filepath.Join(dir, "none.jsonl")}, 2, ""},
 			{nil, 2, ""},

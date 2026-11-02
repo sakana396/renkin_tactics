@@ -3,7 +3,10 @@
 //
 //	go run ./tools/replaylog <記録のファイル>...
 //
-// 食い違いも誤りもなければ終了コード 0、食い違いがあれば 1、記録が読めなければ 2 を返す。
+// 終了コードは、食い違いも誤りもなければ 0、食い違いがあれば 1、記録が読めなければ 2。
+// 途中の行が読めない（操作が受け付けられない）記録でも、その前の行で食い違いが見つかっていれば 1 にする
+// （直した章では、結果が変わったあとの操作が受け付けられなくなることが多いため）。誤りは標準エラーに出す。
+// 経過の秒（elapsed）は比べない。ファイルを複数渡したら、いちばん大きい終了コードを返す。
 package main
 
 import (
@@ -23,7 +26,7 @@ var resultNames = map[tactics.Result]string{tactics.Ongoing: "決まっていな
 
 func run(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "使い方: go run ./tools/replaylog <記録のファイル>...")
+		fmt.Fprintln(stderr, "使い方: go run ./tools/replaylog <記録のファイル>...（終了コード: 0 すべて同じ、1 食い違いあり（後の行が読めなくても）、2 読めない）")
 		return 2
 	}
 	cat, err := defload.Load(data.Base())
@@ -50,7 +53,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		}
 		if err != nil {
 			fmt.Fprintf(stderr, "%s: %v\n", path, err)
-			code = 2
+			// 先に食い違いが見つかっていれば、読めないことより食い違いを優先して 1 にする（DES-LOG-03）。
+			if rep.FirstDiff == 0 {
+				code = 2
+			}
 		}
 	}
 	return code

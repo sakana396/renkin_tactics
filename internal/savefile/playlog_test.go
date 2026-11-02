@@ -11,7 +11,7 @@ import (
 func TestPlayLogs(t *testing.T) {
 	at := time.Date(2026, 11, 2, 15, 30, 0, 0, time.Local)
 	clock := func() time.Time { return at }
-	t.Run("TC-IF-04-08 セーブのディレクトリの下の logs に、時刻と章の名前で作り、追記する", func(t *testing.T) {
+	t.Run("TC-NFR-06-13 セーブのディレクトリの下の logs に、時刻と章の名前で作り、追記する", func(t *testing.T) {
 		dir := filepath.Join(t.TempDir(), "save")
 		w, err := PlayLogs{Dir: dir, Now: clock}.Create("ch02")
 		if err != nil {
@@ -32,7 +32,7 @@ func TestPlayLogs(t *testing.T) {
 			}
 		}
 	})
-	t.Run("TC-IF-04-08 同じ名前があれば番号を足し、前の記録を上書きしない", func(t *testing.T) {
+	t.Run("TC-NFR-06-13 同じ名前があれば番号を足し、前の記録を上書きしない", func(t *testing.T) {
 		dir := t.TempDir()
 		logs := PlayLogs{Dir: dir, Now: clock}
 		first, err := logs.Create("ch01")
@@ -59,7 +59,7 @@ func TestPlayLogs(t *testing.T) {
 			t.Fatal(third)
 		}
 	})
-	t.Run("TC-IF-04-08 章 ID のファイル名に使えない文字は _ にする", func(t *testing.T) {
+	t.Run("TC-NFR-06-13 章 ID のファイル名に使えない文字は _ にする", func(t *testing.T) {
 		dir := t.TempDir()
 		w, err := PlayLogs{Dir: dir, Now: clock}.Create("../x y")
 		if err != nil {
@@ -69,7 +69,7 @@ func TestPlayLogs(t *testing.T) {
 			t.Fatalf("パス %q; 期待 %q", w.(AppendFile).Path, want)
 		}
 	})
-	t.Run("TC-IF-04-08 作れない場所と、消えたファイルへの追記は誤り", func(t *testing.T) {
+	t.Run("TC-NFR-06-13 作れない場所と、消えたファイルへの追記は誤り", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "file")
 		if err := os.WriteFile(file, nil, 0o644); err != nil {
