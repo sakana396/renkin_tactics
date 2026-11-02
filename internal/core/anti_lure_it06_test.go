@@ -10,19 +10,63 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/defs"
 )
 
-// E-100 の章ごとの初期突撃、一団と連動、継続増援を検査する（DES-AI-02、DES-MAP-08）。
+// pathSteps は、地形の通れるマスだけを通って start から各マスへ行く歩数を返す（壁を回り込む分を含む）。
+func pathSteps(m defs.MapDef, cat *defs.Catalog, start defs.Slot) map[defs.Slot]int {
+	cost := map[string]int{}
+	for _, tr := range cat.Terrains() {
+		cost[tr.Symbol] = tr.Cost
+	}
+	passable := func(p defs.Slot) bool {
+		if p.Y < 0 || p.Y >= len(m.Rows) || p.X < 0 || p.X >= len([]rune(m.Rows[0])) {
+			return false
+		}
+		return cost[string([]rune(m.Rows[p.Y])[p.X])] > 0
+	}
+	steps := map[defs.Slot]int{start: 0}
+	queue := []defs.Slot{start}
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		for _, d := range []defs.Slot{{X: 0, Y: -1}, {X: -1, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: 1}} {
+			n := defs.Slot{X: cur.X + d.X, Y: cur.Y + d.Y}
+			if _, ok := steps[n]; !ok && passable(n) {
+				steps[n] = steps[cur] + 1
+				queue = append(queue, n)
+			}
+		}
+	}
+	return steps
+}
+
+func absInt(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
+// 守りの一団の一員どうしの近さの目安（E-100 ②、DES-IT06 10.1 節「壁を回り込まずに行き来できる」）。
+const (
+	groupMaxManhattan = 7 // 一員どうしのマス目の距離の上限
+	groupMaxDetour    = 2 // 経路の歩数がマス目の距離を超えてよい分
+	// 攻撃のあと、全員が持ち場を離れるまでの敵軍の番の数の上限。集まる間の待ちを含む（DES-IT06 10.2 節）。
+	groupLeavePhases = 4
+)
+
+// E-100 の章ごとの初期突撃、守りの一団と連動、継続増援を検査する（DES-AI-02、DES-MAP-08、DES-IT06 10.1 節・13 章）。
 func TestIT06AntiLure(t *testing.T) {
 	cat := baseCatalog(t)
+	// 守りの一団は、主な守りの場所ごとに待つ一員だけで作る（E-100 ②）。
 	wantGroups := map[string]map[string]int{
-		"ch01": {"fort_front": 2},
-		"ch02": {"road_east_front": 3},
-		"ch03": {"wall_west_front": 3},
-		"ch04": {"west_gate_front": 4},
-		"ch05": {"gate_north": 4},
-		"ch06": {"pass_east_front": 3, "pass_center_front": 3},
-		"ch07": {"convoy_east_front": 3, "convoy_valley_front": 4},
-		"ch08": {"forest_east_front": 3, "forest_west_front": 3},
-		"ch09": {"gate_east_front": 4, "gate_west_front": 4},
+		"ch01": {"fort_front": 2},                                                    // 砦の手前の剣士と弓兵（E-100 の 1 章の例外）
+		"ch02": {"road_east_front": 3},                                               // ボスの砦の前
+		"ch03": {"wall_west_front": 3},                                               // 外の城壁の西の切れ目
+		"ch04": {"west_gate_front": 3, "east_gate_front": 3},                         // 城壁の西門・東門
+		"ch05": {"gate_north": 3},                                                    // 北の門
+		"ch06": {"pass_center_front": 3, "pass_north_front": 3},                      // 峠の中央・本営の前
+		"ch07": {"convoy_valley_front": 3},                                           // 谷の中だけ（F-02）
+		"ch08": {"forest_west_front": 3, "forest_north_front": 3},                    // 西の砦・北の砦の前
+		"ch09": {"keep_gate_front": 4, "outer_west_front": 3, "outer_east_front": 3}, // 本営の門・外壁の西と東の切れ目
 	}
 	for ch := 1; ch <= 9; ch++ {
 		id := fmt.Sprintf("ch%02d", ch)
@@ -34,33 +78,48 @@ func TestIT06AntiLure(t *testing.T) {
 			charge := 0
 			groups := map[string][]defs.EnemyPlacement{}
 			for _, e := range m.Enemies {
-				if e.AI == defs.AICharge {
-					charge++
-				}
-				if e.Group != "" {
-					if e.Approach != defs.ApproachGroup {
-						t.Fatalf("%s は一団の寄り方ではない", e.ID)
+				if e.Group == "" {
+					// 決まり 1 の 4 割は一団の外の敵で数える。
+					if e.AI == defs.AICharge {
+						charge++
 					}
-					groups[e.Group] = append(groups[e.Group], e)
+					continue
 				}
+				if e.Approach != defs.ApproachGroup {
+					t.Fatalf("%s は一団の寄り方ではない", e.ID)
+				}
+				if e.AI != defs.AIHold {
+					t.Fatalf("守りの一団 %s の %s が待つ敵ではない（%s）。一員が突撃だと 1 ターン目に一団の全員が動き出す", e.Group, e.ID, e.AI)
+				}
+				groups[e.Group] = append(groups[e.Group], e)
 			}
 			gotGroups := map[string]int{}
 			for group, members := range groups {
 				gotGroups[group] = len(members)
 			}
 			if !reflect.DeepEqual(gotGroups, wantGroups[id]) {
-				t.Fatalf("初期の一団は %v、期待 %v", gotGroups, wantGroups[id])
+				t.Fatalf("守りの一団は %v、期待 %v", gotGroups, wantGroups[id])
 			}
 			if ch == 1 {
-				if len(m.Enemies) != 8 || charge != 2 || len(m.Reinforcements) != 3 || len(groups) != 1 || len(groups["fort_front"]) != 2 {
-					t.Fatalf("1 章の例外: 敵 %d 突撃 %d 増援 %d 一団 %v", len(m.Enemies), charge, len(m.Reinforcements), groups)
+				if len(m.Enemies) != 8 || charge != 2 || len(m.Reinforcements) != 3 {
+					t.Fatalf("1 章の例外: 敵 %d 突撃 %d ターン増援 %d", len(m.Enemies), charge, len(m.Reinforcements))
+				}
+				// #151 の出来事の増援 3 体を残す（E-100、F-03）。
+				found := false
+				for _, e := range m.Events {
+					if e.ID == "border_east_entry" {
+						found = true
+						if e.Trigger != defs.TriggerPlayerEntered || e.Effect != defs.EventReinforce || len(e.Enemies) != 3 {
+							t.Fatalf("border_east_entry: きっかけ %s 効果 %s 増援 %d", e.Trigger, e.Effect, len(e.Enemies))
+						}
+					}
+				}
+				if !found {
+					t.Fatal("出来事の増援 border_east_entry がない")
 				}
 			} else {
 				if charge*5 < len(m.Enemies)*2 {
-					t.Fatalf("初期突撃は %d/%d で 4 割未満", charge, len(m.Enemies))
-				}
-				if len(groups) == 0 {
-					t.Fatal("守りの一団がない")
+					t.Fatalf("一団の外の初期突撃は %d/%d で 4 割未満", charge, len(m.Enemies))
 				}
 				for group, members := range groups {
 					if len(members) < 3 || len(members) > 5 {
@@ -82,10 +141,14 @@ func TestIT06AntiLure(t *testing.T) {
 				}
 			}
 			for group, members := range groups {
-				reachable := reachableByTerrain(m, cat, defs.Slot{X: members[0].X, Y: members[0].Y}, nil)
-				for _, member := range members {
-					if !reachable[defs.Slot{X: member.X, Y: member.Y}] {
-						t.Fatalf("%s の %s は別の到達領域にいる", group, member.ID)
+				for _, a := range members {
+					steps := pathSteps(m, cat, defs.Slot{X: a.X, Y: a.Y})
+					for _, b := range members {
+						manhattan := absInt(a.X-b.X) + absInt(a.Y-b.Y)
+						got, ok := steps[defs.Slot{X: b.X, Y: b.Y}]
+						if !ok || manhattan > groupMaxManhattan || got > manhattan+groupMaxDetour {
+							t.Fatalf("%s の %s (%d,%d) と %s (%d,%d) は近くない: マス目 %d、経路 %d（届く %v）", group, a.ID, a.X, a.Y, b.ID, b.X, b.Y, manhattan, got, ok)
+						}
 					}
 				}
 				for _, member := range members {
@@ -95,7 +158,6 @@ func TestIT06AntiLure(t *testing.T) {
 							linked = true
 							break
 						}
-
 					}
 					if !linked {
 						t.Fatalf("%s の %s が攻撃されたときに一団が動かない", group, member.ID)
@@ -103,7 +165,7 @@ func TestIT06AntiLure(t *testing.T) {
 				}
 			}
 			if ch >= 2 {
-				// 追加した突撃も含め、1 ターン目に出撃枠が攻撃されない。
+				// 1 ターン目に出撃枠が攻撃されない。
 				campaign, err := core.NewCampaignAt(cat, core.Withdraw, id)
 				if err != nil {
 					t.Fatal(err)
@@ -146,7 +208,163 @@ func TestIT06AntiLure(t *testing.T) {
 					}
 				}
 			}
-
+			checkGroupsHold(t, cat, id, m)
+			checkGroupsCharge(t, cat, id, m, groups)
 		})
+	}
+}
+
+// checkGroupsHold は、育った名簿で枠を埋め、自軍が何もしないまま 3 ターン過ごしても、
+// 守りの一団が持ち場を離れず、待つ敵のままであることを確かめる（E-100 ②、F-01）。
+func checkGroupsHold(t *testing.T, cat *defs.Catalog, id string, m defs.MapDef) {
+	t.Helper()
+	var c *core.Campaign
+	if id == "ch01" {
+		var err error
+		c, err = core.NewCampaignAt(cat, core.Withdraw, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		c = estimatedRosterIT06(t, cat, id, false)
+	}
+	n := len(m.Slots)
+	if n > len(c.Roster) {
+		n = len(c.Roster)
+	}
+	members := make([]int, n)
+	for i := range members {
+		members[i] = i
+	}
+	s, _, err := c.StartBattle(members, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := s.Battle
+	start := map[int]tactics.Pos{}
+	for i, u := range b.Units() {
+		if u.Side == tactics.Enemy && u.Group != "" {
+			start[i] = u.Pos
+		}
+	}
+	for turn := 1; turn <= 3 && b.Result == tactics.Ongoing; turn++ {
+		if _, err := b.EndPhase(); err != nil {
+			t.Fatal(err)
+		}
+		for i, p := range start {
+			u := b.Units()[i]
+			if !u.Alive {
+				continue
+			}
+			if u.Pos != p || u.AI != tactics.Hold {
+				t.Fatalf("%d 回目の敵軍の番のあと、守りの一団 %s の %s が持ち場 (%d,%d) を離れた: (%d,%d)、突撃 %v", turn, u.Group, u.ID, p.X, p.Y, u.Pos.X, u.Pos.Y, u.AI == tactics.Charge)
+			}
+		}
+	}
+}
+
+// checkGroupsCharge は、守りの一団の一員を 1 体ずつ攻撃し、そのとき一団の全員が突撃に変わり、
+// 次の敵軍の番に全員が動き出す（動くか攻撃する）ことを確かめる（E-100 ②、F-01）。
+func checkGroupsCharge(t *testing.T, cat *defs.Catalog, id string, m defs.MapDef, groups map[string][]defs.EnemyPlacement) {
+	t.Helper()
+	for group, placements := range groups {
+		for _, target := range placements {
+			setup, err := core.NewSetup(cat, id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			targetIndex, attacker := -1, -1
+			occupied := map[tactics.Pos]bool{}
+			for i, u := range setup.Units {
+				occupied[u.Pos] = true
+				if u.Side == tactics.Enemy && u.ID == target.ID {
+					targetIndex = i
+				}
+			}
+			for i, u := range setup.Units {
+				if u.Side == tactics.Player && !u.Lord && len(u.Weapons) > 0 && u.Weapons[0].Type != tactics.Staff {
+					attacker = i
+					break
+				}
+			}
+			if targetIndex < 0 || attacker < 0 {
+				t.Fatalf("%s の %s を攻撃する組が作れない", group, target.ID)
+			}
+			w := setup.Units[attacker].Weapons[0]
+			from, found := tactics.Pos{}, false
+			for y := range setup.Terrain {
+				for x := range setup.Terrain[y] {
+					p := tactics.Pos{X: x, Y: y}
+					d := absInt(x-target.X) + absInt(y-target.Y)
+					if found || occupied[p] || setup.Terrain[y][x].Cost < 1 || d < w.MinRange || d > w.MaxRange {
+						continue
+					}
+					from, found = p, true
+				}
+			}
+			if !found {
+				t.Fatalf("%s の %s を攻撃できるマスがない", group, target.ID)
+			}
+			setup.Units[attacker].Pos = from
+			b, _, err := tactics.New(setup, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			start := map[int]tactics.Pos{}
+			for i, u := range b.Units() {
+				if u.Side == tactics.Enemy && u.Group == group {
+					start[i] = u.Pos
+				}
+			}
+			events, err := b.Act(tactics.Command{Unit: attacker, To: from, Action: tactics.Attack, Target: targetIndex})
+			if err != nil {
+				t.Fatalf("%s の %s を攻撃できない: %v", group, target.ID, err)
+			}
+			charged := false
+			for _, e := range events {
+				if e.Kind == tactics.EventGroupCharge && e.Group == group {
+					charged = true
+				}
+			}
+			if !charged {
+				t.Fatalf("%s の %s を攻撃しても一団が突撃に変わらない", group, target.ID)
+			}
+			for i := range start {
+				if u := b.Units()[i]; u.Alive && u.AI != tactics.Charge {
+					t.Fatalf("%s の %s を攻撃したのに %s が突撃でない", group, target.ID, u.ID)
+				}
+			}
+			// 一団の方式の敵は、危険な範囲の外で集まってからそろって入る（DES-IT06 10.2 節）。
+			// 集まる先にすでにいる一員や、狭い道で前の列を待つ一員はその番に動かないことがある。
+			// そこで、次の敵軍の番に一団が動き出すこと、待つ敵に戻らないこと、自軍が動かなくても
+			// groupLeavePhases 回の敵軍の番のうちに全員が持ち場を離れる（動くか攻撃する）ことを確かめる。
+			acted := map[int]bool{}
+			for phase := 1; phase <= groupLeavePhases && b.Result == tactics.Ongoing; phase++ {
+				enemyEvents, err := b.EndPhase()
+				if err != nil {
+					t.Fatal(err)
+				}
+				moved := false
+				for _, e := range enemyEvents {
+					if _, member := start[e.Unit]; member && (e.Kind == tactics.EventStrike || e.Kind == tactics.EventMove) {
+						acted[e.Unit] = true
+						moved = true
+					}
+				}
+				if phase == 1 && !moved {
+					t.Fatalf("%s の %s を攻撃したあとの敵軍の番に、一団の誰も動かない", group, target.ID)
+				}
+				for i := range start {
+					if u := b.Units()[i]; u.Alive && u.AI != tactics.Charge {
+						t.Fatalf("%s の %s を攻撃したあと、%s が待つ敵に戻った", group, target.ID, u.ID)
+					}
+				}
+			}
+			for i, p := range start {
+				if u := b.Units()[i]; u.Alive && !acted[i] && b.Result == tactics.Ongoing {
+					t.Fatalf("%s の %s を攻撃したあとの敵軍の番 %d 回で、%s が (%d,%d) から動かない", group, target.ID, groupLeavePhases, u.ID, p.X, p.Y)
+				}
+			}
+		}
 	}
 }

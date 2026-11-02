@@ -21,7 +21,7 @@
 | 試験 | テスト仕様書（反復 3） | [04_test/test-spec-it03.md](04_test/test-spec-it03.md) | 骨組み。実装とともに書き足す |
 | 試験 | テスト仕様書（反復 4） | [04_test/test-spec-it04.md](04_test/test-spec-it04.md) | v0.1 骨組み。自動は未実装、手動は未実施 |
 | 試験 | テスト仕様書（反復 5） | [04_test/test-spec-it05.md](04_test/test-spec-it05.md) | v0.2。自動は実装済み。#98・#105 の手動結果と持ち越しは 3.10 節（E-60〜E-72） |
-| 試験 | テスト仕様書（反復 6） | [04_test/test-spec-it06.md](04_test/test-spec-it06.md) | v2.6 案（#154。初期突撃・一団・連続増援と 20 seed の自動試遊を追加。旧配置に依存するケースを置換。手動・基準 PC の測定は未実施） |
+| 試験 | テスト仕様書（反復 6） | [04_test/test-spec-it06.md](04_test/test-spec-it06.md) | v2.7 案（#154、REV-084 の対応。初期突撃・待つ守りの一団・連続増援と 3 種の名簿の 20 seed の自動試遊を追加。旧配置に依存するケースを置換し、配置に関係しない検査は続ける。手動・基準 PC の測定は未実施） |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
@@ -42,15 +42,15 @@
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
-| 制作 | ch02 の制作記録（反復 6） | [iterations/it06/map-ch02.md](iterations/it06/map-ch02.md) | v0.3（#130、REV-079、E-96・E-97。自動の下限は確認、開発者の短い試遊は 1 回目（版 0.2）を実施し、版 0.3 は未実施） #154 で釣り出し対策を追記 |
-| 制作 | ch05 の制作記録（反復 6） | [iterations/it06/map-ch05.md](iterations/it06/map-ch05.md) | v0.3（#130、REV-079、E-96・E-97。自動の下限は確認、開発者の短い試遊は未実施） #154 で釣り出し対策を追記 |
-| 制作 | ch01 の制作記録（反復 6） | [iterations/it06/map-ch01.md](iterations/it06/map-ch01.md) | v0.1（#131。自動の下限は確認、開発者の短い試遊は未実施） #154 で釣り出し対策を追記 |
-| 制作 | ch03 の制作記録（反復 6） | [iterations/it06/map-ch03.md](iterations/it06/map-ch03.md) | v0.1（#131。自動の下限は確認、壁の外の増援の候補を記録、開発者の短い試遊は未実施） #154 で釣り出し対策を追記 |
-| 制作 | ch04 の制作記録（反復 6） | [iterations/it06/map-ch04.md](iterations/it06/map-ch04.md) | v0.1（#131。自動の下限は確認、開発者の短い試遊は未実施） #154 で釣り出し対策を追記 |
-| 制作 | ch06 の制作記録（反復 6） | [iterations/it06/map-ch06.md](iterations/it06/map-ch06.md) | v0.2（#132。自動の下限は確認、開発者の短い試遊は未実施） #154 で釣り出し対策を追記 |
-| 制作 | ch07 の制作記録（反復 6） | [iterations/it06/map-ch07.md](iterations/it06/map-ch07.md) | v0.2（#132。自動の下限は確認、開発者の短い試遊は未実施） #154 で釣り出し対策を追記 |
-| 制作 | ch08 の制作記録（反復 6） | [iterations/it06/map-ch08.md](iterations/it06/map-ch08.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施） #154 で釣り出し対策を追記 |
-| 制作 | ch09 の制作記録（反復 6） | [iterations/it06/map-ch09.md](iterations/it06/map-ch09.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施） #154 で釣り出し対策を追記 |
+| 制作 | ch02 の制作記録（反復 6） | [iterations/it06/map-ch02.md](iterations/it06/map-ch02.md) | v0.3（#130、REV-079、E-96・E-97。自動の下限は確認、開発者の短い試遊は 1 回目（版 0.2）を実施し、版 0.3 は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch05 の制作記録（反復 6） | [iterations/it06/map-ch05.md](iterations/it06/map-ch05.md) | v0.3（#130、REV-079、E-96・E-97。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch01 の制作記録（反復 6） | [iterations/it06/map-ch01.md](iterations/it06/map-ch01.md) | v0.1（#131。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch03 の制作記録（反復 6） | [iterations/it06/map-ch03.md](iterations/it06/map-ch03.md) | v0.1（#131。自動の下限は確認、壁の外の増援の候補を記録、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch04 の制作記録（反復 6） | [iterations/it06/map-ch04.md](iterations/it06/map-ch04.md) | v0.1（#131。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch06 の制作記録（反復 6） | [iterations/it06/map-ch06.md](iterations/it06/map-ch06.md) | v0.2（#132。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch07 の制作記録（反復 6） | [iterations/it06/map-ch07.md](iterations/it06/map-ch07.md) | v0.2（#132。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch08 の制作記録（反復 6） | [iterations/it06/map-ch08.md](iterations/it06/map-ch08.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch09 の制作記録（反復 6） | [iterations/it06/map-ch09.md](iterations/it06/map-ch09.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
 | 制作 | ch06 の制作記録（反復 5） | [iterations/it05/map-ch06.md](iterations/it05/map-ch06.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch07 の制作記録（反復 5） | [iterations/it05/map-ch07.md](iterations/it05/map-ch07.md) | v0.1（#104。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch08 の制作記録（反復 5） | [iterations/it05/map-ch08.md](iterations/it05/map-ch08.md) | v0.1（#104。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |

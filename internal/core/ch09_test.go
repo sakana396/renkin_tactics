@@ -61,7 +61,7 @@ func TestCh09Map(t *testing.T) {
 		t.Fatal("ch09 のマップがない")
 	}
 
-	t.Run("TC-FR-MAP-02-03 32×32・出撃 7・初期敵 26＋ターン増援 8・最奥のボス", func(t *testing.T) {
+	t.Run("TC-FR-MAP-02-03 32×32・出撃 7・初期敵 26＋ターン増援 14・最奥のボス", func(t *testing.T) {
 		if len(m.Rows) != 32 {
 			t.Fatalf("行の数 = %d", len(m.Rows))
 		}
@@ -88,7 +88,8 @@ func TestCh09Map(t *testing.T) {
 		if len(bosses) != 1 || bosses[0].Name != "ゲルハルト" || bosses[0].X != 15 || bosses[0].Y != 2 || m.Rows[2][15] != 'T' {
 			t.Errorf("ボス = %+v", bosses)
 		}
-		// 動き方: 突っ込む敵は東の騎兵 2 と西のファイター 1 だけ。残りは待ち構える（DES-IT05 6 章）。
+		// 動き方: 反復 5 は突っ込む敵が 3 体だった（DES-IT05 6 章）。#154（E-100、DES-IT06 10.1 節）で、守りの一団の外の
+		// 11 体を突っ込む敵にした。守りの一団の一員と突撃の割合は TC-FR-MAP-04-23 で確かめる。
 		charge := 0
 		for _, e := range m.Enemies {
 			if e.AI == "charge" {
@@ -98,7 +99,8 @@ func TestCh09Map(t *testing.T) {
 		if charge != 11 {
 			t.Errorf("突っ込む初期の敵 = %d", charge)
 		}
-		// 増援の時機と位置（3・5・7・9 ターンに 2 体ずつ。南西の背後、東の端、前庭の両端、本営の中）。
+		// 増援の時機と位置。反復 5 の 8 体（3・5・7・9 ターンに 2 体ずつ。南西の背後、東の端、前庭の両端、本営の中）を
+		// 定義の先頭に残し、#154 で 4・6・8・10〜12 ターン目の 6 体を足した（ターンごとの数は TC-FR-MAP-04-23）。
 		type rf struct{ turn, x, y int }
 		var got []rf
 		for _, r := range m.Reinforcements {

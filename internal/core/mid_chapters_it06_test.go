@@ -11,42 +11,43 @@ import (
 )
 
 // ch06・ch07 の制作値を、出撃枠・敵の総数・後半の一団から確かめる（DES-MAP-08）。
+//
+// #154（E-100）で初めの敵・ターンの増援・一団を変えたので、初めの敵とターンの増援の数・敵の騎兵の数・
+// 出撃枠の安全は TC-FR-MAP-04-23 に移した。出来事の増援（数・一団・Lv・bonus）、出来事の魔道士、閉路の検査は続ける。
 func TestIT06MidChapters(t *testing.T) {
-	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
-		id                          string
-		slots, initial, turn, event int
-		groups                      map[string]int
-		cavaliers                   int
-		frontCavalier               defs.Slot
+		id            string
+		slots, event  int
+		groups        map[string]int
+		frontCavalier defs.Slot
 	}{
-		{"ch06", 7, 14, 4, 2, map[string]int{"pass_center": 3, "pass_east": 2}, 6, defs.Slot{}},
-		{"ch07", 6, 10, 4, 2, map[string]int{"convoy_valley": 2, "convoy_east": 6}, 4, defs.Slot{X: 14, Y: 10}},
+		// 出来事の増援の出来事の数と、出来事の増援の一団ごとの人数。
+		{"ch06", 7, 2, map[string]int{"pass_center": 3, "pass_east": 2}, defs.Slot{}},
+		{"ch07", 6, 2, map[string]int{"convoy_valley": 2, "convoy_east": 6}, defs.Slot{X: 14, Y: 10}},
 	} {
 		t.Run("TC-FR-MAP-04-17 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
 			if !ok {
 				t.Fatal("地図がない")
 			}
-			if len(m.Slots) != tc.slots || len(m.Enemies) != tc.initial || len(m.Reinforcements) != tc.turn || len(m.Events) != tc.event {
-				t.Fatalf("枠・初期・ターン・出来事: %d/%d/%d/%d", len(m.Slots), len(m.Enemies), len(m.Reinforcements), len(m.Events))
-			}
-			all := append([]defs.EnemyPlacement(nil), m.Enemies...)
-			for _, r := range m.Reinforcements {
-				all = append(all, r.EnemyPlacement)
-			}
+			var all []defs.EnemyPlacement
+			reinforce := 0
 			for _, e := range m.Events {
 				if e.Effect != defs.EventReinforce {
-					t.Fatalf("%s は増援でない", e.ID)
+					// #154 の enemy_attacked → charge_group は TC-FR-MAP-04-23 で確かめる。
+					continue
 				}
+				reinforce++
 				if len(e.Enemies) == 0 {
 					t.Fatalf("%s に増援がない", e.ID)
 				}
 				all = append(all, e.Enemies...)
 			}
+			if len(m.Slots) != tc.slots || reinforce != tc.event {
+				t.Fatalf("枠・増援の出来事: %d/%d", len(m.Slots), reinforce)
+			}
 			groups := map[string]int{}
-			cavaliers := 0
 			for _, e := range all {
 				if e.Group != "" {
 					if e.Approach != defs.ApproachGroup {
@@ -54,12 +55,9 @@ func TestIT06MidChapters(t *testing.T) {
 					}
 					groups[e.Group]++
 				}
-				if e.Class == "cavalier" && !e.Boss {
-					cavaliers++
-				}
 			}
-			if !reflect.DeepEqual(groups, tc.groups) || cavaliers != tc.cavaliers {
-				t.Fatalf("一団 %v・騎兵 %d", groups, cavaliers)
+			if !reflect.DeepEqual(groups, tc.groups) {
+				t.Fatalf("出来事の増援の一団 %v", groups)
 			}
 			if tc.id == "ch07" && (m.Enemies[0].X != tc.frontCavalier.X || m.Enemies[0].Y != tc.frontCavalier.Y) {
 				t.Fatalf("初期の騎兵: (%d,%d)", m.Enemies[0].X, m.Enemies[0].Y)
@@ -136,9 +134,13 @@ func TestIT06MidChapters(t *testing.T) {
 				}
 			}
 			minLevel, maxLevel := 6, 9
+			mageSpeed := 7
 			if tc.id == "ch07" {
 				minLevel, maxLevel = 7, 10
+				mageSpeed = 8
 			}
+			// TC-FR-MAP-04-18 で出現を待って見ていた tactics の形も、変換を通して確かめる。
+			checkEventMagesSetup(t, cat, tc.id, mageSpeed)
 			for _, e := range m.Events {
 				for _, enemy := range e.Enemies {
 					if enemy.Level < minLevel || enemy.Level > maxLevel {
@@ -222,7 +224,7 @@ func containsWeapon(weapons []string, id string) bool {
 
 // 育った名簿で勝つ手順の下限を固定 seed で再現する。勝率は難しさの判定に使わない（DES-MAP-08）。
 func TestIT06MidAutoplay(t *testing.T) {
-	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
+	t.Skip("TC-FR-MAP-04-18 の固定 seed・進路の勝ち筋は #154（E-100）の配置で変わったため、3 種の名簿の TC-FR-MAP-04-24 に置き換えた。出来事の魔道士の武器と攻撃の速さは TC-FR-MAP-04-17 で確かめる")
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
 		id, name string

@@ -172,7 +172,7 @@ ai = "charge"
 x = 15
 y = 8
 
-# 2 章（設計書（反復 2）10.5 節）。敵のボーナスは、ボスを除き 2/1/1/1/1（増援も同じ）
+# E-100: 守りの一団は待つ一員だけで作る。誰を攻撃しても、一団の全員が動き出す（DES-IT06 10.1 節）
 
 [[maps.events]]
 id = "anti_lure_fort_front_2"
@@ -187,6 +187,9 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch01_6"
 effect = "charge_group"
 group = "fort_front"
+
+# 2 章（設計書（反復 2）10.5 節）。敵のボーナスは、ボスを除き 2/1/1/1/1（増援も同じ）
+
 [[maps]]
 id = "ch02"
 name = "灰の街道"
@@ -244,7 +247,7 @@ class = "archer"
 weapon = "iron_bow"
 level = 5
 bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
-ai = "hold"
+ai = "charge"
 x = 9
 y = 3
 
@@ -256,7 +259,7 @@ class = "myrmidon"
 weapon = "iron_sword"
 level = 3
 bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
-ai = "charge"
+ai = "hold"
 x = 10
 y = 7
 
@@ -499,7 +502,7 @@ ai = "charge"
 x = 7
 y = 14
 
-# 3 章（設計書（反復 2）10.6 節）。敵のボーナスは、ボスを除き 3/2/1/1/1（増援も同じ）
+# E-100: 守りの一団は待つ一員だけで作る。誰を攻撃しても、一団の全員が動き出す（DES-IT06 10.1 節）
 
 [[maps.events]]
 id = "anti_lure_road_east_front_3"
@@ -521,6 +524,9 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch02_6"
 effect = "charge_group"
 group = "road_east_front"
+
+# 3 章（設計書（反復 2）10.6 節）。敵のボーナスは、ボスを除き 3/2/1/1/1（増援も同じ）
+
 [[maps]]
 id = "ch03"
 name = "王都の奪還"
@@ -571,7 +577,7 @@ class = "archer"
 weapon = "iron_bow"
 level = 6
 bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
-ai = "hold"
+ai = "charge"
 x = 11
 y = 9
 
@@ -617,7 +623,7 @@ class = "archer"
 weapon = "iron_bow"
 level = 7
 bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
-ai = "charge"
+ai = "hold"
 x = 7
 y = 5
 
@@ -829,8 +835,7 @@ ai = "charge"
 x = 15
 y = 11
 
-# 9 章（DES-MAP-08。反復 6 の制作記録は docs/iterations/it06/map-ch09.md）。初期敵 26＋ターン増援 8。
-# 敵のボーナスは、ボスを除き 6/3/3/2/3（増援も同じ）。ボスは 14/5/5/4/6。#104 で ch08 の後の名簿に合わせて強くし直した（E-52。#102 は 4/2/2/1/1・ボス 12/4/4/3/4）
+# E-100: 守りの一団は待つ一員だけで作る。誰を攻撃しても、一団の全員が動き出す（DES-IT06 10.1 節）
 
 [[maps.events]]
 id = "anti_lure_wall_west_front_0"
@@ -852,6 +857,10 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch03_5"
 effect = "charge_group"
 group = "wall_west_front"
+
+# 9 章（DES-MAP-08。反復 6 の制作記録は docs/iterations/it06/map-ch09.md）。初期敵 26＋ターン増援 14（#154）。
+# 敵のボーナスは、ボスを除き 6/3/3/2/3（増援も同じ）。ボスは 14/5/5/4/6。#104 で ch08 の後の名簿に合わせて強くし直した（E-52。#102 は 4/2/2/1/1・ボス 12/4/4/3/4）
+
 [[maps]]
 id = "ch09"
 name = "ヴァルトの門"
@@ -903,6 +912,8 @@ slots = [
 # 本営の玉座の手前の守り（内の門の内側）
 [[maps.enemies]]
 id = "inner_gate_armor"
+group = "keep_gate_front"
+approach = "group"
 class = "armor"
 weapon = "iron_lance"
 level = 9
@@ -912,6 +923,9 @@ x = 15
 y = 5
 
 [[maps.enemies]]
+id = "anti_lure_ch09_1"
+group = "keep_gate_front"
+approach = "group"
 class = "armor"
 weapon = "iron_lance"
 level = 10
@@ -942,6 +956,9 @@ y = 1
 
 # 前庭: 西の門の内側
 [[maps.enemies]]
+id = "anti_lure_ch09_4"
+group = "outer_west_front"
+approach = "group"
 class = "soldier"
 weapon = "iron_lance"
 level = 9
@@ -952,6 +969,9 @@ y = 10
 
 # 前庭: 東の門の内側
 [[maps.enemies]]
+id = "anti_lure_ch09_5"
+group = "outer_east_front"
+approach = "group"
 class = "soldier"
 weapon = "iron_lance"
 level = 10
@@ -962,6 +982,9 @@ y = 10
 
 # 前庭: 西の砦の上
 [[maps.enemies]]
+id = "anti_lure_ch09_6"
+group = "outer_west_front"
+approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 11
@@ -972,6 +995,9 @@ y = 8
 
 # 前庭: 東の砦の上
 [[maps.enemies]]
+id = "anti_lure_ch09_7"
+group = "outer_east_front"
+approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 12
@@ -982,6 +1008,9 @@ y = 8
 
 # 前庭: 本営の門の前
 [[maps.enemies]]
+id = "anti_lure_ch09_8"
+group = "keep_gate_front"
+approach = "group"
 class = "myrmidon"
 weapon = "iron_sword"
 level = 9
@@ -991,6 +1020,9 @@ x = 15
 y = 8
 
 [[maps.enemies]]
+id = "anti_lure_ch09_9"
+group = "keep_gate_front"
+approach = "group"
 class = "fighter"
 weapon = "iron_axe"
 level = 10
@@ -1012,8 +1044,6 @@ y = 13
 # 西の道: 山の上
 [[maps.enemies]]
 id = "anti_lure_ch09_11"
-group = "gate_west_front"
-approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 12
@@ -1025,8 +1055,6 @@ y = 14
 # 西の道: 森の中
 [[maps.enemies]]
 id = "anti_lure_ch09_12"
-group = "gate_west_front"
-approach = "group"
 class = "myrmidon"
 weapon = "iron_sword"
 level = 9
@@ -1048,8 +1076,6 @@ y = 16
 # 西の道: 山の上
 [[maps.enemies]]
 id = "anti_lure_ch09_14"
-group = "gate_west_front"
-approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 11
@@ -1060,8 +1086,6 @@ y = 19
 
 # 西の道: 南の入口
 [[maps.enemies]]
-group = "gate_west_front"
-approach = "group"
 id = "west_entrance_soldier"
 class = "soldier"
 weapon = "iron_lance"
@@ -1071,15 +1095,18 @@ ai = "charge"
 x = 5
 y = 21
 
-# 西の道: 北の出口
+# 前庭: 外壁の西の切れ目の内側。西の守りの一団（#154 で西の道の北の出口 (10,12) から動かした）
 [[maps.enemies]]
+id = "anti_lure_ch09_16"
+group = "outer_west_front"
+approach = "group"
 class = "soldier"
 weapon = "iron_lance"
 level = 9
 bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
-x = 10
-y = 12
+x = 4
+y = 10
 
 # 東の道: 突っ込んでくる騎兵
 [[maps.enemies]]
@@ -1104,8 +1131,6 @@ y = 17
 # 東の道: 崩れた壁の切れ目の奥
 [[maps.enemies]]
 id = "anti_lure_ch09_19"
-group = "gate_east_front"
-approach = "group"
 class = "soldier"
 weapon = "iron_lance"
 level = 12
@@ -1116,8 +1141,6 @@ y = 14
 
 [[maps.enemies]]
 id = "anti_lure_ch09_20"
-group = "gate_east_front"
-approach = "group"
 class = "soldier"
 weapon = "iron_lance"
 level = 9
@@ -1129,8 +1152,6 @@ y = 14
 # 東の道: 砦の上
 [[maps.enemies]]
 id = "anti_lure_ch09_21"
-group = "gate_east_front"
-approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 10
@@ -1142,8 +1163,6 @@ y = 12
 # 東の道: 森の中
 [[maps.enemies]]
 id = "anti_lure_ch09_22"
-group = "gate_east_front"
-approach = "group"
 class = "myrmidon"
 weapon = "iron_sword"
 level = 11
@@ -1162,15 +1181,18 @@ ai = "hold"
 x = 28
 y = 18
 
-# 東の道: 南の入口
+# 前庭: 外壁の東の切れ目の内側。東の守りの一団（#154 で東の道の南の入口 (22,20) から動かした）
 [[maps.enemies]]
+id = "anti_lure_ch09_24"
+group = "outer_east_front"
+approach = "group"
 class = "fighter"
 weapon = "iron_axe"
 level = 9
 bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
-x = 22
-y = 20
+x = 27
+y = 10
 
 # ボス（本営の玉座の砦の上）
 [[maps.enemies]]
@@ -1501,64 +1523,81 @@ bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "charge"
 x = 15
 y = 4
+
+# E-100: 守りの一団は待つ一員だけで作る。誰を攻撃しても、一団の全員が動き出す（DES-IT06 10.1 節）
+
+[[maps.events]]
+id = "anti_lure_keep_gate_front_0"
+trigger = "enemy_attacked"
+unit = "inner_gate_armor"
+effect = "charge_group"
+group = "keep_gate_front"
+
+[[maps.events]]
+id = "anti_lure_keep_gate_front_1"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch09_1"
+effect = "charge_group"
+group = "keep_gate_front"
+
+[[maps.events]]
+id = "anti_lure_keep_gate_front_8"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch09_8"
+effect = "charge_group"
+group = "keep_gate_front"
+
+[[maps.events]]
+id = "anti_lure_keep_gate_front_9"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch09_9"
+effect = "charge_group"
+group = "keep_gate_front"
+
+[[maps.events]]
+id = "anti_lure_outer_west_front_4"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch09_4"
+effect = "charge_group"
+group = "outer_west_front"
+
+[[maps.events]]
+id = "anti_lure_outer_west_front_6"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch09_6"
+effect = "charge_group"
+group = "outer_west_front"
+
+[[maps.events]]
+id = "anti_lure_outer_west_front_16"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch09_16"
+effect = "charge_group"
+group = "outer_west_front"
+
+[[maps.events]]
+id = "anti_lure_outer_east_front_5"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch09_5"
+effect = "charge_group"
+group = "outer_east_front"
+
+[[maps.events]]
+id = "anti_lure_outer_east_front_7"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch09_7"
+effect = "charge_group"
+group = "outer_east_front"
+
+[[maps.events]]
+id = "anti_lure_outer_east_front_24"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch09_24"
+effect = "charge_group"
+group = "outer_east_front"
+
 # ch04〜ch06（DES-MAP-06、DES-CMP-09）。制作記録は docs/iterations/it05/map-ch04.md〜map-ch06.md
 
-
-[[maps.events]]
-id = "anti_lure_gate_west_front_11"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch09_11"
-effect = "charge_group"
-group = "gate_west_front"
-
-[[maps.events]]
-id = "anti_lure_gate_west_front_12"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch09_12"
-effect = "charge_group"
-group = "gate_west_front"
-
-[[maps.events]]
-id = "anti_lure_gate_west_front_14"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch09_14"
-effect = "charge_group"
-group = "gate_west_front"
-
-[[maps.events]]
-id = "anti_lure_gate_west_front_15"
-trigger = "enemy_attacked"
-unit = "west_entrance_soldier"
-effect = "charge_group"
-group = "gate_west_front"
-
-[[maps.events]]
-id = "anti_lure_gate_east_front_19"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch09_19"
-effect = "charge_group"
-group = "gate_east_front"
-
-[[maps.events]]
-id = "anti_lure_gate_east_front_20"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch09_20"
-effect = "charge_group"
-group = "gate_east_front"
-
-[[maps.events]]
-id = "anti_lure_gate_east_front_21"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch09_21"
-effect = "charge_group"
-group = "gate_east_front"
-
-[[maps.events]]
-id = "anti_lure_gate_east_front_22"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch09_22"
-effect = "charge_group"
-group = "gate_east_front"
 [[maps]]
 id = "ch04"
 name = "焼け野の村"
@@ -1618,14 +1657,12 @@ class = "archer"
 weapon = "iron_bow"
 level = 6
 bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
-ai = "charge"
+ai = "hold"
 x = 3
 y = 10
 
 [[maps.enemies]]
 id = "anti_lure_ch04_3"
-group = "west_gate_front"
-approach = "group"
 class = "myrmidon"
 weapon = "iron_sword"
 level = 4
@@ -1635,6 +1672,9 @@ x = 5
 y = 9
 
 [[maps.enemies]]
+id = "anti_lure_ch04_4"
+group = "east_gate_front"
+approach = "group"
 class = "soldier"
 weapon = "iron_lance"
 level = 5
@@ -1677,6 +1717,9 @@ x = 4
 y = 4
 
 [[maps.enemies]]
+id = "anti_lure_ch04_8"
+group = "east_gate_front"
+approach = "group"
 class = "fighter"
 weapon = "iron_axe"
 level = 6
@@ -1686,6 +1729,9 @@ x = 12
 y = 5
 
 [[maps.enemies]]
+id = "anti_lure_ch04_9"
+group = "east_gate_front"
+approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 4
@@ -1699,7 +1745,7 @@ class = "myrmidon"
 weapon = "iron_sword"
 level = 5
 bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
-ai = "hold"
+ai = "charge"
 x = 9
 y = 4
 
@@ -1713,17 +1759,6 @@ bonus = { hp = 9, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
 x = 9
 y = 2
-
-[[maps.reinforcements]]
-id = "anti_lure_turn_04_1"
-turn = 3
-class = "fighter"
-weapon = "iron_axe"
-level = 4
-bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
-ai = "charge"
-x = 0
-y = 15
 
 [[maps.reinforcements]]
 id = "anti_lure_turn_04_2"
@@ -1876,18 +1911,12 @@ ai = "charge"
 x = 11
 y = 0
 
+# E-100: 守りの一団は待つ一員だけで作る。誰を攻撃しても、一団の全員が動き出す（DES-IT06 10.1 節）
 
 [[maps.events]]
 id = "anti_lure_west_gate_front_2"
 trigger = "enemy_attacked"
 unit = "anti_lure_ch04_2"
-effect = "charge_group"
-group = "west_gate_front"
-
-[[maps.events]]
-id = "anti_lure_west_gate_front_3"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch04_3"
 effect = "charge_group"
 group = "west_gate_front"
 
@@ -1904,6 +1933,28 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch04_7"
 effect = "charge_group"
 group = "west_gate_front"
+
+[[maps.events]]
+id = "anti_lure_east_gate_front_4"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch04_4"
+effect = "charge_group"
+group = "east_gate_front"
+
+[[maps.events]]
+id = "anti_lure_east_gate_front_8"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch04_8"
+effect = "charge_group"
+group = "east_gate_front"
+
+[[maps.events]]
+id = "anti_lure_east_gate_front_9"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch04_9"
+effect = "charge_group"
+group = "east_gate_front"
+
 [[maps]]
 id = "ch05"
 name = "狭間の関所"
@@ -1949,7 +2000,7 @@ class = "fighter"
 weapon = "iron_axe"
 level = 6
 bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
-ai = "hold"
+ai = "charge"
 x = 12
 y = 10
 
@@ -1973,7 +2024,7 @@ class = "archer"
 weapon = "iron_bow"
 level = 8
 bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
-ai = "charge"
+ai = "hold"
 x = 8
 y = 5
 
@@ -1985,7 +2036,7 @@ class = "myrmidon"
 weapon = "iron_sword"
 level = 6
 bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
-ai = "charge"
+ai = "hold"
 x = 6
 y = 4
 
@@ -1994,7 +2045,7 @@ class = "soldier"
 weapon = "iron_lance"
 level = 6
 bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
-ai = "hold"
+ai = "charge"
 x = 2
 y = 5
 
@@ -2009,8 +2060,6 @@ y = 3
 
 [[maps.enemies]]
 id = "anti_lure_ch05_7"
-group = "gate_north"
-approach = "group"
 class = "fighter"
 weapon = "iron_axe"
 level = 8
@@ -2089,40 +2138,7 @@ ai = "charge"
 x = 14
 y = 12
 
-[[maps.reinforcements]]
-id = "anti_lure_turn_05_6"
-turn = 4
-class = "myrmidon"
-weapon = "iron_sword"
-level = 5
-bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
-ai = "charge"
-x = 14
-y = 13
-
-[[maps.reinforcements]]
-id = "anti_lure_turn_05_7"
-turn = 6
-class = "fighter"
-weapon = "iron_axe"
-level = 6
-bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
-ai = "charge"
-x = 0
-y = 2
-
 # DES-MAP-08: 正面で受ける位置へ踏み込むと、北の一団が動く。
-
-[[maps.reinforcements]]
-id = "anti_lure_turn_05_8"
-turn = 8
-class = "myrmidon"
-weapon = "iron_sword"
-level = 5
-bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
-ai = "charge"
-x = 14
-y = 13
 
 [[maps.events]]
 id = "gate_entry"
@@ -2243,6 +2259,7 @@ ai = "charge"
 x = 14
 y = 1
 
+# E-100: 守りの一団は待つ一員だけで作る。誰を攻撃しても、一団の全員が動き出す（DES-IT06 10.1 節）
 
 [[maps.events]]
 id = "anti_lure_gate_north_2"
@@ -2265,12 +2282,6 @@ unit = "anti_lure_ch05_4"
 effect = "charge_group"
 group = "gate_north"
 
-[[maps.events]]
-id = "anti_lure_gate_north_7"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch05_7"
-effect = "charge_group"
-group = "gate_north"
 [[maps]]
 id = "ch06"
 name = "山道の突破"
@@ -2307,6 +2318,9 @@ slots = [
 ]
 
 [[maps.enemies]]
+id = "anti_lure_ch06_0"
+group = "pass_center_front"
+approach = "group"
 class = "cavalier"
 weapon = "iron_lance"
 level = 6
@@ -2344,6 +2358,9 @@ x = 7
 y = 12
 
 [[maps.enemies]]
+id = "anti_lure_ch06_4"
+group = "pass_center_front"
+approach = "group"
 class = "myrmidon"
 weapon = "iron_sword"
 level = 6
@@ -2354,8 +2371,6 @@ y = 9
 
 [[maps.enemies]]
 id = "anti_lure_ch06_5"
-group = "pass_east_front"
-approach = "group"
 class = "cavalier"
 weapon = "iron_lance"
 level = 7
@@ -2366,19 +2381,17 @@ y = 10
 
 [[maps.enemies]]
 id = "anti_lure_ch06_6"
-group = "pass_east_front"
-approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 8
 bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
-ai = "hold"
+ai = "charge"
 x = 15
 y = 10
 
 [[maps.enemies]]
 id = "anti_lure_ch06_7"
-group = "pass_east_front"
+group = "pass_center_front"
 approach = "group"
 class = "soldier"
 weapon = "iron_lance"
@@ -2390,8 +2403,6 @@ y = 8
 
 [[maps.enemies]]
 id = "anti_lure_ch06_8"
-group = "pass_center_front"
-approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 6
@@ -2402,17 +2413,18 @@ y = 7
 
 [[maps.enemies]]
 id = "anti_lure_ch06_9"
-group = "pass_center_front"
-approach = "group"
 class = "armor"
 weapon = "iron_lance"
 level = 7
 bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
-ai = "hold"
+ai = "charge"
 x = 7
 y = 6
 
 [[maps.enemies]]
+id = "anti_lure_ch06_10"
+group = "pass_north_front"
+approach = "group"
 class = "cavalier"
 weapon = "iron_lance"
 level = 8
@@ -2423,22 +2435,25 @@ y = 5
 
 [[maps.enemies]]
 id = "anti_lure_ch06_11"
-group = "pass_center_front"
+group = "pass_north_front"
 approach = "group"
 class = "fighter"
 weapon = "iron_axe"
 level = 9
 bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
-ai = "charge"
+ai = "hold"
 x = 10
 y = 4
 
 [[maps.enemies]]
+id = "anti_lure_ch06_12"
+group = "pass_north_front"
+approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 6
 bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
-ai = "charge"
+ai = "hold"
 x = 12
 y = 3
 
@@ -2590,50 +2605,53 @@ ai = "charge"
 x = 15
 y = 4
 
-# 7 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it06/map-ch07.md）。16×16・出撃 6・敵 10＋4＋出来事。
-# 敵のボーナスは、ボスを除き 5/3/2/2/2（増援も同じ）。ボスは 12/5/4/3/4
+# E-100: 守りの一団は待つ一員だけで作る。誰を攻撃しても、一団の全員が動き出す（DES-IT06 10.1 節）
 
 [[maps.events]]
-id = "anti_lure_pass_east_front_5"
+id = "anti_lure_pass_center_front_0"
 trigger = "enemy_attacked"
-unit = "anti_lure_ch06_5"
+unit = "anti_lure_ch06_0"
 effect = "charge_group"
-group = "pass_east_front"
+group = "pass_center_front"
 
 [[maps.events]]
-id = "anti_lure_pass_east_front_6"
+id = "anti_lure_pass_center_front_4"
 trigger = "enemy_attacked"
-unit = "anti_lure_ch06_6"
+unit = "anti_lure_ch06_4"
 effect = "charge_group"
-group = "pass_east_front"
+group = "pass_center_front"
 
 [[maps.events]]
-id = "anti_lure_pass_east_front_7"
+id = "anti_lure_pass_center_front_7"
 trigger = "enemy_attacked"
 unit = "anti_lure_ch06_7"
 effect = "charge_group"
-group = "pass_east_front"
-
-[[maps.events]]
-id = "anti_lure_pass_center_front_8"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch06_8"
-effect = "charge_group"
 group = "pass_center_front"
 
 [[maps.events]]
-id = "anti_lure_pass_center_front_9"
+id = "anti_lure_pass_north_front_10"
 trigger = "enemy_attacked"
-unit = "anti_lure_ch06_9"
+unit = "anti_lure_ch06_10"
 effect = "charge_group"
-group = "pass_center_front"
+group = "pass_north_front"
 
 [[maps.events]]
-id = "anti_lure_pass_center_front_11"
+id = "anti_lure_pass_north_front_11"
 trigger = "enemy_attacked"
 unit = "anti_lure_ch06_11"
 effect = "charge_group"
-group = "pass_center_front"
+group = "pass_north_front"
+
+[[maps.events]]
+id = "anti_lure_pass_north_front_12"
+trigger = "enemy_attacked"
+unit = "anti_lure_ch06_12"
+effect = "charge_group"
+group = "pass_north_front"
+
+# 7 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it06/map-ch07.md）。16×16・出撃 6・初期敵 10＋ターン増援 9（#154）＋出来事。
+# 敵のボーナスは、ボスを除き 5/3/2/2/2（増援も同じ）。ボスは 12/5/4/3/4
+
 [[maps]]
 id = "ch07"
 name = "補給の荷駄"
@@ -2667,8 +2685,6 @@ slots = [
 # 迂回の入口: 突っ込んでくる騎兵
 [[maps.enemies]]
 id = "anti_lure_ch07_0"
-group = "convoy_east_front"
-approach = "group"
 class = "cavalier"
 weapon = "iron_lance"
 level = 7
@@ -2677,7 +2693,7 @@ ai = "charge"
 x = 14
 y = 10
 
-# 近道（谷）をふさぐ剣士
+# 近道（谷）の北をふさぐ剣士。谷の守りの一団（#154 で (7,9) から動かした。1 ターン目に出撃枠へ届かない）
 [[maps.enemies]]
 group = "convoy_valley_front"
 approach = "group"
@@ -2688,13 +2704,11 @@ level = 8
 bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
 ai = "hold"
 x = 7
-y = 9
+y = 6
 
 # 西の岩棚（山）の弓兵。谷を射程 2 で狙う
 [[maps.enemies]]
 id = "anti_lure_ch07_2"
-group = "convoy_valley_front"
-approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 9
@@ -2712,11 +2726,11 @@ class = "myrmidon"
 weapon = "iron_sword"
 level = 10
 bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
-ai = "charge"
+ai = "hold"
 x = 8
 y = 6
 
-# 東の岩棚（山）の弓兵。谷を射程 2 で狙う
+# 谷の中の弓兵。谷の守りの一団（#154 で東の岩棚 (10,6) から谷の中へ動かした。REV-084 F-02）
 [[maps.enemies]]
 id = "anti_lure_ch07_4"
 group = "convoy_valley_front"
@@ -2726,8 +2740,8 @@ weapon = "iron_bow"
 level = 7
 bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
 ai = "hold"
-x = 10
-y = 6
+x = 7
+y = 5
 
 # 谷の出口
 [[maps.enemies]]
@@ -2742,8 +2756,6 @@ y = 3
 # 迂回の砦の上
 [[maps.enemies]]
 id = "anti_lure_ch07_6"
-group = "convoy_east_front"
-approach = "group"
 class = "fighter"
 weapon = "iron_axe"
 level = 9
@@ -2755,8 +2767,6 @@ y = 8
 # 迂回の出口
 [[maps.enemies]]
 id = "anti_lure_ch07_7"
-group = "convoy_east_front"
-approach = "group"
 class = "soldier"
 weapon = "iron_lance"
 level = 10
@@ -3015,20 +3025,12 @@ ai = "charge"
 x = 15
 y = 9
 
-# 8 章（DES-MAP-08。反復 6 の制作記録は docs/iterations/it06/map-ch08.md）。24×24・出撃 6・初期敵 16＋ターン増援 6。
-# 敵のボーナスは、ボスを除き 5/3/3/2/3（増援も同じ）。ボスは 12/5/5/3/5
+# E-100: 守りの一団は待つ一員だけで作る。誰を攻撃しても、一団の全員が動き出す（DES-IT06 10.1 節）
 
 [[maps.events]]
 id = "anti_lure_convoy_valley_front_1"
 trigger = "enemy_attacked"
 unit = "convoy_valley_guard"
-effect = "charge_group"
-group = "convoy_valley_front"
-
-[[maps.events]]
-id = "anti_lure_convoy_valley_front_2"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch07_2"
 effect = "charge_group"
 group = "convoy_valley_front"
 
@@ -3046,26 +3048,9 @@ unit = "anti_lure_ch07_4"
 effect = "charge_group"
 group = "convoy_valley_front"
 
-[[maps.events]]
-id = "anti_lure_convoy_east_front_0"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch07_0"
-effect = "charge_group"
-group = "convoy_east_front"
+# 8 章（DES-MAP-08。反復 6 の制作記録は docs/iterations/it06/map-ch08.md）。24×24・出撃 6・初期敵 16＋ターン増援 12（#154）。
+# 敵のボーナスは、ボスを除き 5/3/3/2/3（増援も同じ）。ボスは 12/5/5/3/5
 
-[[maps.events]]
-id = "anti_lure_convoy_east_front_6"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch07_6"
-effect = "charge_group"
-group = "convoy_east_front"
-
-[[maps.events]]
-id = "anti_lure_convoy_east_front_7"
-trigger = "enemy_attacked"
-unit = "anti_lure_ch07_7"
-effect = "charge_group"
-group = "convoy_east_front"
 [[maps]]
 id = "ch08"
 name = "黒い森"
@@ -3154,7 +3139,7 @@ class = "armor"
 weapon = "iron_lance"
 level = 8
 bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
-ai = "charge"
+ai = "hold"
 x = 5
 y = 11
 
@@ -3167,7 +3152,7 @@ class = "archer"
 weapon = "iron_bow"
 level = 9
 bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
-ai = "charge"
+ai = "hold"
 x = 3
 y = 10
 
@@ -3187,8 +3172,6 @@ y = 9
 # 東の砦の上
 [[maps.enemies]]
 id = "anti_lure_ch08_7"
-group = "forest_east_front"
-approach = "group"
 class = "fighter"
 weapon = "iron_axe"
 level = 11
@@ -3200,26 +3183,22 @@ y = 11
 # 東の空き地
 [[maps.enemies]]
 id = "anti_lure_ch08_8"
-group = "forest_east_front"
-approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 8
 bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
-ai = "hold"
+ai = "charge"
 x = 20
 y = 12
 
 # 東の空き地
 [[maps.enemies]]
 id = "anti_lure_ch08_9"
-group = "forest_east_front"
-approach = "group"
 class = "myrmidon"
 weapon = "iron_sword"
 level = 9
 bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
-ai = "hold"
+ai = "charge"
 x = 17
 y = 9
 
@@ -3243,19 +3222,24 @@ ai = "hold"
 x = 11
 y = 6
 
-# 北の陣
+# 北の砦の前の騎兵。北の守りの一団（#154 で北の陣 (8,3) から動かした）
 [[maps.enemies]]
+id = "anti_lure_ch08_12"
+group = "forest_north_front"
+approach = "group"
 class = "cavalier"
 weapon = "iron_lance"
 level = 8
 bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
-x = 8
-y = 3
+x = 13
+y = 2
 
 # 北の陣
 [[maps.enemies]]
 id = "forest_north_armor"
+group = "forest_north_front"
+approach = "group"
 class = "armor"
 weapon = "iron_lance"
 level = 9
@@ -3266,6 +3250,9 @@ y = 2
 
 # 北の陣
 [[maps.enemies]]
+id = "anti_lure_ch08_14"
+group = "forest_north_front"
+approach = "group"
 class = "archer"
 weapon = "iron_bow"
 level = 10
@@ -3521,6 +3508,8 @@ ai = "charge"
 x = 15
 y = 3
 
+# E-100: 守りの一団は待つ一員だけで作る。誰を攻撃しても、一団の全員が動き出す（DES-IT06 10.1 節）
+
 [[maps.events]]
 id = "anti_lure_forest_west_front_4"
 trigger = "enemy_attacked"
@@ -3543,22 +3532,22 @@ effect = "charge_group"
 group = "forest_west_front"
 
 [[maps.events]]
-id = "anti_lure_forest_east_front_7"
+id = "anti_lure_forest_north_front_12"
 trigger = "enemy_attacked"
-unit = "anti_lure_ch08_7"
+unit = "anti_lure_ch08_12"
 effect = "charge_group"
-group = "forest_east_front"
+group = "forest_north_front"
 
 [[maps.events]]
-id = "anti_lure_forest_east_front_8"
+id = "anti_lure_forest_north_front_13"
 trigger = "enemy_attacked"
-unit = "anti_lure_ch08_8"
+unit = "forest_north_armor"
 effect = "charge_group"
-group = "forest_east_front"
+group = "forest_north_front"
 
 [[maps.events]]
-id = "anti_lure_forest_east_front_9"
+id = "anti_lure_forest_north_front_14"
 trigger = "enemy_attacked"
-unit = "anti_lure_ch08_9"
+unit = "anti_lure_ch08_14"
 effect = "charge_group"
-group = "forest_east_front"
+group = "forest_north_front"

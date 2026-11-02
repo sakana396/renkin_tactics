@@ -232,15 +232,27 @@ eq('joins order (E-89)','`ch02.joins = ["noel", "elsa"]`' in design_text,True)
 # 出撃枠は全章 +1（E-90）。13 章の表の「今の枠」「今の敵の数」を data から照合し、新しい枠 = 今 + 1。
 maps={m['id']:m for m in read_toml('maps.toml')['maps']}
 eq('E-100 初期突撃の記述','初期敵の 4 割以上' in design_text,True)
+eq('E-100 突撃は一団の外で数える記述','守りの一団の外の敵で数える' in design_text,True)
 eq('E-100 一団の人数の記述','初期敵 3〜5 体' in design_text,True)
+eq('E-100 守りの一団は待つ一員だけの記述','待つ（`ai = "hold"`）一員だけで作る' in design_text,True)
+eq('E-100 一団の近さの記述','壁を回り込まずに行き来できる' in design_text,True)
+eq('13 章の今の敵の数の注記','表の「今の敵の数」は E-90 のときの値' in design_text,True)
 eq('E-100 前半の増援の記述','ch02〜ch07 は 4〜8 ターン目' in design_text,True)
 eq('E-100 後半の増援の記述','ch08・ch09 は 4〜12 ターン目' in design_text,True)
 for id,m in maps.items():
+    # 守りの一団は待つ一員だけ（E-100 ②、REV-084 F-01）。
+    for e in m['enemies']:
+        if e.get('group'):
+            eq(id+' '+e['id']+' 守りの一団は待つ',e['ai'],'hold')
     if id=='ch01':
         eq('ch01 砦前の一団',sum(e.get('group')=='fort_front' for e in m['enemies']),2)
         eq('ch01 ターン増援を維持',len(m['reinforcements']),3)
+        # #151 の出来事の増援 3 体を残す（E-100、REV-084 F-03）。
+        border=[e for e in m['events'] if e['id']=='border_east_entry']
+        eq('ch01 出来事の増援を維持',[(e['trigger'],e['effect'],len(e['enemies'])) for e in border],[('player_entered','reinforce',3)])
         continue
-    eq(id+' 突撃 4 割以上',5*sum(e['ai']=='charge' for e in m['enemies'])>=2*len(m['enemies']),True)
+    # 4 割は守りの一団の外の敵で数える（REV-084 F-01）。
+    eq(id+' 一団の外の突撃 4 割以上',5*sum(e['ai']=='charge' and not e.get('group') for e in m['enemies'])>=2*len(m['enemies']),True)
     end=12 if id in ('ch08','ch09') else 8
     for turn in range(4,end+1):
         count=sum(r['turn']==turn for r in m['reinforcements'])
@@ -277,4 +289,4 @@ eq('minimap16',128//16,8)
 eq('minimap x centered',(512+(320-128)//2, 512+(320-128)//2+127),(608,735))
 eq('minimap y (title 16, bottom 8)',(360+16,360+16+127,511-(360+16+127)),(376,503,8))
 eq('story paragraphs after adding',5+1,6)
-print(f'成功: {checks} 項目。B1〜B7・H1・G1〜G5・L1・C1、F1〜F12、既存の仲間とノエルの武器の重さ、今の 9 章の bonus の範囲、報酬と 5 枠の表、ch02 の加入の順、全章の出撃枠 +1 と名簿、初期敵の上限、E-100 の突撃率・増援ターン、勇者の斧の反撃 1 回、ミニマップの位置、表の列・リンクを検算した。')
+print(f'成功: {checks} 項目。B1〜B7・H1・G1〜G5・L1・C1、F1〜F12、既存の仲間とノエルの武器の重さ、今の 9 章の bonus の範囲、報酬と 5 枠の表、ch02 の加入の順、全章の出撃枠 +1 と名簿、初期敵の上限、E-100 の一団の外の突撃率・守りの一団の ai・ch01 の出来事の増援・増援ターン、勇者の斧の反撃 1 回、ミニマップの位置、表の列・リンクを検算した。')

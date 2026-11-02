@@ -2,7 +2,6 @@ package core_test
 
 import (
 	"math"
-	"reflect"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core"
@@ -11,44 +10,26 @@ import (
 )
 
 // 基準の章の制作値と出来事の依存を確かめる（DES-MAP-08、DES-MAP-07）。
+//
+// #154（E-100）で初めの敵・ターンの増援・一団を変えたので、配置に関係する検査（敵・増援・出来事の数、一団、
+// 敵の騎兵、出撃枠の安全）は TC-FR-MAP-04-23 に移した。出来事の魔道士の武器と攻撃の速さ、TC-FR-MAP-04-11 は続ける。
 func TestIT06BaseChapters(t *testing.T) {
-	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
-		id         string
-		initial    int
-		turn       int
-		events     int
-		group      string
-		groupCount int
+		id string
 		// 出来事の魔道士の ID と、DES-IT06 5.3 節の式で求めた攻撃の速さ（制作記録の点検表）。
 		mage      string
 		mageSpeed int
-		// 初めの敵・ターンの増援・出来事の増援を通した一団ごとの人数と、ボスを除く敵の騎兵の数（E-97 の版 0.3）。
-		groups    map[string]int
-		cavaliers int
 	}{
-		{"ch02", 8, 3, 4, "", 0, "road_mage", 6, map[string]int{"road_north": 3, "road_south": 2}, 6},
-		{"ch05", 9, 2, 5, "gate_north", 3, "gate_rear_mage", 7, map[string]int{"gate_north": 3, "gate_east": 3, "gate_reserve": 2}, 4},
+		{"ch02", "road_mage", 6},
+		{"ch05", "gate_rear_mage", 7},
 	} {
 		t.Run("TC-FR-MAP-04-10 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
 			if !ok {
 				t.Fatal("章の地図がない")
 			}
-			if len(m.Enemies) != tc.initial || len(m.Reinforcements) != tc.turn || len(m.Events) != tc.events {
-				t.Fatalf("敵・増援・出来事の数: %d/%d/%d", len(m.Enemies), len(m.Reinforcements), len(m.Events))
-			}
 			mage := 0
-			group := 0
-			direct := 0
-			for _, e := range m.Enemies {
-				if e.Group == tc.group && tc.group != "" && e.Approach == defs.ApproachGroup {
-					group++
-				} else if e.Approach == "" || e.Approach == defs.ApproachDirect {
-					direct++
-				}
-			}
 			cls, _ := cat.Class("mage")
 			for _, event := range m.Events {
 				for _, e := range event.Enemies {
@@ -70,63 +51,11 @@ func TestIT06BaseChapters(t *testing.T) {
 					}
 				}
 			}
-			if mage != 1 || group != tc.groupCount || direct == 0 {
-				t.Fatalf("魔道士または一団の設定が不足: mage=%d group=%d direct=%d", mage, group, direct)
+			if mage != 1 {
+				t.Fatalf("出来事の魔道士が 1 体でない: %d", mage)
 			}
-			// 一団と敵の騎兵（再移動あり）を、初めの敵・ターンの増援・出来事の増援を通して数える（E-97）。
-			all := append([]defs.EnemyPlacement(nil), m.Enemies...)
-			for _, r := range m.Reinforcements {
-				all = append(all, r.EnemyPlacement)
-			}
-			for _, event := range m.Events {
-				all = append(all, event.Enemies...)
-			}
-			groups := map[string]int{}
-			cavaliers := 0
-			for _, e := range all {
-				if e.Group != "" {
-					if e.Approach != defs.ApproachGroup {
-						t.Fatalf("一団 %s の %s が一団の寄り方でない", e.Group, e.ID)
-					}
-					groups[e.Group]++
-				}
-				if e.Class == "cavalier" && !e.Boss {
-					cavaliers++
-				}
-			}
-			if !reflect.DeepEqual(groups, tc.groups) || cavaliers != tc.cavaliers {
-				t.Fatalf("一団 %v・敵の騎兵 %d（期待 %v・%d）", groups, cavaliers, tc.groups, tc.cavaliers)
-			}
-			// 出撃枠の安全: 1 ターン目の初めの敵の攻撃は、どの枠にも届かない（DES-IT06 13 章、DES-IT05 の制作の検査）。
-			// 版 0.3 で足した敵はすべて出来事の増援で、1 ターン目にはいない。ch05 の初めの敵（正面の守り・門のアーマーなど、
-			// 待ちで穴の前を守る）は反復 5 から 1 ターン目に正面の枠へ届く配置（ch05 の制作記録 6.1 節）なので、ch02 だけを確かめる。
-			if tc.id != "ch02" {
-				return
-			}
-			c, err := core.NewCampaignAt(cat, core.Withdraw, tc.id)
-			if err != nil {
-				t.Fatal(err)
-			}
-			s, _, err := c.StartBattle([]int{0}, 1)
-			if err != nil {
-				t.Fatal(err)
-			}
-			slots := map[tactics.Pos]bool{}
-			for _, slot := range m.Slots {
-				slots[tactics.Pos{X: slot.X, Y: slot.Y}] = true
-			}
-			for j, u := range s.Battle.Units() {
-				if u.Side != tactics.Enemy {
-					continue
-				}
-				for pos := range s.Battle.Reachable(j) {
-					for _, target := range s.Battle.AttackRange(j, pos) {
-						if slots[target] {
-							t.Fatalf("1 ターン目の敵 %s %v の攻撃が枠 %v に届く", u.Name, u.Pos, target)
-						}
-					}
-				}
-			}
+			// TC-FR-MAP-04-12 で出現を待って見ていた tactics の形も、変換を通して確かめる。
+			checkEventMagesSetup(t, cat, tc.id, tc.mageSpeed)
 		})
 		t.Run("TC-FR-MAP-04-11 "+tc.id, func(t *testing.T) {
 			m, _ := cat.Map(tc.id)
@@ -276,7 +205,7 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 // あわせて、出来事の増援として出た魔道士の tactics.Unit が、魔法の武器（ファイア）と
 // DES-IT06 5.3 節の攻撃の速さを持つことを確かめる（core の enemyUnit の変換を通る）。
 func TestIT06BaseChapterAutoplay(t *testing.T) {
-	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
+	t.Skip("TC-FR-MAP-04-12 の固定 seed・進路の勝ち筋は #154（E-100）の配置で変わったため、3 種の名簿の TC-FR-MAP-04-24 に置き換えた。出来事の魔道士の武器と攻撃の速さは TC-FR-MAP-04-10 で確かめる")
 	cat := baseCatalog(t)
 	routes := map[string][][]tactics.Pos{
 		// ch02 の中央 (7,7) → 東 (12,8) → ボス (14,8)。
@@ -424,5 +353,47 @@ func TestIT06EstimatedRoster(t *testing.T) {
 				t.Fatalf("報酬の武器: %v", leon.Weapons)
 			}
 		})
+	}
+}
+
+// checkEventMagesSetup は、出来事の増援の魔道士を core の変換（enemyUnit）を通した tactics の形で確かめる。
+// 魔法の武器（ファイア）を装備し、DES-IT06 5.3 節の攻撃の速さが want であること（DES-CMP-11、DES-MAP-07）。
+// 自動の試し遊びで出現を待たずに確かめるので、配置や勝ち筋に左右されない（#154 の F-04）。
+func checkEventMagesSetup(t *testing.T, cat *defs.Catalog, mapID string, want int) {
+	t.Helper()
+	m, _ := cat.Map(mapID)
+	mages := map[string]bool{}
+	for _, event := range m.Events {
+		for _, e := range event.Enemies {
+			if e.Class == "mage" {
+				mages[e.ID] = true
+			}
+		}
+	}
+	if len(mages) == 0 {
+		t.Fatalf("%s に出来事の魔道士がいない", mapID)
+	}
+	setup, err := core.NewSetup(cat, mapID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := 0
+	for _, event := range setup.Events {
+		for _, u := range event.Enemies {
+			if !mages[u.ID] {
+				continue
+			}
+			seen++
+			w := u.Weapons[u.Equipped]
+			if w.ID != "fire" || w.Type != tactics.Magic || w.DamageType != tactics.Magical {
+				t.Fatalf("出来事の魔道士 %s の武器が魔法の攻撃でない: %+v", u.ID, w)
+			}
+			if got := u.Stats.Spd - max(0, w.Weight-u.Stats.Str); got != want {
+				t.Fatalf("出来事の魔道士 %s の攻撃の速さ = %d、期待 %d（%+v）", u.ID, got, want, u.Stats)
+			}
+		}
+	}
+	if seen != len(mages) {
+		t.Fatalf("変換された出来事の魔道士は %d 体、定義 %d 体", seen, len(mages))
 	}
 }
