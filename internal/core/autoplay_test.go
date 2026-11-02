@@ -38,6 +38,8 @@ type autoResult struct {
 	Kills int
 	// Deaths は自軍が倒れた記録（ターン・倒れた自軍・倒した敵とその位置）。
 	Deaths []string
+	// Rewinds は巻き戻した回数（賢い打ち手だけが使う。#158）。
+	Rewinds int
 }
 
 // autoLog は試し遊びの記録の出し先（調べるときだけ設定する）。

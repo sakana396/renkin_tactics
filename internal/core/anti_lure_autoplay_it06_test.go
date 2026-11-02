@@ -22,33 +22,36 @@ var antiLureRosters = []antiLureRoster{
 	{"ミラを失いティオを出す", false, true},
 }
 
+// antiLureRoutes・antiLureChosen・antiLureOrder は TC-FR-MAP-04-24 の主な進路・出撃・行動の順（#158 の賢い打ち手でも同じ名簿を使う）。
+var antiLureRoutes = map[string][]tactics.Pos{
+	"ch01": {{X: 5, Y: 10}, {X: 9, Y: 6}, {X: 12, Y: 2}},
+	"ch02": {{X: 7, Y: 7}, {X: 12, Y: 8}, {X: 14, Y: 8}},
+	"ch03": {{X: 11, Y: 10}, {X: 11, Y: 7}, {X: 11, Y: 5}, {X: 11, Y: 3}},
+	"ch04": {{X: 4, Y: 12}, {X: 4, Y: 7}, {X: 5, Y: 4}, {X: 9, Y: 4}},
+	"ch05": {{X: 7, Y: 9}, {X: 7, Y: 6}, {X: 8, Y: 2}},
+	"ch06": {{X: 6, Y: 14}, {X: 6, Y: 10}, {X: 7, Y: 6}, {X: 10, Y: 3}},
+	"ch07": {{X: 7, Y: 11}, {X: 7, Y: 8}, {X: 7, Y: 4}, {X: 9, Y: 2}},
+	"ch08": {{X: 11, Y: 17}, {X: 11, Y: 11}, {X: 11, Y: 6}, {X: 12, Y: 2}},
+	"ch09": ch09East,
+}
+var antiLureChosen = map[string][]string{
+	"ch01": {"leon", "gald", "bran", "mira", "rina"},
+	"ch02": {"leon", "gald", "bran", "mira", "rina", "noel", "elsa"},
+	"ch03": {"leon", "gald", "bran", "mira", "noel", "elsa"},
+	"ch04": {"leon", "gald", "bran", "mira", "noel", "elsa", "rina"},
+	"ch05": {"leon", "gald", "bran", "mira", "noel", "elsa"},
+	"ch06": {"leon", "gald", "bran", "mira", "noel", "elsa", "tio"},
+	"ch07": {"leon", "gald", "bran", "mira", "noel", "tio"},
+	"ch08": {"leon", "gald", "bran", "mira", "noel", "elsa"},
+	"ch09": {"leon", "gald", "bran", "mira", "noel", "elsa", "rina"},
+}
+var antiLureOrder = []string{"gald", "mira", "noel", "bran", "elsa", "leon", "rina", "tio"}
+
 // 想定名簿と既存の主な進路で、固定 20 seed の勝ち数を測る（DES-MAP-08、DES-IT06 13 章）。
 // 勝ちは詰まない手順の下限で、難しさの判定には使わない。名簿ごとに並べて走らせる。
 func TestIT06AntiLureAutoplay(t *testing.T) {
 	cat := baseCatalog(t)
-	routes := map[string][]tactics.Pos{
-		"ch01": {{X: 5, Y: 10}, {X: 9, Y: 6}, {X: 12, Y: 2}},
-		"ch02": {{X: 7, Y: 7}, {X: 12, Y: 8}, {X: 14, Y: 8}},
-		"ch03": {{X: 11, Y: 10}, {X: 11, Y: 7}, {X: 11, Y: 5}, {X: 11, Y: 3}},
-		"ch04": {{X: 4, Y: 12}, {X: 4, Y: 7}, {X: 5, Y: 4}, {X: 9, Y: 4}},
-		"ch05": {{X: 7, Y: 9}, {X: 7, Y: 6}, {X: 8, Y: 2}},
-		"ch06": {{X: 6, Y: 14}, {X: 6, Y: 10}, {X: 7, Y: 6}, {X: 10, Y: 3}},
-		"ch07": {{X: 7, Y: 11}, {X: 7, Y: 8}, {X: 7, Y: 4}, {X: 9, Y: 2}},
-		"ch08": {{X: 11, Y: 17}, {X: 11, Y: 11}, {X: 11, Y: 6}, {X: 12, Y: 2}},
-		"ch09": ch09East,
-	}
-	chosenByMap := map[string][]string{
-		"ch01": {"leon", "gald", "bran", "mira", "rina"},
-		"ch02": {"leon", "gald", "bran", "mira", "rina", "noel", "elsa"},
-		"ch03": {"leon", "gald", "bran", "mira", "noel", "elsa"},
-		"ch04": {"leon", "gald", "bran", "mira", "noel", "elsa", "rina"},
-		"ch05": {"leon", "gald", "bran", "mira", "noel", "elsa"},
-		"ch06": {"leon", "gald", "bran", "mira", "noel", "elsa", "tio"},
-		"ch07": {"leon", "gald", "bran", "mira", "noel", "tio"},
-		"ch08": {"leon", "gald", "bran", "mira", "noel", "elsa"},
-		"ch09": {"leon", "gald", "bran", "mira", "noel", "elsa", "rina"},
-	}
-	order := []string{"gald", "mira", "noel", "bran", "elsa", "leon", "rina", "tio"}
+	routes, chosenByMap, order := antiLureRoutes, antiLureChosen, antiLureOrder
 	for ch := 1; ch <= 9; ch++ {
 		id := fmt.Sprintf("ch%02d", ch)
 		for _, roster := range antiLureRosters {
