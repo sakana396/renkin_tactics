@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 
+	"github.com/sakana396/renkin_tactics/internal/core"
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 )
 
@@ -98,6 +99,9 @@ type Controller struct {
 	shownSide tactics.Side
 
 	message string
+	// log は行動の記録（DES-LOG-01）。nil なら記録しない。logFailed は書けなかったことを一度知らせたこと。
+	log       *core.PlayLog
+	logFailed bool
 
 	// hints は通常の盤面に出す増援の予兆領域。再生の完了後と巻き戻しの成功後だけ取り直す（DES-UI-24）。
 	hints []tactics.ReinforcementHint
@@ -355,13 +359,14 @@ func (c *Controller) EndPhase() {
 		c.message = "まだ行動していない自軍がいます。もう一度 E を押すと番を終えます"
 		return
 	}
-	events, err := c.battle.EndPhase()
+	events, err := c.log.EndPhase(c.battle)
 	if err != nil {
 		c.confirmEnd = false
 		c.message = fmt.Sprintf("番を終えられません: %v", err)
 		return
 	}
 	c.play(events)
+	c.checkLog()
 }
 
 // SetFastForward は、Space か Enter を押しているかを毎フレーム伝える（DES-UI-04）。
@@ -838,7 +843,7 @@ func (c *Controller) ranges(i int) (blue, red map[tactics.Pos]bool) {
 
 // act は決定したコマンドで Act を 1 回だけ呼び、出来事の再生を始める（DES-UI-02、DES-BTL-04）。
 func (c *Controller) act(cmd tactics.Command) {
-	events, err := c.battle.Act(cmd)
+	events, err := c.log.Act(c.battle, cmd)
 	if err != nil {
 		// 画面ではできる行動だけを出すので、ふつうは来ない。状態は変わっていない（DES-ERR-01）。
 		c.state, c.quickSpots, c.quickTarget = Idle, nil, -1
@@ -846,6 +851,15 @@ func (c *Controller) act(cmd tactics.Command) {
 		return
 	}
 	c.play(events)
+	c.checkLog()
+}
+
+// checkLog は、行動の記録を書けなくなったら一度だけ知らせる（DES-LOG-02）。遊ぶのは続けられる。
+func (c *Controller) checkLog() {
+	if err := c.log.Err(); err != nil && !c.logFailed {
+		c.logFailed = true
+		c.message = fmt.Sprintf("行動の記録を書けません（遊ぶのは続けられます）: %v", err)
+	}
 }
 
 // play は出来事の再生を始める（DES-UI-04）。

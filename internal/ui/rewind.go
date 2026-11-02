@@ -108,7 +108,7 @@ func (c *Controller) RewindEnter() {
 		return
 	}
 	entry := h[i]
-	if err := c.battle.Rewind(entry.ID); err != nil {
+	if err := c.log.Rewind(c.battle, entry.ID); err != nil {
 		c.rewind.confirm = false
 		c.rewind.detailOffset = 0
 		c.rewind.message = err.Error()
@@ -130,6 +130,7 @@ func (c *Controller) RewindEnter() {
 	c.shownTurn, c.shownSide = c.battle.Turn, c.battle.Phase
 	c.state = Idle
 	c.refreshHints()
+	c.checkLog()
 }
 
 // rewindLabel は描画と独立した行動の全文。移動だけの敵も出来事の境界から区別する（DES-UI-19）。

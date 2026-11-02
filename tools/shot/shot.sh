@@ -19,6 +19,14 @@ while (($#)); do
 		out_path="$(realpath -m "$out_path")"
 		args+=("-out" "$(wslpath -w "$out_path")")
 		shift 2
+	elif [[ "$1" == -logdir ]]; then
+		if (($# < 2)); then
+			echo '-logdir のディレクトリがありません' >&2
+			exit 2
+		fi
+		mkdir -p "$2"
+		args+=("-logdir" "$(wslpath -w "$(realpath -m "$2")")")
+		shift 2
 	else
 		args+=("$1")
 		shift

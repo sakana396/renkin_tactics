@@ -83,7 +83,9 @@ func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
-	if err := start(ui.Config{Catalog: cat, Store: savefile.Store{Dir: dir}, NextSeed: nextSeed, StartChapter: *chapter}); err != nil {
+	// 行動の記録は、セーブのディレクトリの下の logs に、出撃ごとに 1 つ作る（DES-LOG-02）。
+	logs := savefile.PlayLogs{Dir: dir, Now: now}
+	if err := start(ui.Config{Catalog: cat, Store: savefile.Store{Dir: dir}, NextSeed: nextSeed, StartChapter: *chapter, PlayLog: logs.Create}); err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}

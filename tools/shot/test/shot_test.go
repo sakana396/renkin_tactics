@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// WSL の実行口は出力先だけ Windows のパスに変え、操作列をそのまま渡す。
+// WSL の実行口は出力先と記録の置き場所だけ Windows のパスに変え、操作列をそのまま渡す。
 func TestShotWrapper(t *testing.T) {
 	dir := t.TempDir()
 	bin := filepath.Join(dir, "bin")
@@ -39,7 +39,8 @@ chmod +x "$exe"
 	}
 	out := filepath.Join(dir, "images", "sample.png")
 	log := filepath.Join(dir, "args.txt")
-	cmd := exec.Command("bash", "../shot.sh", "-chapter", "ch09", "-scene", "battle", "-steps", "rewind,cursor:1:2", "-out", out)
+	logdir := filepath.Join(dir, "playlogs")
+	cmd := exec.Command("bash", "../shot.sh", "-chapter", "ch09", "-scene", "battle", "-logdir", logdir, "-steps", "rewind,cursor:1:2", "-out", out)
 	cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "SHOT_TEST_LOG="+log)
 	if b, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("実行に失敗: %v\n%s", err, b)
@@ -48,7 +49,11 @@ chmod +x "$exe"
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "-chapter\nch09\n-scene\nbattle\n-steps\nrewind,cursor:1:2\n-out\nWIN:" + out + "\n"
+	// -logdir も Windows のパスに変え、ディレクトリを作っておく（DES-LOG-02）。
+	if st, err := os.Stat(logdir); err != nil || !st.IsDir() {
+		t.Fatalf("-logdir のディレクトリを作っていない: %v", err)
+	}
+	want := "-chapter\nch09\n-scene\nbattle\n-logdir\nWIN:" + logdir + "\n-steps\nrewind,cursor:1:2\n-out\nWIN:" + out + "\n"
 	if string(b) != want {
 		t.Fatalf("渡した引数 = %q、期待 = %q", strings.TrimSpace(string(b)), strings.TrimSpace(want))
 	}

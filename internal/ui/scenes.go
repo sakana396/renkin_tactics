@@ -24,6 +24,8 @@ type Config struct {
 	NextSeed func() uint64
 	// StartChapter は新規開始の章 ID。空なら最初の章から始める（DES-CMD-03）。
 	StartChapter string
+	// PlayLog は出撃のたびに、章 ID の行動の記録の書き出し先を作る（DES-LOG-02）。nil なら記録しない。
+	PlayLog func(chapter string) (io.Writer, error)
 }
 
 // Scene はキャンペーンの場面（DES-UI-09）。
@@ -349,7 +351,8 @@ func (s *SceneController) startDeployedBattle() {
 		s.message = err.Error()
 		return
 	}
-	sortie, events, err := s.campaign.StartBattleAt(s.deployMembers, s.deploySlots, s.cfg.NextSeed())
+	seed := s.cfg.NextSeed()
+	sortie, events, err := s.campaign.StartBattleAt(s.deployMembers, s.deploySlots, seed)
 	if err != nil {
 		s.message = err.Error()
 		return
@@ -358,6 +361,17 @@ func (s *SceneController) startDeployedBattle() {
 	if err != nil {
 		s.message = err.Error()
 		return
+	}
+	// 行動の記録は、戦闘を作れたあとに始める。作れなくても遊べる（DES-LOG-02）。
+	if s.cfg.PlayLog != nil {
+		chapter := s.cfg.Catalog.Chapters()[s.campaign.Chapter].ID
+		if w, err := s.cfg.PlayLog(chapter); err != nil {
+			ctrl.message = fmt.Sprintf("行動の記録を作れません: %v", err)
+		} else {
+			ctrl.log = core.NewPlayLog(w)
+			ctrl.log.Start(s.campaign, sortie, s.deploySlots, seed, events)
+			ctrl.checkLog()
+		}
 	}
 	s.resetDeploy()
 	s.sortie = sortie
