@@ -225,15 +225,25 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 		m.Stats.Mag += up(ch.Growth.Mag, n)
 		m.Stats.Res += up(ch.Growth.Res, n)
 	}
-	// 前の章の報酬の武器を持たせる（ch01 のアーマーキラー、ch02 のハンマー、ch03 の対騎兵の槍、ch04 のキルソード）。
+	// 前の章の報酬の武器を持たせる（DES-MAP-08 13 章）。
 	takes := map[string][][2]string{
 		"ch03": {{"leon", "armor_killer"}, {"bran", "hammer"}},
 		"ch04": {{"leon", "armor_killer"}, {"bran", "hammer"}, {"elsa", "horse_killer"}},
 		"ch05": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"bran", "hammer"}, {"elsa", "horse_killer"}},
-		"ch08": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"bran", "hammer"}, {"bran", "brave_axe"}, {"elsa", "horse_killer"}},
-		"ch09": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"bran", "hammer"}, {"bran", "brave_axe"}, {"elsa", "horse_killer"}, {"gald", "horse_killer"}},
+		"ch08": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"leon", "thunder_sword"}, {"mira", "long_bow"}, {"bran", "hammer"}, {"bran", "brave_axe"}, {"elsa", "horse_killer"}},
+		"ch09": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"leon", "thunder_sword"}, {"mira", "long_bow"}, {"bran", "hammer"}, {"bran", "brave_axe"}, {"elsa", "horse_killer"}, {"gald", "horse_killer"}},
 	}
 	if list, ok := takes[id]; ok {
+		// 雷の剣を含める章では、レオンの 5 枠を守るため回復薬 1 個を共有在庫に戻す。
+		if id == "ch08" || id == "ch09" {
+			for i, m := range c.Roster {
+				if m.Character == "leon" {
+					if err := c.StoreItem(i, "potion"); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+		}
 		for _, take := range list {
 			for i, m := range c.Roster {
 				if m.Character == take[0] {

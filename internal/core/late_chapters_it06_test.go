@@ -140,8 +140,11 @@ func TestIT06LateRoster(t *testing.T) {
 			if got["noel"].Stats.Mag != tc.noelMag || got["noel"].Stats.Res != tc.noelRes || got["leon"].Stats.Lck != tc.leonLck {
 				t.Fatalf("追加能力の成長: ノエル %+v レオン %+v", got["noel"], got["leon"])
 			}
-			if !reflect.DeepEqual(got["leon"].Weapons, []string{"iron_sword", "armor_killer", "killing_sword"}) || !reflect.DeepEqual(got["bran"].Weapons, []string{"iron_axe", "hammer", "brave_axe"}) || !reflect.DeepEqual(got["elsa"].Weapons, []string{"iron_lance", "horse_killer"}) {
+			if !reflect.DeepEqual(got["leon"].Weapons, []string{"iron_sword", "armor_killer", "killing_sword", "thunder_sword"}) || !reflect.DeepEqual(got["mira"].Weapons, []string{"iron_bow", "long_bow"}) || !reflect.DeepEqual(got["bran"].Weapons, []string{"iron_axe", "hammer", "brave_axe"}) || !reflect.DeepEqual(got["elsa"].Weapons, []string{"iron_lance", "horse_killer"}) {
 				t.Fatal("前章までの武器がない")
+			}
+			if !reflect.DeepEqual(got["leon"].Items, []defs.ItemCount{{Item: "potion", Count: 1}}) {
+				t.Fatal("レオンの手持ちが 5 枠の配分になっていない")
 			}
 			if tc.id == "ch09" && !reflect.DeepEqual(got["gald"].Weapons, []string{"iron_lance", "horse_killer"}) {
 				t.Fatal("2 本目の対騎兵の槍がない")
@@ -161,10 +164,11 @@ func TestIT06LateChapterAutoplay(t *testing.T) {
 		appear          int
 		members         []string
 	}{
-		{"ch08", "平均・中央", "center", false, false, 3, []string{"forest_road_alarm"}, 9, nil},
-		{"ch08", "低め・中央", "center", true, false, 3, []string{"forest_road_alarm"}, 9, []string{"leon", "gald", "bran", "mira", "elsa", "rina"}},
-		{"ch08", "代役・低め・中央", "center", true, true, 2, []string{"forest_road_alarm"}, 9, nil},
-		{"ch09", "平均・東", "east", false, false, 1, []string{"gate_east_alarm", "gate_inner_alarm"}, 17, nil},
+		{"ch08", "平均・中央", "center", false, false, 4, []string{"forest_road_alarm"}, 9, nil},
+		{"ch08", "平均・東", "east", false, false, 2, []string{"forest_road_alarm", "forest_north_alarm"}, 13, nil},
+		{"ch08", "低め・中央", "center", true, false, 13, []string{"forest_road_alarm"}, 9, []string{"leon", "gald", "bran", "mira", "elsa", "rina"}},
+		{"ch08", "代役・低め・中央", "center", true, true, 7, []string{"forest_road_alarm"}, 9, nil},
+		{"ch09", "平均・東", "east", false, false, 2, []string{"gate_east_alarm", "gate_inner_alarm"}, 17, nil},
 		{"ch09", "平均・西", "west", false, false, 1, []string{"gate_west_alarm", "gate_east_alarm", "gate_inner_alarm"}, 20, nil},
 		{"ch09", "平均・二手", "split", false, false, 5, []string{"gate_west_alarm", "gate_east_alarm", "gate_inner_alarm"}, 20, nil},
 		{"ch09", "低め・東", "east", true, false, 11, []string{"gate_east_alarm", "gate_inner_alarm"}, 17, nil},
@@ -172,6 +176,20 @@ func TestIT06LateChapterAutoplay(t *testing.T) {
 	} {
 		t.Run("TC-FR-MAP-04-21 "+tc.id+" "+tc.name, func(t *testing.T) {
 			c := estimatedRosterIT06(t, cat, tc.id, tc.low)
+			if tc.id == "ch09" && tc.low {
+				// 低めの東進では出撃準備で雷の剣を共有在庫へ戻し、回復薬を 2 個にする。
+				// 想定名簿には雷の剣を含めたうえで、5 枠内の持ち替えを試す（DES-MAP-08 13 章）。
+				for i, m := range c.Roster {
+					if m.Character == "leon" {
+						if err := c.StoreWeapon(i, 3); err != nil {
+							t.Fatal(err)
+						}
+						if err := c.TakeItem(i, "potion"); err != nil {
+							t.Fatal(err)
+						}
+					}
+				}
+			}
 			members := []string{"leon", "gald", "bran", "mira", "noel", "elsa"}
 			if tc.id == "ch09" {
 				members = append(members, "rina")
