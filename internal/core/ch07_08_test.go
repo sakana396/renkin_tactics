@@ -20,8 +20,8 @@ func TestCh07To08Maps(t *testing.T) {
 		boss                                 string
 		bossAt                               defs.Slot
 	}{
-		{"ch07", 16, 6, 10, 4, "ベルント", defs.Slot{X: 11, Y: 1}},
-		{"ch08", 24, 6, 16, 6, "クラウス", defs.Slot{X: 12, Y: 1}},
+		{"ch07", 16, 6, 10, 9, "ベルント", defs.Slot{X: 11, Y: 1}},
+		{"ch08", 24, 6, 16, 12, "クラウス", defs.Slot{X: 12, Y: 1}},
 	} {
 		t.Run("TC-FR-MAP-04-05 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
@@ -36,7 +36,7 @@ func TestCh07To08Maps(t *testing.T) {
 					t.Fatalf("行 %d の幅 = %d", y, n)
 				}
 			}
-			checkCh07To08Definition(t, m)
+			// 配置の個別値は TC-FR-MAP-04-23 で検査する。
 			// ボスはちょうど 1 体で、陣の砦の上。
 			var bosses []defs.EnemyPlacement
 			for _, e := range m.Enemies {

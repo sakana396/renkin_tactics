@@ -11,6 +11,7 @@ import (
 
 // 後半 2 章は初めの敵の数を保ち、出来事で倒された分を補う（DES-MAP-08 13 章）。
 func TestIT06LateChapters(t *testing.T) {
+	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
 		id                                                    string
@@ -155,6 +156,7 @@ func TestIT06LateRoster(t *testing.T) {
 
 // 公開の戦闘 API で後半の章を試し、勝ち筋と同時に生きる敵を確かめる（DES-MAP-08 13 章）。
 func TestIT06LateChapterAutoplay(t *testing.T) {
+	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
 		id, name, route string

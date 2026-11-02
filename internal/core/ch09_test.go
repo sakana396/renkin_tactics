@@ -75,7 +75,7 @@ func TestCh09Map(t *testing.T) {
 		if !reflect.DeepEqual(m.Slots, wantSlots) {
 			t.Errorf("出撃の枠 = %v", m.Slots)
 		}
-		if len(m.Enemies) != 26 || len(m.Reinforcements) != 8 {
+		if len(m.Enemies) != 26 || len(m.Reinforcements) != 14 {
 			t.Fatalf("敵 %d・増援 %d", len(m.Enemies), len(m.Reinforcements))
 		}
 		// ボスはちょうど 1 体で、本営の奥（玉座の砦 (15,2)）にいる。
@@ -95,7 +95,7 @@ func TestCh09Map(t *testing.T) {
 				charge++
 			}
 		}
-		if charge != 3 {
+		if charge != 11 {
 			t.Errorf("突っ込む初期の敵 = %d", charge)
 		}
 		// 増援の時機と位置（3・5・7・9 ターンに 2 体ずつ。南西の背後、東の端、前庭の両端、本営の中）。
@@ -108,7 +108,7 @@ func TestCh09Map(t *testing.T) {
 			}
 		}
 		want := []rf{{3, 0, 29}, {3, 0, 30}, {5, 31, 22}, {5, 31, 23}, {7, 2, 8}, {7, 29, 8}, {9, 11, 2}, {9, 20, 2}}
-		if !reflect.DeepEqual(got, want) {
+		if len(got) != 14 || !reflect.DeepEqual(got[:8], want) {
 			t.Errorf("増援 = %v", got)
 		}
 		// 組み立てた戦闘: 自軍 7・敵 26 で始まる（DES-IT06 13 章）。
@@ -131,7 +131,7 @@ func TestCh09Map(t *testing.T) {
 		for _, r := range setup.Reinforcements {
 			turns = append(turns, r.Turn)
 		}
-		if !reflect.DeepEqual(turns, []int{3, 3, 5, 5, 7, 7, 9, 9}) || len(m.Slots)+len(m.Enemies)+len(m.Reinforcements) != 41 {
+		if len(turns) != 14 || len(m.Slots)+len(m.Enemies)+len(m.Reinforcements) != 47 {
 			t.Errorf("増援のターン = %v、総数 = %d", turns, len(m.Slots)+len(m.Enemies)+len(m.Reinforcements))
 		}
 		// 敵の能力のボーナス（E-52 で ch08 の後の名簿に合わせて強くし直した。#102 は 4/2/2/1/1・ボス 12/4/4/3/4）。

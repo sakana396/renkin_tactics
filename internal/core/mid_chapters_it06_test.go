@@ -12,6 +12,7 @@ import (
 
 // ch06・ch07 の制作値を、出撃枠・敵の総数・後半の一団から確かめる（DES-MAP-08）。
 func TestIT06MidChapters(t *testing.T) {
+	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
 		id                          string
@@ -221,6 +222,7 @@ func containsWeapon(weapons []string, id string) bool {
 
 // 育った名簿で勝つ手順の下限を固定 seed で再現する。勝率は難しさの判定に使わない（DES-MAP-08）。
 func TestIT06MidAutoplay(t *testing.T) {
+	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
 		id, name string

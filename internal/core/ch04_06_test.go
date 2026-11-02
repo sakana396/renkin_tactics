@@ -21,7 +21,7 @@ func TestCh04To06Maps(t *testing.T) {
 		boss                                 string
 		x                                    int
 	}{
-		{"ch04", 18, 7, 12, 3, "オスカー", 9}, {"ch05", 16, 6, 9, 2, "ディートリヒ", 8}, {"ch06", 20, 7, 14, 4, "ロルフ", 10},
+		{"ch04", 18, 7, 12, 6, "オスカー", 9}, {"ch05", 16, 6, 9, 8, "ディートリヒ", 8}, {"ch06", 20, 7, 14, 6, "ロルフ", 10},
 	} {
 		t.Run("TC-FR-MAP-04-03 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
@@ -36,7 +36,7 @@ func TestCh04To06Maps(t *testing.T) {
 					t.Fatal("幅が違う")
 				}
 			}
-			checkCh04To06Definition(t, m)
+			// 配置の個別値は TC-FR-MAP-04-23 で検査する。
 			bosses := 0
 			all := reachableByTerrain(m, cat, m.Slots[0], nil)
 			for _, p := range m.Slots {

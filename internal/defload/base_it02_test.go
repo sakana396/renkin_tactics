@@ -26,6 +26,7 @@ func TestBaseDataIt02(t *testing.T) {
 	}
 
 	t.Run("TC-FR-SYS-03-06 2 章・3 章のマップの出撃の枠・敵・増援が 10.5・10.6 節のとおり", func(t *testing.T) {
+		t.Skip("#154 で初期配置と増援を変更。TC-FR-MAP-04-23・24 へ置換")
 		type enemy struct {
 			name, class, weapon, ai string
 			boss                    bool

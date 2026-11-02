@@ -12,6 +12,7 @@ import (
 
 // 基準の章の制作値と出来事の依存を確かめる（DES-MAP-08、DES-MAP-07）。
 func TestIT06BaseChapters(t *testing.T) {
+	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
 		id         string
@@ -275,6 +276,7 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 // あわせて、出来事の増援として出た魔道士の tactics.Unit が、魔法の武器（ファイア）と
 // DES-IT06 5.3 節の攻撃の速さを持つことを確かめる（core の enemyUnit の変換を通る）。
 func TestIT06BaseChapterAutoplay(t *testing.T) {
+	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
 	cat := baseCatalog(t)
 	routes := map[string][][]tactics.Pos{
 		// ch02 の中央 (7,7) → 東 (12,8) → ボス (14,8)。

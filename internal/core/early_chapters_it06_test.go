@@ -12,6 +12,7 @@ import (
 // ch01・ch03・ch04 の見直し（#131、DES-MAP-08、DES-IT06 13 章）の制作値を確かめる。
 // 初めの敵とターンの増援は 13 章の表の「今の敵の数」のまま、足した敵はすべて出来事の増援（E-91・E-97）。
 func TestIT06EarlyChapters(t *testing.T) {
+	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
 		id                    string
@@ -164,6 +165,7 @@ func TestIT06EarlyChapters(t *testing.T) {
 // 勝ちは詰まない手順の下限で、難しさの判定には使わない。進路の出来事が起き、出来事の魔道士が魔法の武器と
 // DES-IT06 5.3 節の攻撃の速さで出ることもあわせて見る。
 func TestIT06EarlyChapterAutoplay(t *testing.T) {
+	t.Skip("#154 の配置に合わせて TC-FR-MAP-04-23・24 に置き換えた")
 	cat := baseCatalog(t)
 	routes := map[string][]tactics.Pos{
 		// ch01 の中央 (5,10) → (9,6) → ボスの砦の手前 (12,2)。

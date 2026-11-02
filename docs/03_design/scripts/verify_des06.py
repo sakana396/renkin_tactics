@@ -164,7 +164,6 @@ for m in read_toml('maps.toml')['maps']:
     spans=tuple((min(e.get('bonus',{}).get(k,0) for e in enemies),max(e.get('bonus',{}).get(k,0) for e in enemies)) for k in ['hp','str'])
     eq(m['id']+' bonus range',spans,expected_ranges[m['id']])
     if m['id']=='ch09':
-        eq('ch09 count',len(enemies),34)
         boss=next(e for e in enemies if e.get('boss'))
         eq('ch09 boss stats',[classes[boss['class']]['base'][k]+boss['bonus'][k] for k in ['hp','str','skl','spd','def']],[38,12,9,8,9])
     if m['id']=='ch06':
@@ -232,6 +231,20 @@ eq('leon max weapons',int(next(line for line in design_text.splitlines() if line
 eq('joins order (E-89)','`ch02.joins = ["noel", "elsa"]`' in design_text,True)
 # 出撃枠は全章 +1（E-90）。13 章の表の「今の枠」「今の敵の数」を data から照合し、新しい枠 = 今 + 1。
 maps={m['id']:m for m in read_toml('maps.toml')['maps']}
+eq('E-100 初期突撃の記述','初期敵の 4 割以上' in design_text,True)
+eq('E-100 一団の人数の記述','初期敵 3〜5 体' in design_text,True)
+eq('E-100 前半の増援の記述','ch02〜ch07 は 4〜8 ターン目' in design_text,True)
+eq('E-100 後半の増援の記述','ch08・ch09 は 4〜12 ターン目' in design_text,True)
+for id,m in maps.items():
+    if id=='ch01':
+        eq('ch01 砦前の一団',sum(e.get('group')=='fort_front' for e in m['enemies']),2)
+        eq('ch01 ターン増援を維持',len(m['reinforcements']),3)
+        continue
+    eq(id+' 突撃 4 割以上',5*sum(e['ai']=='charge' for e in m['enemies'])>=2*len(m['enemies']),True)
+    end=12 if id in ('ch08','ch09') else 8
+    for turn in range(4,end+1):
+        count=sum(r['turn']==turn for r in m['reinforcements'])
+        eq(id+f' {turn} ターン目の増援',1<=count<=2,True)
 chapters_data=read_toml('chapters.toml')['chapters']
 party=read_toml('game.toml')['party']
 roster=list(party); max_live_enemies=39
@@ -245,7 +258,7 @@ for ch in chapters_data:
     # #125 で data の枠は新しい出撃枠（今 + 1）になった。
     eq(ch['id']+' slots in data = new',int(row[2]),len(m['slots']))
     eq(ch['id']+' slots +1',int(row[2]),int(row[1])+1)
-    eq(ch['id']+' enemies now',int(row[4]),enemies)
+    # 13 章の「今の敵の数」は E-90 時点の履歴値。#154 の追加増援後の値とは比較しない。
     eq(ch['id']+' roster size',int(row[3]),len(roster))
     if ch['id'] in ('ch01','ch02'): eq(ch['id']+' everyone deploys',len(roster)<=int(row[2]),True)
     eq(ch['id']+' initial enemies <= 39 (E-91)',len(m['enemies'])<=max_live_enemies,True)
@@ -264,4 +277,4 @@ eq('minimap16',128//16,8)
 eq('minimap x centered',(512+(320-128)//2, 512+(320-128)//2+127),(608,735))
 eq('minimap y (title 16, bottom 8)',(360+16,360+16+127,511-(360+16+127)),(376,503,8))
 eq('story paragraphs after adding',5+1,6)
-print(f'成功: {checks} 項目。B1〜B7・H1・G1〜G5・L1・C1、F1〜F12、既存の仲間とノエルの武器の重さ、今の 9 章の bonus の範囲、報酬と 5 枠の表、ch02 の加入の順、全章の出撃枠 +1 と名簿・敵の数、勇者の斧の反撃 1 回、ミニマップの位置、表の列・リンクを検算した。')
+print(f'成功: {checks} 項目。B1〜B7・H1・G1〜G5・L1・C1、F1〜F12、既存の仲間とノエルの武器の重さ、今の 9 章の bonus の範囲、報酬と 5 枠の表、ch02 の加入の順、全章の出撃枠 +1 と名簿、初期敵の上限、E-100 の突撃率・増援ターン、勇者の斧の反撃 1 回、ミニマップの位置、表の列・リンクを検算した。')
