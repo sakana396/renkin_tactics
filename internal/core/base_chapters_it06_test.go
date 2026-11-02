@@ -168,7 +168,7 @@ func TestIT06BaseChapters(t *testing.T) {
 
 // 想定名簿は反復 6 の能力と加入時期を含めて作る（DES-MAP-08 13 章）。
 // ch02 は ch01 から出た 5 人だけが平均 +2・低め +1 Lv、加入した 2 人は加入値のまま。
-// ch05・ch08・ch09 の初めの 5 人は反復 5 の見積もり（estimatedRoster）を使う。2 章に同じ Lv2 で加わる騎兵（エルザ）と
+// ch05〜ch09 の初めの 5 人は反復 5 の見積もり（estimatedRoster）を使う。2 章に同じ Lv2 で加わる騎兵（エルザ）と
 // 錬金術師（ノエル）は、出た章から 1 章 1 Lv で育て、二人の差をなくす。
 // 低めは伸びを成長率の 6 割で四捨五入する。幸運・魔力・魔防も同じ式で足す。
 func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *core.Campaign {
@@ -178,7 +178,7 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 		t.Fatal(err)
 	}
 	c := base
-	if id == "ch03" || id == "ch04" || id == "ch05" || id == "ch08" || id == "ch09" {
+	if id == "ch03" || id == "ch04" || id == "ch05" || id == "ch06" || id == "ch07" || id == "ch08" || id == "ch09" {
 		c = estimatedRoster(t, cat, id, low)
 	}
 	rate := 1.0
@@ -189,7 +189,7 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 		m := &c.Roster[i]
 		ch, _ := cat.Character(m.Character)
 		joiner := m.Character == "noel" || m.Character == "elsa"
-		// 物理の 5 能力を新しく足す数（ch05 の初めの 5 人は estimatedRoster で足し済み）。
+		// 物理の 5 能力を新しく足す数（ch05〜ch07 の初めの 5 人は estimatedRoster で足し済み）。
 		grow := 0
 		switch {
 		case id == "ch02" && !joiner:
@@ -203,6 +203,12 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 		case id == "ch05" && joiner:
 			*m = base.Roster[i]
 			grow = 3
+		case id == "ch06" && joiner:
+			*m = base.Roster[i]
+			grow = 4
+		case id == "ch07" && joiner:
+			*m = base.Roster[i]
+			grow = 5
 		case id == "ch08" && joiner:
 			*m = base.Roster[i]
 			grow = 6
@@ -230,6 +236,8 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 		"ch03": {{"leon", "armor_killer"}, {"bran", "hammer"}},
 		"ch04": {{"leon", "armor_killer"}, {"bran", "hammer"}, {"elsa", "horse_killer"}},
 		"ch05": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"bran", "hammer"}, {"elsa", "horse_killer"}},
+		"ch06": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"bran", "hammer"}, {"elsa", "horse_killer"}, {"tio", "long_bow"}},
+		"ch07": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"leon", "thunder_sword"}, {"bran", "hammer"}, {"elsa", "horse_killer"}, {"tio", "long_bow"}},
 		"ch08": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"leon", "thunder_sword"}, {"mira", "long_bow"}, {"bran", "hammer"}, {"bran", "brave_axe"}, {"elsa", "horse_killer"}},
 		"ch09": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"leon", "thunder_sword"}, {"mira", "long_bow"}, {"bran", "hammer"}, {"bran", "brave_axe"}, {"elsa", "horse_killer"}, {"gald", "horse_killer"}},
 	}
@@ -247,6 +255,12 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 		for _, take := range list {
 			for i, m := range c.Roster {
 				if m.Character == take[0] {
+					if id == "ch07" && take[1] == "thunder_sword" {
+						// 3 本目の報酬武器を持つため、主人公の回復薬を 1 個在庫へ戻す。
+						if err := c.StoreItem(i, "potion"); err != nil {
+							t.Fatal(err)
+						}
+					}
 					if err := c.TakeWeapon(i, take[1]); err != nil {
 						t.Fatal(err)
 					}
