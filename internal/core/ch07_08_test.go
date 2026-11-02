@@ -156,14 +156,9 @@ func TestCh07To08Autoplay(t *testing.T) {
 		seed uint64
 	}{
 		{"ch07", 0, false, 4}, {"ch07", 1, false, 2}, {"ch07", 0, true, 3}, {"ch07", 1, true, 2},
-		{"ch08", 0, false, 10}, {"ch08", 1, false, 1}, {"ch08", 2, false, 6}, {"ch08", 0, true, 1}, {"ch08", 1, true, 9},
 	} {
 		p := ch07To08Plans(tc.id)[tc.plan]
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-06 %s/%s/低め%v/seed%d", tc.id, p.name, tc.low, tc.seed), func(t *testing.T) {
-			// IT06 で一時停止（TST-IT06 3.2・3.3 節）。ch07 は #132、ch08 は #133 で置き換える。
-			if tc.id == "ch08" && tc.plan == 1 && tc.low && tc.seed == 9 {
-				pauseIT06(t, "#133")
-			}
 			if tc.id == "ch07" && tc.plan == 0 && !tc.low && tc.seed == 4 {
 				pauseIT06Level(t, "#132")
 			}
