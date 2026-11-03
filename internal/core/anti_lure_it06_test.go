@@ -368,3 +368,58 @@ func checkGroupsCharge(t *testing.T, cat *defs.Catalog, id string, m defs.MapDef
 		}
 	}
 }
+
+// 3 章の 5 ターン目のファイターの増援は、内の城壁の西の部屋の外に出ない（E-114、DES-MAP-03、map-ch03.md 7 章）。
+// 元のマスがふさがれると距離 2 までの通れるマスに出るので、その候補のどれもが、壁を回り込まずに
+// 元のマスから行ける（通れるマスだけを通る歩数がマス目の距離と同じ）ことを確かめる。
+func TestIT06Ch03TurnFiveReinforcementOrigin(t *testing.T) {
+	t.Run("TC-FR-MAP-04-23 ch03 の 5 ターン目の増援の元は (5,1) で、候補が壁の外に出ない", func(t *testing.T) {
+		cat := baseCatalog(t)
+		m, ok := cat.Map("ch03")
+		if !ok {
+			t.Fatal("ch03 がない")
+		}
+		var origin *defs.Slot
+		for _, r := range m.Reinforcements {
+			if r.Turn == 5 && r.Class == "fighter" {
+				if origin != nil {
+					t.Fatal("5 ターン目のファイターの増援が 2 体以上ある")
+				}
+				origin = &defs.Slot{X: r.X, Y: r.Y}
+			}
+		}
+		if origin == nil {
+			t.Fatal("5 ターン目のファイターの増援がない")
+		}
+		if *origin != (defs.Slot{X: 5, Y: 1}) {
+			t.Fatalf("5 ターン目のファイターの元のマス = %+v、期待 (5,1)（E-114）", *origin)
+		}
+		steps := pathSteps(m, cat, *origin)
+		const reach = 2 // DES-MAP-03: 元のマスがふさがれたときに探す距離
+		for y := origin.Y - reach; y <= origin.Y+reach; y++ {
+			for x := origin.X - reach; x <= origin.X+reach; x++ {
+				d := absInt(x-origin.X) + absInt(y-origin.Y)
+				if d > reach || y < 0 || y >= len(m.Rows) || x < 0 || x >= len([]rune(m.Rows[0])) {
+					continue
+				}
+				c := defs.Slot{X: x, Y: y}
+				if st, ok := steps[c]; ok && st == d {
+					continue
+				}
+				if passableTerrain(m, cat, c) {
+					t.Errorf("候補 (%d,%d) は通れるが、元のマスから壁を回り込まないと行けない（歩数 %v、距離 %d）", x, y, steps[c], d)
+				}
+			}
+		}
+	})
+}
+
+// passableTerrain は、マス p の地形が通れるかを返す。
+func passableTerrain(m defs.MapDef, cat *defs.Catalog, p defs.Slot) bool {
+	for _, tr := range cat.Terrains() {
+		if tr.Symbol == string([]rune(m.Rows[p.Y])[p.X]) {
+			return tr.Cost > 0
+		}
+	}
+	return false
+}
