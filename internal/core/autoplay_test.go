@@ -24,6 +24,8 @@ type autoPlan struct {
 	Routes [][]tactics.Pos
 	// Order は行動の順（キャラ ID）。書いていないキャラは後ろ。
 	Order []string
+	// Observe は、この試し遊びだけの出来事の観測（nil なら観測しない）。並べて走らせるときに autoObserve の代わりに使う。
+	Observe func([]tactics.Event)
 }
 
 // autoResult は自動の試し遊びの結果。
@@ -85,6 +87,9 @@ type autoPlayer struct {
 func (p *autoPlayer) note(events []tactics.Event) {
 	if autoObserve != nil {
 		autoObserve(events)
+	}
+	if p.plan.Observe != nil {
+		p.plan.Observe(events)
 	}
 	units := p.b.Units()
 	last := map[int]int{}

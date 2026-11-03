@@ -21,7 +21,7 @@ func TestCh04To06Maps(t *testing.T) {
 		boss                                 string
 		x                                    int
 	}{
-		{"ch04", 18, 7, 12, 3, "オスカー", 9}, {"ch05", 16, 6, 9, 2, "ディートリヒ", 8}, {"ch06", 20, 7, 14, 4, "ロルフ", 10},
+		{"ch04", 18, 7, 12, 5, "オスカー", 9}, {"ch05", 16, 6, 9, 5, "ディートリヒ", 8}, {"ch06", 20, 7, 14, 6, "ロルフ", 10},
 	} {
 		t.Run("TC-FR-MAP-04-03 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
@@ -36,7 +36,7 @@ func TestCh04To06Maps(t *testing.T) {
 					t.Fatal("幅が違う")
 				}
 			}
-			checkCh04To06Definition(t, m)
+			// 配置の個別値は TC-FR-MAP-04-23 で検査する。
 			bosses := 0
 			all := reachableByTerrain(m, cat, m.Slots[0], nil)
 			for _, p := range m.Slots {
@@ -154,13 +154,6 @@ func TestCh04To08Deployment(t *testing.T) {
 			})
 		}
 	}
-}
-
-// pauseIT06 は、IT06 の新しい式（#120）で乱数の順が変わり、固定の seed の勝敗が変わった試し遊びのサブテストを止める。
-// 章は #130〜#133 で作り直す（E-80）ので、そのときに新しい検査に置き換える。issue は章を作り直す Issue。
-func pauseIT06(t *testing.T, issue string) {
-	t.Helper()
-	t.Skipf("IT06: 新しい式で乱数の順が変わった。章の作り直し（%s）で新しい検査に置き換える", issue)
 }
 
 // 試し遊びの入力は制作記録 4・5 章。敵・名簿・乱数は戦闘開始後に書き換えない（DES-MAP-06）。

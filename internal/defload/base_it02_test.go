@@ -26,6 +26,9 @@ func TestBaseDataIt02(t *testing.T) {
 	}
 
 	t.Run("TC-FR-SYS-03-06 2 章・3 章のマップの出撃の枠・敵・増援が 10.5・10.6 節のとおり", func(t *testing.T) {
+		// #154（E-100、DES-IT06 10.1 節・13 章）で、初めの敵の ai・一団とターンの増援を変えた。
+		// ここでは名前・枠・敵の兵種・武器・Lv・位置・bonus・ボスの能力を確かめ、ai・一団・ターンの増援は
+		// TC-FR-MAP-04-23 で確かめる。
 		type enemy struct {
 			name, class, weapon, ai string
 			boss                    bool
@@ -110,19 +113,19 @@ func TestBaseDataIt02(t *testing.T) {
 				}
 				want = append(want, placement)
 			}
-			if !reflect.DeepEqual(m.Enemies, want) {
+			strip := func(list []defs.EnemyPlacement) []defs.EnemyPlacement {
+				out := append([]defs.EnemyPlacement(nil), list...)
+				for i := range out {
+					out[i].AI, out[i].ID, out[i].Group, out[i].Approach = "", "", "", ""
+				}
+				return out
+			}
+			if !reflect.DeepEqual(strip(m.Enemies), strip(want)) {
 				t.Errorf("%s の敵 =\n%+v\nwant\n%+v", tt.id, m.Enemies, want)
 			}
 			boss := m.Enemies[len(m.Enemies)-1]
 			if s := statsOf(boss.Class, boss.Bonus); s != tt.bossStats {
 				t.Errorf("%s のボスの能力 = %+v、期待 %+v", tt.id, s, tt.bossStats)
-			}
-			var wantR []defs.Reinforcement
-			for _, r := range tt.reinf {
-				wantR = append(wantR, defs.Reinforcement{Turn: r.turn, EnemyPlacement: defs.EnemyPlacement{Class: r.class, Weapons: []string{r.weapn}, Bonus: tt.bonus, AI: "charge", Level: r.level, X: r.x, Y: r.y}})
-			}
-			if !reflect.DeepEqual(m.Reinforcements, wantR) {
-				t.Errorf("%s の増援 =\n%+v\nwant\n%+v", tt.id, m.Reinforcements, wantR)
 			}
 		}
 		// 3 章の門のアーマーの能力は 25/8/4/3/10/4（10.6 節）。

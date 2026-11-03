@@ -6,6 +6,9 @@ import (
 	"strconv"
 )
 
+// groupNearLimit は集合中に仲間の現在位置から離れてよいマス目の距離（DES-AI-02）。
+const groupNearLimit = 7
+
 // planEnemyGroups は敵軍の番の始めに一団の集まる先と突入を決める（DES-AI-02）。
 // 増援・回復後の盤面を基準にし、行動中は計画を変えない。
 func (b *Battle) planEnemyGroups(count int) {
@@ -38,6 +41,15 @@ func (b *Battle) planEnemyGroups(count int) {
 	}
 	sort.Slice(keys, func(i, j int) bool { return groups[keys[i]][0] < groups[keys[j]][0] })
 	threats := b.playerThreats(playerReach)
+	// 仲間が動いて古い先だけが遠くなったら、予約する前に割り当て直す。
+	for _, key := range keys {
+		members := groups[key]
+		for _, i := range members {
+			if goal, ok := b.groupPlan[i]; ok && !b.groupNear(goal, i, members) {
+				delete(b.groupPlan, i)
+			}
+		}
+	}
 	assigned := make(map[Pos]bool)
 	// 先に全一団の生存者の集合先を予約する。処理順が後の一団も例外にしない。
 	for i, goal := range b.groupPlan {
@@ -83,10 +95,11 @@ func (b *Battle) planEnemyGroups(count int) {
 				anyDanger = true
 			}
 		}
-		if !planned && !anyDanger {
+		if !planned && !anyDanger && !b.groupGathering[key] {
 			continue
 		}
 
+		b.groupGathering[key] = true
 		groupGoals := make(map[Pos]bool)
 		for _, i := range members {
 			if goal, ok := b.groupPlan[i]; ok {
@@ -114,7 +127,7 @@ func (b *Battle) planEnemyGroups(count int) {
 						p := Pos{x, y}
 						owner, taken := occupied[p]
 						_, ownerPlanned := b.groupPlan[owner]
-						if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i && (!member[owner] || !ownerPlanned)) {
+						if tile.Cost < 1 || assigned[p] || danger[p] || !b.groupNear(p, i, members) || (taken && owner != i && (!member[owner] || !ownerPlanned)) {
 							continue
 						}
 						cost, ok := path[p]
@@ -144,7 +157,7 @@ func (b *Battle) planEnemyGroups(count int) {
 							p := Pos{x, y}
 							owner, taken := occupied[p]
 							_, ownerPlanned := b.groupPlan[owner]
-							if tile.Cost < 1 || assigned[p] || danger[p] || (taken && owner != i && (!member[owner] || !ownerPlanned)) {
+							if tile.Cost < 1 || assigned[p] || danger[p] || !b.groupNear(p, i, members) || (taken && owner != i && (!member[owner] || !ownerPlanned)) {
 								continue
 							}
 							cost, ok := path[p]
@@ -205,6 +218,19 @@ func (b *Battle) planEnemyGroups(count int) {
 			}
 		}
 	}
+}
+
+// groupNear は一団の仲間の現在位置から七マス以内かを調べる（DES-AI-02）。
+func (b *Battle) groupNear(p Pos, self int, members []int) bool {
+	if len(members) <= 1 {
+		return true
+	}
+	for _, i := range members {
+		if i != self && distance(p, b.units[i].Pos) <= groupNearLimit {
+			return true
+		}
+	}
+	return false
 }
 
 // groupMemberAt は同じ一団の一員が現在いるマスを調べる（DES-AI-02）。
@@ -374,11 +400,18 @@ func (b *Battle) terrainDistances(from Pos, reverse bool) map[Pos]int {
 func (b *Battle) groupMove(unit int, reach map[Pos]int, goal Pos) (Pos, bool) {
 	danger := b.groupDanger[unit]
 	toGoal := b.terrainDistances(goal, true)
+	var members []int
+	key := b.groupKey(b.units[unit].Group, b.units[unit].Pos)
+	for i, u := range b.units {
+		if u.Alive && u.Side == Enemy && u.Approach == GroupApproach && b.groupKey(u.Group, u.Pos) == key {
+			members = append(members, i)
+		}
+	}
 	var best Pos
 	bestRemain, bestCost := unreachable, unreachable
 	found := false
 	for p, cost := range reach {
-		if danger[p] {
+		if danger[p] || !b.groupNear(p, unit, members) {
 			continue
 		}
 		remain, ok := toGoal[p]
@@ -387,6 +420,20 @@ func (b *Battle) groupMove(unit int, reach map[Pos]int, goal Pos) (Pos, bool) {
 		}
 		if !found || remain < bestRemain || (remain == bestRemain && (cost < bestCost || (cost == bestCost && posLess(p, best)))) {
 			best, bestRemain, bestCost, found = p, remain, cost, true
+		}
+	}
+	if !found && danger[b.units[unit].Pos] {
+		// 仲間の近くに安全な退避先がなければ、安全を優先する。
+		near := b.closeness()
+		bestNear := unreachable
+		for p, cost := range reach {
+			if danger[p] {
+				continue
+			}
+			n := near(p)
+			if !found || n < bestNear || (n == bestNear && (cost < bestCost || (cost == bestCost && posLess(p, best)))) {
+				best, bestNear, bestCost, found = p, n, cost, true
+			}
 		}
 	}
 	return best, found

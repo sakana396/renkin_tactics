@@ -9,34 +9,37 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/defs"
 )
 
-// 後半 2 章は初めの敵の数を保ち、出来事で倒された分を補う（DES-MAP-08 13 章）。
+// 後半 2 章は出来事で倒された分を補う（DES-MAP-08 13 章）。
+//
+// #154（E-100）で初めの敵・ターンの増援・一団を変えたので、初めの敵とターンの増援の数・敵の騎兵の数・
+// 出撃枠の安全は TC-FR-MAP-04-23 に移した。出来事の増援（数・一団・Lv・bonus）と閉路の検査は続ける。
 func TestIT06LateChapters(t *testing.T) {
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
-		id                                                    string
-		slots, initial, turn, events, eventEnemies, cavaliers int
-		bonus                                                 defs.Stats
-		groups                                                map[string]int
-		minLevel, maxLevel                                    int
+		id                          string
+		slots, events, eventEnemies int
+		bonus                       defs.Stats
+		groups                      map[string]int // 出来事の増援の一団ごとの人数
+		minLevel, maxLevel          int
 	}{
-		{"ch08", 6, 16, 6, 2, 7, 8, defs.Stats{HP: 5, Str: 3, Skl: 3, Spd: 2, Def: 3}, map[string]int{"forest_road_reserve": 3, "forest_north_reserve": 4}, 8, 11},
-		{"ch09", 7, 26, 8, 3, 12, 11, defs.Stats{HP: 6, Str: 3, Skl: 3, Spd: 2, Def: 3}, map[string]int{"gate_west_reserve": 3, "gate_east_reserve": 3, "gate_inner_reserve": 6}, 9, 12},
+		{"ch08", 6, 2, 7, defs.Stats{HP: 5, Str: 3, Skl: 3, Spd: 2, Def: 3}, map[string]int{"forest_road_reserve": 3, "forest_north_reserve": 4}, 8, 11},
+		{"ch09", 7, 3, 12, defs.Stats{HP: 6, Str: 3, Skl: 3, Spd: 2, Def: 3}, map[string]int{"gate_west_reserve": 3, "gate_east_reserve": 3, "gate_inner_reserve": 6}, 9, 12},
 	} {
 		t.Run("TC-FR-MAP-04-20 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
 			if !ok {
 				t.Fatal("地図がない")
 			}
-			if len(m.Slots) != tc.slots || len(m.Enemies) != tc.initial || len(m.Reinforcements) != tc.turn || len(m.Events) != tc.events {
-				t.Fatalf("枠・初期敵・ターン増援・出来事: %d/%d/%d/%d", len(m.Slots), len(m.Enemies), len(m.Reinforcements), len(m.Events))
-			}
-			all := append([]defs.EnemyPlacement(nil), m.Enemies...)
-			for _, r := range m.Reinforcements {
-				all = append(all, r.EnemyPlacement)
-			}
+			var all []defs.EnemyPlacement
 			total := 0
+			reinforce := 0
 			graph := map[string][]string{}
 			for _, e := range m.Events {
+				if e.Trigger == defs.TriggerEnemyAttacked && e.Effect == defs.EventChargeGroup {
+					// #154 の enemy_attacked → charge_group は TC-FR-MAP-04-23 で確かめる。
+					continue
+				}
+				reinforce++
 				if e.Trigger != defs.TriggerEnemyDefeated || e.Effect != defs.EventReinforce {
 					t.Fatalf("出来事 %s は撃破後の増援でない", e.ID)
 				}
@@ -49,11 +52,10 @@ func TestIT06LateChapters(t *testing.T) {
 					graph[e.Unit] = append(graph[e.Unit], enemy.ID)
 				}
 			}
-			if total != tc.eventEnemies {
-				t.Fatalf("出来事の増援は %d 体", total)
+			if len(m.Slots) != tc.slots || reinforce != tc.events || total != tc.eventEnemies {
+				t.Fatalf("枠・増援の出来事・出来事の増援: %d/%d/%d", len(m.Slots), reinforce, total)
 			}
 			groups := map[string]int{}
-			cavaliers := 0
 			for _, e := range all {
 				if e.Group != "" {
 					if e.Approach != defs.ApproachGroup {
@@ -61,12 +63,9 @@ func TestIT06LateChapters(t *testing.T) {
 					}
 					groups[e.Group]++
 				}
-				if e.Class == "cavalier" && !e.Boss {
-					cavaliers++
-				}
 			}
-			if !reflect.DeepEqual(groups, tc.groups) || cavaliers != tc.cavaliers {
-				t.Fatalf("一団 %v・騎兵 %d", groups, cavaliers)
+			if !reflect.DeepEqual(groups, tc.groups) {
+				t.Fatalf("出来事の増援の一団 %v", groups)
 			}
 			state := map[string]int{}
 			var visit func(string) bool
@@ -86,30 +85,6 @@ func TestIT06LateChapters(t *testing.T) {
 			for id := range graph {
 				if visit(id) {
 					t.Fatalf("増援の参照に閉路: %s", id)
-				}
-			}
-			c, err := core.NewCampaignAt(cat, core.Withdraw, tc.id)
-			if err != nil {
-				t.Fatal(err)
-			}
-			s, _, err := c.StartBattle([]int{0}, 1)
-			if err != nil {
-				t.Fatal(err)
-			}
-			slots := map[tactics.Pos]bool{}
-			for _, p := range m.Slots {
-				slots[tactics.Pos{X: p.X, Y: p.Y}] = true
-			}
-			for i, u := range s.Battle.Units() {
-				if u.Side != tactics.Enemy {
-					continue
-				}
-				for p := range s.Battle.Reachable(i) {
-					for _, target := range s.Battle.AttackRange(i, p) {
-						if slots[target] {
-							t.Fatalf("初めの敵 %s の攻撃が出撃枠に届く", u.ID)
-						}
-					}
 				}
 			}
 		})
@@ -155,6 +130,7 @@ func TestIT06LateRoster(t *testing.T) {
 
 // 公開の戦闘 API で後半の章を試し、勝ち筋と同時に生きる敵を確かめる（DES-MAP-08 13 章）。
 func TestIT06LateChapterAutoplay(t *testing.T) {
+	t.Skip("TC-FR-MAP-04-21 の固定 seed・進路の勝ち筋は #154（E-100）の配置で変わったため、3 種の名簿の TC-FR-MAP-04-24 に置き換えた")
 	cat := baseCatalog(t)
 	for _, tc := range []struct {
 		id, name, route string
