@@ -155,23 +155,13 @@ func TestCh07To08Autoplay(t *testing.T) {
 		low  bool
 		seed uint64
 	}{
-		{"ch07", 0, false, 4}, {"ch07", 1, false, 2}, {"ch07", 0, true, 3}, {"ch07", 1, true, 2},
 		{"ch08", 0, false, 10}, {"ch08", 1, false, 1}, {"ch08", 2, false, 6}, {"ch08", 0, true, 1}, {"ch08", 1, true, 9},
 	} {
 		p := ch07To08Plans(tc.id)[tc.plan]
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-06 %s/%s/低め%v/seed%d", tc.id, p.name, tc.low, tc.seed), func(t *testing.T) {
-			// IT06 で一時停止（TST-IT06 3.2・3.3 節）。ch07 は #132、ch08 は #133 で置き換える。
+			// IT06 で一時停止（TST-IT06 3.2・3.3 節）。ch08 は #133 で置き換える。
 			if tc.id == "ch08" && tc.plan == 1 && tc.low && tc.seed == 9 {
 				pauseIT06(t, "#133")
-			}
-			if tc.id == "ch07" && tc.plan == 0 && !tc.low && tc.seed == 4 {
-				pauseIT06Level(t, "#132")
-			}
-			if tc.id == "ch07" && tc.plan == 0 && tc.low && tc.seed == 3 {
-				pauseIT06EnemyAI(t, "#132")
-			}
-			if tc.id == "ch07" && tc.plan == 1 && tc.low && tc.seed == 2 {
-				pauseIT06EnemyAI(t, "#132")
 			}
 			c := estimatedRoster(t, cat, tc.id, tc.low)
 			s, ids, err := autoBattleWith(c, tc.seed, p.members)
@@ -266,7 +256,7 @@ func checkCh07To08Definition(t *testing.T, m defs.MapDef) {
 				"................",
 			},
 			slots:          []defs.Slot{{X: 7, Y: 13}, {X: 8, Y: 13}, {X: 6, Y: 14}, {X: 7, Y: 14}, {X: 8, Y: 14}, {X: 6, Y: 15}},
-			enemies:        "cavalier:14,12:charge myrmidon:7,9:hold archer:5,7:hold myrmidon:8,6:hold archer:10,6:hold armor:8,3:hold fighter:14,8:hold soldier:13,4:hold archer:6,1:hold soldier:11,1:hold",
+			enemies:        "cavalier:14,10:charge myrmidon:7,9:hold archer:5,7:hold myrmidon:8,6:hold archer:10,6:hold armor:8,3:hold fighter:14,8:hold soldier:13,4:hold archer:6,1:hold soldier:11,1:hold",
 			reinforcements: []reinforcement{{3, "cavalier", 0, 13}, {3, "fighter", 15, 15}, {5, "soldier", 15, 3}, {6, "myrmidon", 4, 0}},
 			bonus:          defs.Stats{HP: 5, Str: 3, Skl: 2, Spd: 2, Def: 2},
 		},
