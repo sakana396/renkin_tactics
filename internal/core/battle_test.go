@@ -118,7 +118,8 @@ func TestNewBattleCh01(t *testing.T) {
 		for _, u := range b.Units()[5:] {
 			got = append(got, u.Name)
 		}
-		want := []string{"ソルジャー 1", "ソルジャー 2", "剣士 1", "剣士 2", "ファイター 1", "ファイター 2", "アーチャー", "ハーゲン"}
+		// アーチャーは初めの敵に 1 体だが、出来事の増援（#131 の border_east_archer）も通して数えるので番号が付く。
+		want := []string{"ソルジャー 1", "ソルジャー 2", "剣士 1", "剣士 2", "ファイター 1", "ファイター 2", "アーチャー 1", "ハーゲン"}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("敵の名前 = %q, want %q", got, want)
 		}

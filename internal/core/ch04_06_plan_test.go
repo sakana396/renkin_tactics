@@ -13,6 +13,7 @@ import (
 // ch03 の後（ch04 の開始）は、ch01〜ch03 の経験（約 1,500）を 6 人で分け、リナ以外は 3、リナは 2 レベル上がる見込み。
 // ch04 から先は、章ごとに平均 1 レベル分を加える（ch09 は ch04〜ch08 の 5 章分。E-52）。
 // 低めは 1 レベル少なく、伸びを成長率の 6 割にする。移動力と手持ちは変えない。
+// 反復 6 の ch03 の開始も ch04 と同じ値を使う（2 章のあとの開発者の名簿（E-96、平均 Lv3.4）より少し育った側。#131）。
 func estimatedRoster(t *testing.T, cat *defs.Catalog, id string, low bool) *core.Campaign {
 	t.Helper()
 	return estimatedRosterWithRecruits(t, cat, id, low, false)
@@ -25,7 +26,7 @@ func estimatedRosterWithRecruits(t *testing.T, cat *defs.Catalog, id string, low
 	if err != nil {
 		t.Fatal(err)
 	}
-	extra, ok := map[string]int{"ch04": 0, "ch05": 1, "ch06": 2, "ch07": 3, "ch08": 4, "ch09": 5}[id]
+	extra, ok := map[string]int{"ch03": 0, "ch04": 0, "ch05": 1, "ch06": 2, "ch07": 3, "ch08": 4, "ch09": 5}[id]
 	if !ok {
 		t.Fatalf("見積もりのない章 %s", id)
 	}
@@ -62,17 +63,10 @@ func estimatedRosterWithRecruits(t *testing.T, cat *defs.Catalog, id string, low
 	return c
 }
 
-// ch04To06Plans は方面・地形・行動順を変えた作戦（DES-MAP-06）。
+// ch04To06Plans は方面・地形・行動順を変えた作戦（DES-MAP-06）。ch04 は #131 で TC-FR-MAP-04-15 に移した。
 func ch04To06Plans(id string) []autoPlan {
 	order := []string{"gald", "mira", "bran", "elsa", "leon", "rina"}
 	switch id {
-	case "ch04":
-		west := []tactics.Pos{{X: 4, Y: 12}, {X: 4, Y: 7}, {X: 5, Y: 4}}
-		east := []tactics.Pos{{X: 13, Y: 12}, {X: 13, Y: 7}, {X: 12, Y: 4}}
-		return []autoPlan{
-			{Groups: map[string]int{"leon": 0, "mira": 0, "elsa": 0, "gald": 1, "bran": 1, "rina": 1}, Routes: [][]tactics.Pos{west, east}, Order: order},
-			{Routes: [][]tactics.Pos{east}, Order: order},
-		}
 	case "ch05":
 		return []autoPlan{
 			{Routes: [][]tactics.Pos{{{X: 7, Y: 9}, {X: 7, Y: 6}, {X: 8, Y: 3}}}, Order: order},

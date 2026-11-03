@@ -21,7 +21,7 @@
 | 試験 | テスト仕様書（反復 3） | [04_test/test-spec-it03.md](04_test/test-spec-it03.md) | 骨組み。実装とともに書き足す |
 | 試験 | テスト仕様書（反復 4） | [04_test/test-spec-it04.md](04_test/test-spec-it04.md) | v0.1 骨組み。自動は未実装、手動は未実施 |
 | 試験 | テスト仕様書（反復 5） | [04_test/test-spec-it05.md](04_test/test-spec-it05.md) | v0.2。自動は実装済み。#98・#105 の手動結果と持ち越しは 3.10 節（E-60〜E-72） |
-| 試験 | テスト仕様書（反復 6） | [04_test/test-spec-it06.md](04_test/test-spec-it06.md) | v0.6（#120・#123・#124・#126・#127）。能力・計算・予測・セーブ、回復と敵のレベル、出来事、再移動、一団の敵の思考の自動ケースを順次実装。旧自動試遊の一部は IT06 で一時停止（#130〜#133 で置き換え）。後続の自動ケース・手動・基準の PC での測定は未実施 |
+| 試験 | テスト仕様書（反復 6） | [04_test/test-spec-it06.md](04_test/test-spec-it06.md) | v2.10（#120・#123・#124・#126・#127・#130・#149・#131・#132・#133・#154・#158）。能力・計算・予測・セーブ、回復と敵のレベル、出来事、再移動、一団の敵の思考の自動ケースを順次実装。旧自動試遊の一部は IT06 で一時停止（#130〜#133 で置き換え）。#154 で初期突撃・待つ守りの一団・一団の近さ・連続増援と 3 種の名簿の 20 seed の自動試遊を足した。後続の自動ケース・手動・基準の PC での測定は未実施 |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
@@ -36,12 +36,21 @@
 | 計画 | 反復 5 計画書 | [iterations/it05/plan.md](iterations/it05/plan.md) | v0.4 承認（E-57）。仲間 2 人の加入（E-55） |
 | 設計 | 設計書（反復 5） | [03_design/design-it05.md](03_design/design-it05.md) | v0.4 承認（E-57）。仲間 2 人の加入（E-55） |
 | 計画 | 反復 5 の振り返り | [iterations/it05/retrospective.md](iterations/it05/retrospective.md) | v0.2 承認（E-72） |
-| 計画 | 反復 6 計画書 | [iterations/it06/plan.md](iterations/it06/plan.md) | v0.3 承認（E-87）。手ごたえの引き上げと、武器・魔法の広がり（E-73〜E-87）。v0.4（案）で試遊の行動の記録（#155、E-103・E-104・E-106）を追加（承認待ち） |
-| 設計 | 設計書（反復 6） | [03_design/design-it06.md](03_design/design-it06.md) | v0.2 承認（E-93）。REV-066 の指摘を反映。未決事項は E-89 で決定、全章の出撃枠 +1（E-90）、一度に 46 体（自軍 7・敵 39。E-91）。検算は [03_design/scripts/verify_des06.py](03_design/scripts/verify_des06.py)。v0.6（案）で 13.1 節に試遊の行動の記録（DES-LOG-01〜03、#155、E-106）を追加（承認待ち） |
+| 計画 | 反復 6 計画書 | [iterations/it06/plan.md](iterations/it06/plan.md) | v0.4 承認（E-114）。v0.3 まで承認（E-87）。手ごたえの引き上げと、武器・魔法の広がり（E-73〜E-87）。v0.4 で試遊の行動の記録（#155、E-103・E-104・E-106）を追加 |
+| 設計 | 設計書（反復 6） | [03_design/design-it06.md](03_design/design-it06.md) | v0.8（13.1 節の試遊の行動の記録（DES-LOG-01〜03、#155、0.8）、13 章「自動の試遊」の 2 つの打ち手（#158、0.7）、10・13 章の釣り出し対策と一団の待ち方（E-99・E-100・E-108・E-109、#154、0.6）、12.2 節の改訂（E-97、#149、0.5）は承認（E-114））。0.4 まで承認（E-93）。REV-066 の指摘を反映。未決事項は E-89 で決定、全章の出撃枠 +1（E-90）、一度に 46 体（自軍 7・敵 39。E-91）。検算は [03_design/scripts/verify_des06.py](03_design/scripts/verify_des06.py) |
 | 設計 | 式の一覧（DES-FML-01） | [03_design/formulas.md](03_design/formulas.md) | v0.2 承認（E-93）。REV-066 の指摘を反映。勇者の斧の反撃は 1 回（E-89） |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
+| 制作 | ch02 の制作記録（反復 6） | [iterations/it06/map-ch02.md](iterations/it06/map-ch02.md) | v0.3（#130、REV-079、E-96・E-97。自動の下限は確認、開発者の短い試遊は 1 回目（版 0.2）を実施し、版 0.3 は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch05 の制作記録（反復 6） | [iterations/it06/map-ch05.md](iterations/it06/map-ch05.md) | v0.3（#130、REV-079、E-96・E-97。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch01 の制作記録（反復 6） | [iterations/it06/map-ch01.md](iterations/it06/map-ch01.md) | v0.1（#131。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch03 の制作記録（反復 6） | [iterations/it06/map-ch03.md](iterations/it06/map-ch03.md) | v0.2（#131。自動の下限は確認、壁の外の増援の候補を記録。#154 で 5T の増援の元を (5,1) に動かした（E-114）。開発者の試遊は E-113）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch04 の制作記録（反復 6） | [iterations/it06/map-ch04.md](iterations/it06/map-ch04.md) | v0.1（#131。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch06 の制作記録（反復 6） | [iterations/it06/map-ch06.md](iterations/it06/map-ch06.md) | v0.2（#132。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch07 の制作記録（反復 6） | [iterations/it06/map-ch07.md](iterations/it06/map-ch07.md) | v0.2（#132。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch08 の制作記録（反復 6） | [iterations/it06/map-ch08.md](iterations/it06/map-ch08.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch09 の制作記録（反復 6） | [iterations/it06/map-ch09.md](iterations/it06/map-ch09.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
 | 制作 | ch06 の制作記録（反復 5） | [iterations/it05/map-ch06.md](iterations/it05/map-ch06.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch07 の制作記録（反復 5） | [iterations/it05/map-ch07.md](iterations/it05/map-ch07.md) | v0.1（#104。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch08 の制作記録（反復 5） | [iterations/it05/map-ch08.md](iterations/it05/map-ch08.md) | v0.1（#104。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |

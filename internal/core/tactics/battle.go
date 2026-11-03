@@ -17,12 +17,13 @@ type Battle struct {
 	units          []Unit
 	reinforcements []ReinforcementSetup
 	// mapEvents は出来事の定義（New が入力から独立させ、戦闘中に変えない）。mapState はその状態（DES-MAP-07）。
-	mapEvents    []MapEventSetup
-	mapState     eventState
-	groupEntered map[string]bool
-	groupPlan    map[int]Pos
-	groupDanger  map[int]map[Pos]bool
-	groupRegions map[Pos]Pos
+	mapEvents      []MapEventSetup
+	mapState       eventState
+	groupEntered   map[string]bool
+	groupGathering map[string]bool
+	groupPlan      map[int]Pos
+	groupDanger    map[int]map[Pos]bool
+	groupRegions   map[Pos]Pos
 	// canto は待っている再移動（DES-BTL-10）。
 	canto cantoState
 
@@ -69,6 +70,7 @@ func New(setup Setup, seed uint64) (*Battle, []Event, error) {
 	b.mapEvents = cloneMapEvents(setup.Events)
 	b.mapState = eventState{fired: make([]bool, len(b.mapEvents))}
 	b.groupEntered = make(map[string]bool)
+	b.groupGathering = make(map[string]bool)
 	return b, b.startPlayerPhase(nil), nil
 }
 

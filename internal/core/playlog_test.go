@@ -345,7 +345,8 @@ func TestPlayLog(t *testing.T) {
 				t.Fatalf("phase %s がない: %v", k, phases)
 			}
 		}
-		// seed 7 のこの手順は 3 ターン目に負けるので、end は最後の 1 行だけ（lost・turn 3）。
+		// seed 7 のこの手順は、#154 の配置（DES-IT06 10・13 章）では 2 ターン目の敵軍の番に負けるので、
+		// end は最後の 1 行だけ（lost・turn 2）。
 		ends := 0
 		for _, r := range recs {
 			if r["type"] == "end" {
@@ -353,8 +354,8 @@ func TestPlayLog(t *testing.T) {
 			}
 		}
 		last := recs[len(recs)-1]
-		if s.Battle.Result != tactics.Lost || ends != 1 || last["type"] != "end" || last["result"] != "lost" || num(last["turn"]) != 3 {
-			t.Fatalf("勝敗 %v、end %d 行、最後 %v; 期待 負け・1 行・lost の turn 3", s.Battle.Result, ends, last)
+		if s.Battle.Result != tactics.Lost || ends != 1 || last["type"] != "end" || last["result"] != "lost" || num(last["turn"]) != 2 {
+			t.Fatalf("勝敗 %v、end %d 行、最後 %v; 期待 負け・1 行・lost の turn 2", s.Battle.Result, ends, last)
 		}
 		// 経過の秒は操作の行（start・action・end_phase・rewind）にだけ入り、偽の時計の順に 2 ずつ増える（E-106）。
 		sec := 0
@@ -542,9 +543,10 @@ func TestPlayLog(t *testing.T) {
 	})
 	t.Run("TC-NFR-06-10 ch04 の再移動・回復・道具・レベルアップ・番の終わりへの巻き戻しを流し直す", func(t *testing.T) {
 		w := &countingWriter{}
-		b := playCh04ForLog(t, cat, core.NewPlayLog(w, fakeClock()), 2)
+		b := playCh04ForLog(t, cat, core.NewPlayLog(w, fakeClock()), 4)
 		log := w.buf.String()
-		// seed 2 のこの手順は、6 ターン目まで勝敗が決まらない。どの種類も少なくとも 1 回は起きる。
+		// seed 4 のこの手順は、6 ターン目まで勝敗が決まらない。どの種類も少なくとも 1 回は起きる。
+		// （#154 の配置（DES-IT06 10・13 章）では、前の seed 2 は 3 ターン目に負けて回復の行動が起きないので替えた。）
 		if b.Result != tactics.Ongoing || b.Turn != 7 {
 			t.Fatalf("勝敗 %v、ターン %d; 期待 決まらず 7 ターン目", b.Result, b.Turn)
 		}

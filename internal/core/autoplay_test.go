@@ -24,6 +24,8 @@ type autoPlan struct {
 	Routes [][]tactics.Pos
 	// Order は行動の順（キャラ ID）。書いていないキャラは後ろ。
 	Order []string
+	// Observe は、この試し遊びだけの出来事の観測（nil なら観測しない）。並べて走らせるときに autoObserve の代わりに使う。
+	Observe func([]tactics.Event)
 }
 
 // autoResult は自動の試し遊びの結果。
@@ -36,10 +38,15 @@ type autoResult struct {
 	Kills int
 	// Deaths は自軍が倒れた記録（ターン・倒れた自軍・倒した敵とその位置）。
 	Deaths []string
+	// Rewinds は巻き戻した回数（賢い打ち手だけが使う。#158）。
+	Rewinds int
 }
 
 // autoLog は試し遊びの記録の出し先（調べるときだけ設定する）。
 var autoLog func(string)
+
+// autoObserve は制作記録用に出来事の列を観測する（DES-MAP-08）。
+var autoObserve func([]tactics.Event)
 
 func (r autoResult) String() string {
 	return fmt.Sprintf("結果=%v ターン=%d 倒れた自軍=%v 倒した敵=%d %v", r.Result, r.Turns, r.Fallen, r.Kills, r.Deaths)
@@ -80,6 +87,12 @@ type autoPlayer struct {
 
 // note は、出来事から自軍が倒れたことを記録する。
 func (p *autoPlayer) note(events []tactics.Event) {
+	if autoObserve != nil {
+		autoObserve(events)
+	}
+	if p.plan.Observe != nil {
+		p.plan.Observe(events)
+	}
 	units := p.b.Units()
 	last := map[int]int{}
 	turn := p.b.Turn

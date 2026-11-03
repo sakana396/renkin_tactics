@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 	"github.com/sakana396/renkin_tactics/internal/defs"
 )
 
@@ -21,8 +20,8 @@ func TestCh07To08Maps(t *testing.T) {
 		boss                                 string
 		bossAt                               defs.Slot
 	}{
-		{"ch07", 16, 6, 10, 4, "ベルント", defs.Slot{X: 11, Y: 1}},
-		{"ch08", 24, 6, 16, 6, "クラウス", defs.Slot{X: 12, Y: 1}},
+		{"ch07", 16, 6, 10, 9, "ベルント", defs.Slot{X: 11, Y: 1}},
+		{"ch08", 24, 6, 16, 12, "クラウス", defs.Slot{X: 12, Y: 1}},
 	} {
 		t.Run("TC-FR-MAP-04-05 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
@@ -37,7 +36,7 @@ func TestCh07To08Maps(t *testing.T) {
 					t.Fatalf("行 %d の幅 = %d", y, n)
 				}
 			}
-			checkCh07To08Definition(t, m)
+			// 配置の個別値は TC-FR-MAP-04-23 で検査する。
 			// ボスはちょうど 1 体で、陣の砦の上。
 			var bosses []defs.EnemyPlacement
 			for _, e := range m.Enemies {
@@ -146,88 +145,6 @@ func checkCh08Forest(t *testing.T, m defs.MapDef) {
 	}
 }
 
-// 試し遊びの入力は制作記録 4・5 章。敵・名簿・乱数は戦闘開始後に書き換えない（DES-MAP-06）。
-func TestCh07To08Autoplay(t *testing.T) {
-	cat := baseCatalog(t)
-	for _, tc := range []struct {
-		id   string
-		plan int
-		low  bool
-		seed uint64
-	}{
-		{"ch07", 0, false, 4}, {"ch07", 1, false, 2}, {"ch07", 0, true, 3}, {"ch07", 1, true, 2},
-		{"ch08", 0, false, 10}, {"ch08", 1, false, 1}, {"ch08", 2, false, 6}, {"ch08", 0, true, 1}, {"ch08", 1, true, 9},
-	} {
-		p := ch07To08Plans(tc.id)[tc.plan]
-		t.Run(fmt.Sprintf("TC-FR-MAP-04-06 %s/%s/低め%v/seed%d", tc.id, p.name, tc.low, tc.seed), func(t *testing.T) {
-			// IT06 で一時停止（TST-IT06 3.2・3.3 節）。ch07 は #132、ch08 は #133 で置き換える。
-			if tc.id == "ch08" && tc.plan == 1 && tc.low && tc.seed == 9 {
-				pauseIT06(t, "#133")
-			}
-			if tc.id == "ch07" && tc.plan == 0 && !tc.low && tc.seed == 4 {
-				pauseIT06Level(t, "#132")
-			}
-			if tc.id == "ch07" && tc.plan == 0 && tc.low && tc.seed == 3 {
-				pauseIT06EnemyAI(t, "#132")
-			}
-			if tc.id == "ch07" && tc.plan == 1 && tc.low && tc.seed == 2 {
-				pauseIT06EnemyAI(t, "#132")
-			}
-			c := estimatedRoster(t, cat, tc.id, tc.low)
-			s, ids, err := autoBattleWith(c, tc.seed, p.members)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if n := len(s.Battle.Units()) - len(mustMap(t, cat, tc.id).Enemies); n != 5 {
-				t.Fatalf("出撃 %d 人", n)
-			}
-			r := autoPlay(s.Battle, ids, p.plan, 40)
-			// 攻撃（敵軍を含む）・杖・薬の行動がない番を「移動・待機だけ」の参考値として集計する。
-			active := map[int]bool{}
-			first := 0
-			for _, h := range s.Battle.History() {
-				if h.Kind == tactics.HistoryAction && h.Action != tactics.Wait {
-					active[h.Turn] = true
-				}
-				if first == 0 && h.Kind == tactics.HistoryAction && h.Action == tactics.Attack {
-					first = h.Turn
-				}
-			}
-			var quiet []int
-			for turn := 1; turn <= r.Turns; turn++ {
-				if !active[turn] {
-					quiet = append(quiet, turn)
-				}
-			}
-			t.Logf("%v 初交戦=%d 移動・待機だけの番=%v", r, first, quiet)
-			if r.Result != tactics.Won {
-				t.Fatalf("勝てなかった: %v", r)
-			}
-			if first == 0 || first > 3 {
-				t.Fatal("交戦まで歩くだけの区間が長い")
-			}
-			before := append([]defs.ItemCount(nil), c.Stock...)
-			res, err := c.FinishChapter(s)
-			next := map[string]string{"ch07": "ch08", "ch08": "ch09"}[tc.id]
-			if err != nil || res.Chapter != tc.id || res.Cleared || c.Cleared || cat.Chapters()[c.Chapter].ID != next {
-				t.Fatalf("勝利の反映 %+v: %v", res, err)
-			}
-			if !reflect.DeepEqual(res.Reward, []defs.ItemCount{{Item: "potion", Count: 2}, {Weapon: map[string]string{"ch07": "brave_axe", "ch08": "horse_killer"}[tc.id], Count: 1}}) || len(c.StockWeapons) == 0 || len(before) != 1 || !reflect.DeepEqual(c.Stock, []defs.ItemCount{{Item: "potion", Count: before[0].Count + 2}}) {
-				t.Fatalf("報酬 %+v 在庫 %v", res.Reward, c.Stock)
-			}
-		})
-	}
-}
-
-func mustMap(t *testing.T, cat *defs.Catalog, id string) defs.MapDef {
-	t.Helper()
-	m, ok := cat.Map(id)
-	if !ok {
-		t.Fatalf("マップ %s がない", id)
-	}
-	return m
-}
-
 // checkCh07To08Definition は制作時に決めた地形・配置・能力の期待値（DES-MAP-06、制作記録 2 章）。
 // 章の寸法・人数は計画書 5 章、道と砦は設計書 6 章から導く。
 func checkCh07To08Definition(t *testing.T, m defs.MapDef) {
@@ -266,7 +183,7 @@ func checkCh07To08Definition(t *testing.T, m defs.MapDef) {
 				"................",
 			},
 			slots:          []defs.Slot{{X: 7, Y: 13}, {X: 8, Y: 13}, {X: 6, Y: 14}, {X: 7, Y: 14}, {X: 8, Y: 14}, {X: 6, Y: 15}},
-			enemies:        "cavalier:14,12:charge myrmidon:7,9:hold archer:5,7:hold myrmidon:8,6:hold archer:10,6:hold armor:8,3:hold fighter:14,8:hold soldier:13,4:hold archer:6,1:hold soldier:11,1:hold",
+			enemies:        "cavalier:14,10:charge myrmidon:7,9:hold archer:5,7:hold myrmidon:8,6:hold archer:10,6:hold armor:8,3:hold fighter:14,8:hold soldier:13,4:hold archer:6,1:hold soldier:11,1:hold",
 			reinforcements: []reinforcement{{3, "cavalier", 0, 13}, {3, "fighter", 15, 15}, {5, "soldier", 15, 3}, {6, "myrmidon", 4, 0}},
 			bonus:          defs.Stats{HP: 5, Str: 3, Skl: 2, Spd: 2, Def: 2},
 		},

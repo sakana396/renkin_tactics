@@ -113,11 +113,11 @@ func TestBaseData(t *testing.T) {
 		enemies := []defs.EnemyPlacement{
 			{Level: 1, Class: "soldier", Weapons: []string{"iron_lance"}, AI: "charge", X: 6, Y: 10},
 			{Level: 2, Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", X: 7, Y: 4},
-			{Level: 3, Class: "myrmidon", Weapons: []string{"iron_sword"}, AI: "hold", X: 9, Y: 8},
+			{Level: 3, ID: "anti_lure_ch01_2", Group: "fort_front", Approach: "group", Class: "myrmidon", Weapons: []string{"iron_sword"}, AI: "hold", X: 9, Y: 8},
 			{Level: 1, Class: "myrmidon", Weapons: []string{"iron_sword"}, AI: "hold", X: 11, Y: 3},
 			{Level: 2, Class: "fighter", Weapons: []string{"iron_axe"}, AI: "charge", X: 10, Y: 11},
 			{Level: 3, Class: "fighter", Weapons: []string{"iron_axe"}, AI: "hold", X: 13, Y: 8},
-			{Level: 1, Class: "archer", Weapons: []string{"iron_bow"}, AI: "hold", X: 12, Y: 7},
+			{Level: 1, ID: "anti_lure_ch01_6", Group: "fort_front", Approach: "group", Class: "archer", Weapons: []string{"iron_bow"}, AI: "hold", X: 12, Y: 7},
 			{Level: 7, Name: "ハーゲン", Class: "soldier", Weapons: []string{"iron_lance"}, Bonus: defs.Stats{HP: 8, Str: 3, Skl: 3, Spd: 2, Def: 3}, AI: "hold", Boss: true, X: 13, Y: 1},
 		}
 		if !reflect.DeepEqual(m.Enemies, enemies) {

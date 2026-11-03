@@ -39,6 +39,7 @@ type battleSnapshot struct {
 	mapState       eventState
 	canto          cantoState
 	groupEntered   map[string]bool
+	groupGathering map[string]bool
 	groupPlan      map[int]Pos
 	groupDanger    map[int]map[Pos]bool
 	rngState       []byte
@@ -52,7 +53,7 @@ func (b *Battle) snapshot() battleSnapshot {
 	return battleSnapshot{
 		Turn: b.Turn, Phase: b.Phase, Result: b.Result,
 		units: b.Units(), terrain: b.terrain, reinforcements: b.reinforcements,
-		progress: b.progress, mapEvents: b.mapEvents, mapState: b.mapState.clone(), canto: b.canto, groupEntered: cloneGroupEntered(b.groupEntered), groupPlan: cloneGroupPlan(b.groupPlan), groupDanger: cloneGroupDanger(b.groupDanger), rngState: append([]byte(nil), data...), eventCount: b.eventCount,
+		progress: b.progress, mapEvents: b.mapEvents, mapState: b.mapState.clone(), canto: b.canto, groupEntered: cloneGroupEntered(b.groupEntered), groupGathering: cloneGroupEntered(b.groupGathering), groupPlan: cloneGroupPlan(b.groupPlan), groupDanger: cloneGroupDanger(b.groupDanger), rngState: append([]byte(nil), data...), eventCount: b.eventCount,
 	}
 }
 
@@ -74,7 +75,7 @@ func (b *Battle) restore(s battleSnapshot) error {
 	b.progress, b.eventCount = s.progress, s.eventCount
 	b.mapEvents, b.mapState = s.mapEvents, s.mapState.clone()
 	b.canto = s.canto
-	b.groupEntered, b.groupPlan = cloneGroupEntered(s.groupEntered), cloneGroupPlan(s.groupPlan)
+	b.groupEntered, b.groupGathering, b.groupPlan = cloneGroupEntered(s.groupEntered), cloneGroupEntered(s.groupGathering), cloneGroupPlan(s.groupPlan)
 	b.groupDanger = cloneGroupDanger(s.groupDanger)
 	b.pcg = pcg
 	b.rng = rand.New(pcg)

@@ -61,7 +61,7 @@ func TestCh09Map(t *testing.T) {
 		t.Fatal("ch09 のマップがない")
 	}
 
-	t.Run("TC-FR-MAP-02-03 32×32・出撃 6・敵 26＋増援 8・最奥のボス・総 40 体", func(t *testing.T) {
+	t.Run("TC-FR-MAP-02-03 32×32・出撃 7・初期敵 26＋ターン増援 14・最奥のボス", func(t *testing.T) {
 		if len(m.Rows) != 32 {
 			t.Fatalf("行の数 = %d", len(m.Rows))
 		}
@@ -70,12 +70,12 @@ func TestCh09Map(t *testing.T) {
 				t.Fatalf("行 %d の長さ = %d", y, n)
 			}
 		}
-		// 出撃の枠は南の出発地の 6 つ（1 番目は主人公）。
+		// 出撃の枠は南の出発地の 7 つ（1 番目は主人公）。
 		wantSlots := []defs.Slot{{X: 15, Y: 29}, {X: 16, Y: 29}, {X: 14, Y: 30}, {X: 15, Y: 30}, {X: 16, Y: 30}, {X: 17, Y: 30}, {X: 14, Y: 29}}
 		if !reflect.DeepEqual(m.Slots, wantSlots) {
 			t.Errorf("出撃の枠 = %v", m.Slots)
 		}
-		if len(m.Enemies) != 26 || len(m.Reinforcements) != 8 {
+		if len(m.Enemies) != 26 || len(m.Reinforcements) != 14 {
 			t.Fatalf("敵 %d・増援 %d", len(m.Enemies), len(m.Reinforcements))
 		}
 		// ボスはちょうど 1 体で、本営の奥（玉座の砦 (15,2)）にいる。
@@ -88,17 +88,19 @@ func TestCh09Map(t *testing.T) {
 		if len(bosses) != 1 || bosses[0].Name != "ゲルハルト" || bosses[0].X != 15 || bosses[0].Y != 2 || m.Rows[2][15] != 'T' {
 			t.Errorf("ボス = %+v", bosses)
 		}
-		// 動き方: 突っ込む敵は東の騎兵 2 と西のファイター 1 だけ。残りは待ち構える（DES-IT05 6 章）。
+		// 動き方: 反復 5 は突っ込む敵が 3 体だった（DES-IT05 6 章）。#154（E-100、DES-IT06 10.1 節）で、守りの一団の外の
+		// 11 体を突っ込む敵にした。守りの一団の一員と突撃の割合は TC-FR-MAP-04-23 で確かめる。
 		charge := 0
 		for _, e := range m.Enemies {
 			if e.AI == "charge" {
 				charge++
 			}
 		}
-		if charge != 3 {
+		if charge != 11 {
 			t.Errorf("突っ込む初期の敵 = %d", charge)
 		}
-		// 増援の時機と位置（3・5・7・9 ターンに 2 体ずつ。南西の背後、東の端、前庭の両端、本営の中）。
+		// 増援の時機と位置。反復 5 の 8 体（3・5・7・9 ターンに 2 体ずつ。南西の背後、東の端、前庭の両端、本営の中）を
+		// 定義の先頭に残し、#154 で 4・6・8・10〜12 ターン目の 6 体を足した（ターンごとの数は TC-FR-MAP-04-23）。
 		type rf struct{ turn, x, y int }
 		var got []rf
 		for _, r := range m.Reinforcements {
@@ -108,19 +110,19 @@ func TestCh09Map(t *testing.T) {
 			}
 		}
 		want := []rf{{3, 0, 29}, {3, 0, 30}, {5, 31, 22}, {5, 31, 23}, {7, 2, 8}, {7, 29, 8}, {9, 11, 2}, {9, 20, 2}}
-		if !reflect.DeepEqual(got, want) {
+		if len(got) != 14 || !reflect.DeepEqual(got[:8], want) {
 			t.Errorf("増援 = %v", got)
 		}
-		// 組み立てた戦闘: 自軍 6・敵 26 で始まり、増援を足して 40 体（TBD-11 の上限）。
+		// 組み立てた戦闘: 自軍 7・敵 26 で始まる（DES-IT06 13 章）。
 		c, err := core.NewCampaignAt(cat, core.Withdraw, "ch09")
 		if err != nil {
 			t.Fatal(err)
 		}
-		s, _, err := c.StartBattle([]int{0, 1, 2, 3, 4, 5}, 1)
+		s, _, err := c.StartBattle([]int{0, 1, 2, 3, 4, 5, 6}, 1)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if n := len(s.Battle.Units()); n != 32 {
+		if n := len(s.Battle.Units()); n != 33 {
 			t.Errorf("初めのユニット = %d", n)
 		}
 		setup, err := core.NewSetup(cat, "ch09")
@@ -131,7 +133,7 @@ func TestCh09Map(t *testing.T) {
 		for _, r := range setup.Reinforcements {
 			turns = append(turns, r.Turn)
 		}
-		if !reflect.DeepEqual(turns, []int{3, 3, 5, 5, 7, 7, 9, 9}) || len(m.Slots)+len(m.Enemies)+len(m.Reinforcements) != 41 {
+		if len(turns) != 14 || len(m.Slots)+len(m.Enemies)+len(m.Reinforcements) != 47 {
 			t.Errorf("増援のターン = %v、総数 = %d", turns, len(m.Slots)+len(m.Enemies)+len(m.Reinforcements))
 		}
 		// 敵の能力のボーナス（E-52 で ch08 の後の名簿に合わせて強くし直した。#102 は 4/2/2/1/1・ボス 12/4/4/3/4）。
@@ -210,48 +212,6 @@ func TestCh09Map(t *testing.T) {
 			}
 		}
 	})
-}
-
-func TestCh09Autoplay(t *testing.T) {
-	cat := baseCatalog(t)
-	// 固定の seed で、二手に分かれる攻略と、片方の道にまとめる攻略の両方がボス撃破まで届く（DES-MAP-06、制作記録 4 章）。
-	// 打ち手は autoplay_test.go の決まった手順で、人の遊び方の代わりではない（解ける手順がある下限の確かめ）。
-	for _, tc := range []struct {
-		name string
-		plan string
-		low  bool
-		seed uint64
-	}{
-		// ch08 の後の想定名簿と、強くし直した敵（E-52）での seed（制作記録 5 章）。
-		{"分かれる・平均の名簿", "split", false, 8},
-		{"分かれる・低めの名簿", "split", true, 4},
-		{"東の道にまとめる・平均の名簿", "east", false, 1},
-		{"西の道にまとめる・平均の名簿", "west", false, 2},
-	} {
-		t.Run("TC-FR-MAP-04-02 "+tc.name, func(t *testing.T) {
-			// IT06 で一時停止（TST-IT06 3.2 節）。#133 で置き換える。
-			if tc.plan == "split" {
-				pauseIT06(t, "#133")
-			}
-			c := ch09Roster(t, cat, tc.low)
-			// 反復 5 の試遊条件を保つ。
-			c.Roster = append(c.Roster[:5], c.Roster[6:]...)
-			s, ids, err := autoCampaignBattle(c, tc.seed, 6)
-			if err != nil {
-				t.Fatal(err)
-			}
-			r := autoPlay(s.Battle, ids, ch09Plans()[tc.plan], 50)
-			t.Log(r)
-			if r.Result != tactics.Won {
-				t.Fatalf("勝てなかった: %v", r)
-			}
-			// 勝てば ch09 で章が終わり、キャンペーンはクリアになる（FR-CMP-02）。
-			res, err := c.FinishChapter(s)
-			if err != nil || !res.Cleared || !c.Cleared || res.Chapter != "ch09" {
-				t.Fatalf("結果 = %+v, %v", res, err)
-			}
-		})
-	}
 }
 
 // winByForce は、主人公だけを極端に強くして（試験だけの名簿の書き換え）、今の章のボスを倒させる。
