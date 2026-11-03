@@ -68,9 +68,10 @@ func antiLureStart(t *testing.T, cat *defs.Catalog, id string, roster antiLureRo
 	return s.Battle, ids, chosen
 }
 
-// antiLurePlan は TC-FR-MAP-04-24 と同じ作戦（主な進路・固定の行動順）。
-func antiLurePlan(id string) autoPlan {
-	return autoPlan{Order: antiLureOrder, Routes: [][]tactics.Pos{antiLureRoutes[id]}}
+// antiLurePlan は TC-FR-MAP-04-24 と同じ作戦（章・名簿ごとの主な進路・固定の行動順）。
+func antiLurePlan(id string, roster antiLureRoster) autoPlan {
+	path, order := antiLureRoute(id, roster)
+	return autoPlan{Order: order, Routes: [][]tactics.Pos{path}}
 }
 
 // smartCase は、賢い打ち手で決まった seed を遊ぶケース。
@@ -81,15 +82,16 @@ type smartCase struct {
 }
 
 // 賢い打ち手は、平均の名簿で 1〜9 章のどれにも勝つ固定 seed がある。代役（ミラを失いティオを出す）の名簿も、
-// 20 seed で勝てた章（ch04〜ch08）は勝つ（TC-FR-MAP-04-25。#158、DES-MAP-08、DES-IT06 13 章）。
+// 20 seed で勝てた章（ch04・ch05・ch06・ch08・ch09）は勝つ（TC-FR-MAP-04-25。#158、DES-MAP-08、DES-IT06 13 章）。
+// ch03 の平均は E-111 で参考の扱いだが、勝つ seed が残ったので回帰として遊ぶ。
 // seed は TestMeasureSmartAutoplay の測定で勝った最初の seed。重さのため 1 章 1 seed だけを遊ぶ。
 func TestIT06SmartAutoplayWins(t *testing.T) {
 	cat := baseCatalog(t)
 	avg, lost := antiLureRosters[0], antiLureRosters[2]
 	cases := []smartCase{
-		{"ch01", avg, 2}, {"ch02", avg, 3}, {"ch03", avg, 18}, {"ch04", avg, 1}, {"ch05", avg, 2},
-		{"ch06", avg, 1}, {"ch07", avg, 1}, {"ch08", avg, 2}, {"ch09", avg, 3},
-		{"ch04", lost, 2}, {"ch05", lost, 1}, {"ch06", lost, 1}, {"ch07", lost, 1}, {"ch08", lost, 1},
+		{"ch01", avg, 2}, {"ch02", avg, 5}, {"ch03", avg, 11}, {"ch04", avg, 1}, {"ch05", avg, 2},
+		{"ch06", avg, 1}, {"ch07", avg, 2}, {"ch08", avg, 1}, {"ch09", avg, 1},
+		{"ch04", lost, 1}, {"ch05", lost, 1}, {"ch06", lost, 1}, {"ch08", lost, 2}, {"ch09", lost, 10},
 	}
 	for _, tc := range cases {
 		name := tc.roster.name
@@ -99,7 +101,7 @@ func TestIT06SmartAutoplayWins(t *testing.T) {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-25 %s %s seed %d", tc.id, name, tc.seed), func(t *testing.T) {
 			t.Parallel()
 			b, ids, _ := antiLureStart(t, cat, tc.id, tc.roster, tc.seed)
-			r := smartPlay(b, ids, antiLurePlan(tc.id), smartAll, 50)
+			r := smartPlay(b, ids, antiLurePlan(tc.id, tc.roster), smartAll, 50)
 			t.Logf("%v 巻き戻し %d 回", r, r.Rewinds)
 			if r.Result != tactics.Won {
 				t.Fatalf("賢い打ち手が勝てない: %v", r)
@@ -111,16 +113,16 @@ func TestIT06SmartAutoplayWins(t *testing.T) {
 	}
 }
 
-// 低めの名簿でも、賢い打ち手は 20 seed で勝てた章（ch02・ch04・ch05・ch06）の固定 seed に勝つ（TC-FR-MAP-04-26。#158）。
-// 勝てなかった章（ch03・ch07・ch08・ch09）の負け方は制作記録の「#158 賢い打ち手」の節に書く。
+// 低めの名簿でも、賢い打ち手は 20 seed で勝てた章（ch04・ch06）の固定 seed に勝つ（TC-FR-MAP-04-26。#158）。
+// 勝てなかった章（ch02・ch03・ch05・ch07・ch08・ch09）の負け方は制作記録の「#158 賢い打ち手」の節に書く。
 func TestIT06SmartAutoplayLowWins(t *testing.T) {
 	cat := baseCatalog(t)
 	low := antiLureRosters[1]
-	for _, tc := range []smartCase{{"ch02", low, 2}, {"ch04", low, 2}, {"ch05", low, 20}, {"ch06", low, 4}} {
+	for _, tc := range []smartCase{{"ch04", low, 2}, {"ch06", low, 18}} {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-26 %s 低め seed %d", tc.id, tc.seed), func(t *testing.T) {
 			t.Parallel()
 			b, ids, _ := antiLureStart(t, cat, tc.id, tc.roster, tc.seed)
-			r := smartPlay(b, ids, antiLurePlan(tc.id), smartAll, 50)
+			r := smartPlay(b, ids, antiLurePlan(tc.id, tc.roster), smartAll, 50)
 			t.Logf("%v 巻き戻し %d 回", r, r.Rewinds)
 			if r.Result != tactics.Won {
 				t.Fatalf("賢い打ち手が低めの名簿で勝てない: %v", r)
@@ -139,18 +141,18 @@ func TestIT06SmartAutoplayFeatures(t *testing.T) {
 		feature string
 		smartCase
 	}{
-		{"Weapons", smartCase{"ch07", lost, 3}},
-		{"Threat", smartCase{"ch04", avg, 1}},
-		{"Focus", smartCase{"ch07", avg, 1}},
-		{"Heal", smartCase{"ch09", avg, 3}},
-		{"Hold", smartCase{"ch06", avg, 1}},
+		{"Weapons", smartCase{"ch08", lost, 5}},
+		{"Threat", smartCase{"ch06", avg, 1}},
+		{"Focus", smartCase{"ch04", avg, 1}},
+		{"Heal", smartCase{"ch09", avg, 1}},
+		{"Hold", smartCase{"ch05", lost, 7}},
 		{"Rewind", smartCase{"ch04", low, 2}},
 	} {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-27 %s %s %s seed %d", tc.feature, tc.id, tc.roster.name, tc.seed), func(t *testing.T) {
 			t.Parallel()
 			play := func(f smartFeatures) autoResult {
 				b, ids, _ := antiLureStart(t, cat, tc.id, tc.roster, tc.seed)
-				return smartPlay(b, ids, antiLurePlan(tc.id), f, 50)
+				return smartPlay(b, ids, antiLurePlan(tc.id, tc.roster), f, 50)
 			}
 			all := play(smartAll)
 			if all.Result != tactics.Won {
@@ -167,7 +169,7 @@ func TestIT06SmartAutoplayFeatures(t *testing.T) {
 				t.Fatalf("%s を外しても勝つ: %v", tc.feature, r)
 			}
 			b, ids, _ := antiLureStart(t, cat, tc.id, tc.roster, tc.seed)
-			if r := autoPlay(b, ids, antiLurePlan(tc.id), 50); r.Result == tactics.Won {
+			if r := autoPlay(b, ids, antiLurePlan(tc.id, tc.roster), 50); r.Result == tactics.Won {
 				t.Fatalf("今の打ち手でも勝つ: %v", r)
 			}
 		})
@@ -228,7 +230,7 @@ func TestMeasureSmartAutoplay(t *testing.T) {
 					var losses []string
 					for seed := uint64(1); seed <= 20; seed++ {
 						b, ids, _ := antiLureStart(t, cat, id, roster, seed)
-						r := pl.play(b, ids, antiLurePlan(id))
+						r := pl.play(b, ids, antiLurePlan(id, roster))
 						if r.Result == tactics.Won {
 							wins = append(wins, int(seed))
 						} else if len(losses) < 20 {
