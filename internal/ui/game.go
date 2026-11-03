@@ -569,8 +569,10 @@ func (g *Game) drawInfoView(dst *ebiten.Image, v InfoView) {
 		g.label(dst, tab.Label, r.Min.X+(r.Dx()-textWidth(tab.Label))/2, r.Min.Y+(r.Dy()-lineHeight)/2, white)
 	}
 	if len(v.Tabs) > 0 {
+		// 案内は印と一緒にずらす（準備では右列へずらしてある。DES-UI-32）。
 		t := InfoTabGuide()
-		g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
+		d := v.Tabs[0].Rect.Min.Sub(InfoTabRects()[0].Min)
+		g.label(dst, t.Text, t.X+d.X, t.Y+d.Y, infoStyleColor(t.Style))
 	}
 }
 
@@ -719,8 +721,24 @@ func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
 		g.drawDeploy(dst, *v.Deploy)
 	}
 	if v.Info != nil {
-		vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
+		// 下地は既定では右の情報欄の全体。準備の名簿では右列だけを塗る（DES-UI-32）。
+		area := v.InfoArea
+		if area.Empty() {
+			area = image.Rect(MapSize, 0, ScreenWidth, ScreenHeight)
+		}
+		vector.DrawFilledRect(dst, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), panelColor, false)
 		g.drawInfoView(dst, *v.Info)
+	}
+	// 準備の「名簿」「持ち物」のタブは、選んでいるものを塗る（DES-UI-32）。
+	for _, tab := range v.Tabs {
+		r := tab.Rect
+		fill := menuColor
+		if tab.Selected {
+			fill = playerBase
+		}
+		vector.DrawFilledRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), fill, false)
+		vector.StrokeRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), 1, menuBorder, false)
+		g.label(dst, tab.Label, r.Min.X+(r.Dx()-textWidth(tab.Label))/2, r.Min.Y+(r.Dy()-lineHeight)/2, white)
 	}
 	if v.Minimap != nil {
 		g.drawMinimap(dst, *v.Minimap)

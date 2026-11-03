@@ -38,7 +38,11 @@ type SceneView struct {
 	Icons   []SceneIcon
 	Rows    []PrepareRow
 	Info    *InfoView
-	Deploy  *DeployView
+	// InfoArea は Info の下地を塗る範囲（DES-UI-32）。空なら右の情報欄の全体。
+	InfoArea image.Rectangle
+	// Tabs は準備の「名簿」「持ち物」のタブ（DES-UI-32）。ほかの場面では空。
+	Tabs   []PrepareTab
+	Deploy *DeployView
 	// Minimap は配置のミニマップ（DES-UI-28）。ほかの場面では nil。
 	Minimap *MinimapView
 }
@@ -250,23 +254,11 @@ func (s *SceneController) Click(x, y int) {
 		}
 		return
 	}
-	v := s.View()
 	if s.scene == Prepare {
-		if s.infoTabClick(x, y) {
-			return
-		}
-		for _, r := range v.Rows {
-			if image.Pt(x, y).In(r.Mark) {
-				s.toggleDeployment(r.Member)
-				return
-			}
-			if image.Pt(x, y).In(r.Rect) {
-				s.prepareMember = r.Member
-				s.message = ""
-				return
-			}
-		}
+		s.clickPrepare(x, y)
+		return
 	}
+	v := s.View()
 	if len(v.Buttons) > 0 {
 		for i, b := range v.Buttons {
 			if image.Pt(x, y).In(b.Rect) && b.Enabled {
@@ -281,14 +273,18 @@ func (s *SceneController) Click(x, y int) {
 
 // infoTabClick は準備と配置の情報欄のページの印のクリックを受ける（DES-UI-28）。印を出しているときだけ受け、表示だけを変える。
 func (s *SceneController) infoTabClick(x, y int) bool {
-	if v := s.View(); v.Info == nil || len(v.Info.Tabs) == 0 {
+	v := s.View()
+	if v.Info == nil {
 		return false
 	}
-	page, ok := HitInfoTab(x, y)
-	if ok {
-		s.infoPage = page
+	// 印の範囲は表示と同じものを使う。準備では右列へずらしてある（DES-UI-32）。
+	for _, tab := range v.Info.Tabs {
+		if image.Pt(x, y).In(tab.Rect) {
+			s.infoPage = tab.Page
+			return true
+		}
 	}
-	return ok
+	return false
 }
 
 // ToggleInfoPage は準備と配置での Tab キーの処理（DES-UI-28）。表示だけを変える。
