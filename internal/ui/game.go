@@ -149,6 +149,11 @@ func (g *Game) Update() error {
 			if cancel {
 				c.Cancel()
 			}
+			if inpututil.IsKeyJustPressed(ebiten.KeyA) {
+				c.ShiftForecastWeapon(-1)
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyD) {
+				c.ShiftForecastWeapon(1)
+			}
 			if inpututil.IsKeyJustPressed(ebiten.KeyE) {
 				c.EndPhase()
 			}

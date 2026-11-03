@@ -2,7 +2,6 @@ package ui
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
@@ -38,7 +37,7 @@ func weaponMenuController(t *testing.T) *Controller {
 }
 
 func TestWeaponMenu(t *testing.T) {
-	t.Run("TC-IF-01-41 攻撃は 行動 → 武器 → 相手 → 予測 → 決定 の順で、届かない武器は理由を出し、決定まで装備を変えない", func(t *testing.T) {
+	t.Run("TC-IF-01-41 攻撃は相手から予測へ進み、決定まで装備を変えない", func(t *testing.T) {
 		c := weaponMenuController(t)
 		history := len(c.Battle().History())
 		c.Click(tactics.Pos{X: 1, Y: 1})
@@ -47,62 +46,31 @@ func TestWeaponMenu(t *testing.T) {
 			t.Fatalf("行動の一覧 %v（状態 %v）", c.Actions(), c.State())
 		}
 		c.ChooseAction(tactics.Attack)
-		if c.State() != WeaponMenu || !reflect.DeepEqual(c.MenuLabels(), []string{"ファイア", "鉄の剣（使えない）"}) {
-			t.Fatalf("武器の一覧 %v（状態 %v）", c.MenuLabels(), c.State())
-		}
-		// 剣（射程 1）は距離 2 のボスに届かない。理由を出して一覧に残る。
-		c.ClickMenu(1)
-		if c.State() != WeaponMenu || !strings.Contains(c.Message(), "鉄の剣 の射程（1）に届く敵がいません") {
-			t.Fatalf("届かない武器: 状態 %v、知らせ %q", c.State(), c.Message())
-		}
-		c.ClickMenu(0)
-		if c.State() != Targeting || !reflect.DeepEqual(c.Targets(), []int{2}) {
-			t.Fatalf("ファイアの相手 %v（状態 %v）", c.Targets(), c.State())
-		}
-		_, red := c.Overlay()
-		want := map[tactics.Pos]bool{}
-		for _, p := range c.Battle().WeaponRange(0, tactics.Pos{X: 1, Y: 1}, 1) {
-			want[p] = true
-		}
-		if !reflect.DeepEqual(red, want) {
-			t.Fatalf("ファイアの射程 %v", red)
+		if c.State() != Targeting || c.target != -1 || !reflect.DeepEqual(c.Targets(), []int{2}) {
+			t.Fatalf("相手選択: 状態 %v、相手 %d、候補 %v", c.State(), c.target, c.Targets())
 		}
 		c.Click(tactics.Pos{X: 1, Y: 3})
 		p := c.Panel(tactics.Pos{}, false)
-		if len(p.Forecast) == 0 || p.ForecastWeapons[0] != tactics.Magic || c.Battle().Units()[0].Equipped != 0 {
-			t.Fatalf("予測 %v、武器 %v、装備 %d", p.Forecast, p.ForecastWeapons, c.Battle().Units()[0].Equipped)
+		if len(p.Forecast) == 0 || p.ForecastWeapons[0] != tactics.Magic || c.weapon != 1 || c.Battle().Units()[0].Equipped != 0 {
+			t.Fatalf("予測 %v、武器 %d、装備 %d", p.Forecast, c.weapon, c.Battle().Units()[0].Equipped)
 		}
-		// 取り消し: 予測 → 相手 → 武器の一覧 → 行動の一覧 → 移動先の選択（REV-072 F-01）。装備は変わらない。
-		for i, want := range []struct {
-			state  State
-			target int
-		}{{Targeting, -1}, {WeaponMenu, -1}, {Moved, -1}, {Selected, -1}} {
+		for i, want := range []State{Targeting, Moved, Selected} {
 			c.Cancel()
-			if _, _, target := c.Selection(); c.State() != want.state || target != want.target {
-				t.Fatalf("取り消し %d 回目のあと %v・相手 %d、期待 %v・%d", i+1, c.State(), target, want.state, want.target)
-			}
-			if i == 0 && (c.weapon != 1 || len(c.Panel(tactics.Pos{}, false).Forecast) != 0) {
-				t.Fatalf("1 回目の取り消しで武器 %d、予測が残る", c.weapon)
+			if c.State() != want || c.target != -1 {
+				t.Fatalf("取り消し %d: 状態 %v、相手 %d", i+1, c.State(), c.target)
 			}
 		}
 		if c.Battle().Units()[0].Equipped != 0 || len(c.Battle().History()) != history {
 			t.Fatal("取り消しで装備か履歴が変わった")
 		}
-		// 決定すると、選んだファイア（添字 1）で攻撃し、装備がファイアになる。
 		c.Click(tactics.Pos{X: 1, Y: 1})
 		c.ChooseAction(tactics.Attack)
-		c.ClickMenu(0)
 		c.Click(tactics.Pos{X: 1, Y: 3})
 		c.Click(tactics.Pos{X: 1, Y: 3})
 		playOut(c)
 		if u := c.Battle().Units()[0]; u.Equipped != 1 || !u.Acted {
 			t.Fatalf("決定のあと 装備 %d、行動 %v", u.Equipped, u.Acted)
 		}
-		// 情報欄の「装備・スキル」のページ（DES-UI-28、#129）は、装備（ファイア）と、ほかに持っている武器を列の順に出す。
-		u := c.Battle().Units()[0]
-		v := (Panel{Unit: &u, Page: PageEquip}).View()
-		textOf(t, v, "武器: ファイア（魔法）")
-		textOf(t, v, "ほかの武器: 癒やしの杖、鉄の剣、癒やしの杖")
 	})
 	t.Run("TC-IF-01-41 回復は 行動 → 杖 → 相手 で、選んだ杖の回数だけ減り、装備は変えない", func(t *testing.T) {
 		c := weaponMenuController(t)

@@ -397,7 +397,7 @@ func TestForecastVisual(t *testing.T) {
 			target(t, c, tc.unit, tc.target)
 			p := c.Panel(tc.target, true)
 			v := p.View()
-			bottom := forecastBottom(len(p.Forecast))
+			bottom := forecastBottom(len(p.Forecast)) - lineHeight
 			if v.Banner != nil {
 				bottom += 44
 			}

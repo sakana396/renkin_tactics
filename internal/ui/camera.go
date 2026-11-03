@@ -87,6 +87,14 @@ func (c *Controller) Wheel(x, y int, delta float64, shift bool) bool {
 	if delta == 0 {
 		return false
 	}
+	if c.state == Targeting && c.target >= 0 && !c.rewind.open && x >= MapSize && x < ScreenWidth && y >= 0 && y < 360 {
+		step := 1
+		if delta > 0 {
+			step = -1
+		}
+		c.ShiftForecastWeapon(step)
+		return true
+	}
 	if dx, dy, ok := boardWheel(x, y, delta, shift); ok {
 		c.Scroll(dx, dy)
 		return true

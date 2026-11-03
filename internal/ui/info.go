@@ -18,6 +18,8 @@ type Panel struct {
 	Heal *tactics.HealForecast
 	// Forecast は攻撃の予測の表（FR-BTL-08、UC-03）。攻撃の相手を選んでいるときだけ入る。
 	Forecast []ForecastRow
+	// ForecastWeapon は予測で仮選択した攻撃武器の名前（DES-UI-34）。
+	ForecastWeapon string
 	// Emphasis は攻撃の予測の強調（DES-UI-07）。
 	Emphasis ForecastEmphasis
 	// ForecastWeapons は、予測の両側（攻撃する側、守る側）の武器の種類（DES-UI-07）。武器の絵と相性の印に使う。
@@ -120,6 +122,7 @@ func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 	if f, ok := c.attackForecast(); ok {
 		// 相手は Targets から選んでいるので、ふつうは誤りにならない。誤りなら予測を出さない。
 		p.Forecast = ForecastRows(f, units[c.unit].Boss, units[c.target].Boss)
+		p.ForecastWeapon = units[c.unit].Weapons[c.weapon].Name
 		// 攻撃する側は選んだ武器、守る側は装備している武器（DES-ITM-02）。
 		p.ForecastWeapons = [2]tactics.WeaponType{units[c.unit].Weapons[c.weapon].Type, units[c.target].EquippedWeapon().Type}
 		a, d := ForecastAfter(f)
@@ -214,7 +217,24 @@ func (c *Controller) InfoClick(x, y int) bool {
 		return false
 	}
 	if _, ok := c.attackForecast(); ok {
-		return false
+		if x < MapSize || x >= ScreenWidth || y < 0 || y >= 360 {
+			return false
+		}
+		row := c.Panel(c.dest, true).View().Bottom - lineHeight
+		if y < row || y >= row+lineHeight {
+			return true
+		}
+		switch {
+		case x < MapSize+infoMargin+24:
+			c.ShiftForecastWeapon(-1)
+		case x < MapSize+infoMargin+224:
+			c.ShiftForecastWeapon(1)
+		case x < MapSize+infoMargin+264:
+			c.ConfirmForecast()
+		default:
+			c.Cancel()
+		}
+		return true
 	}
 	page, ok := HitInfoTab(x, y)
 	if ok {
@@ -336,6 +356,10 @@ func (p Panel) View() InfoView {
 		// 予測を開いている間は、予測の表示を優先し、ユニットと地形とページの印は出さない（DES-IT06 12.2 節、DES-UI-28）。
 		// 情報欄は 320×360 で、予測（帯ありで y = 260 まで）とユニットの情報を並べると収まらないため。
 		v.Bottom = v.addForecast(p, x, y)
+		v.text(x, v.Bottom, "◀ "+p.ForecastWeapon+" ▶", StyleTitle)
+		v.text(x+224, v.Bottom, "決定", StyleGood)
+		v.text(x+264, v.Bottom, "戻る", StylePlain)
+		v.Bottom += lineHeight
 		return v
 	}
 	if p.Tabs {

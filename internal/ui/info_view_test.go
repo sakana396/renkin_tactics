@@ -38,9 +38,9 @@ func portraitOf(t *testing.T, v InfoView) InfoIcon {
 	return InfoIcon{}
 }
 
-// forecastBottom は、表が n 行の予測（見出し 1 行・武器の絵・表）の一番下の y を返す（DES-UI-07）。
+// forecastBottom は、表が n 行の予測（見出し・武器の絵・表・武器送り）の一番下の y を返す（DES-UI-07、DES-UI-34）。
 func forecastBottom(n int) int {
-	return infoMargin + lineHeight + WeaponIconSize + n*lineHeight
+	return infoMargin + lineHeight + WeaponIconSize + (n+1)*lineHeight
 }
 
 // textOf は、文が s の InfoText を返す。
@@ -304,10 +304,10 @@ func TestInfoView(t *testing.T) {
 			}
 			v := p.View()
 			check(v)
-			// 予測（見出し・武器の絵 32 px・表 10 行）の下 y = 8 + 16 + 32 + 160 = 216（帯ありはさらに 44 px 下）が一番下。
+			// 予測（見出し・武器の絵 32 px・表 10 行・武器送り 1 行）の下 y = 232（帯ありはさらに 44 px 下）が一番下。
 			// 予測を開いている間は、ユニットの絵・名前・地形とページの印を出さない（DES-IT06 12.2 節）。
-			if v.Bottom != 216+shift || forecastBottom(10)+shift != v.Bottom {
-				t.Errorf("一番下 = %d、予測の表の下 %d のはず", v.Bottom, 216+shift)
+			if v.Bottom != 232+shift || forecastBottom(10)+shift != v.Bottom {
+				t.Errorf("一番下 = %d、予測の武器行の下 %d のはず", v.Bottom, 232+shift)
 			}
 			for _, ic := range v.Icons {
 				if ic.Size == PortraitSize {
