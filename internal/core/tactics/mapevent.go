@@ -243,19 +243,45 @@ func (b *Battle) liveEnemies() int {
 // 突撃に変わった一団の敵は、出たときから突撃にする。
 func (b *Battle) spawnEnemy(events []Event, us UnitSetup) []Event {
 	if b.liveEnemies() >= maxLiveEnemies {
+		if us.Commander {
+			b.collapseGroup(b.groupKey(us.Group, us.Pos))
+		}
 		return events
 	}
 	pos, ok := b.reinforcementPosition(us.Pos)
 	if !ok {
+		if us.Commander {
+			b.collapseGroup(b.groupKey(us.Group, us.Pos))
+		}
 		return events
 	}
 	u := newUnit(us)
 	u.Pos = pos
+	if !u.Commander && b.groupCollapsed[b.groupKey(u.Group, u.Pos)] {
+		u.Collapsed = true
+	}
 	if u.Group != "" && b.mapState.charged[u.Group] {
 		u.AI = Charge
 	}
 	b.units = append(b.units, u)
 	return b.emit(events, Event{Kind: EventReinforce, Unit: len(b.units) - 1, To: pos})
+}
+
+// collapseGroup は小隊長を失った到達領域の配下を直進に切り替える（DES-AI-03）。
+func (b *Battle) collapseGroup(key string) {
+	if key == "" {
+		return
+	}
+	if b.groupCollapsed == nil {
+		b.groupCollapsed = make(map[string]bool)
+	}
+	b.groupCollapsed[key] = true
+	for i := range b.units {
+		u := &b.units[i]
+		if u.Alive && u.Side == Enemy && !u.Commander && u.Approach == GroupApproach && b.groupKey(u.Group, u.Pos) == key {
+			u.Collapsed = true
+		}
+	}
 }
 
 // placeEventReinforcements は、このターンに予約した出来事の増援を、出来事の定義の順・個体の順に出す（DES-IT06 9.3 節）。

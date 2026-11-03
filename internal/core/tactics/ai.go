@@ -64,7 +64,7 @@ func posLess(a, b Pos) bool {
 // 動かない敵は出来事を出さない。
 func (b *Battle) actEnemy(events []Event, unit int) []Event {
 	reach := b.Reachable(unit)
-	if u := b.units[unit]; u.Approach == GroupApproach && !b.groupEntered[b.groupKey(u.Group, u.Pos)] {
+	if u := b.units[unit]; u.Approach == GroupApproach && !u.Collapsed && !b.groupEntered[b.groupKey(u.Group, u.Pos)] {
 		goal, planned := b.groupPlan[unit]
 		if !planned {
 			danger := b.groupDanger[unit]
@@ -112,6 +112,9 @@ func (b *Battle) actEnemy(events []Event, unit int) []Event {
 			}
 		}
 		// 安全な逃げ場がないときだけ、通常の攻撃候補を使う。
+	}
+	if b.units[unit].Collapsed && b.units[unit].AI == Hold {
+		b.units[unit].AI = Charge
 	}
 	if best, ok := b.bestCandidate(unit, reach); ok {
 		b.units[unit].AI = Charge

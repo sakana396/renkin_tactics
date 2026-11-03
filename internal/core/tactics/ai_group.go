@@ -20,7 +20,7 @@ func (b *Battle) planEnemyGroups(count int) {
 	for i := 0; i < count; i++ {
 		u := b.units[i]
 		key := b.groupKey(u.Group, u.Pos)
-		if u.Alive && u.Side == Enemy && u.Approach == GroupApproach && !b.groupEntered[key] {
+		if u.Alive && u.Side == Enemy && u.Approach == GroupApproach && !u.Collapsed && !b.groupEntered[key] {
 			groups[key] = append(groups[key], i)
 		}
 	}
@@ -53,7 +53,7 @@ func (b *Battle) planEnemyGroups(count int) {
 	assigned := make(map[Pos]bool)
 	// 先に全一団の生存者の集合先を予約する。処理順が後の一団も例外にしない。
 	for i, goal := range b.groupPlan {
-		if i < len(b.units) && b.units[i].Alive {
+		if i < len(b.units) && b.units[i].Alive && !b.units[i].Collapsed {
 			assigned[goal] = true
 		}
 	}
@@ -403,7 +403,7 @@ func (b *Battle) groupMove(unit int, reach map[Pos]int, goal Pos) (Pos, bool) {
 	var members []int
 	key := b.groupKey(b.units[unit].Group, b.units[unit].Pos)
 	for i, u := range b.units {
-		if u.Alive && u.Side == Enemy && u.Approach == GroupApproach && b.groupKey(u.Group, u.Pos) == key {
+		if u.Alive && u.Side == Enemy && u.Approach == GroupApproach && !u.Collapsed && b.groupKey(u.Group, u.Pos) == key {
 			members = append(members, i)
 		}
 	}
