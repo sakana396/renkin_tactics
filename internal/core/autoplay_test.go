@@ -41,6 +41,9 @@ type autoResult struct {
 // autoLog は試し遊びの記録の出し先（調べるときだけ設定する）。
 var autoLog func(string)
 
+// autoObserve は制作記録用に出来事の列を観測する（DES-MAP-08）。
+var autoObserve func([]tactics.Event)
+
 func (r autoResult) String() string {
 	return fmt.Sprintf("結果=%v ターン=%d 倒れた自軍=%v 倒した敵=%d %v", r.Result, r.Turns, r.Fallen, r.Kills, r.Deaths)
 }
@@ -80,6 +83,9 @@ type autoPlayer struct {
 
 // note は、出来事から自軍が倒れたことを記録する。
 func (p *autoPlayer) note(events []tactics.Event) {
+	if autoObserve != nil {
+		autoObserve(events)
+	}
 	units := p.b.Units()
 	last := map[int]int{}
 	turn := p.b.Turn
