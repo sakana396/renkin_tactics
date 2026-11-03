@@ -375,11 +375,18 @@ func (p *smartPlayer) incoming(i int, at tactics.Pos, uw tactics.Weapon, skip in
 		var bestBlow, mineBlow blow
 		var bestCount, mineCount int
 		mineGain := -1.0
+		// 同点なら添字の小さい武器を採る。map の順に頼ると同じ seed でも判断が変わる（REV-086 F-01）。
+		wks := make([]int, 0, len(p.zone[e]))
+		for k := range p.zone[e] {
+			wks = append(wks, k)
+		}
+		sort.Ints(wks)
 		for _, tg := range targets {
 			if hp[tg.k] <= 0 {
 				continue
 			}
-			for k, z := range p.zone[e] {
+			for _, k := range wks {
+				z := p.zone[e][k]
 				if !z[tg.at] {
 					continue
 				}
