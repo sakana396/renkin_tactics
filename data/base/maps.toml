@@ -728,8 +728,8 @@ weapon = "iron_axe"
 level = 7
 bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
 ai = "charge"
-x = 4
-y = 2
+x = 5
+y = 1
 
 
 [[maps.reinforcements]]
