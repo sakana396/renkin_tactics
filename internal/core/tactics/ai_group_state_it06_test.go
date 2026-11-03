@@ -7,15 +7,16 @@ import (
 
 // 一団の集合中の状態を深く復元する（TC-FR-BTL-10-33、DES-RWD-03）。
 func TestGroupStateRestoreIt06(t *testing.T) {
-	b := &Battle{pcg: rand.NewPCG(17, 0), groupEntered: map[string]bool{"g": false}, groupPlan: map[int]Pos{1: {4, 1}, 2: {5, 1}}, groupDanger: map[int]map[Pos]bool{1: {{3, 1}: true}}}
+	b := &Battle{pcg: rand.NewPCG(17, 0), groupEntered: map[string]bool{"g": false}, groupGathering: map[string]bool{"g": true}, groupPlan: map[int]Pos{1: {4, 1}, 2: {5, 1}}, groupDanger: map[int]map[Pos]bool{1: {{3, 1}: true}}}
 	snap := b.snapshot()
 	b.groupEntered["g"] = true
+	b.groupGathering["g"] = false
 	delete(b.groupPlan, 1)
 	b.groupDanger[1][Pos{3, 1}] = false
 	if err := b.restore(snap); err != nil {
 		t.Fatal(err)
 	}
-	if b.groupEntered["g"] || b.groupPlan[1] != (Pos{4, 1}) || b.groupPlan[2] != (Pos{5, 1}) || !b.groupDanger[1][Pos{3, 1}] {
+	if b.groupEntered["g"] || !b.groupGathering["g"] || b.groupPlan[1] != (Pos{4, 1}) || b.groupPlan[2] != (Pos{5, 1}) || !b.groupDanger[1][Pos{3, 1}] {
 		t.Fatalf("集合状態を復元できない: entered=%v plan=%v danger=%v", b.groupEntered, b.groupPlan, b.groupDanger)
 	}
 }

@@ -68,7 +68,7 @@ func (b *Battle) actEnemy(events []Event, unit int) []Event {
 		goal, planned := b.groupPlan[unit]
 		if !planned {
 			danger := b.groupDanger[unit]
-			gathering := false
+			gathering := b.groupGathering[b.groupKey(u.Group, u.Pos)]
 			for i, other := range b.units {
 				if other.Alive && other.Side == Enemy && other.Approach == GroupApproach && b.groupKey(other.Group, other.Pos) == b.groupKey(u.Group, u.Pos) {
 					if len(b.groupDanger[i]) != 0 {

@@ -95,10 +95,11 @@ func (b *Battle) planEnemyGroups(count int) {
 				anyDanger = true
 			}
 		}
-		if !planned && !anyDanger {
+		if !planned && !anyDanger && !b.groupGathering[key] {
 			continue
 		}
 
+		b.groupGathering[key] = true
 		groupGoals := make(map[Pos]bool)
 		for _, i := range members {
 			if goal, ok := b.groupPlan[i]; ok {
