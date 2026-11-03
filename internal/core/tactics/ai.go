@@ -107,6 +107,9 @@ func (b *Battle) actEnemy(events []Event, unit int) []Event {
 			if to, ok := b.groupMove(unit, reach, goal); ok {
 				return b.moveEnemy(events, unit, to)
 			}
+			if !b.groupDanger[unit][b.units[unit].Pos] {
+				return events
+			}
 		}
 		// 安全な逃げ場がないときだけ、通常の攻撃候補を使う。
 	}
