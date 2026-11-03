@@ -373,45 +373,48 @@ func checkGroupsCharge(t *testing.T, cat *defs.Catalog, id string, m defs.MapDef
 // 元のマスがふさがれると距離 2 までの通れるマスに出るので、その候補のどれもが、壁を回り込まずに
 // 元のマスから行ける（通れるマスだけを通る歩数がマス目の距離と同じ）ことを確かめる。
 func TestIT06Ch03TurnFiveReinforcementOrigin(t *testing.T) {
-	t.Run("TC-FR-MAP-04-23 ch03 の 5 ターン目の増援の元は (5,1) で、候補が壁の外に出ない", func(t *testing.T) {
-		cat := baseCatalog(t)
-		m, ok := cat.Map("ch03")
-		if !ok {
-			t.Fatal("ch03 がない")
-		}
-		var origin *defs.Slot
-		for _, r := range m.Reinforcements {
-			if r.Turn == 5 && r.Class == "fighter" {
-				if origin != nil {
-					t.Fatal("5 ターン目のファイターの増援が 2 体以上ある")
-				}
-				origin = &defs.Slot{X: r.X, Y: r.Y}
+	// 5 ターン目は E-114、6 ターン目は E-115 で (5,1) に動かした。
+	for _, turn := range []int{5, 6} {
+		t.Run(fmt.Sprintf("TC-FR-MAP-04-23 ch03 の %d ターン目の増援の元は (5,1) で、候補が壁の外に出ない", turn), func(t *testing.T) {
+			cat := baseCatalog(t)
+			m, ok := cat.Map("ch03")
+			if !ok {
+				t.Fatal("ch03 がない")
 			}
-		}
-		if origin == nil {
-			t.Fatal("5 ターン目のファイターの増援がない")
-		}
-		if *origin != (defs.Slot{X: 5, Y: 1}) {
-			t.Fatalf("5 ターン目のファイターの元のマス = %+v、期待 (5,1)（E-114）", *origin)
-		}
-		steps := pathSteps(m, cat, *origin)
-		const reach = 2 // DES-MAP-03: 元のマスがふさがれたときに探す距離
-		for y := origin.Y - reach; y <= origin.Y+reach; y++ {
-			for x := origin.X - reach; x <= origin.X+reach; x++ {
-				d := absInt(x-origin.X) + absInt(y-origin.Y)
-				if d > reach || y < 0 || y >= len(m.Rows) || x < 0 || x >= len([]rune(m.Rows[0])) {
-					continue
-				}
-				c := defs.Slot{X: x, Y: y}
-				if st, ok := steps[c]; ok && st == d {
-					continue
-				}
-				if passableTerrain(m, cat, c) {
-					t.Errorf("候補 (%d,%d) は通れるが、元のマスから壁を回り込まないと行けない（歩数 %v、距離 %d）", x, y, steps[c], d)
+			var origin *defs.Slot
+			for _, r := range m.Reinforcements {
+				if r.Turn == turn && r.Class == "fighter" {
+					if origin != nil {
+						t.Fatalf("%d ターン目のファイターの増援が 2 体以上ある", turn)
+					}
+					origin = &defs.Slot{X: r.X, Y: r.Y}
 				}
 			}
-		}
-	})
+			if origin == nil {
+				t.Fatalf("%d ターン目のファイターの増援がない", turn)
+			}
+			if *origin != (defs.Slot{X: 5, Y: 1}) {
+				t.Fatalf("%d ターン目のファイターの元のマス = %+v、期待 (5,1)（E-114・E-115）", turn, *origin)
+			}
+			steps := pathSteps(m, cat, *origin)
+			const reach = 2 // DES-MAP-03: 元のマスがふさがれたときに探す距離
+			for y := origin.Y - reach; y <= origin.Y+reach; y++ {
+				for x := origin.X - reach; x <= origin.X+reach; x++ {
+					d := absInt(x-origin.X) + absInt(y-origin.Y)
+					if d > reach || y < 0 || y >= len(m.Rows) || x < 0 || x >= len([]rune(m.Rows[0])) {
+						continue
+					}
+					c := defs.Slot{X: x, Y: y}
+					if st, ok := steps[c]; ok && st == d {
+						continue
+					}
+					if passableTerrain(m, cat, c) {
+						t.Errorf("候補 (%d,%d) は通れるが、元のマスから壁を回り込まないと行けない（歩数 %v、距離 %d）", x, y, steps[c], d)
+					}
+				}
+			}
+		})
+	}
 }
 
 // passableTerrain は、マス p の地形が通れるかを返す。
