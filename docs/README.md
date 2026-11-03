@@ -40,6 +40,7 @@
 | 設計 | 設計書（反復 6） | [03_design/design-it06.md](03_design/design-it06.md) | v0.8（13.1 節の試遊の行動の記録（DES-LOG-01〜03、#155、0.8）、13 章「自動の試遊」の 2 つの打ち手（#158、0.7）、10・13 章の釣り出し対策と一団の待ち方（E-99・E-100・E-108・E-109、#154、0.6）、12.2 節の改訂（E-97、#149、0.5）は承認（E-114））。0.4 まで承認（E-93）。REV-066 の指摘を反映。未決事項は E-89 で決定、全章の出撃枠 +1（E-90）、一度に 46 体（自軍 7・敵 39。E-91）。検算は [03_design/scripts/verify_des06.py](03_design/scripts/verify_des06.py) |
 | 設計 | 式の一覧（DES-FML-01） | [03_design/formulas.md](03_design/formulas.md) | v0.2 承認（E-93）。REV-066 の指摘を反映。勇者の斧の反撃は 1 回（E-89） |
 | 計画 | 反復 6 の振り返り（IT06-RETRO） | [iterations/it06/retrospective.md](iterations/it06/retrospective.md) | v0.2（承認（E-116））。通しの試遊（E-113）と行動の記録で H-22〜27 を判定し、知見（E-114）を記録 |
+| 計画 | 反復 7 計画書 | [iterations/it07/plan.md](iterations/it07/plan.md) | v0.2（案）。画面の作り直し・指揮官・重騎士の ZOC（E-117）。確認点の答え（E-118） |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
