@@ -22,33 +22,56 @@ var antiLureRosters = []antiLureRoster{
 	{"ミラを失いティオを出す", false, true},
 }
 
+// antiLureRoutes・antiLureChosen・antiLureOrder は TC-FR-MAP-04-24 の主な進路・出撃・行動の順（#158 の賢い打ち手でも同じ名簿を使う）。
+var antiLureRoutes = map[string][]tactics.Pos{
+	"ch01": {{X: 5, Y: 10}, {X: 9, Y: 6}, {X: 12, Y: 2}},
+	"ch02": {{X: 7, Y: 7}, {X: 12, Y: 8}, {X: 14, Y: 8}},
+	"ch03": {{X: 11, Y: 10}, {X: 11, Y: 7}, {X: 11, Y: 5}, {X: 11, Y: 3}},
+	"ch04": {{X: 4, Y: 12}, {X: 4, Y: 7}, {X: 5, Y: 4}, {X: 9, Y: 4}},
+	"ch05": {{X: 7, Y: 9}, {X: 7, Y: 6}, {X: 8, Y: 2}},
+	"ch06": {{X: 6, Y: 14}, {X: 6, Y: 10}, {X: 7, Y: 6}, {X: 10, Y: 3}},
+	"ch07": {{X: 7, Y: 11}, {X: 7, Y: 8}, {X: 7, Y: 4}, {X: 9, Y: 2}},
+	"ch08": {{X: 11, Y: 17}, {X: 11, Y: 11}, {X: 11, Y: 6}, {X: 12, Y: 2}},
+	"ch09": ch09East,
+}
+var antiLureChosen = map[string][]string{
+	"ch01": {"leon", "gald", "bran", "mira", "rina"},
+	"ch02": {"leon", "gald", "bran", "mira", "rina", "noel", "elsa"},
+	"ch03": {"leon", "gald", "bran", "mira", "noel", "rina"},
+	"ch04": {"leon", "gald", "bran", "mira", "noel", "elsa", "rina"},
+	"ch05": {"leon", "gald", "bran", "mira", "noel", "elsa"},
+	"ch06": {"leon", "gald", "bran", "mira", "noel", "elsa", "tio"},
+	"ch07": {"leon", "gald", "bran", "mira", "noel", "tio"},
+	"ch08": {"leon", "gald", "bran", "mira", "noel", "elsa"},
+	"ch09": {"leon", "gald", "bran", "mira", "noel", "elsa", "rina"},
+}
+var antiLureOrder = []string{"gald", "mira", "noel", "bran", "elsa", "leon", "rina", "tio"}
+
+// antiLureRoute は章 id・名簿の主な進路と固定の行動順を返す（TC-FR-MAP-04-24。#158 の賢い打ち手も同じものを使う）。
+// 勝ち筋を失った名簿は、同じ章の別の主要進路と固定の行動順を試す（#154、REV-087）。
+func antiLureRoute(id string, roster antiLureRoster) ([]tactics.Pos, []string) {
+	path := antiLureRoutes[id]
+	playOrder := antiLureOrder
+	switch {
+	case id == "ch02" && !roster.low:
+		path = []tactics.Pos{{X: 4, Y: 7}, {X: 7, Y: 7}, {X: 10, Y: 8}, {X: 12, Y: 8}, {X: 14, Y: 8}}
+		playOrder = []string{"gald", "bran", "mira", "tio", "noel", "elsa", "leon", "rina"}
+	case id == "ch03" && !roster.low:
+		path = []tactics.Pos{{X: 4, Y: 10}, {X: 4, Y: 7}, {X: 5, Y: 5}, {X: 6, Y: 3}}
+	case id == "ch05" && roster.lostMira:
+		path = []tactics.Pos{{X: 2, Y: 10}, {X: 2, Y: 6}, {X: 4, Y: 3}, {X: 8, Y: 2}}
+		playOrder = []string{"mira", "gald", "leon", "bran", "rina", "elsa", "noel", "tio"}
+	case id == "ch07" && roster.lostMira:
+		path = []tactics.Pos{{X: 13, Y: 12}, {X: 14, Y: 8}, {X: 13, Y: 4}, {X: 11, Y: 3}}
+	}
+	return path, playOrder
+}
+
 // 想定名簿と既存の主な進路で、固定 20 seed の勝ち数を測る（DES-MAP-08、DES-IT06 13 章）。
 // 勝ちは詰まない手順の下限で、難しさの判定には使わない。名簿ごとに並べて走らせる。
 func TestIT06AntiLureAutoplay(t *testing.T) {
 	cat := baseCatalog(t)
-	routes := map[string][]tactics.Pos{
-		"ch01": {{X: 5, Y: 10}, {X: 9, Y: 6}, {X: 12, Y: 2}},
-		"ch02": {{X: 7, Y: 7}, {X: 12, Y: 8}, {X: 14, Y: 8}},
-		"ch03": {{X: 11, Y: 10}, {X: 11, Y: 7}, {X: 11, Y: 5}, {X: 11, Y: 3}},
-		"ch04": {{X: 4, Y: 12}, {X: 4, Y: 7}, {X: 5, Y: 4}, {X: 9, Y: 4}},
-		"ch05": {{X: 7, Y: 9}, {X: 7, Y: 6}, {X: 8, Y: 2}},
-		"ch06": {{X: 6, Y: 14}, {X: 6, Y: 10}, {X: 7, Y: 6}, {X: 10, Y: 3}},
-		"ch07": {{X: 7, Y: 11}, {X: 7, Y: 8}, {X: 7, Y: 4}, {X: 9, Y: 2}},
-		"ch08": {{X: 11, Y: 17}, {X: 11, Y: 11}, {X: 11, Y: 6}, {X: 12, Y: 2}},
-		"ch09": ch09East,
-	}
-	chosenByMap := map[string][]string{
-		"ch01": {"leon", "gald", "bran", "mira", "rina"},
-		"ch02": {"leon", "gald", "bran", "mira", "rina", "noel", "elsa"},
-		"ch03": {"leon", "gald", "bran", "mira", "noel", "rina"},
-		"ch04": {"leon", "gald", "bran", "mira", "noel", "elsa", "rina"},
-		"ch05": {"leon", "gald", "bran", "mira", "noel", "elsa"},
-		"ch06": {"leon", "gald", "bran", "mira", "noel", "elsa", "tio"},
-		"ch07": {"leon", "gald", "bran", "mira", "noel", "tio"},
-		"ch08": {"leon", "gald", "bran", "mira", "noel", "elsa"},
-		"ch09": {"leon", "gald", "bran", "mira", "noel", "elsa", "rina"},
-	}
-	order := []string{"gald", "mira", "noel", "bran", "elsa", "leon", "rina", "tio"}
+	chosenByMap := antiLureChosen
 	for ch := 1; ch <= 9; ch++ {
 		id := fmt.Sprintf("ch%02d", ch)
 		for _, roster := range antiLureRosters {
@@ -156,21 +179,7 @@ func TestIT06AntiLureAutoplay(t *testing.T) {
 							maxLive = max(maxLive, live)
 						}
 					}
-					// 勝ち筋を失った名簿は、同じ章の別の主要進路と固定の行動順を試す。
-					path := routes[id]
-					playOrder := order
-					switch {
-					case id == "ch02" && !roster.low:
-						path = []tactics.Pos{{X: 4, Y: 7}, {X: 7, Y: 7}, {X: 10, Y: 8}, {X: 12, Y: 8}, {X: 14, Y: 8}}
-						playOrder = []string{"gald", "bran", "mira", "tio", "noel", "elsa", "leon", "rina"}
-					case id == "ch03" && !roster.low:
-						path = []tactics.Pos{{X: 4, Y: 10}, {X: 4, Y: 7}, {X: 5, Y: 5}, {X: 6, Y: 3}}
-					case id == "ch05" && roster.lostMira:
-						path = []tactics.Pos{{X: 2, Y: 10}, {X: 2, Y: 6}, {X: 4, Y: 3}, {X: 8, Y: 2}}
-						playOrder = []string{"mira", "gald", "leon", "bran", "rina", "elsa", "noel", "tio"}
-					case id == "ch07" && roster.lostMira:
-						path = []tactics.Pos{{X: 13, Y: 12}, {X: 14, Y: 8}, {X: 13, Y: 4}, {X: 11, Y: 3}}
-					}
+					path, playOrder := antiLureRoute(id, roster)
 					r := autoPlay(s.Battle, ids, autoPlan{Order: playOrder, Routes: [][]tactics.Pos{path}, Observe: observe}, 50)
 					if maxLive > 39 {
 						t.Fatalf("生存敵が %d 体", maxLive)
