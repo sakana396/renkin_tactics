@@ -178,7 +178,7 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 		t.Fatal(err)
 	}
 	c := base
-	if id == "ch05" {
+	if id == "ch03" || id == "ch04" || id == "ch05" {
 		c = estimatedRoster(t, cat, id, low)
 	}
 	rate := 1.0
@@ -193,6 +193,12 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 		grow := 0
 		switch {
 		case id == "ch02" && !joiner:
+			grow = 2
+		case id == "ch03" && joiner:
+			*m = base.Roster[i]
+			grow = 1
+		case id == "ch04" && joiner:
+			*m = base.Roster[i]
 			grow = 2
 		case id == "ch05" && joiner:
 			*m = base.Roster[i]
@@ -213,17 +219,17 @@ func estimatedRosterIT06(t *testing.T, cat *defs.Catalog, id string, low bool) *
 		m.Stats.Mag += up(ch.Growth.Mag, n)
 		m.Stats.Res += up(ch.Growth.Res, n)
 	}
-	if id == "ch05" {
-		for _, take := range []struct {
-			character string
-			weapon    string
-		}{
-			{"leon", "armor_killer"}, {"leon", "killing_sword"},
-			{"bran", "hammer"}, {"elsa", "horse_killer"},
-		} {
+	// 前の章の報酬の武器を持たせる（ch01 のアーマーキラー、ch02 のハンマー、ch03 の対騎兵の槍、ch04 のキルソード）。
+	takes := map[string][][2]string{
+		"ch03": {{"leon", "armor_killer"}, {"bran", "hammer"}},
+		"ch04": {{"leon", "armor_killer"}, {"bran", "hammer"}, {"elsa", "horse_killer"}},
+		"ch05": {{"leon", "armor_killer"}, {"leon", "killing_sword"}, {"bran", "hammer"}, {"elsa", "horse_killer"}},
+	}
+	if list, ok := takes[id]; ok {
+		for _, take := range list {
 			for i, m := range c.Roster {
-				if m.Character == take.character {
-					if err := c.TakeWeapon(i, take.weapon); err != nil {
+				if m.Character == take[0] {
+					if err := c.TakeWeapon(i, take[1]); err != nil {
 						t.Fatal(err)
 					}
 				}
