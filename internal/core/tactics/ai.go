@@ -68,7 +68,7 @@ func (b *Battle) actEnemy(events []Event, unit int) []Event {
 		goal, planned := b.groupPlan[unit]
 		if !planned {
 			danger := b.groupDanger[unit]
-			gathering := false
+			gathering := b.groupGathering[b.groupKey(u.Group, u.Pos)]
 			for i, other := range b.units {
 				if other.Alive && other.Side == Enemy && other.Approach == GroupApproach && b.groupKey(other.Group, other.Pos) == b.groupKey(u.Group, u.Pos) {
 					if len(b.groupDanger[i]) != 0 {
@@ -106,6 +106,9 @@ func (b *Battle) actEnemy(events []Event, unit int) []Event {
 		if planned {
 			if to, ok := b.groupMove(unit, reach, goal); ok {
 				return b.moveEnemy(events, unit, to)
+			}
+			if !b.groupDanger[unit][b.units[unit].Pos] {
+				return events
 			}
 		}
 		// 安全な逃げ場がないときだけ、通常の攻撃候補を使う。
