@@ -90,7 +90,7 @@ func TestIT06SmartAutoplayWins(t *testing.T) {
 	avg, lost := antiLureRosters[0], antiLureRosters[2]
 	cases := []smartCase{
 		{"ch01", avg, 2}, {"ch02", avg, 5}, {"ch03", avg, 11}, {"ch04", avg, 1}, {"ch05", avg, 2},
-		{"ch06", avg, 1}, {"ch07", avg, 2}, {"ch08", avg, 1}, {"ch09", avg, 1},
+		{"ch06", avg, 2}, {"ch07", avg, 2}, {"ch08", avg, 1}, {"ch09", avg, 1},
 		{"ch04", lost, 1}, {"ch05", lost, 1}, {"ch06", lost, 1}, {"ch08", lost, 2}, {"ch09", lost, 10},
 	}
 	for _, tc := range cases {
@@ -113,12 +113,13 @@ func TestIT06SmartAutoplayWins(t *testing.T) {
 	}
 }
 
-// 低めの名簿でも、賢い打ち手は 20 seed で勝てた章（ch04・ch06）の固定 seed に勝つ（TC-FR-MAP-04-26。#158）。
-// 勝てなかった章（ch02・ch03・ch05・ch07・ch08・ch09）の負け方は制作記録の「#158 賢い打ち手」の節に書く。
+// 低めの名簿でも、賢い打ち手は 20 seed で勝てた章（ch04）の固定 seed に勝つ（TC-FR-MAP-04-26。#158）。
+// 勝てなかった章（ch02・ch03・ch05〜ch09）の負け方は制作記録の「#158 賢い打ち手」の節に書く。
+// ch06 は、6 章の出撃枠の移動（E-112）のあとの測り直しで 0 勝になったので外した。
 func TestIT06SmartAutoplayLowWins(t *testing.T) {
 	cat := baseCatalog(t)
 	low := antiLureRosters[1]
-	for _, tc := range []smartCase{{"ch04", low, 2}, {"ch06", low, 18}} {
+	for _, tc := range []smartCase{{"ch04", low, 2}} {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-26 %s 低め seed %d", tc.id, tc.seed), func(t *testing.T) {
 			t.Parallel()
 			b, ids, _ := antiLureStart(t, cat, tc.id, tc.roster, tc.seed)
@@ -142,7 +143,7 @@ func TestIT06SmartAutoplayFeatures(t *testing.T) {
 		smartCase
 	}{
 		{"Weapons", smartCase{"ch08", lost, 5}},
-		{"Threat", smartCase{"ch06", avg, 1}},
+		{"Threat", smartCase{"ch06", avg, 2}},
 		{"Focus", smartCase{"ch04", avg, 1}},
 		{"Heal", smartCase{"ch09", avg, 1}},
 		{"Hold", smartCase{"ch05", lost, 7}},

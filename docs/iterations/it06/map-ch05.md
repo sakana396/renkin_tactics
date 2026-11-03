@@ -253,7 +253,7 @@ ch01 は定義の初期の名簿、ほかは `estimatedRosterIT06`（低めは�
 
 ## #158 賢い打ち手の試し遊び（E-102・E-107）
 
-最新の #154（一団が仲間の近くで待つ直し。E-108・E-109・E-111、REV-087）の配置と敵の動きのまま（データは変えていない）、TC-FR-MAP-04-24 と同じ名簿・出撃・章と名簿ごとの主な進路・行動順で、今の打ち手（`autoPlay`）と賢い打ち手（`smartPlay`、`internal/core/smart_autoplay_it06_test.go`）を seed 1〜20、最大 50 ターンで比べた（`RENKIN_MEASURE=1 go test ./internal/core -run TestMeasureSmartAutoplay`）。賢い打ち手の工夫と測り方は TST-IT06 3.21 節に書いた。勝ちは詰まない手順の下限で、難しさの判断には使わない（DES-IT06 13 章）。
+最新の #154（一団が仲間の近くで待つ直し。E-108・E-109・E-111、REV-087）の配置と敵の動きのまま（データは変えていない）、TC-FR-MAP-04-24 と同じ名簿・出撃・章と名簿ごとの主な進路・行動順で、今の打ち手（`autoPlay`）と賢い打ち手（`smartPlay`、`internal/core/smart_autoplay_it06_test.go`）を seed 1〜20、最大 50 ターンで比べた（`RENKIN_MEASURE=1 go test ./internal/core -run TestMeasureSmartAutoplay`）。賢い打ち手の工夫と測り方は TST-IT06 3.22 節に書いた。勝ちは詰まない手順の下限で、難しさの判断には使わない（DES-IT06 13 章）。
 
 | 名簿 | 今の打ち手の勝ち | 今の打ち手の勝つ seed | 賢い打ち手の勝ち | 賢い打ち手の勝つ seed |
 |---|---:|---|---:|---|
