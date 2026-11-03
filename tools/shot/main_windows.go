@@ -9,9 +9,11 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/sakana396/renkin_tactics/data"
 	"github.com/sakana396/renkin_tactics/internal/defload"
+	"github.com/sakana396/renkin_tactics/internal/savefile"
 	"github.com/sakana396/renkin_tactics/internal/ui"
 )
 
@@ -28,6 +30,7 @@ func main() {
 	scene := flag.String("scene", "title", "場面: title, rule, story, prepare, deploy, battle")
 	steps := flag.String("steps", "", "操作列。カンマで区切る。詳しくは README.md")
 	out := flag.String("out", "", "PNG の出力先")
+	logdir := flag.String("logdir", "", "行動の記録を書くディレクトリ（その下の logs に作る。指定しなければ記録しない）")
 	flag.Parse()
 	if *out == "" {
 		fmt.Fprintln(os.Stderr, "-out で PNG の出力先を指定してください")
@@ -53,7 +56,12 @@ func main() {
 	if *steps != "" {
 		actions = strings.Split(*steps, ",")
 	}
-	err = ui.RunShot(ui.Config{Catalog: cat, Store: memoryStore{}, NextSeed: func() uint64 { return 1 }, StartChapter: *chapter}, ui.ShotOptions{Scene: *scene, Steps: actions, Path: *out})
+	cfg := ui.Config{Catalog: cat, Store: memoryStore{}, NextSeed: func() uint64 { return 1 }, StartChapter: *chapter}
+	if *logdir != "" {
+		// 遊ぶ版と同じ書き出し先を使う（DES-LOG-02）。
+		cfg.PlayLog, cfg.Now, cfg.Stderr = savefile.PlayLogs{Dir: *logdir, Now: time.Now}.Create, time.Now, os.Stderr
+	}
+	err = ui.RunShot(cfg, ui.ShotOptions{Scene: *scene, Steps: actions, Path: *out})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

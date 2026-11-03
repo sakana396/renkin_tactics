@@ -8,7 +8,7 @@ tools/shot/shot.sh -chapter ch09 -scene battle -steps 'rewind' -out /tmp/ch09-re
 tools/shot/shot.sh -chapter ch09 -scene battle -steps 'cursor:160:160' -out /tmp/ch09-info.png
 ```
 
-PNG は常に 832×576 px。セーブファイルは読み書きせず、乱数の種は 1 に固定する。`-chapter` は ch01〜ch09、`-scene` は `title`、`rule`、`story`、`prepare`、`deploy`、`battle` を指定する。場面への移動では新規開始、物語の送り、出撃確定を自動で行う。
+PNG は常に 832×576 px。セーブファイルは読み書きせず、乱数の種は 1 に固定する。`-logdir ディレクトリ` を付けると、遊ぶ版と同じ行動の記録（DES-IT06 13.1 節）を、そのディレクトリの下の `logs` に書く（付けなければ書かない）。記録は `go run ./tools/replaylog <ファイル>` で流し直せる。`-chapter` は ch01〜ch09、`-scene` は `title`、`rule`、`story`、`prepare`、`deploy`、`battle` を指定する。場面への移動では新規開始、物語の送り、出撃確定を自動で行う。
 
 `-steps` には次の操作をカンマ区切りで左から順に書く。盤面の座標は左上を (0,0) とした章全体のマス座標。画面の座標は 832×576 のピクセル座標。
 
@@ -32,3 +32,12 @@ PNG は常に 832×576 px。セーブファイルは読み書きせず、乱数�
 たとえば操作列は `click:自軍X:自軍Y,click:移動先X:移動先Y,action:attack,target:敵X:敵Y` の順にする。敵の位置と移動できるマスは章の定義と現在の盤面に合わせる。
 
 選択が成立しないときは、画面の状態に応じて操作が無視される。座標と操作順を見直す。`-out` の親ディレクトリは自動で作る。
+
+## 行動の記録の置き場所（DES-IT06 13.1 節）
+
+- 遊ぶ版（`cmd/renkin`）は、出撃のたびに `<セーブのディレクトリ>/logs/<年月日>-<時分秒>-<章 ID>.jsonl` を 1 つ作る。セーブのディレクトリは `-savedir` で指定したもの、省けば OS の標準の置き場所（Windows なら `%AppData%\renkin_tactics`。DES-SAV-02）
+- `tools/shot` は `-logdir` を付けたときだけ、`<-logdir>/logs/` に同じ形で書く
+- 操作の行（`start`・`action`・`end_phase`・`rewind`）には、出撃してからの経過の秒 `elapsed` が入る（E-106）
+- 記録は自動では消さない（E-106）。要らなくなったら `logs` フォルダを手で消す
+- 書けないときは、戦闘の案内に「行動の記録を書けません（遊ぶのは続けられます）」が出て、詳しい誤りは標準エラーに出る
+- `go run ./tools/replaylog <記録>...` は流し直して比べる。終了コードは、すべて同じなら 0、食い違いがあれば 1（その後の行が読めなくても 1）、読めなければ 2。`elapsed` は比べない

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
+	"time"
 
 	"github.com/sakana396/renkin_tactics/internal/core"
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
@@ -24,6 +26,12 @@ type Config struct {
 	NextSeed func() uint64
 	// StartChapter は新規開始の章 ID。空なら最初の章から始める（DES-CMD-03）。
 	StartChapter string
+	// PlayLog は出撃のたびに、章 ID の行動の記録の書き出し先を作る（DES-LOG-02）。nil なら記録しない。
+	PlayLog func(chapter string) (io.Writer, error)
+	// Now は行動の記録の経過の秒（出撃してから）を測る時計（DES-LOG-01、E-106）。nil なら経過の秒を書かない。
+	Now func() time.Time
+	// Stderr は、行動の記録を作れない・書けないときの詳しい誤りの出し先（DES-LOG-02）。nil なら os.Stderr。
+	Stderr io.Writer
 }
 
 // Scene はキャンペーンの場面（DES-UI-09）。
@@ -349,7 +357,8 @@ func (s *SceneController) startDeployedBattle() {
 		s.message = err.Error()
 		return
 	}
-	sortie, events, err := s.campaign.StartBattleAt(s.deployMembers, s.deploySlots, s.cfg.NextSeed())
+	seed := s.cfg.NextSeed()
+	sortie, events, err := s.campaign.StartBattleAt(s.deployMembers, s.deploySlots, seed)
 	if err != nil {
 		s.message = err.Error()
 		return
@@ -358,6 +367,23 @@ func (s *SceneController) startDeployedBattle() {
 	if err != nil {
 		s.message = err.Error()
 		return
+	}
+	// 行動の記録は、戦闘を作れたあとに始める。作れなくても遊べる（DES-LOG-02）。
+	if s.cfg.PlayLog != nil {
+		chapter := s.cfg.Catalog.Chapters()[s.campaign.Chapter].ID
+		ctrl.logErr = s.cfg.Stderr
+		if ctrl.logErr == nil {
+			ctrl.logErr = os.Stderr
+		}
+		if w, err := s.cfg.PlayLog(chapter); err != nil {
+			// 案内は短くし、詳しい誤り（パスなど）は標準エラーへ出す（DES-LOG-02）。
+			ctrl.message = "行動の記録を作れません（遊ぶのは続けられます）"
+			fmt.Fprintf(ctrl.logErr, "行動の記録を作れません: %v\n", err)
+		} else {
+			ctrl.log = core.NewPlayLog(w, elapsedSince(s.cfg.Now))
+			ctrl.log.Start(s.campaign, sortie, s.deploySlots, seed, events)
+			ctrl.checkLog()
+		}
 	}
 	s.resetDeploy()
 	s.sortie = sortie
@@ -396,4 +422,14 @@ func (s *SceneController) rewindKey(key string) {
 	if (s.scene == Battle || s.scene == GameOver) && s.battle != nil {
 		s.battle.rewindKey(key)
 	}
+}
+
+// elapsedSince は、今の時刻から測った経過の秒（切り捨て）を返す関数を作る（DES-LOG-01、E-106）。
+// 時計は画面の側で読み、core には秒の値を返す関数だけを渡す（NFR-05）。now が nil なら nil。
+func elapsedSince(now func() time.Time) func() int {
+	if now == nil {
+		return nil
+	}
+	began := now()
+	return func() int { return int(now().Sub(began) / time.Second) }
 }

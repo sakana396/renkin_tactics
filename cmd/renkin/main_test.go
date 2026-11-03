@@ -57,6 +57,26 @@ func TestRun(t *testing.T) {
 			}
 		}
 	})
+	t.Run("TC-NFR-06-14 遊ぶ版は -savedir の下の logs に出撃ごとの行動の記録を作り、時計と標準エラーを渡す", func(t *testing.T) {
+		var cfg ui.Config
+		dir := t.TempDir()
+		var stderr bytes.Buffer
+		if code := run([]string{"-savedir", dir}, &stderr, data.Base(), fixedNow, func(c ui.Config) error { cfg = c; return nil }); code != 0 || cfg.PlayLog == nil {
+			t.Fatal(code, cfg.PlayLog == nil)
+		}
+		// 経過の秒は起動の時計で測り、詳しい誤りは起動の stderr へ出す（DES-LOG-01・02、E-106）。
+		if cfg.Now == nil || !cfg.Now().Equal(fixedNow()) || cfg.Stderr != &stderr {
+			t.Fatalf("Now があるか %v、Stderr %v", cfg.Now != nil, cfg.Stderr)
+		}
+		w, err := cfg.PlayLog("ch01")
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := filepath.Join(dir, savefile.PlayLogDirName, fixedNow().Format("20060102-150405")+"-ch01.jsonl")
+		if f, ok := w.(savefile.AppendFile); !ok || f.Path != want {
+			t.Fatalf("記録 %#v; 期待 %s", w, want)
+		}
+	})
 	t.Run("TC-FR-SYS-04-23 正しい目録と保存先と種を画面へ渡す", func(t *testing.T) {
 		var stderr bytes.Buffer
 		var cfg ui.Config
