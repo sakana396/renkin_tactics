@@ -184,17 +184,21 @@ func TestControllerTransitions(t *testing.T) {
 			t.Errorf("空きマス: 範囲 = %v, %v", blue, red)
 		}
 		c.Click(tactics.Pos{X: 1, Y: 0})
-		// クリックのあと、カーソルを空きマスに離しても出し続ける（DES-UI-08）。
+		// クリックのあと、カーソルを空きマスに離しても、固定した敵の範囲（橙の線。WatchedFrames）として出し続ける（DES-UI-29）。
+		// 敵の範囲は自軍の範囲の塗り（Overlay）には入れない。
 		c.SetCursor(cellCenter(tactics.Pos{X: 3, Y: 3}))
-		blue, red := c.Overlay()
+		blue, red := c.WatchedFrames()
 		if c.State() != Idle || !reflect.DeepEqual(blue, posSet(tactics.Pos{X: 1, Y: 0})) {
 			t.Errorf("敵: 状態 %v、青 %v（移動 0 なので今いるマスだけ）", c.State(), blue)
 		}
 		if !reflect.DeepEqual(red, posSet(tactics.Pos{X: 0, Y: 0}, tactics.Pos{X: 2, Y: 0}, tactics.Pos{X: 1, Y: 1})) {
 			t.Errorf("敵: 赤 = %v", red)
 		}
-		c.Click(tactics.Pos{X: 1, Y: 0})
 		if blue, red := c.Overlay(); blue != nil || red != nil {
+			t.Errorf("敵の範囲が塗りに入った: %v, %v", blue, red)
+		}
+		c.Click(tactics.Pos{X: 1, Y: 0})
+		if blue, red := c.WatchedFrames(); blue != nil || red != nil {
 			t.Errorf("もう一度クリックしても範囲が消えない: %v, %v", blue, red)
 		}
 		// 自軍 1 を待機させて行動済みにし、もう一度クリックする。

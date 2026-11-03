@@ -250,28 +250,29 @@ func TestUIControls(t *testing.T) {
 		c.Click(tactics.Pos{X: 2})
 		c.Click(tactics.Pos{X: 4})
 		c.SetCursor(-1, -1)
-		overlayIs(t, c, "A と B", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
+		watchedIs(t, c, "A と B", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
 		// もう一度 A をクリックすると A だけ消える。
 		c.Click(tactics.Pos{X: 2})
-		overlayIs(t, c, "A を消す", rowSet(3, 4, 5), rowSet(2, 6))
-		// カーソルを合わせた A の範囲は、出している B の範囲と合わせて出す（B を隠さない）。
+		watchedIs(t, c, "A を消す", rowSet(3, 4, 5), rowSet(2, 6))
+		// カーソルを合わせた A の範囲は、固定した B の範囲とは別の層（カーソル）で出す（B を隠さず、固定も変えない。DES-UI-29）。
+		// A は青 (1, 0)〜(3, 0)、赤 (0, 0)・(4, 0)。
 		c.SetCursor(cellCenter(tactics.Pos{X: 2}))
-		overlayIs(t, c, "A に合わせる", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
+		watchedIs(t, c, "A に合わせる", rowSet(3, 4, 5), rowSet(2, 6))
+		cursorIs(t, c, "A に合わせる", rowSet(1, 2, 3), rowSet(0, 4))
 		c.SetCursor(-1, -1)
 		c.Click(tactics.Pos{X: 2})
 		// 空いたマスのクリック、スクロール、Q の切り替えでは集まりを変えない。Q の危険範囲は別に出す。
 		c.Click(tactics.Pos{X: 0})
 		c.Scroll(1, 0)
 		c.ToggleDanger()
-		overlayIs(t, c, "空きマス・スクロール・Q", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
+		watchedIs(t, c, "空きマス・スクロール・Q", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
 		if got := c.Danger(); !reflect.DeepEqual(got, rowSet(0, 1, 2, 3, 4, 5, 6)) {
 			t.Errorf("Q の危険範囲 %v", got)
 		}
 		c.ToggleDanger()
-		overlayIs(t, c, "Q を消す", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
-		if c.RangeStyle() != StyleBad {
-			t.Error("敵の範囲の色が赤でない")
-		}
+		watchedIs(t, c, "Q を消す", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
+		// 敵の範囲は自軍の範囲の塗り（Overlay）に入れない（DES-UI-29）。
+		overlayIs(t, c, "Idle の塗り", nil, nil)
 
 		// 位置が変わったら計算し直す: 通路でソルジャー (4, 0) とボス (0, 0) を出す。
 		// ソルジャーはレオン (2, 0) を通れず、青 (3, 0)〜(5, 0)、赤 (2, 0)・(6, 0)。ボスは青 (0, 0)、赤 (1, 0)。
@@ -279,14 +280,14 @@ func TestUIControls(t *testing.T) {
 		c.Click(tactics.Pos{X: 4})
 		c.Click(tactics.Pos{X: 0})
 		c.SetCursor(-1, -1)
-		overlayIs(t, c, "ソルジャーとボス", rowSet(0, 3, 4, 5), rowSet(1, 2, 6))
+		watchedIs(t, c, "ソルジャーとボス", rowSet(0, 3, 4, 5), rowSet(1, 2, 6))
 		// レオンを選ぶと自軍の範囲を出し、集まりは保つ。レオンを (1, 0) へ動かして待機すると、自軍は全員行動済みなので
 		// 敵軍の番になり、ソルジャーが (2, 0) に動いてレオンを攻撃する。ソルジャーは (2, 0) から右へ (5, 0) まで動けるので、
 		// 青 (2, 0)〜(5, 0)、赤 (1, 0)・(6, 0)。ボスの赤 (1, 0) と合わせる。
 		c.Click(tactics.Pos{X: 2})
 		own, ownRed := c.ranges(0)
 		overlayIs(t, c, "レオンを選ぶ", own, ownRed)
-		// 自軍を選んで動かしている間も、出している敵の範囲を枠（WatchedFrames）で残す（E-60）。
+		// 自軍を選んで動かしている間も、固定した敵の範囲を橙の線（WatchedFrames）で残す（E-60、DES-UI-29）。
 		if blue, red := c.WatchedFrames(); !reflect.DeepEqual(blue, rowSet(0, 3, 4, 5)) || !reflect.DeepEqual(red, rowSet(1, 2, 6)) {
 			t.Errorf("Selected の敵の範囲の枠: 青 %v、赤 %v", blue, red)
 		}
@@ -304,7 +305,7 @@ func TestUIControls(t *testing.T) {
 		if c.Battle().Units()[2].Pos != (tactics.Pos{X: 2}) {
 			t.Fatalf("前提: ソルジャーの位置 %v", c.Battle().Units()[2].Pos)
 		}
-		overlayIs(t, c, "レオンが動いたあと", rowSet(0, 2, 3, 4, 5), rowSet(1, 6))
+		watchedIs(t, c, "レオンが動いたあと", rowSet(0, 2, 3, 4, 5), rowSet(1, 6))
 		// 2 ターン目の番を終えると、敵軍の番に増援 (9, 0) が現れる。範囲は保つ。
 		c.EndPhase()
 		c.EndPhase()
@@ -312,10 +313,10 @@ func TestUIControls(t *testing.T) {
 		if c.State() != Idle || len(c.Battle().Units()) != 4 {
 			t.Fatalf("3 ターン目: 状態 %v、ユニット %d", c.State(), len(c.Battle().Units()))
 		}
-		overlayIs(t, c, "敵軍の番のあと", rowSet(0, 2, 3, 4, 5), rowSet(1, 6))
+		watchedIs(t, c, "敵軍の番のあと", rowSet(0, 2, 3, 4, 5), rowSet(1, 6))
 		// 増援 (9, 0) も足す（青 (9, 0)、赤 (8, 0)）。
 		c.Click(tactics.Pos{X: 9})
-		overlayIs(t, c, "増援を足す", rowSet(0, 2, 3, 4, 5, 9), rowSet(1, 6, 8))
+		watchedIs(t, c, "増援を足す", rowSet(0, 2, 3, 4, 5, 9), rowSet(1, 6, 8))
 		// 巻き戻しに成功したら、同じ集まりを戻った盤面に照らす。最初の行動（レオンの待機）の前へ戻ると、増援はまだいないので除き、
 		// ソルジャーとボスは戻った盤面（レオン (2, 0)、ソルジャー (4, 0)）で出す。
 		c.OpenRewind()
@@ -333,7 +334,7 @@ func TestUIControls(t *testing.T) {
 		if !reflect.DeepEqual(c.watched, map[int]bool{1: true, 2: true}) {
 			t.Errorf("巻き戻しのあとの集まり %v", c.watched)
 		}
-		overlayIs(t, c, "巻き戻しのあと", rowSet(0, 3, 4, 5), rowSet(1, 2, 6))
+		watchedIs(t, c, "巻き戻しのあと", rowSet(0, 3, 4, 5), rowSet(1, 2, 6))
 
 		// 戦死した敵は除く。弱い敵とボスを出し、主人公が弱い敵を倒すと、ボスの範囲だけが残る。
 		k := newIdleWith(t, killSetup)
@@ -352,10 +353,10 @@ func TestUIControls(t *testing.T) {
 		if !reflect.DeepEqual(k.watched, map[int]bool{1: true}) {
 			t.Errorf("戦死のあとの集まり %v", k.watched)
 		}
-		overlayIs(t, k, "戦死のあと", posSet(tactics.Pos{X: 5, Y: 5}), posSet(tactics.Pos{X: 4, Y: 5}, tactics.Pos{X: 5, Y: 4}))
+		watchedIs(t, k, "戦死のあと", posSet(tactics.Pos{X: 5, Y: 5}), posSet(tactics.Pos{X: 4, Y: 5}, tactics.Pos{X: 5, Y: 4}))
 		// Esc は集まりを空にする。別の Battle（新しい Controller）では空。
 		k.Cancel()
-		overlayIs(t, k, "Esc", nil, nil)
+		watchedIs(t, k, "Esc", nil, nil)
 		if fresh := newIdleWith(t, killSetup); len(fresh.watched) != 0 {
 			t.Errorf("新しい戦闘の集まり %v", fresh.watched)
 		}

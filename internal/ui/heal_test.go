@@ -233,9 +233,13 @@ func TestHealUI(t *testing.T) {
 			t.Fatal(reach)
 		}
 		c.Cancel()
+		// 敵に合わせると、その敵の範囲を自軍の塗りとは別のカーソルの線（青白。CursorFrames）で出し、杖の緑に変えない（DES-UI-29）。
 		c.SetCursor(4*CellSize+1, CellSize+1)
-		if c.RangeStyle() != StyleBad {
-			t.Fatal("敵の範囲の色が変わった")
+		if move, _ := c.CursorFrames(); len(move) == 0 || c.CursorEnemy() < 0 || c.Battle().Units()[c.CursorEnemy()].Side != tactics.Enemy {
+			t.Fatalf("敵の範囲が出ない: %v、%d", move, c.CursorEnemy())
+		}
+		if c.RangeStyle() != StyleGood {
+			t.Fatal("杖の射程の色が変わった")
 		}
 	})
 }

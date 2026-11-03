@@ -166,10 +166,10 @@ func (g *Game) Update() error {
 }
 
 // leftClick は左クリックを、ボタンか盤面のマスの操作に読み替える（DES-UI-02）。
-// 判定はミニマップ → 情報欄 → 盤面の順（DES-UI-28）。
+// 判定はミニマップ → 範囲の「消す」 → 情報欄 → 盤面の順（DES-UI-28、DES-UI-29）。
 func (g *Game) leftClick(x, y int) {
 	c := g.ctrl
-	if c.MinimapClick(x, y) || c.InfoClick(x, y) {
+	if c.MinimapClick(x, y) || c.RangeClick(x, y) || c.InfoClick(x, y) {
 		return
 	}
 	if labels := c.MenuLabels(); len(labels) > 0 {
@@ -223,8 +223,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	hint := g.ctrl.ReinforcementHintView()
 	g.drawHint(board, hint)
 	g.drawUnits(board)
-	g.drawWatched(board)
-	g.drawDanger(board)
+	g.drawEnemyRanges(board, g.ctrl.EnemyRangeLayers())
+	g.drawWatchedPins(board, g.ctrl.WatchedPins(), g.ctrl.Units())
 	g.drawSelection(board)
 	g.drawTargetLabel(board)
 	g.drawEvent(board)
@@ -330,39 +330,6 @@ func (g *Game) drawOverlay(dst *ebiten.Image) {
 			continue
 		}
 		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, clr, false)
-	}
-}
-
-// drawDanger は、敵の危険範囲を橙の枠でマスごとに描く（DES-UI-08）。移動と攻撃を分けない。
-// 自軍のいるマスも見えるように、ユニットの上に描く。選択や攻撃の相手の枠（drawSelection）は、この上に描く。
-func (g *Game) drawDanger(dst *ebiten.Image) {
-	for p := range g.ctrl.Danger() {
-		if !g.drawCamera.Visible(p) {
-			continue
-		}
-		vector.StrokeRect(dst, float32(g.drawCamera.Screen(p).X)+3, float32(g.drawCamera.Screen(p).Y)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
-	}
-}
-
-// drawWatched は、自軍を選んでいる間のクリックして出している敵の範囲を、マスの内側の枠で描く（DES-UI-27）。
-// 自軍の範囲の塗りと重ねても見分けられるよう、塗らずに、暗い縁取りの付いた枠（移動は紫、攻撃は赤）にし、
-// 危険範囲の橙の枠（内側 3 px）より内側に描く。
-func (g *Game) drawWatched(dst *ebiten.Image) {
-	blue, red := g.ctrl.WatchedFrames()
-	for _, layer := range []struct {
-		cells map[tactics.Pos]bool
-		clr   color.Color
-	}{{blue, watchMoveColor}, {red, watchAttackColor}} {
-		for p := range layer.cells {
-			if !g.drawCamera.Visible(p) {
-				continue
-			}
-			pt := g.drawCamera.Screen(p)
-			x, y := float32(pt.X)+8, float32(pt.Y)+8
-			const side = CellSize - 16
-			vector.StrokeRect(dst, x, y, side, side, 4, watchEdge, false)
-			vector.StrokeRect(dst, x, y, side, side, 2, layer.clr, false)
-		}
 	}
 }
 
@@ -528,7 +495,12 @@ func (g *Game) drawOver(dst *ebiten.Image) {
 func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 	vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
 	// 予測・ユニット・地形・ページの印は、位置を決めた InfoView のとおりに描く（DES-UI-06、DES-UI-07、DES-UI-28）。
-	g.drawInfoView(dst, g.ctrl.InfoView(cx, cy))
+	v := g.ctrl.InfoView(cx, cy)
+	g.drawInfoView(dst, v)
+	if r, ok := g.ctrl.cursorNameMark(v); ok {
+		g.drawNameMark(dst, r)
+	}
+	g.drawRangeStatus(dst, g.ctrl.RangeStatus())
 	g.label(dst, cameraGuide, rewindLeft, cameraGuideY, muted)
 }
 
@@ -605,6 +577,7 @@ func (g *Game) drawMinimap(dst *ebiten.Image, v MinimapView) {
 		for _, c := range v.Cells {
 			fill(c.Rect, minimapTerrainColor(c.Terrain))
 		}
+		drawMinimapDanger(dst, v.Danger)
 		for _, h := range v.Hints {
 			stroke(h, hintColor)
 		}
@@ -615,6 +588,7 @@ func (g *Game) drawMinimap(dst *ebiten.Image, v MinimapView) {
 			}
 			fill(u.Rect, clr)
 		}
+		drawMinimapPins(dst, v.Pins)
 		stroke(v.View, white)
 	}
 	for _, l := range v.Legend {
@@ -721,6 +695,9 @@ func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
 	if v.Info != nil {
 		vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
 		g.drawInfoView(dst, *v.Info)
+		if v.Deploy != nil && !v.Deploy.NameMark.Empty() {
+			g.drawNameMark(dst, v.Deploy.NameMark)
+		}
 	}
 	if v.Minimap != nil {
 		g.drawMinimap(dst, *v.Minimap)
@@ -779,18 +756,6 @@ func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 		}
 		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, blueOverlay, false)
 	}
-	for p := range d.Blue {
-		if !g.drawCamera.Visible(p) {
-			continue
-		}
-		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, blueOverlay, false)
-	}
-	for p := range d.Red {
-		if !g.drawCamera.Visible(p) {
-			continue
-		}
-		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, redOverlay, false)
-	}
 	g.drawUnitList(dst, d.Units)
 	for _, p := range d.Slots {
 		if !g.drawCamera.Visible(p) {
@@ -798,12 +763,8 @@ func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 		}
 		g.strokeCell(dst, p, menuBorder)
 	}
-	for p := range d.Danger {
-		if !g.drawCamera.Visible(p) {
-			continue
-		}
-		vector.StrokeRect(dst, float32(g.drawCamera.Screen(p).X)+3, float32(g.drawCamera.Screen(p).Y)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
-	}
+	// 全敵の塗りとカーソルの敵の線は、戦闘と同じ層の順に重ねる（DES-UI-29）。
+	g.drawEnemyRanges(dst, d.RangeLayers())
 	if d.Selected >= 0 {
 		g.strokeCell(dst, d.Units[d.Selected].Pos, cursorColor)
 	}
