@@ -10,10 +10,10 @@
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
 | 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
 | 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
-| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.7 承認（E-94、#119）。IT06 の能力・武器・再移動・出来事、同時 46 体 |
-| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.10 承認（E-94、#119）。武器選択・再移動・出来事の増援・配置・巻き戻し |
+| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.8（#164）。DES-IT07 7 章の文面（承認 E-122）で ZOC・小隊長・画面の操作を追記。v0.7 まで承認（E-94、#119） |
+| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.12（#164）。DES-IT07 7 章の文面（承認 E-122）で予測中の武器・予測窓・詳細画面・範囲・持ち物・ZOC・小隊長を追記。v0.11 まで承認（E-94、REV-072） |
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.2 承認済み |
-| 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.4 承認済み（E-40） |
+| 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.5（#164。DES-IT07 7 章（E-122）による DES-BTL-03・AI-01・UI-07・08 の追記）。v0.4 承認済み（E-40） |
 | 計画 | 反復 2 計画書 | [iterations/it02/plan.md](iterations/it02/plan.md) | v0.3 承認済み（E-32、E-33） |
 | 設計 | 設計書（反復 2） | [03_design/design-it02.md](03_design/design-it02.md) | v0.4 承認済み（E-32、E-33、E-40） |
 | 試験 | テスト仕様書（反復 1） | [04_test/test-spec-it01.md](04_test/test-spec-it01.md) | 実装とともに書き足す |
@@ -22,6 +22,7 @@
 | 試験 | テスト仕様書（反復 4） | [04_test/test-spec-it04.md](04_test/test-spec-it04.md) | v0.1 骨組み。自動は未実装、手動は未実施 |
 | 試験 | テスト仕様書（反復 5） | [04_test/test-spec-it05.md](04_test/test-spec-it05.md) | v0.2。自動は実装済み。#98・#105 の手動結果と持ち越しは 3.10 節（E-60〜E-72） |
 | 試験 | テスト仕様書（反復 6） | [04_test/test-spec-it06.md](04_test/test-spec-it06.md) | v2.10（#120・#123・#124・#126・#127・#130・#149・#131・#132・#133・#154・#158）。能力・計算・予測・セーブ、回復と敵のレベル、出来事、再移動、一団の敵の思考の自動ケースを順次実装。旧自動試遊の一部は IT06 で一時停止（#130〜#133 で置き換え）。#154 で初期突撃・待つ守りの一団・一団の近さ・連続増援と 3 種の名簿の 20 seed の自動試遊を足した。後続の自動ケース・手動・基準の PC での測定は未実施 |
+| 試験 | テスト仕様書（反復 7） | [04_test/test-spec-it07.md](04_test/test-spec-it07.md) | v0.1 骨組み（#164）。DES-IT07 9.1 節の観点とケース ID。自動は未実装、手動・測定は未実施 |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
@@ -37,8 +38,8 @@
 | 設計 | 設計書（反復 5） | [03_design/design-it05.md](03_design/design-it05.md) | v0.4 承認（E-57）。仲間 2 人の加入（E-55） |
 | 計画 | 反復 5 の振り返り | [iterations/it05/retrospective.md](iterations/it05/retrospective.md) | v0.2 承認（E-72） |
 | 計画 | 反復 6 計画書 | [iterations/it06/plan.md](iterations/it06/plan.md) | v0.4 承認（E-114）。v0.3 まで承認（E-87）。手ごたえの引き上げと、武器・魔法の広がり（E-73〜E-87）。v0.4 で試遊の行動の記録（#155、E-103・E-104・E-106）を追加 |
-| 設計 | 設計書（反復 6） | [03_design/design-it06.md](03_design/design-it06.md) | v0.8（13.1 節の試遊の行動の記録（DES-LOG-01〜03、#155、0.8）、13 章「自動の試遊」の 2 つの打ち手（#158、0.7）、10・13 章の釣り出し対策と一団の待ち方（E-99・E-100・E-108・E-109、#154、0.6）、12.2 節の改訂（E-97、#149、0.5）は承認（E-114））。0.4 まで承認（E-93）。REV-066 の指摘を反映。未決事項は E-89 で決定、全章の出撃枠 +1（E-90）、一度に 46 体（自軍 7・敵 39。E-91）。検算は [03_design/scripts/verify_des06.py](03_design/scripts/verify_des06.py) |
-| 設計 | 式の一覧（DES-FML-01） | [03_design/formulas.md](03_design/formulas.md) | v0.2 承認（E-93）。REV-066 の指摘を反映。勇者の斧の反撃は 1 回（E-89） |
+| 設計 | 設計書（反復 6） | [03_design/design-it06.md](03_design/design-it06.md) | v0.9（#164。8・10・12・13 章に DES-IT07 7 章（E-122）による追記）。v0.8（13.1 節の試遊の行動の記録（DES-LOG-01〜03、#155、0.8）、13 章「自動の試遊」の 2 つの打ち手（#158、0.7）、10・13 章の釣り出し対策と一団の待ち方（E-99・E-100・E-108・E-109、#154、0.6）、12.2 節の改訂（E-97、#149、0.5）は承認（E-114））。0.4 まで承認（E-93）。REV-066 の指摘を反映。未決事項は E-89 で決定、全章の出撃枠 +1（E-90）、一度に 46 体（自軍 7・敵 39。E-91）。検算は [03_design/scripts/verify_des06.py](03_design/scripts/verify_des06.py) |
+| 設計 | 式の一覧（DES-FML-01） | [03_design/formulas.md](03_design/formulas.md) | v0.3（#164。DES-IT07 7 章（E-122）による ZOC 込みの移動の費用と近さを追記）。v0.2 承認（E-93）。REV-066 の指摘を反映。勇者の斧の反撃は 1 回（E-89） |
 | 計画 | 反復 6 の振り返り（IT06-RETRO） | [iterations/it06/retrospective.md](iterations/it06/retrospective.md) | v0.2（承認（E-116））。通しの試遊（E-113）と行動の記録で H-22〜27 を判定し、知見（E-114）を記録 |
 | 計画 | 反復 7 計画書 | [iterations/it07/plan.md](iterations/it07/plan.md) | v0.3（承認（E-119））。画面の作り直し・指揮官・重騎士の ZOC（E-117・E-118）。REV-090 の指摘を反映 |
 | 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.4（承認（E-122））。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
