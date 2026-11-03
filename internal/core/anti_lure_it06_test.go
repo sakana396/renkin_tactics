@@ -369,7 +369,7 @@ func checkGroupsCharge(t *testing.T, cat *defs.Catalog, id string, m defs.MapDef
 	}
 }
 
-// 3 章の 5 ターン目のファイターの増援は、内の城壁の西の部屋の外に出ない（E-114、DES-MAP-03、map-ch03.md 7 章）。
+// 3 章の 5・6 ターン目のファイターの増援は、内の城壁の西の部屋の外に出ない（E-114・E-115、DES-MAP-03、map-ch03.md 7 章）。
 // 元のマスがふさがれると距離 2 までの通れるマスに出るので、その候補のどれもが、壁を回り込まずに
 // 元のマスから行ける（通れるマスだけを通る歩数がマス目の距離と同じ）ことを確かめる。
 func TestIT06Ch03TurnFiveReinforcementOrigin(t *testing.T) {
