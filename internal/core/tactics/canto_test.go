@@ -376,7 +376,7 @@ func TestClassSkillsTactics(t *testing.T) {
 			class []tactics.Skill
 		}{
 			{"効果なし", []tactics.Skill{{Name: "なし"}}},
-			{"範囲外の効果", []tactics.Skill{{Name: "?", Effect: tactics.Canto + 1}}},
+			{"範囲外の効果", []tactics.Skill{{Name: "?", Effect: tactics.ZOC + 1}}},
 			{"同じ効果の重なり", []tactics.Skill{cantoSkill, cantoSkill}},
 			{"確率 101", []tactics.Skill{{Name: "大盾", Effect: tactics.Pavise, Chance: 101}}},
 			{"怒りの倍率", []tactics.Skill{{Name: "怒り", Effect: tactics.Wrath, Multiplier: 3}}},

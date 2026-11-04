@@ -31,6 +31,7 @@ func TestClassSkillsConversion(t *testing.T) {
 			t.Fatal(err)
 		}
 		canto := []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}}
+		zoc := []tactics.Skill{{Name: "通せんぼ", Effect: tactics.ZOC}}
 		elsa, cavalierFoes := 0, 0
 		for i, u := range s.Battle.Units() {
 			want := []tactics.Skill(nil)
@@ -44,6 +45,9 @@ func TestClassSkillsConversion(t *testing.T) {
 				} else {
 					cavalierFoes++
 				}
+			}
+			if u.ClassName == "アーマー" {
+				want = zoc
 			}
 			if !reflect.DeepEqual(u.ClassSkills, want) {
 				t.Errorf("units[%d] %s（%s）の兵種のスキル = %+v（want %+v）", i, u.Name, u.ClassName, u.ClassSkills, want)

@@ -118,7 +118,7 @@ func (b *Battle) planEnemyGroups(count int) {
 				if (len(danger) == 0) != (pass == 1) {
 					continue
 				}
-				path := b.terrainDistances(u.Pos, false)
+				path := b.terrainDistances(u.Pos, false, u.Side)
 				var goal Pos
 				found := false
 				bestNear, bestCost := unreachable, unreachable
@@ -363,9 +363,9 @@ func (b *Battle) dangerFor(enemy int, reach map[int]map[Pos]int, threats map[int
 	return out
 }
 
-// terrainDistances は占有を除いた地形の最小費用を返す（DES-AI-02）。
+// terrainDistances は占有を除いた地形と ZOC の最小費用を返す（DES-AI-02、DES-BTL-11）。
 // reverse は各マスから from へ進む費用を逆向きに求める。
-func (b *Battle) terrainDistances(from Pos, reverse bool) map[Pos]int {
+func (b *Battle) terrainDistances(from Pos, reverse bool, side Side) map[Pos]int {
 	dist := map[Pos]int{from: 0}
 	q := &posQueue{{pos: from, cost: 0}}
 	for q.Len() > 0 {
@@ -385,6 +385,11 @@ func (b *Battle) terrainDistances(from Pos, reverse bool) map[Pos]int {
 			if reverse {
 				c = b.TerrainAt(cur.pos).Cost
 			}
+			if reverse {
+				c += zocCost(b.units, side, cur.pos)
+			} else {
+				c += zocCost(b.units, side, next)
+			}
 			total := cur.cost + c
 			if old, ok := dist[next]; ok && old <= total {
 				continue
@@ -399,7 +404,7 @@ func (b *Battle) terrainDistances(from Pos, reverse bool) map[Pos]int {
 // groupMove は集まる先へ、この番に届く安全なマスまで進む（DES-AI-02）。
 func (b *Battle) groupMove(unit int, reach map[Pos]int, goal Pos) (Pos, bool) {
 	danger := b.groupDanger[unit]
-	toGoal := b.terrainDistances(goal, true)
+	toGoal := b.terrainDistances(goal, true, b.units[unit].Side)
 	var members []int
 	key := b.groupKey(b.units[unit].Group, b.units[unit].Pos)
 	for i, u := range b.units {

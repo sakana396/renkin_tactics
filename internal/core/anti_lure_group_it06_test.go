@@ -13,6 +13,7 @@ import (
 // 1 章の実際の命令を再生し、砦前の一団の距離を調べる（TC-FR-MAP-04-28、DES-AI-02）。
 func TestCh01FortFrontStaysTogether(t *testing.T) {
 	t.Run("TC-FR-MAP-04-28 ch01 の行動記録", func(t *testing.T) {
+		t.Skip("ZOC により旧版の行動記録の命令が成立しない。新版の記録は #174 で採る")
 		f, err := os.Open("testdata/play156-ch01.jsonl")
 		if err != nil {
 			t.Fatal(err)

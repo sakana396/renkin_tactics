@@ -23,7 +23,7 @@ func TestClassSkills(t *testing.T) {
 		if want := (defs.SkillDef{ID: "canto", Name: "再移動", Effect: defs.EffectCanto}); !ok || sk != want {
 			t.Errorf("スキル canto = %+v, %v（want %+v）", sk, ok, want)
 		}
-		for _, id := range []string{"lord", "armor", "fighter", "archer", "soldier", "myrmidon", "cleric"} {
+		for _, id := range []string{"lord", "fighter", "archer", "soldier", "myrmidon", "cleric"} {
 			if c, _ := cat.Class(id); len(c.Skills) != 0 {
 				t.Errorf("クラス %s の兵種のスキル = %v（want 空）", id, c.Skills)
 			}
@@ -58,7 +58,7 @@ func TestClassSkills(t *testing.T) {
 			[]string{`classes.toml: classes[6].skills[1]: 兵種のスキル "canto" が重なっています`}},
 		{"TC-FR-UNT-07-08 再移動の効果の種類が決まった値でない",
 			[]edit{replace("skills.toml", `effect = "canto"`, `effect = "gallop"`)},
-			[]string{`skills.toml: skills[4].effect: スキルの効果の種類 "gallop" は使えません（inspire・pavise・wrath・snipe・canto のどれか）`}},
+			[]string{`skills.toml: skills[4].effect: スキルの効果の種類 "gallop" は使えません（inspire・pavise・wrath・snipe・canto・zoc のどれか）`}},
 		{"TC-FR-UNT-07-08 兵種のスキルの型が文字列の列でない",
 			[]edit{replace("classes.toml", `skills = ["canto"]`, `skills = "canto"`)},
 			[]string{`classes.toml`}},

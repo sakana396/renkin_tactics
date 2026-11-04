@@ -306,7 +306,7 @@ func validateUnit(u UnitSetup) error {
 	if err := validateTags("兵種の分類", u.Tags); err != nil {
 		return err
 	}
-	if u.Skill.Effect < NoSkill || u.Skill.Effect > Canto {
+	if u.Skill.Effect < NoSkill || u.Skill.Effect > ZOC {
 		return fmt.Errorf("スキルの効果 %d が正しくありません", u.Skill.Effect)
 	}
 	if u.AI < Charge || u.AI > Hold {
@@ -325,7 +325,7 @@ func validateUnit(u UnitSetup) error {
 	// 兵種のスキル: 効果があり、重ならない（DES-IT06 8.1 節）。
 	seen := map[SkillEffect]bool{}
 	for k, sk := range u.ClassSkills {
-		if sk.Effect <= NoSkill || sk.Effect > Canto {
+		if sk.Effect <= NoSkill || sk.Effect > ZOC {
 			return fmt.Errorf("classSkills[%d]: スキルの効果 %d が正しくありません", k, sk.Effect)
 		}
 		if seen[sk.Effect] {
@@ -341,6 +341,9 @@ func validateUnit(u UnitSetup) error {
 
 // validateSkill はスキル 1 つの数値を確かめる（DES-DAT-03 の規則 6 と同じ範囲）。
 func validateSkill(sk Skill) error {
+	if sk.Effect == ZOC && (sk.Range != 0 || sk.Hit != 0 || sk.Avoid != 0 || sk.Chance != 0 || sk.Multiplier != 0) {
+		return fmt.Errorf("通せんぼには数値を付けられません")
+	}
 	if sk.Range < 0 || sk.Hit < 0 || sk.Avoid < 0 {
 		return fmt.Errorf("スキルの数値（範囲 %d、命中 %d、回避 %d）は 0 以上でなければなりません", sk.Range, sk.Hit, sk.Avoid)
 	}

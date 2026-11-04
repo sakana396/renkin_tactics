@@ -12,6 +12,7 @@ const deployButtonTop = infoTabTop - 40
 
 // DeployView は戦闘を作らずに表示する地形・初期敵・出撃枠と仮配置（DES-UI-20、DES-UI-23）。
 type DeployView struct {
+	Board             tactics.BoardView
 	Terrain           [][]tactics.Terrain
 	Units             []tactics.Unit
 	Slots             []tactics.Pos
@@ -163,6 +164,7 @@ func (s *SceneController) deployView() SceneView {
 	if err != nil {
 		s.message = err.Error()
 	} else {
+		d.Board = board
 		d.Selected = s.deploySelected
 		d.Units = board.Units()
 		for y := 0; y < board.Height(); y++ {

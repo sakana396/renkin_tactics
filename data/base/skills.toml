@@ -1,5 +1,5 @@
 # スキル（DES-DAT-02、設計書 3.7 節）
-# effect は inspire・pavise・wrath・snipe・canto のどれか。働き方はコードで決め、数値をここに書く
+# effect は inspire・pavise・wrath・snipe・canto・zoc のどれか。働き方はコードで決め、数値をここに書く
 # 効果の種類ごとに使わない数値は書かない（0 になる）
 
 [[skills]]
@@ -33,3 +33,9 @@ hit = 20
 id = "canto"
 name = "再移動"
 effect = "canto"
+
+# 通せんぼ（DES-DAT-05）。重騎士の兵種のスキル。数値はない
+[[skills]]
+id = "zoc"
+name = "通せんぼ"
+effect = "zoc"

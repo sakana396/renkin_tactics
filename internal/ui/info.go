@@ -30,6 +30,8 @@ type Panel struct {
 	Unit *tactics.Unit
 	// Terrain は、カーソルのあるマスの地形（FR-UNT-09、FR-MAP-01）。カーソルが盤面の外なら nil。
 	Terrain *tactics.Terrain
+	// ZOC はカーソル下に相手の重騎士の隣接費があること（DES-UI-29）。
+	ZOC bool
 	// Page はユニットの情報のページ（DES-UI-26、DES-UI-28）。Tabs が真なら、ページの切り替えの印を出す。
 	Page InfoPage
 	Tabs bool
@@ -137,6 +139,9 @@ func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 	}
 	t := c.battle.TerrainAt(cursor)
 	p.Terrain = &t
+	if sides := c.battle.BoardView().ZOCSides(cursor); sides[tactics.Player] || sides[tactics.Enemy] {
+		p.ZOC = true
+	}
 	return p
 }
 
@@ -357,6 +362,10 @@ func (p Panel) View() InfoView {
 	if p.Terrain != nil && p.Heal == nil {
 		for _, s := range TerrainLines(*p.Terrain) {
 			v.text(x, y, s, StylePlain)
+			y += lineHeight
+		}
+		if p.ZOC {
+			v.text(x, y, "相手の重騎士の隣: +1", StylePlain)
 			y += lineHeight
 		}
 	}
@@ -911,6 +920,8 @@ func skillDescription(s tactics.Skill) string {
 		return fmt.Sprintf("移動せずに攻撃すると命中 +%d", s.Hit)
 	case tactics.Canto:
 		return "攻撃・回復・道具のあと、残りの移動で動ける"
+	case tactics.ZOC:
+		return "相手の重騎士の隣への移動費 +1"
 	}
 	return ""
 }

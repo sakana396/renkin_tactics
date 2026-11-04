@@ -225,6 +225,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawUnits(board)
 	g.drawWatched(board)
 	g.drawDanger(board)
+	g.drawZOC(board, g.ctrl.battle.BoardView())
 	g.drawSelection(board)
 	g.drawTargetLabel(board)
 	g.drawEvent(board)
@@ -341,6 +342,37 @@ func (g *Game) drawDanger(dst *ebiten.Image) {
 			continue
 		}
 		vector.StrokeRect(dst, float32(g.drawCamera.Screen(p).X)+3, float32(g.drawCamera.Screen(p).Y)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
+	}
+}
+
+// drawZOC は危険範囲の上に、重騎士の陣営色の細い角印を描く（DES-UI-29）。
+func (g *Game) drawZOC(dst *ebiten.Image, board tactics.BoardView) {
+	for y := 0; y < board.Height(); y++ {
+		for x := 0; x < board.Width(); x++ {
+			p := tactics.Pos{X: x, Y: y}
+			if !g.drawCamera.Visible(p) {
+				continue
+			}
+			for side, marked := range board.ZOCSides(p) {
+				if !marked {
+					continue
+				}
+				clr := color.Color(playerBase)
+				if side == int(tactics.Enemy) {
+					clr = enemyBase
+				}
+				pt := g.drawCamera.Screen(p)
+				px, py := float32(pt.X)+5, float32(pt.Y)+5
+				if side == int(tactics.Enemy) {
+					px, py = float32(pt.X)+CellSize-5, float32(pt.Y)+CellSize-5
+					vector.StrokeLine(dst, px-7, py, px, py, 2, clr, false)
+					vector.StrokeLine(dst, px, py-7, px, py, 2, clr, false)
+				} else {
+					vector.StrokeLine(dst, px, py, px+7, py, 2, clr, false)
+					vector.StrokeLine(dst, px, py, px, py+7, 2, clr, false)
+				}
+			}
+		}
 	}
 }
 
@@ -804,6 +836,7 @@ func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 		}
 		vector.StrokeRect(dst, float32(g.drawCamera.Screen(p).X)+3, float32(g.drawCamera.Screen(p).Y)+3, CellSize-6, CellSize-6, 2, dangerColor, false)
 	}
+	g.drawZOC(dst, d.Board)
 	if d.Selected >= 0 {
 		g.strokeCell(dst, d.Units[d.Selected].Pos, cursorColor)
 	}
@@ -824,6 +857,7 @@ func (g *Game) drawRewindPreview(dst *ebiten.Image) {
 		g.drawBoardTerrain(board, v.Board)
 		g.drawHint(board, v.Hint)
 		g.drawUnitList(board, v.Units)
+		g.drawZOC(board, v.Board)
 		if v.HasFrame {
 			g.strokeCell(board, v.Frame, cursorColor)
 		}

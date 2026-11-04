@@ -7,7 +7,7 @@ var directions = [...]Pos{{0, -1}, {-1, 0}, {1, 0}, {0, 1}}
 
 // Reachable は、ユニット unit が移動できるマスと、そこまでの最小の費用を返す（DES-BTL-03、DES-MAP-01）。
 //
-// 費用は入るマスの地形の Cost で、合計が Mov 以下のマス（今いるマスを含む）に行ける。
+// 費用は入るマスの地形の Cost と相手軍の重騎士による ZOC で、合計が Mov 以下のマス（今いるマスを含む）に行ける。
 // Cost が 0 の地形には入れない。味方のいるマスは通り抜けられるが止まれず、相手の陣営のいるマスには入れない。
 // unit が存在しないか倒れていれば nil を返す。
 func (b *Battle) Reachable(unit int) map[Pos]int {
@@ -22,7 +22,7 @@ func (b BoardView) Reachable(unit int) map[Pos]int {
 	return b.reachableWithin(unit, b.units[unit].Stats.Mov)
 }
 
-// reachableWithin は、移動力の代わりに mov までの費用で行けるマスを返す（DES-BTL-03、DES-BTL-10）。
+// reachableWithin は、移動力の代わりに mov までの費用で行けるマスを返す（DES-BTL-03、DES-BTL-10、DES-BTL-11）。
 // 再移動の残りの移動力でも、地形の費用と「ほかのユニットがいるマス」の決まりは Reachable と同じ。
 func (b BoardView) reachableWithin(unit, mov int) map[Pos]int {
 	u := b.units[unit]
@@ -53,7 +53,7 @@ func (b BoardView) reachableWithin(unit, mov int) map[Pos]int {
 			if side, ok := occupant[next]; ok && side != u.Side {
 				continue
 			}
-			total := cur.cost + c
+			total := cur.cost + c + zocCost(b.units, u.Side, next)
 			if total > mov {
 				continue
 			}
@@ -72,6 +72,36 @@ func (b BoardView) reachableWithin(unit, mov int) map[Pos]int {
 		}
 	}
 	return best
+}
+
+// zocCost は進入先が相手軍の生存する重騎士の隣なら 1 を返す（DES-BTL-11）。
+func zocCost(units []Unit, mover Side, at Pos) int {
+	for _, u := range units {
+		if !u.Alive || u.Side == mover || distance(u.Pos, at) != 1 {
+			continue
+		}
+		if _, ok := u.skill(ZOC); ok {
+			return 1
+		}
+	}
+	return 0
+}
+
+// ZOCSides は通れるマスに隣接する生存重騎士の陣営を返す（DES-BTL-11、DES-UI-29）。
+func (b BoardView) ZOCSides(at Pos) [2]bool {
+	var sides [2]bool
+	if !b.inMap(at) || b.TerrainAt(at).Cost < 1 {
+		return sides
+	}
+	for _, u := range b.units {
+		if !u.Alive || distance(u.Pos, at) != 1 {
+			continue
+		}
+		if _, ok := u.skill(ZOC); ok {
+			sides[u.Side] = true
+		}
+	}
+	return sides
 }
 
 // AttackRange は、ユニット unit が from から武器で攻撃できるマスを返す（DES-BTL-01、DES-ITM-02）。
