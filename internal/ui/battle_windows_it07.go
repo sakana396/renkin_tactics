@@ -383,6 +383,8 @@ func twoTierInfo(units []tactics.Unit, upper, selected int, terrain *tactics.Ter
 func (v *InfoView) addUnitSummary(u tactics.Unit, top int) {
 	y := top + infoMargin
 	v.Icons = append(v.Icons, InfoIcon{X: summaryPortraitX, Y: y, Size: PortraitSize, Tile: unitTile(u)})
+	// 上下段とも名前の横に指揮の印と短い語を置く（DES-UI-35）。
+	v.addCommandMark(u, summaryX, y, unitName(u))
 	equip := "装備 なし"
 	if w := u.EquippedWeapon(); w.Name != "" {
 		equip = fmt.Sprintf("装備 %s %s（%s）", weaponRowMark, w.Name, weaponTypeName(w.Type))

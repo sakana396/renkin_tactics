@@ -49,7 +49,8 @@ func TestIT06MidChapters(t *testing.T) {
 			}
 			groups := map[string]int{}
 			for _, e := range all {
-				if e.Group != "" {
+				// IT07 #172 の小隊長は数えず、TC-FR-MAP-04-30 で確かめる。
+				if e.Group != "" && !e.Commander {
 					if e.Approach != defs.ApproachGroup {
 						t.Fatalf("%s が一団の方式でない", e.ID)
 					}
@@ -81,6 +82,10 @@ func TestIT06MidChapters(t *testing.T) {
 					"convoy_east_flank_soldier":  {X: 15, Y: 9},
 				}
 				for _, enemy := range east.Enemies {
+					// IT07 #172 の小隊長は TC-FR-MAP-04-30 で確かめる。
+					if enemy.Commander {
+						continue
+					}
 					pos, ok := wantPos[enemy.ID]
 					if !ok || enemy.X != pos.X || enemy.Y != pos.Y || m.Rows[enemy.Y][enemy.X] == '^' {
 						t.Fatalf("東の増援 %s の地形・位置: (%d,%d)", enemy.ID, enemy.X, enemy.Y)
@@ -143,6 +148,11 @@ func TestIT06MidChapters(t *testing.T) {
 			checkEventMagesSetup(t, cat, tc.id, mageSpeed)
 			for _, e := range m.Events {
 				for _, enemy := range e.Enemies {
+					// 小隊長の Lv は配下の上限 +1 で、目安を 1 超えてよい（DES-IT07 5.1 節。TC-FR-MAP-04-30）。
+					maxLevel := maxLevel
+					if enemy.Commander {
+						maxLevel++
+					}
 					if enemy.Level < minLevel || enemy.Level > maxLevel {
 						t.Fatalf("%s のレベル %d", enemy.ID, enemy.Level)
 					}
