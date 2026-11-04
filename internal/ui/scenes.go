@@ -73,10 +73,13 @@ type SceneController struct {
 	prepareMember    int
 	prepareStockTop  int
 	prepareRosterTop int
-	deployMembers    []int
-	deploySlots      []int
-	deploySelected   int
-	deployCursor     tactics.Pos
+	// prepareTab・prepareItem は準備の表示タブと持ち物で選んだ品（DES-UI-32）。表示だけに使う。
+	prepareTab     PrepareTabKind
+	prepareItem    prepareItem
+	deployMembers  []int
+	deploySlots    []int
+	deploySelected int
+	deployCursor   tactics.Pos
 	// deployLastCell は直前にカーソルを置いた配置の盤面のマス、deployOnInfo はカーソルが情報欄の上にあること（DES-UI-27、DES-UI-28）。
 	deployLastCell tactics.Pos
 	deployLastOK   bool
@@ -329,6 +332,8 @@ func (s *SceneController) Cancel() {
 		return
 	}
 	switch s.scene {
+	case Prepare:
+		s.cancelPrepare()
 	case Deploy:
 		if s.deploySelected >= 0 {
 			s.deploySelected = -1
