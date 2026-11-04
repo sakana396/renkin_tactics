@@ -328,6 +328,8 @@ type InfoView struct {
 	Texts  []InfoText
 	Bars   []InfoBar
 	Icons  []InfoIcon
+	// Marks は名前の横の小隊長・配下・崩れの印（DES-UI-35）。
+	Marks []InfoMark
 	// Tabs はページの印（DES-UI-28）。予測を出しているときと、印を求めないときは空。
 	Tabs []InfoTab
 	// Bottom は描くものの一番下の y（画面の座標）。ページの印は含めない。
@@ -457,6 +459,7 @@ func (v *InfoView) addStats(u tactics.Unit, x, y int) int {
 	}
 	ty := y + (PortraitSize-lines*lineHeight)/2
 	v.text(x+portraitTextX, ty, unitName(u), StyleTitle)
+	v.addCommandMark(u, x+portraitTextX, ty, unitName(u))
 	v.text(x+portraitTextX, ty+lineHeight, "クラス: "+u.ClassName, StylePlain)
 	if lv != "" {
 		v.text(x+portraitTextX, ty+2*lineHeight, lv, StylePlain)
@@ -537,6 +540,7 @@ func (v *InfoView) addWeaponRows(u tactics.Unit, x, y int) int {
 // （FR-UNT-09、DES-UI-06、DES-UI-28）。
 func (v *InfoView) addEquip(u tactics.Unit, x, y int) int {
 	v.text(x, y, unitName(u), StyleTitle)
+	v.addCommandMark(u, x, y, unitName(u))
 	y += lineHeight + blockGap
 
 	// 武器の行は、種類の絵を左に置き、右の 1 行目に名前と種類、2 行目に 3 つの値を決まった桁（weaponCols）に並べる。
