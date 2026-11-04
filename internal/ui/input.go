@@ -626,28 +626,12 @@ func (c *Controller) hoveredWeapon() int {
 	return -1
 }
 
-// Overlay は移動範囲と武器の射程を返す（DES-UI-03、DES-UI-08、DES-UI-18）。
+// Overlay は移動範囲と武器の射程を返す（DES-UI-03、DES-UI-18）。
 // 第二戻り値の色は RangeStyle に従い、杖なら緑、攻撃なら赤になる。
-// 敵の範囲を出しているとき（shownEnemy）は、選んでいる自軍の範囲の代わりに、その敵の範囲を返す。
-// Idle では、カーソルを合わせた敵とクリックして出している敵（shownWatched）の範囲を合わせて返す（DES-UI-27）。
-// 自軍を選んでいる間のクリックして出している敵の範囲は、自軍の範囲と見分けられるよう WatchedFrames で枠として返す。
-// そうでなければ、Selected では選んだ自軍の範囲を返す。
-// 赤は、移動できるマスから武器が届くマスのうち、移動できないマス。
+// 敵の範囲（全敵・固定・カーソル）は塗りに混ぜず、EnemyRangeLayers で別の層として返す（DES-UI-29）。
+// Selected では選んだ自軍の範囲を返す。赤は、移動できるマスから武器が届くマスのうち、移動できないマス。
 // Moved・Targeting・HealTargeting では、移動先から武器が届くマスを第二戻り値で返す。
 func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
-	e := c.shownEnemy()
-	if c.state == Idle {
-		ws := c.shownWatched()
-		if e >= 0 && !c.watched[e] {
-			ws = append(ws, e)
-		}
-		if len(ws) > 0 {
-			return c.unionRanges(ws)
-		}
-	}
-	if e >= 0 {
-		return c.ranges(e)
-	}
 	switch c.state {
 	case Selected:
 		return c.ranges(c.unit)
@@ -689,8 +673,8 @@ func (c *Controller) SetCursor(x, y int) {
 	}
 }
 
-// shownEnemy は、カーソルを合わせて範囲を出す敵の添字を返す（DES-UI-08）。出さなければ -1。
-// Idle・Selected・Moved のときだけ出す。カーソルを合わせた敵を、クリックして出している敵（shownWatched）より優先する。
+// shownEnemy は、カーソルを合わせて範囲を出す敵の添字を返す（DES-UI-08、DES-UI-29）。出さなければ -1。
+// Idle・Selected・Moved のときだけ出す。固定した敵（shownWatched）とは別の層にする。
 func (c *Controller) shownEnemy() int {
 	switch c.state {
 	case Idle, Selected, Moved:
@@ -700,22 +684,18 @@ func (c *Controller) shownEnemy() int {
 }
 
 // shownWatched は、クリックして範囲を出している敵のうち、今の盤面で生きている敵の添字を、添字の順に返す（DES-UI-27）。
-// 出すのは、敵の範囲を出す状態（Idle・Selected・Moved）のとき。自軍を選んで動かしている間も残す（E-60、DES-IT06 12.4 節）。
+// 入力を待つ状態ではずっと出す（E-60、DES-IT06 12.4 節、E-124）。再生中（Playing）・Over・巻き戻しの一覧の間は出さない。
 func (c *Controller) shownWatched() []int {
-	switch c.state {
-	case Idle, Selected, Moved:
-		return c.aliveWatched()
+	if c.rewind.open || c.state == Playing || c.state == Over {
+		return nil
 	}
-	return nil
+	return c.aliveWatched()
 }
 
-// WatchedFrames は、自軍を選んでいる間（Selected・Moved）に、クリックして出している敵の範囲を返す（DES-UI-27）。
-// 青は移動できるマス、赤は攻撃できるマス（unionRanges と同じ）。自軍の範囲の塗り（Overlay）と見分けられるよう、
-// 描画では塗らずにマスの内側の枠で描く。Idle では Overlay の塗りに入れるので nil。ほかの状態は shownWatched が空。
+// WatchedFrames は、固定した敵（クリックして範囲を出している敵）の範囲を返す（DES-UI-27、DES-UI-29）。
+// 青は移動できるマス（橙の実線）、赤は攻撃できるマス（橙の破線。unionRanges と同じ）。
+// 入力を待つ状態（Playing・Over・巻き戻しの一覧の間を除く）で出し、自軍の範囲の塗り（Overlay）とは別の層にする（E-124）。
 func (c *Controller) WatchedFrames() (blue, red map[tactics.Pos]bool) {
-	if c.state == Idle {
-		return nil, nil
-	}
 	ws := c.shownWatched()
 	if len(ws) == 0 {
 		return nil, nil
@@ -803,7 +783,7 @@ func (c *Controller) ToggleDanger() {
 	c.danger = !c.danger
 }
 
-// Danger は、橙の枠で描く敵の危険範囲を返す（DES-UI-08）。出していないとき、再生中と勝ち負けの画面では nil。
+// Danger は、赤紫の薄い塗りで描く全敵の危険範囲を返す（DES-UI-08、DES-UI-29）。出していないとき、再生中と勝ち負けの画面では nil。
 //
 // 危険範囲は、生きている敵それぞれについて、Reachable の各マスから AttackRange で攻撃できるマスを合わせたもの。
 // 今の盤面（Battle の位置）で求めるので、Moved で画面の上だけ動かした自軍の仮の位置は数えない。
@@ -965,12 +945,9 @@ func (c *Controller) healTargetsWith(w int) []int {
 	return out
 }
 
-// RangeStyle は表示中の射程の色を返す。敵の射程は赤のままにする（DES-UI-18、DES-UI-08）。
+// RangeStyle は表示中の自軍の射程の色を返す（DES-UI-18）。敵の範囲は Overlay に入れないので、ここでは扱わない（DES-UI-29）。
 // 攻撃の武器の赤と、選んだ杖の緑を分ける（DES-IT06 6.1 節）。移動先を選ぶ前と行動の一覧では、攻撃の武器がなければ緑。
 func (c *Controller) RangeStyle() InfoStyle {
-	if c.shownEnemy() >= 0 || c.state == Idle && len(c.shownWatched()) > 0 {
-		return StyleBad
-	}
 	switch c.state {
 	case HealTargeting, StaffMenu:
 		return StyleGood
