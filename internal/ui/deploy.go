@@ -113,6 +113,7 @@ func (s *SceneController) resetDeploy() {
 	s.deployCursor = tactics.Pos{X: -1, Y: -1}
 	s.deployLastCell, s.deployLastOK, s.deployOnInfo = tactics.Pos{}, false, false
 	s.deployDanger = false
+	s.deployNav = deployNav{}
 }
 
 // SetDeployCursor は配置中のホバー位置だけを変え、味方の選択は保つ（DES-UI-23）。

@@ -13,21 +13,27 @@ import (
 
 var zocSkill = tactics.Skill{Name: "通せんぼ", Effect: tactics.ZOC}
 
-// playerMark は、画面の左上 (sx, sy) のマスに付ける自軍の角印（左上の L 字、頂点はマスの角から 5 px、長さ 7 px）。
+// playerMark は、画面の左上 (sx, sy) のマスに付ける自軍の角印（左上の L 字、頂点はマスの角から 5 px、長さ 5 px）。
 // 期待値は DES-IT07 3.8 節（自軍は青、敵軍は赤の細い角）から手で置いた座標で、zocMarkLines は使わない。
 func playerMark(sx, sy int) []zocMarkLine {
 	return []zocMarkLine{
-		{From: image.Pt(sx+5, sy+5), To: image.Pt(sx+12, sy+5), Side: tactics.Player},
-		{From: image.Pt(sx+5, sy+5), To: image.Pt(sx+5, sy+12), Side: tactics.Player},
+		{From: image.Pt(sx+5, sy+5), To: image.Pt(sx+10, sy+5), Side: tactics.Player},
+		{From: image.Pt(sx+5, sy+5), To: image.Pt(sx+5, sy+10), Side: tactics.Player},
 	}
 }
 
-// enemyMark は、画面の左上 (sx, sy) のマスに付ける敵軍の角印（右下の L 字。頂点は (sx+27, sy+27)）。
+// enemyMark は、画面の左上 (sx, sy) のマスに付ける敵軍の角印（左下の L 字。頂点は (sx+5, sy+24) で、
+// HP の棒（y = 27〜）の上。右下の装備の印（x = 22〜）と右上のピンを避ける）。
 func enemyMark(sx, sy int) []zocMarkLine {
 	return []zocMarkLine{
-		{From: image.Pt(sx+20, sy+27), To: image.Pt(sx+27, sy+27), Side: tactics.Enemy},
-		{From: image.Pt(sx+27, sy+20), To: image.Pt(sx+27, sy+27), Side: tactics.Enemy},
+		{From: image.Pt(sx+5, sy+24), To: image.Pt(sx+10, sy+24), Side: tactics.Enemy},
+		{From: image.Pt(sx+5, sy+19), To: image.Pt(sx+5, sy+24), Side: tactics.Enemy},
 	}
+}
+
+// markRect は角印の線分を太さ 2 で囲む範囲を返す。
+func markRect(l zocMarkLine) image.Rectangle {
+	return image.Rect(min(l.From.X, l.To.X)-1, min(l.From.Y, l.To.Y)-1, max(l.From.X, l.To.X)+1, max(l.From.Y, l.To.Y)+1)
 }
 
 // joinMarks は角印の線分を順につなぐ。
@@ -80,8 +86,20 @@ func TestZOCMarks(t *testing.T) {
 		}
 		// 危険範囲を下、角印を上に描く（DES-IT07 3.8 節）。角印はユニットの上で、固定のピンより先。
 		at := func(ls []boardLayer, l boardLayer) int { return slices.Index(ls, l) }
-		if i, j := at(battleLayers, layerEnemyRanges), at(battleLayers, layerZOC); i < 0 || j < 0 || i > j || at(battleLayers, layerUnits) > j {
+		if i, j := at(battleLayers, layerEnemyRanges), at(battleLayers, layerZOC); i < 0 || j < 0 || i > j || at(battleLayers, layerUnits) > j || at(battleLayers, layerEquipMarks) < j {
 			t.Errorf("戦闘の層の順 %v", battleLayers)
+		}
+		// 角印はユニットのいるマスでも、装備の印・HP の棒・固定のピン（ボスの印の左を含む）と重ならない。
+		pt := image.Pt(0, 0)
+		head, _ := pinShape(pt, false)
+		bossHead, _ := pinShape(pt, true)
+		for _, l := range joinMarks(playerMark(0, 0), enemyMark(0, 0)) {
+			r := markRect(l)
+			for _, other := range []image.Rectangle{equipMarkRect(pt), unitHPBarRect(pt), head, bossHead} {
+				if r.Overlaps(other) {
+					t.Errorf("角印 %v が %v と重なる", r, other)
+				}
+			}
 		}
 		// カーソルの下の説明は、自軍の重騎士だけの隣・敵軍の重騎士だけの隣・両軍の隣で出し、どちらの隣でもないマスと壁では出さない。
 		for _, tc := range []struct {
