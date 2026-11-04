@@ -2,6 +2,7 @@ package ui
 
 import (
 	"image"
+	"image/color"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 )
@@ -56,9 +57,62 @@ type OverviewCell struct {
 }
 
 // OverviewUnit は全体図の生きているユニットの 1 マス（DES-UI-30）。陣営の色（行動済みの自軍は暗く）の下地にユニットの絵を描く。
+// Equip はマスの右下の 6×6 の装備の種類の色の範囲、EquipColor はその色（DES-UI-33、DES-IT07 3.6 節）。
+// 武器のないユニットは Equip が空で、描かない。
 type OverviewUnit struct {
-	Rect image.Rectangle
-	Unit tactics.Unit
+	Rect       image.Rectangle
+	Unit       tactics.Unit
+	Equip      image.Rectangle
+	EquipColor color.NRGBA
+}
+
+// overviewEquipSize は全体図の装備の種類の色の大きさ（6×6。DES-IT07 3.6 節）。
+const overviewEquipSize = 6
+
+// OverviewWeaponLegend は凡例の装備の種類の色の 1 行（DES-UI-33）。
+type OverviewWeaponLegend struct {
+	Swatch image.Rectangle
+	Color  color.NRGBA
+	Text   SceneText
+}
+
+// overviewWeaponTypes は凡例に並べる武器の種類の順（DES-UI-33）。
+var overviewWeaponTypes = []tactics.WeaponType{tactics.Sword, tactics.Lance, tactics.Axe, tactics.Bow, tactics.Magic, tactics.Staff}
+
+// weaponTypeColor は全体図の装備の種類の色（DES-UI-33）。盤面の陣営の色（青・赤）と見分けられる色にする。
+// 盤面の印と同じく、絵のある種類（weaponTile）だけに色を付ける。
+func weaponTypeColor(t tactics.WeaponType) (color.NRGBA, bool) {
+	switch t {
+	case tactics.Sword:
+		return color.NRGBA{245, 225, 80, 255}, true
+	case tactics.Lance:
+		return color.NRGBA{110, 215, 255, 255}, true
+	case tactics.Axe:
+		return color.NRGBA{120, 225, 90, 255}, true
+	case tactics.Bow:
+		return color.NRGBA{255, 150, 40, 255}, true
+	case tactics.Magic:
+		return color.NRGBA{205, 125, 255, 255}, true
+	case tactics.Staff:
+		return color.NRGBA{250, 250, 250, 255}, true
+	}
+	return color.NRGBA{}, false
+}
+
+// overviewEquip は、全体図のマス cell に置く装備の種類の色の範囲と色を返す（DES-UI-33）。
+// 装備している武器（Equipped）の種類 1 つだけで、盤面の印（equipMarks）と同じく、武器のないユニットには付けない。
+func overviewEquip(u tactics.Unit, cell image.Rectangle) (image.Rectangle, color.NRGBA) {
+	if u.Equipped < 0 || u.Equipped >= len(u.Weapons) {
+		return image.Rectangle{}, color.NRGBA{}
+	}
+	if _, ok := weaponTile(u.Weapons[u.Equipped].Type); !ok {
+		return image.Rectangle{}, color.NRGBA{}
+	}
+	clr, ok := weaponTypeColor(u.Weapons[u.Equipped].Type)
+	if !ok {
+		return image.Rectangle{}, color.NRGBA{}
+	}
+	return image.Rect(cell.Max.X-overviewEquipSize, cell.Max.Y-overviewEquipSize, cell.Max.X, cell.Max.Y), clr
 }
 
 // MapOverviewView は全体図に描くもの（DES-UI-30）。描画から分け、Ebitengine なしで確かめられるようにする。
@@ -74,7 +128,9 @@ type MapOverviewView struct {
 	View   image.Rectangle
 	Panel  image.Rectangle
 	Legend []MinimapLegend
-	Texts  []SceneText
+	// Weapons は凡例の装備の種類の色（DES-UI-33）。
+	Weapons []OverviewWeaponLegend
+	Texts   []SceneText
 }
 
 // 全体図の凡例で足す印（DES-UI-30）。ミニマップの印（MinimapMark）の続きの値にする。
@@ -107,11 +163,28 @@ func overviewTexts() ([]MinimapLegend, []SceneText) {
 	return legend, texts
 }
 
+// overviewWeaponLegend は、凡例の after 行目から装備の種類の色の行を並べる（DES-UI-33）。
+func overviewWeaponLegend(after int) []OverviewWeaponLegend {
+	x := MapSize + infoMargin
+	var out []OverviewWeaponLegend
+	for i, t := range overviewWeaponTypes {
+		y := 4 + 5*lineHeight + (after+i)*(lineHeight+2)
+		clr, _ := weaponTypeColor(t)
+		out = append(out, OverviewWeaponLegend{
+			Swatch: image.Rect(x+3, y+5, x+3+overviewEquipSize, y+5+overviewEquipSize),
+			Color:  clr,
+			Text:   SceneText{Text: "装備 " + weaponTypeName(t), X: x + 18, Y: y, Style: StyleLabel},
+		})
+	}
+	return out
+}
+
 // buildOverview は盤面の見え方から全体図を作る（DES-UI-30）。倒れたユニットと盤の外のユニットは描かない。
 // まだ出ていない増援は units に入っていないので描かれない。
 func buildOverview(b terrainSource, units []tactics.Unit, hints []tactics.ReinforcementHint, danger map[tactics.Pos]bool, pins []tactics.Pos, cam Camera) MapOverviewView {
 	v := MapOverviewView{Layout: overviewLayout(b.Width(), b.Height()), Panel: image.Rect(MapSize, 0, ScreenWidth, InfoHeight)}
 	v.Legend, v.Texts = overviewTexts()
+	v.Weapons = overviewWeaponLegend(len(v.Legend))
 	l := v.Layout
 	if l.Cell == 0 {
 		return v
@@ -131,7 +204,9 @@ func buildOverview(b terrainSource, units []tactics.Unit, hints []tactics.Reinfo
 		if !u.Alive || u.Pos.X < 0 || u.Pos.Y < 0 || u.Pos.X >= l.Width || u.Pos.Y >= l.Height {
 			continue
 		}
-		v.Units = append(v.Units, OverviewUnit{Rect: l.CellRect(u.Pos), Unit: u})
+		r := l.CellRect(u.Pos)
+		eq, clr := overviewEquip(u, r)
+		v.Units = append(v.Units, OverviewUnit{Rect: r, Unit: u, Equip: eq, EquipColor: clr})
 	}
 	v.Danger = minimapDanger(l, danger)
 	v.Pins = minimapPins(l, pins)

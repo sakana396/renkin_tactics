@@ -288,6 +288,73 @@ func TestBoardNavIT07(t *testing.T) {
 		}
 	})
 
+	t.Run("TC-FR-UNT-09-26 全体図のマスの右下に装備中の武器の種類の 6×6 の色を 1 つだけ置く。武器なし・戦死には置かない（全体図の部分。#169、E-125）", func(t *testing.T) {
+		sword := tactics.Weapon{Name: "剣", Type: tactics.Sword}
+		bow := tactics.Weapon{Name: "弓", Type: tactics.Bow}
+		axe := tactics.Weapon{Name: "斧", Type: tactics.Axe}
+		staff := tactics.Weapon{Name: "杖", Type: tactics.Staff}
+		units := []tactics.Unit{
+			{Name: "剣", Pos: tactics.Pos{X: 1, Y: 1}, Alive: true, Weapons: []tactics.Weapon{sword}},
+			{Name: "二本目", Pos: tactics.Pos{X: 2, Y: 1}, Alive: true, Weapons: []tactics.Weapon{sword, bow}, Equipped: 1},
+			{Name: "なし", Pos: tactics.Pos{X: 3, Y: 1}, Alive: true},
+			{Name: "杖だけ", Pos: tactics.Pos{X: 4, Y: 1}, Alive: true, Weapons: []tactics.Weapon{staff}},
+			{Name: "戦死", Pos: tactics.Pos{X: 5, Y: 1}, Alive: false, Weapons: []tactics.Weapon{axe}},
+			{Name: "敵の斧", Side: tactics.Enemy, Pos: tactics.Pos{X: 31, Y: 31}, Alive: true, Weapons: []tactics.Weapon{axe}},
+		}
+		color := func(t tactics.WeaponType) any { c, _ := weaponTypeColor(t); return c }
+		// 32×32 は 1 マス 16 px。マス (x, y) は (16x, 16y)〜(16x+16, 16y+16) で、色はその右下の 6×6。
+		v := buildOverview(gridTerrain(field(32, 32)), units, nil, nil, nil, Camera{Width: 32, Height: 32})
+		got := map[string][2]any{}
+		for _, u := range v.Units {
+			got[u.Unit.Name] = [2]any{u.Equip, u.EquipColor}
+		}
+		want := map[string][2]any{
+			"剣":   {image.Rect(26, 26, 32, 32), color(tactics.Sword)},
+			"二本目": {image.Rect(42, 26, 48, 32), color(tactics.Bow)},
+			"なし":  {image.Rectangle{}, any(got["なし"][1])},
+			"杖だけ": {image.Rect(74, 26, 80, 32), color(tactics.Staff)},
+			"敵の斧": {image.Rect(506, 506, 512, 512), color(tactics.Axe)},
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("全体図の装備の色 = %v\nのはず %v", got, want)
+		}
+		if !got["なし"][0].(image.Rectangle).Empty() {
+			t.Error("武器なしに色を置いた")
+		}
+		// 16×16 は 1 マス 32 px でも 6×6。
+		v = buildOverview(gridTerrain(field(16, 16)), units[:1], nil, nil, nil, Camera{Width: 16, Height: 16})
+		if v.Units[0].Equip != image.Rect(58, 58, 64, 64) {
+			t.Errorf("16×16 の装備の色 %v", v.Units[0].Equip)
+		}
+		// 種類ごとに色が違い、陣営の色（自軍の青・敵の赤）とも違う。凡例は右上の欄に収める。
+		seen := map[any]bool{playerBase: true, enemyBase: true}
+		for _, wt := range overviewWeaponTypes {
+			c, ok := weaponTypeColor(wt)
+			if !ok || seen[c] {
+				t.Errorf("%v の色 %v が重なる", wt, c)
+			}
+			seen[c] = true
+		}
+		if len(v.Weapons) != 6 {
+			t.Fatalf("凡例の種類 %d", len(v.Weapons))
+		}
+		for _, w := range v.Weapons {
+			if r := rectOfText(w.Text.X, w.Text.Y, w.Text.Text, false); !r.In(v.Panel) || !w.Swatch.In(v.Panel) || w.Swatch.Dx() != 6 || w.Swatch.Dy() != 6 {
+				t.Errorf("凡例 %q %v・%v", w.Text.Text, r, w.Swatch)
+			}
+		}
+		// 実際の戦闘の全体図: wideSetup のレオンは剣、ファイターは斧（盤面の装備の印と同じ Equipped から引く）。
+		c := newIdleWith(t, wideSetup)
+		for _, u := range c.MapOverview().Units {
+			if u.Unit.Name == "レオン" && (u.Equip != image.Rect(330, 330, 336, 336) || u.EquipColor != color(tactics.Sword)) {
+				t.Errorf("レオン %v %v", u.Equip, u.EquipColor)
+			}
+			if u.Unit.Name == "ファイター" && u.EquipColor != color(tactics.Axe) {
+				t.Errorf("ファイター %v", u.EquipColor)
+			}
+		}
+	})
+
 	t.Run("TC-IF-01-46 全体図のモーダルはクリックとキーを先に取り、巻き戻しの一覧を最優先にする（全体図の部分）", func(t *testing.T) {
 		c := newIdleWith(t, wideSetup)
 		waitUnit(t, c, 1)
@@ -322,18 +389,22 @@ func TestBoardNavIT07(t *testing.T) {
 			t.Errorf("M と Z: 全体図 %v、選択 %d、カメラ %+v", c.OverviewOpen(), c.unit, c.camera)
 		}
 		// T は全体図を出していても巻き戻しの一覧を開き、一覧を取り消すと全体図と Selected に戻る。
-		c.OpenRewind()
-		if !c.rewind.open || c.OverviewOpen() {
+		// Game.Update が呼ぶ入口（SceneController.rewindKey("T")、一覧の間の battleKey("Esc")・rewindKey("Enter")・syncRewind）を通す。
+		// 一覧の間は navInput が入力を取らない（Update は一覧の分岐でそのフレームを終える）。
+		g.scenes.rewindKey("T")
+		if !c.rewind.open || c.OverviewOpen() || g.navInput(navKeys{Overview: true, Cancel: true}, 0, 0) {
 			t.Fatalf("T: 一覧 %v、全体図 %v", c.rewind.open, c.OverviewOpen())
 		}
-		c.Cancel()
+		c.battleKey("Esc")
+		g.scenes.syncRewind()
 		if c.rewind.open || !c.OverviewOpen() || c.State() != Selected || c.unit != 0 {
 			t.Fatalf("一覧の取消し: 全体図 %v、状態 %v", c.OverviewOpen(), c.State())
 		}
 		// 巻き戻しに成功すると全体図を消し、Idle の復元盤面を出す。
-		c.OpenRewind()
-		c.RewindEnter()
-		c.RewindEnter()
+		g.scenes.rewindKey("T")
+		c.rewindKey("Enter")
+		c.rewindKey("Enter")
+		g.scenes.syncRewind()
 		if c.rewind.open || c.OverviewOpen() || c.State() != Idle || c.battle.Units()[1].Acted {
 			t.Errorf("巻き戻しの成功: 一覧 %v、全体図 %v、状態 %v、ガルド行動済み %v", c.rewind.open, c.OverviewOpen(), c.State(), c.battle.Units()[1].Acted)
 		}
@@ -373,7 +444,7 @@ func TestBoardNavIT07(t *testing.T) {
 				t.Fatalf("Selected の Z: 状態 %v、選択 %d。%d のはず", c.State(), c.unit, w)
 			}
 		}
-		// 全員行動済みなら移さない。
+		// 全員行動済みの名簿では次の味方がない（敵だけの名簿も同じ）。
 		acted := c.battle.Units()
 		for i := range acted {
 			acted[i].Acted = acted[i].Side == tactics.Player
@@ -399,6 +470,29 @@ func TestBoardNavIT07(t *testing.T) {
 			t.Error("巻き戻しの一覧で Z を受けた")
 		}
 		c.Cancel()
+		// 実際の Controller で全員を行動済みにする（ガルドは行動済み。レオンとミアを待機させる）。core は全員が行動すると
+		// 自動で番を移すので、最後の待機の直後は再生中（全員行動済みの盤面を描いている間）になる。
+		// その間の Z と「次の味方 Z」は、カメラ・選択・巡回位置を変えない。
+		waitUnit(t, c, 0)
+		last := c.battle.Units()[4].Pos
+		c.Click(last)
+		c.Click(last)
+		c.ChooseAction(tactics.Wait)
+		if c.State() != Playing {
+			t.Fatalf("前提: 最後の待機のあと %v", c.State())
+		}
+		if e, _, ok := c.Event(); !ok || !e.Units[0].Acted || !e.Units[1].Acted || !e.Units[4].Acted {
+			t.Fatalf("前提: 描いている盤面が全員行動済みでない")
+		}
+		camAll, unitAll, navAll := c.camera, c.unit, c.nav
+		for _, k := range []navKeys{{Next: true}, {Left: true}} {
+			if g.navInput(k, 704, 520) || c.camera != camAll || c.unit != unitAll || c.nav != navAll {
+				t.Errorf("全員行動済みの %+v: カメラ %+v、選択 %d、巡回 %+v", k, c.camera, c.unit, c.nav)
+			}
+		}
+		if c.NextAlly() || c.camera != camAll || c.nav != navAll {
+			t.Error("全員行動済みで NextAlly が移した")
+		}
 
 		// 配置: 名簿の順に主人公（枠 (31,31)）→ 仲間（枠 (0,0)）→ 主人公。選択とカメラの中心を移し、枠と出撃の印は変えない。
 		s := minimapDeployScenes(t)

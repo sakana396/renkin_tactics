@@ -164,6 +164,11 @@ func (g *Game) drawOverview(dst *ebiten.Image, v MapOverviewView) {
 		if u.Unit.Boss {
 			strokeImageRect(dst, u.Rect, 1, gold)
 		}
+		if !u.Equip.Empty() {
+			// 装備の種類の色は、明るい地形と下地の上でも読めるよう暗い縁を敷く（マスの中に収める）。
+			fillImageRect(dst, u.Equip.Inset(-1).Intersect(u.Rect), textShadow)
+			fillImageRect(dst, u.Equip, u.EquipColor)
+		}
 	}
 	for _, r := range v.Pins {
 		strokeImageRect(dst, r.Inset(-1), 2, gold)
@@ -190,6 +195,11 @@ func (g *Game) drawOverview(dst *ebiten.Image, v MapOverviewView) {
 			strokeImageRect(dst, lg.Swatch, 2, gold)
 		}
 		g.label(dst, lg.Text.Text, lg.Text.X, lg.Text.Y, infoStyleColor(lg.Text.Style))
+	}
+	for _, w := range v.Weapons {
+		fillImageRect(dst, w.Swatch.Inset(-1), textShadow)
+		fillImageRect(dst, w.Swatch, w.Color)
+		g.label(dst, w.Text.Text, w.Text.X, w.Text.Y, infoStyleColor(w.Text.Style))
 	}
 	for _, t := range v.Texts {
 		g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
