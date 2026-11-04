@@ -528,7 +528,8 @@ func checkInfoArea(t *testing.T, step string, v InfoView) {
 	}
 }
 
-// 情報欄を 320×360 に置き直し、「能力」「装備・スキル」の 2 ページに分ける（DES-IT06 12.2・12.5 節、DES-UI-28）。
+// 情報欄を 320×360 に置き直す（DES-IT06 12.2・12.5 節、DES-UI-28）。戦闘と配置の右欄は上下 2 段と操作行にし、
+// 2 ページの切り替えは詳しい画面に置き換えた（DES-UI-31、E-120。#166）。準備の情報欄は 2 ページのまま。
 func TestInfoPagesLayout(t *testing.T) {
 	t.Run("TC-FR-MAP-06-07 ミニマップの見出し・凡例は欄の余白にあり、地図の本体と重ならない", func(t *testing.T) {
 		c := newIdleWith(t, minimapSetup)
@@ -559,38 +560,35 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-MAP-06-07 戦闘の情報欄は両ページと回復の予測で 320×360 に収まり、攻撃の予測の間はページの印を出さない", func(t *testing.T) {
+	t.Run("TC-FR-MAP-06-07 戦闘の右欄の上下 2 段は、カーソルだけ・選択と相手・回復の予測で y < 296 に収まり、ページの印を出さない（DES-UI-31）", func(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
-		x, y := cellCenter(tactics.Pos{X: 2, Y: 3})
-		for _, page := range []InfoPage{PageStats, PageEquip} {
-			c.infoPage = page
-			v := c.InfoView(x, y)
-			if len(v.Tabs) != 2 || v.Tabs[page].Selected != true || v.Tabs[1-page].Selected {
-				t.Errorf("ページ %d の印 = %+v", page, v.Tabs)
+		top := image.Rect(MapSize, 0, ScreenWidth, infoControlTop)
+		fits := func(step string, v InfoView) {
+			t.Helper()
+			checkInfoArea(t, step, v)
+			if len(v.Tabs) != 0 || v.Bottom > 296 {
+				t.Errorf("%s: 印 %d 個、一番下 %d", step, len(v.Tabs), v.Bottom)
 			}
-			checkInfoArea(t, "戦闘", v)
+			for _, tx := range v.Texts {
+				if r := rectOfText(tx.X, tx.Y, tx.Text, tx.Big); !r.In(top) {
+					t.Errorf("%s: 文 %q %v が操作行（y = 304〜）にかかる", step, tx.Text, r)
+				}
+			}
 		}
-		// キャラと兵種の両方のスキル（#124）と手持ちを持つユニットも、「装備・スキル」のページが印の上に収まる。
+		fits("カーソルだけ", c.BattleInfoView(cellCenter(tactics.Pos{X: 2, Y: 3})))
+		// キャラと兵種の両方のスキル（#124）と手持ちを持つユニットも、同じ人物の下段（地形・スキル）が収まる。
 		two := tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, HP: 20, Weapons: []tactics.Weapon{testLance}, Alive: true,
 			Skill: tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}, ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}},
 			Items: []tactics.ItemStack{{Item: potion, Count: 2}}}
-		checkInfoArea(t, "2 つのスキル", Panel{Unit: &two, Terrain: &forest, Page: PageEquip, Tabs: true}.View())
-		// 盤面の外でもページの印を出し、クリックできる。
-		if v := c.InfoView(600, 100); len(v.Tabs) != 2 || len(v.Texts) != 0 {
-			t.Errorf("盤面の外 = %+v", v)
-		}
-		c.infoPage = PageStats
-		target(t, c, tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3})
-		x, y = cellCenter(tactics.Pos{X: 3, Y: 3})
-		if v := c.InfoView(x, y); len(v.Tabs) != 0 {
-			t.Errorf("攻撃の予測と一緒にページの印 %+v", v.Tabs)
-		}
-		r := InfoTabRects()[1]
-		if c.InfoClick(r.Min.X+1, r.Min.Y+1) || c.infoPage != PageStats || c.State() != Targeting {
-			t.Errorf("予測の間に印のクリックを受けた: %v %v", c.infoPage, c.State())
+		fits("2 つのスキル", twoTierInfo([]tactics.Unit{two}, 0, 0, &forest))
+		c.Click(tactics.Pos{X: 2, Y: 3})
+		fits("選択と相手", c.BattleInfoView(cellCenter(tactics.Pos{X: 3, Y: 3})))
+		// 盤面の外（ミニマップの上）では選んでいるユニットを出す。
+		if got := rows(c.BattleInfoView(650, 400)); len(got) == 0 || got[0] != "レオン" {
+			t.Errorf("盤面の外: %q", got)
 		}
 
-		// 回復の予測はユニットのページと並べても収まる。
+		// 回復の予測の間も、右欄は 2 段のまま収まる（予測は共通の窓に出す）。
 		h := healController(t, 15)
 		moveHealer(h, tactics.Pos{X: 3, Y: 2})
 		h.ChooseAction(tactics.Heal)
@@ -598,14 +596,10 @@ func TestInfoPagesLayout(t *testing.T) {
 		if h.State() != HealTargeting || h.target != 1 {
 			t.Fatalf("前提: 状態 %v、相手 %d", h.State(), h.target)
 		}
-		x, y = cellCenter(tactics.Pos{X: 3, Y: 1})
-		for _, page := range []InfoPage{PageStats, PageEquip} {
-			h.infoPage = page
-			v := h.InfoView(x, y)
-			if len(v.Tabs) != 2 || !strings.Contains(strings.Join(rows(v), "\n"), "回復 +") {
-				t.Errorf("回復の予測とページ %d: %q", page, rows(v))
-			}
-			checkInfoArea(t, "回復の予測", v)
+		v := h.BattleInfoView(cellCenter(tactics.Pos{X: 3, Y: 1}))
+		fits("回復の予測", v)
+		if strings.Contains(strings.Join(rows(v), "\n"), "回復 +") {
+			t.Errorf("回復の予測を右欄に出した: %q", rows(v))
 		}
 	})
 
@@ -701,56 +695,57 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-MAP-06-07 カーソルが情報欄の上にあるときは、選んでいるユニットか直前に盤面で見ていたマスを出し続ける", func(t *testing.T) {
+	t.Run("TC-FR-MAP-06-07 カーソルが情報欄の上にあるときは、選んでいるユニットか直前に盤面で見ていたマスを出し続け、「詳細 I」で同じ人物を開く", func(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
 		g := &Game{ctrl: c}
-		r := InfoTabRects()[1]
+		r := detailButtonRect
 		tx, ty := r.Min.X+2, r.Min.Y+2
-		// 何も見ていなければ空。
-		if v := c.InfoView(tx, ty); len(v.Texts) != 0 || len(v.Tabs) != 2 {
-			t.Errorf("まだ盤面を見ていない: %q", rows(v))
+		// 何も見ていなければ空で、「詳細 I」は押せず、押しても開かない。
+		if v := c.BattleInfoView(tx, ty); len(v.Texts) != 0 || c.DetailButton().Enabled {
+			t.Errorf("まだ盤面を見ていない: %q、押せる %v", rows(v), c.DetailButton().Enabled)
 		}
-		// レオン (2, 3) を見てから印へ動かすと、レオンを出し続け、印のクリックで「装備・スキル」に変わる。
+		// レオン (2, 3) を見てからボタンへ動かすと、レオンを出し続け、クリックでレオンの詳しい画面を開く。状態は変えない。
 		x, y := cellCenter(tactics.Pos{X: 2, Y: 3})
 		c.SetCursor(x, y)
 		c.SetCursor(tx, ty)
-		if got := rows(c.InfoView(tx, ty)); len(got) == 0 || got[0] != "レオン" {
-			t.Errorf("印の上: %q", got)
+		if got := rows(c.BattleInfoView(tx, ty)); len(got) == 0 || got[0] != "レオン" || !c.DetailButton().Enabled {
+			t.Errorf("ボタンの上: %q", got)
 		}
 		g.leftClick(tx, ty)
-		if got := strings.Join(rows(c.InfoView(tx, ty)), "\n"); c.infoPage != PageEquip || !strings.Contains(got, "武器: 鉄の剣（剣）") || c.State() != Idle {
-			t.Errorf("切り替えたあと: ページ %d、状態 %v、%q", c.infoPage, c.State(), got)
+		if !c.DetailOpen() || c.detailUnit != 0 || c.State() != Idle {
+			t.Errorf("詳細のクリック: 開く %v、ユニット %d、状態 %v", c.DetailOpen(), c.detailUnit, c.State())
 		}
-		// 選んでいるユニットがいれば、直前に見ていた別のユニットより優先する。
-		c.infoPage = PageStats
+		c.DetailInput(false, true)
+		// ボタンの外（左と下）のクリックは受けない。
+		if c.InfoClick(r.Min.X-1, r.Min.Y+2) || c.InfoClick(r.Min.X+2, r.Max.Y) || c.DetailOpen() {
+			t.Error("ボタンの外のクリックを受けた")
+		}
+		// 選んでいるユニットがいれば、直前に見ていた空きマスより優先する。
 		c.Click(tactics.Pos{X: 2, Y: 3})
-		x, y = cellCenter(tactics.Pos{X: 3, Y: 3})
+		x, y = cellCenter(tactics.Pos{X: 0, Y: 0})
 		c.SetCursor(x, y)
 		c.SetCursor(tx, ty)
-		if got := rows(c.InfoView(tx, ty)); c.State() != Selected || len(got) == 0 || got[0] != "レオン" {
+		if got := rows(c.BattleInfoView(tx, ty)); c.State() != Selected || len(got) == 0 || got[0] != "レオン" {
 			t.Errorf("選んでいるとき: 状態 %v、%q", c.State(), got)
 		}
-		// 盤面の上では、今までどおりカーソルの下のマスを出す。
-		if got := rows(c.InfoView(x, y)); len(got) == 0 || got[0] != "ソルジャー 3　★ボス" {
+		// 盤面の上では、カーソルの下のユニットを上段、選んでいるユニットを下段に出す。
+		x, y = cellCenter(tactics.Pos{X: 3, Y: 3})
+		if got := rows(c.BattleInfoView(x, y)); len(got) < 7 || got[0] != "ソルジャー 3　★ボス" || got[6] != "レオン" {
 			t.Errorf("盤面の上: %q", got)
-		}
-		// ミニマップの上や窓の外では、選んでいるユニットに戻る（DES-IT06 12.4 節。#128 で改訂）。
-		if got := rows(c.InfoView(650, 400)); len(got) == 0 || got[0] != "レオン" {
-			t.Errorf("選んでいるときのミニマップの上: %q", got)
 		}
 		// 選んでいなければ直前のマスに戻る。空きマスなら地形だけ。ミニマップの上では出し続けない。
 		c.Cancel()
-		if v := c.InfoView(650, 400); len(v.Texts) != 0 {
+		if v := c.BattleInfoView(650, 400); len(v.Texts) != 0 {
 			t.Errorf("ミニマップの上: %q", rows(v))
 		}
 		x, y = cellCenter(tactics.Pos{X: 0, Y: 0})
 		c.SetCursor(x, y)
-		if got := rows(c.InfoView(tx, ty)); len(got) == 0 || got[0] != "地形: 平地" {
+		if got := rows(c.BattleInfoView(tx, ty)); len(got) != 1 || got[0] != "地形: 平地　回避 0　守備 0　回復 0%" {
 			t.Errorf("空きマスのあと: %q", got)
 		}
 	})
 
-	t.Run("TC-FR-MAP-06-07 Tab と印のクリックでページを切り替え、選択・カメラ・敵の範囲は変えない", func(t *testing.T) {
+	t.Run("TC-FR-MAP-06-07 Tab は詳しい画面の節だけを送り、選択・カメラ・敵の範囲は変えない（E-120）", func(t *testing.T) {
 		c := newIdleWith(t, minimapSetup)
 		g := &Game{ctrl: c}
 		c.Click(tactics.Pos{X: 20, Y: 20})
@@ -758,84 +753,83 @@ func TestInfoPagesLayout(t *testing.T) {
 			t.Fatal("前提: 選択")
 		}
 		cam := c.camera
-		c.ToggleInfoPage()
-		if c.infoPage != PageEquip || c.State() != Selected || c.unit != 0 || c.camera != cam {
-			t.Errorf("Tab: ページ %d、状態 %v、カメラ %+v", c.infoPage, c.State(), c.camera)
+		// 詳しい画面を出していない Tab は何もしない。
+		if c.DetailInput(true, false) || c.DetailOpen() {
+			t.Error("詳しい画面がないのに Tab を受けた")
 		}
-		c.ToggleInfoPage()
-		if c.infoPage != PageStats {
-			t.Errorf("Tab 2 回でページ %d", c.infoPage)
+		g.leftClick(detailButtonRect.Min.X+2, detailButtonRect.Min.Y+2)
+		if !c.DetailOpen() || c.detailSection != SectionStats {
+			t.Fatalf("詳細のクリック: 開く %v、節 %d", c.DetailOpen(), c.detailSection)
 		}
-		r := InfoTabRects()
-		g.leftClick(r[1].Min.X+2, r[1].Min.Y+2)
-		if c.infoPage != PageEquip || c.State() != Selected || c.camera != cam {
-			t.Errorf("「装備・スキル」のクリック: ページ %d、状態 %v", c.infoPage, c.State())
+		for _, want := range []DetailSection{SectionWeapons, SectionSkills, SectionStats} {
+			c.DetailInput(true, false)
+			if c.detailSection != want || c.State() != Selected || c.unit != 0 || c.camera != cam {
+				t.Errorf("Tab: 節 %d（%d のはず）、状態 %v、カメラ %+v", c.detailSection, want, c.State(), c.camera)
+			}
 		}
-		g.leftClick(r[0].Max.X-1, r[0].Max.Y-1)
-		if c.infoPage != PageStats || c.State() != Selected {
-			t.Errorf("「能力」のクリック: ページ %d、状態 %v", c.infoPage, c.State())
+		// 詳しい画面の間の左クリックは、盤面にもボタンにも渡さない。
+		g.leftClick(cellCenter(tactics.Pos{X: 21, Y: 20}))
+		if c.State() != Selected || !c.DetailOpen() {
+			t.Errorf("詳しい画面の間のクリック: 状態 %v", c.State())
 		}
-		// 印の外（2 つの間と下）のクリックは受けない。
-		if c.InfoClick(r[0].Max.X+1, r[0].Min.Y+2) || c.InfoClick(r[0].Min.X+2, r[0].Max.Y) {
-			t.Error("印の外のクリックを受けた")
-		}
-		// 敵をクリックして出した範囲も、ページの切り替えで変わらない。
+		c.DetailInput(false, true)
+		// 敵をクリックして出した範囲も、詳しい画面の開け閉めで変わらない。
 		c.Cancel()
 		c.Click(tactics.Pos{X: 30, Y: 30})
-		g.leftClick(r[1].Min.X+2, r[1].Min.Y+2)
-		c.ToggleInfoPage()
-		if !reflect.DeepEqual(c.watched, map[int]bool{2: true}) || c.State() != Idle || c.infoPage != PageStats {
-			t.Errorf("敵の範囲 %v、状態 %v、ページ %d", c.watched, c.State(), c.infoPage)
+		c.camera.Focus(tactics.Pos{X: 30, Y: 30})
+		ep := c.Camera().Screen(tactics.Pos{X: 30, Y: 30})
+		c.SetCursor(ep.X+16, ep.Y+16)
+		if !c.OpenDetail() || c.detailUnit != 2 {
+			t.Fatalf("敵の詳しい画面: %d", c.detailUnit)
 		}
-		// 巻き戻しの一覧を開いている間は、情報欄の代わりに一覧を出すので切り替えない。
+		c.DetailInput(true, false)
+		c.DetailInput(false, true)
+		if !reflect.DeepEqual(c.watched, map[int]bool{2: true}) || c.State() != Idle {
+			t.Errorf("敵の範囲 %v、状態 %v", c.watched, c.State())
+		}
+		// 巻き戻しの一覧を開いている間は、詳しい画面を開かず、「詳細 I」のクリックも受けない。
 		c.OpenRewind()
-		c.ToggleInfoPage()
-		if c.infoPage != PageStats || c.InfoClick(r[1].Min.X+2, r[1].Min.Y+2) || c.infoPage != PageStats {
-			t.Errorf("一覧の間に切り替えた: %d", c.infoPage)
+		if c.OpenDetail() || c.InfoClick(detailButtonRect.Min.X+2, detailButtonRect.Min.Y+2) || c.DetailOpen() {
+			t.Error("一覧の間に詳しい画面を開いた")
 		}
 	})
 
 	t.Run("TC-FR-MAP-06-07 配置と準備の情報欄・ボタン・印はミニマップと重ならず、印のクリックは表示だけを変える", func(t *testing.T) {
 		s := minimapDeployScenes(t)
 		clickDeployCell(s, tactics.Pos{X: 15, Y: 15})
-		for _, page := range []InfoPage{PageStats, PageEquip} {
-			s.infoPage = page
-			v := s.View()
-			if v.Info == nil || len(v.Info.Tabs) != 2 || !v.Info.Tabs[page].Selected {
-				t.Fatalf("配置のページ %d: %+v", page, v.Info)
+		// 配置の右欄は上下 2 段で、ページの印を出さない（DES-UI-31）。ボタンは中身の下に置く。
+		v := s.View()
+		if v.Info == nil || len(v.Info.Tabs) != 0 {
+			t.Fatalf("配置の情報欄: %+v", v.Info)
+		}
+		checkInfoArea(t, "配置", *v.Info)
+		for i, b := range v.Buttons {
+			if !b.Rect.In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) || b.Rect.Min.Y < v.Info.Bottom {
+				t.Errorf("ボタン %q %v（情報の下 %d）", b.Label, b.Rect, v.Info.Bottom)
 			}
-			checkInfoArea(t, "配置", *v.Info)
-			for i, b := range v.Buttons {
-				if !b.Rect.In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) || b.Rect.Min.Y < v.Info.Bottom || b.Rect.Overlaps(v.Info.Tabs[0].Rect) || b.Rect.Overlaps(v.Info.Tabs[1].Rect) {
-					t.Errorf("ボタン %q %v（情報の下 %d）", b.Label, b.Rect, v.Info.Bottom)
-				}
-				for _, other := range v.Buttons[i+1:] {
-					if b.Rect.Overlaps(other.Rect) {
-						t.Errorf("ボタンが重なる %v %v", b.Rect, other.Rect)
-					}
-				}
-			}
-			for _, tx := range v.Texts {
-				if rectOfText(tx.X, tx.Y, tx.Text, tx.Big).Overlaps(MinimapRect()) {
-					t.Errorf("配置の文 %q がミニマップに重なる", tx.Text)
+			for _, other := range v.Buttons[i+1:] {
+				if b.Rect.Overlaps(other.Rect) {
+					t.Errorf("ボタンが重なる %v %v", b.Rect, other.Rect)
 				}
 			}
 		}
-		s.infoPage = PageStats
+		for _, tx := range v.Texts {
+			if rectOfText(tx.X, tx.Y, tx.Text, tx.Big).Overlaps(MinimapRect()) {
+				t.Errorf("配置の文 %q がミニマップに重なる", tx.Text)
+			}
+		}
+		// 元の印の位置のクリックと Tab は、配置の選択と枠を変えない。
 		slots := append([]int(nil), s.deploySlots...)
 		r := InfoTabRects()[1]
 		s.Click(r.Min.X+2, r.Min.Y+2)
-		if s.infoPage != PageEquip || s.deploySelected != 0 || !reflect.DeepEqual(s.deploySlots, slots) || s.Scene() != Deploy {
-			t.Errorf("配置の印のクリック: ページ %d、選択 %d、枠 %v", s.infoPage, s.deploySelected, s.deploySlots)
-		}
 		s.ToggleInfoPage()
-		if s.infoPage != PageStats || s.deploySelected != 0 {
-			t.Errorf("配置の Tab: %d", s.infoPage)
+		if s.infoPage != PageStats || s.deploySelected != 0 || !reflect.DeepEqual(s.deploySlots, slots) || s.Scene() != Deploy {
+			t.Errorf("配置の印の位置のクリックと Tab: ページ %d、選択 %d、枠 %v", s.infoPage, s.deploySelected, s.deploySlots)
 		}
 		// 準備（ミニマップなし）でも同じ印を出し、クリックで切り替える。選んでいる仲間と出撃の印は変えない。
 		p := prepareScenes(t)
 		member, selected := p.prepareMember, p.SelectedMembers()
-		v := p.View()
+		v = p.View()
 		if v.Info == nil || len(v.Info.Tabs) != 2 || v.Minimap != nil {
 			t.Fatalf("準備の情報欄 %+v、ミニマップ %v", v.Info, v.Minimap)
 		}
@@ -854,28 +848,26 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-MAP-06-07 Targeting で Tab を押してもページが変わらない（REV-071 F-01）", func(t *testing.T) {
+	t.Run("TC-FR-MAP-06-07 Targeting の詳しい画面の Tab は節だけを送り、閉じると予測に戻る（REV-071 F-01、E-120）", func(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
 		target(t, c, tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3})
 		if _, ok := c.attackForecast(); !ok || c.State() != Targeting {
 			t.Fatal("前提: 攻撃の予測")
 		}
-		target := c.target
-		c.ToggleInfoPage()
-		c.ToggleInfoPage()
-		c.ToggleInfoPage()
-		if c.infoPage != PageStats || c.State() != Targeting || c.target != target {
-			t.Errorf("予測の間の Tab: ページ %d、状態 %v、相手 %d", c.infoPage, c.State(), c.target)
+		target, weapon := c.target, c.weapon
+		c.SetCursor(cellCenter(tactics.Pos{X: 3, Y: 3}))
+		if c.DetailInput(true, false) || !c.OpenDetail() {
+			t.Fatal("予測の間に詳しい画面を開けない")
 		}
-		// 予測を閉じたあとは切り替える。
-		c.Cancel()
-		c.ToggleInfoPage()
-		if c.infoPage != PageEquip {
-			t.Errorf("予測を閉じたあとの Tab: ページ %d", c.infoPage)
+		c.DetailInput(true, false)
+		c.DetailInput(true, false)
+		c.DetailInput(false, true)
+		if _, ok := c.ForecastWindow(); !ok || c.State() != Targeting || c.target != target || c.weapon != weapon {
+			t.Errorf("閉じたあと: 状態 %v、相手 %d、武器 %d", c.State(), c.target, c.weapon)
 		}
 	})
 
-	t.Run("TC-FR-MAP-06-07 勝敗が決まった Over でも印のクリックと Tab でページを切り替え、場面と戦闘は変えない（REV-071 F-02）", func(t *testing.T) {
+	t.Run("TC-FR-MAP-06-07 勝敗が決まった Over では詳しい画面を開かず、「詳細 I」のクリックで場面と戦闘は変えない（REV-071 F-02、DES-IT07 3.1 節）", func(t *testing.T) {
 		s := fixtureScenes(&memoryStore{}, false, false)
 		startScenes(s)
 		winScene(t, s)
@@ -884,23 +876,19 @@ func TestInfoPagesLayout(t *testing.T) {
 		if s.Scene() != Battle || c.State() != Over {
 			t.Fatalf("前提: 場面 %v、状態 %v", s.Scene(), c.State())
 		}
-		if v := c.InfoView(600, 100); len(v.Tabs) != 2 {
-			t.Fatalf("Over の印 = %+v", v.Tabs)
+		if c.DetailButton().Enabled {
+			t.Error("Over で「詳細 I」を押せる")
 		}
 		old, before := c.Battle(), c.Battle().Units()
-		r := InfoTabRects()[1]
+		r := detailButtonRect
 		s.Click(r.Min.X+2, r.Min.Y+2)
-		if c.infoPage != PageEquip {
-			t.Errorf("Over の印のクリック: ページ %d", c.infoPage)
-		}
-		c.ToggleInfoPage()
-		if c.infoPage != PageStats {
-			t.Errorf("Over の Tab: ページ %d", c.infoPage)
+		if c.DetailOpen() || c.OpenDetail() {
+			t.Error("Over で詳しい画面を開いた")
 		}
 		if s.Scene() != Battle || c.State() != Over || c.Battle() != old || !reflect.DeepEqual(before, old.Units()) {
-			t.Error("Over の印の操作で場面か戦闘が変わった")
+			t.Error("Over の「詳細 I」のクリックで場面か戦闘が変わった")
 		}
-		// 印の外の Over のクリックは、今までどおり勝敗の帯で次へ進む。
+		// ボタンの外の Over のクリックは、今までどおり勝敗の帯で次へ進む。
 		e := BattleEndRect()
 		s.Click(e.Min.X+2, e.Min.Y+2)
 		if s.Scene() == Battle {

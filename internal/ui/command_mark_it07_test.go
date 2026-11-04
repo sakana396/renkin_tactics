@@ -41,7 +41,7 @@ func marksOf(units []tactics.Unit) []CommandMark {
 // infoMarkAt は、カーソルを p に置いたときの右欄の印と語を返す。印がなければ ok が偽。
 func infoMarkAt(t *testing.T, c *Controller, p tactics.Pos) (InfoMark, InfoText, InfoText, bool) {
 	t.Helper()
-	v := c.InfoView(cellCenter(p))
+	v := c.BattleInfoView(cellCenter(p))
 	if len(v.Marks) == 0 {
 		return InfoMark{}, InfoText{}, InfoText{}, false
 	}
@@ -62,6 +62,33 @@ func infoMarkAt(t *testing.T, c *Controller, p tactics.Pos) (InfoMark, InfoText,
 }
 
 func TestCommandMarks(t *testing.T) {
+	t.Run("TC-FR-UNT-09-30 右欄の上下段に指揮の印と短い語を出す", func(t *testing.T) {
+		c := newIdleWith(t, commandSetup)
+		v := twoTierInfo(c.Units(), 1, 2, nil)
+		for _, want := range []struct {
+			y    int
+			mark CommandMark
+		}{
+			{infoMargin, CommanderMark},
+			{infoLowerTop + infoMargin, SubordinateMark},
+		} {
+			found := false
+			for _, m := range v.Marks {
+				if m.Rect.Min.Y != want.y+(lineHeight-commandMarkSize)/2 || m.Mark != want.mark {
+					continue
+				}
+				for _, tx := range v.Texts {
+					if tx.Y == want.y && tx.X > m.Rect.Max.X && tx.Text == want.mark.Word() {
+						found = true
+					}
+				}
+			}
+			if !found {
+				t.Errorf("y=%d の印と語がない: %+v %+v", want.y, v.Marks, v.Texts)
+			}
+		}
+	})
+
 	t.Run("TC-FR-UNT-09-30 小隊長は金の菱形、配下は同色の小点、崩れは灰の割れた小点。ごろつき・ボス・自軍は印なし。印は絵の左上", func(t *testing.T) {
 		if CommanderMark.shape() != shapeDiamond || SubordinateMark.shape() != shapeDot || CollapsedMark.shape() != shapeCrackedDot || NoCommandMark.shape() != shapeNone {
 			t.Fatal("印の形が菱形・小点・割れた小点でない")

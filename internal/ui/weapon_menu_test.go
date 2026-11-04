@@ -72,10 +72,14 @@ func TestWeaponMenu(t *testing.T) {
 		if u := c.Battle().Units()[0]; u.Equipped != 1 || !u.Acted {
 			t.Fatalf("決定のあと 装備 %d、行動 %v", u.Equipped, u.Acted)
 		}
-		c.infoPage = PageEquip
-		pos := c.Camera().Screen(c.Battle().Units()[0].Pos)
-		if got := strings.Join(rows(c.InfoView(pos.X+2, pos.Y+2)), "\n"); !strings.Contains(got, "ほかの武器: ") || !strings.Contains(got, "鉄の剣") {
-			t.Fatalf("決定後の装備・スキル: %q", got)
+		// 右欄の上段の装備と、詳しい画面の E 印が決定した武器に移る（DES-UI-31・33）。ほかの武器は詳しい画面で読む。
+		u := c.Battle().Units()[0]
+		pos := c.Camera().Screen(u.Pos)
+		if got := strings.Join(rows(c.BattleInfoView(pos.X+2, pos.Y+2)), "\n"); !strings.Contains(got, "装備 E "+u.Weapons[1].Name) {
+			t.Fatalf("決定後の右欄: %q", got)
+		}
+		if got := strings.Join(rows(DetailView(u, SectionWeapons)), "\n"); !strings.Contains(got, "E "+u.Weapons[1].Name) || !strings.Contains(got, "鉄の剣") {
+			t.Fatalf("決定後の詳しい画面: %q", got)
 		}
 	})
 	t.Run("TC-IF-01-41 回復は 行動 → 杖 → 相手 で、選んだ杖の回数だけ減り、装備は変えない", func(t *testing.T) {

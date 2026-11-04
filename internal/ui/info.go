@@ -146,23 +146,6 @@ func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 	return p
 }
 
-// panel は、今のカーソルとページで情報欄の中身を作る（DES-UI-01、DES-UI-28）。戦闘の情報欄には、いつもページの印を出す。
-func (c *Controller) panel(cursor tactics.Pos, onMap bool) Panel {
-	p := c.Panel(cursor, onMap)
-	p.Page, p.Tabs = c.infoPage, true
-	return p
-}
-
-// InfoView は、カーソルの画面の座標 (x, y) での情報欄の描くものを返す（DES-UI-01、DES-UI-27、DES-UI-28）。
-// 出すものの優先の順は「予測などの専用の表示 → カーソルの下の生きているユニット → 選んでいるユニット → 地形」（DES-IT06 12.4 節）。
-// 予測は Panel が優先する。カーソルが盤の外や空いたマスにあるときは、選んでいるユニットのマスの情報に戻る。
-// 選んでいるユニットがいなくてカーソルが情報欄の上にあるときは、ページの印をクリックして中身を切り替えられるよう、
-// 直前に盤面で見ていたマスの情報を出し続ける（DES-IT06 12.2 節）。表示だけを変え、選択は変えない。
-func (c *Controller) InfoView(x, y int) InfoView {
-	cell, onMap := c.infoCell(x, y)
-	return c.panel(cell, onMap).View()
-}
-
 // infoCell は、カーソルの画面の座標 (x, y) で情報を出すマスを返す（DES-UI-27、DES-UI-28）。どれもなければ ok が偽。
 func (c *Controller) infoCell(x, y int) (tactics.Pos, bool) {
 	cell, onMap := c.Camera().CellAt(x, y)
@@ -202,48 +185,14 @@ func (c *Controller) liveUnitAt(p tactics.Pos) bool {
 	return false
 }
 
-// ToggleInfoPage は Tab キーで情報欄のページを切り替える（DES-UI-28）。表示だけを変える。
-// ページの印を出していないとき（攻撃の予測・巻き戻しの一覧）は切り替えない（REV-071 F-01）。勝敗が決まった Over でも受ける。
-func (c *Controller) ToggleInfoPage() {
-	if c.rewind.open {
-		return
-	}
-	if _, ok := c.attackForecast(); ok {
-		return
-	}
-	c.infoPage = c.infoPage.next()
-}
-
-// InfoClick は情報欄のページの印のクリックを受ける（DES-UI-28）。印を出していないとき（予測・巻き戻しの一覧）は受けない。
+// InfoClick は右欄の操作行の「詳細 I」のクリックを受ける（DES-UI-31）。ボタンの中なら真を返し、盤面に渡さない。
+// 巻き戻しの一覧の間は受けない。予測を右欄に収め直している間は、予測の窓が先に受ける（ForecastClick）。
 func (c *Controller) InfoClick(x, y int) bool {
-	if c.rewind.open {
+	if c.rewind.open || !image.Pt(x, y).In(detailButtonRect) {
 		return false
 	}
-	if _, ok := c.attackForecast(); ok {
-		if x < MapSize || x >= ScreenWidth || y < 0 || y >= 360 {
-			return false
-		}
-		row := c.Panel(c.dest, true).View().Bottom - lineHeight
-		if y < row || y >= row+lineHeight {
-			return false
-		}
-		switch {
-		case x < MapSize+infoMargin+24:
-			c.ShiftForecastWeapon(-1)
-		case x < MapSize+infoMargin+224:
-			c.ShiftForecastWeapon(1)
-		case x < MapSize+infoMargin+264:
-			c.ConfirmForecast()
-		default:
-			c.Cancel()
-		}
-		return true
-	}
-	page, ok := HitInfoTab(x, y)
-	if ok {
-		c.infoPage = page
-	}
-	return ok
+	c.OpenDetail()
+	return true
 }
 
 // 情報欄の見せ方（DES-UI-06）の大きさと位置（px）。x は情報欄の左端（余白 infoMargin の内側）から数える。

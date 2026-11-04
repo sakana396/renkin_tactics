@@ -115,6 +115,18 @@ func TestZOCMarks(t *testing.T) {
 			if got := hasText(c.Panel(tc.p, true).View(), zocNote); got != tc.want {
 				t.Errorf("%v の説明 = %v, want %v", tc.p, got, tc.want)
 			}
+			pt := c.Camera().Screen(tc.p)
+			v := c.BattleInfoView(pt.X+2, pt.Y+2)
+			if got := hasText(v, zocNote); got != tc.want {
+				t.Errorf("%v の新しい右欄の説明 = %v, want %v", tc.p, got, tc.want)
+			}
+			if tc.want {
+				for _, tx := range v.Texts {
+					if tx.Text == zocNote && (tx.Y < 112 || tx.Y+lineHeight > infoLowerTop) {
+						t.Errorf("ZOC の説明が上下段に重なる: %v", tx)
+					}
+				}
+			}
 		}
 		if got := skillDescription(zocSkill); got != "隣のマスに入る相手の移動費 +1" {
 			t.Errorf("スキルの説明 = %q", got)
