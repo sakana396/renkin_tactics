@@ -142,9 +142,7 @@ func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 	}
 	t := c.battle.TerrainAt(cursor)
 	p.Terrain = &t
-	if sides := c.battle.BoardView().ZOCSides(cursor); sides[tactics.Player] || sides[tactics.Enemy] {
-		p.ZOC = true
-	}
+	p.ZOC = hasZOCAt(c.battle.BoardView(), cursor)
 	return p
 }
 
@@ -389,7 +387,7 @@ func (p Panel) View() InfoView {
 			y += lineHeight
 		}
 		if p.ZOC {
-			v.text(x, y, "相手の重騎士の隣: +1", StylePlain)
+			v.text(x, y, zocNote, StylePlain)
 			y += lineHeight
 		}
 	}
@@ -945,7 +943,7 @@ func skillDescription(s tactics.Skill) string {
 	case tactics.Canto:
 		return "攻撃・回復・道具のあと、残りの移動で動ける"
 	case tactics.ZOC:
-		return "相手の重騎士の隣への移動費 +1"
+		return "隣のマスに入る相手の移動費 +1"
 	}
 	return ""
 }

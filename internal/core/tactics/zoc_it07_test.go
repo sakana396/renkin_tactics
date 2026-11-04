@@ -246,3 +246,69 @@ func TestZOCInvalidMove(t *testing.T) {
 		}
 	})
 }
+
+// 撃破した重騎士の隣を通らないと届かない再移動先（DES-IT07 4.3 節。REV-100 F-04）。
+// 平地 4×3 の (1,1) に相手の重騎士。騎兵 Mov=5 は (0,2) から ZOC 内の (0,1) に入って攻撃する（費用 2、残り 3）。
+// (2,0) へは (0,0)→(1,0)→(2,0) か (1,1)→(2,1)→(2,0)。重騎士が残れば (1,0) か (2,1) が ZOC 内で 4、倒せば 3。
+func TestZOCCantoAfterKill(t *testing.T) {
+	for _, kill := range []bool{false, true} {
+		name := "重騎士が残れば ZOC 内を通る再移動先に届かない"
+		if kill {
+			name = "重騎士を倒せば ZOC が消え、その隣を通って届く"
+		}
+		t.Run("TC-FR-BTL-03-21 "+name, func(t *testing.T) {
+			cav := ally("騎兵", 0, 2, 5)
+			cav.ClassSkills = []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}}
+			knight := foe("重騎士", 1, 1)
+			knight.ClassSkills = []tactics.Skill{{Name: "通せんぼ", Effect: tactics.ZOC}}
+			knight.AI = tactics.Hold
+			knight.Stats.Mov = 0
+			s := tactics.Setup{Terrain: grid("....", "....", "...."), Units: []tactics.UnitSetup{lord(3, 2, 0), cav, knight, boss(3, 0)}}
+			b := mustNew(t, s)
+			b.SetRoll(func() int {
+				if kill {
+					return 0
+				}
+				return 99
+			})
+			if kill {
+				b.SetHP(2, 1)
+			}
+			if _, err := b.Act(tactics.Command{Unit: 1, To: pos(0, 1), Action: tactics.Attack, Target: 2}); err != nil {
+				t.Fatal(err)
+			}
+			if b.Units()[2].Alive == kill {
+				t.Fatalf("重騎士の生死 = %v, kill=%v", b.Units()[2].Alive, kill)
+			}
+			pending, ok := b.PendingCanto()
+			if !ok || pending.Remaining != 3 {
+				t.Fatalf("残り = %+v, %v; want 3", pending, ok)
+			}
+			got, ok := b.CantoReachable()[pos(2, 0)]
+			if ok != kill || (ok && got != 3) {
+				t.Errorf("(2,0) への再移動 = %d, %v; want 3, %v", got, ok, kill)
+			}
+		})
+	}
+}
+
+// 戦死した重騎士は ZOC を持たない（TC-FR-MAP-01-07、REV-100 F-04）。
+func TestZOCDeadKnight(t *testing.T) {
+	t.Run("TC-FR-MAP-01-07 戦死した重騎士の隣は費用が増えない", func(t *testing.T) {
+		knight := foe("重騎士", 2, 0)
+		knight.ClassSkills = []tactics.Skill{{Name: "通せんぼ", Effect: tactics.ZOC}}
+		knight.Stats.Mov = 0
+		s := tactics.Setup{Terrain: grid("##.###", "......", "######"), Units: []tactics.UnitSetup{lord(0, 1, 3), boss(5, 1), knight}}
+		b := mustNew(t, s)
+		if got, ok := b.Reachable(0)[pos(3, 1)]; ok {
+			t.Fatalf("生きた重騎士の隣を通って 3 歩先に届いた: %d", got)
+		}
+		b.KillUnit(2)
+		if got, ok := b.Reachable(0)[pos(3, 1)]; !ok || got != 3 {
+			t.Errorf("戦死後の 3 歩先 = %d, %v; want 3, true", got, ok)
+		}
+		if got := b.BoardView().ZOCSides(pos(2, 1)); got[tactics.Enemy] {
+			t.Error("戦死した重騎士の角印が残る")
+		}
+	})
+}

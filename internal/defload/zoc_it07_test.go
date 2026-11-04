@@ -32,6 +32,10 @@ func TestZOCDefinition(t *testing.T) {
 		{"数値を付ける", []edit{replace("skills.toml", "effect = \"zoc\"", "effect = \"zoc\"\nhit = 1")}, "通せんぼには数値を付けられません"},
 		{"効果名を誤る", []edit{replace("skills.toml", "effect = \"zoc\"", "effect = \"unknown\"")}, "スキルの効果の種類"},
 		{"同じスキルを二度書く", []edit{replace("classes.toml", "skills = [\"zoc\"]", "skills = [\"zoc\", \"zoc\"]")}, "重なっています"},
+		{"同じ効果の別のスキルを重ねる", []edit{
+			replace("skills.toml", "effect = \"zoc\"", "effect = \"zoc\"\n\n[[skills]]\nid = \"zoc2\"\nname = \"通せんぼ二\"\neffect = \"zoc\""),
+			replace("classes.toml", "skills = [\"zoc\"]", "skills = [\"zoc\", \"zoc2\"]"),
+		}, "兵種のスキルの効果 \"zoc\" が重なっています"},
 		{"知らない参照", []edit{replace("classes.toml", "skills = [\"zoc\"]", "skills = [\"unknown\"]")}, "スキル \"unknown\" がありません"},
 	}
 	for _, tc := range cases {

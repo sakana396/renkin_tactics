@@ -251,10 +251,18 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawOverlay(board)
 	hint := g.ctrl.ReinforcementHintView()
 	g.drawHint(board, hint)
-	g.drawUnits(board)
-	g.drawEnemyRanges(board, g.ctrl.EnemyRangeLayers())
-	g.drawZOC(board, g.ctrl.battle.BoardView())
-	g.drawWatchedPins(board, g.ctrl.WatchedPins(), g.ctrl.Units())
+	for _, l := range battleLayers {
+		switch l {
+		case layerUnits:
+			g.drawUnits(board)
+		case layerEnemyRanges:
+			g.drawEnemyRanges(board, g.ctrl.EnemyRangeLayers())
+		case layerZOC:
+			g.drawZOC(board, g.ctrl.battle.BoardView())
+		case layerWatchedPins:
+			g.drawWatchedPins(board, g.ctrl.WatchedPins(), g.ctrl.Units())
+		}
+	}
 	g.drawSelection(board)
 	g.drawTargetLabel(board)
 	g.drawEvent(board)
@@ -363,34 +371,15 @@ func (g *Game) drawOverlay(dst *ebiten.Image) {
 	}
 }
 
-// drawZOC は危険範囲の上に、重騎士の陣営色の細い角印を描く（DES-UI-29）。
+// drawZOC は、盤面 board の重騎士の ZOC の角印を陣営色の細い線で描く（DES-UI-29、DES-IT07 3.8 節）。
+// 形と位置は zocMarkLines で決める。描く順は battleLayers・deployLayers・rewindLayers に従う。
 func (g *Game) drawZOC(dst *ebiten.Image, board tactics.BoardView) {
-	for y := 0; y < board.Height(); y++ {
-		for x := 0; x < board.Width(); x++ {
-			p := tactics.Pos{X: x, Y: y}
-			if !g.drawCamera.Visible(p) {
-				continue
-			}
-			for side, marked := range board.ZOCSides(p) {
-				if !marked {
-					continue
-				}
-				clr := color.Color(playerBase)
-				if side == int(tactics.Enemy) {
-					clr = enemyBase
-				}
-				pt := g.drawCamera.Screen(p)
-				px, py := float32(pt.X)+5, float32(pt.Y)+5
-				if side == int(tactics.Enemy) {
-					px, py = float32(pt.X)+CellSize-5, float32(pt.Y)+CellSize-5
-					vector.StrokeLine(dst, px-7, py, px, py, 2, clr, false)
-					vector.StrokeLine(dst, px, py-7, px, py, 2, clr, false)
-				} else {
-					vector.StrokeLine(dst, px, py, px+7, py, 2, clr, false)
-					vector.StrokeLine(dst, px, py, px, py+7, 2, clr, false)
-				}
-			}
+	for _, l := range zocMarkLines(board, g.drawCamera) {
+		clr := color.Color(playerBase)
+		if l.Side == tactics.Enemy {
+			clr = enemyBase
 		}
+		vector.StrokeLine(dst, float32(l.From.X), float32(l.From.Y), float32(l.To.X), float32(l.To.Y), 2, clr, false)
 	}
 }
 
@@ -842,11 +831,18 @@ func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 		}
 		g.strokeCell(dst, p, menuBorder)
 	}
-	// 全敵の塗りとカーソルの敵の線は、戦闘と同じ層の順に重ねる（DES-UI-29）。
-	g.drawEnemyRanges(dst, d.RangeLayers())
-	g.drawZOC(dst, d.Board)
-	if d.Selected >= 0 {
-		g.strokeCell(dst, d.Units[d.Selected].Pos, cursorColor)
+	// 全敵の塗りとカーソルの敵の線は、戦闘と同じ層の順に重ね、その上に ZOC の角印を描く（DES-UI-29）。
+	for _, l := range deployLayers {
+		switch l {
+		case layerEnemyRanges:
+			g.drawEnemyRanges(dst, d.RangeLayers())
+		case layerZOC:
+			g.drawZOC(dst, d.Board)
+		case layerFrame:
+			if d.Selected >= 0 {
+				g.strokeCell(dst, d.Units[d.Selected].Pos, cursorColor)
+			}
+		}
 	}
 }
 
@@ -864,10 +860,17 @@ func (g *Game) drawRewindPreview(dst *ebiten.Image) {
 	if v.Available {
 		g.drawBoardTerrain(board, v.Board)
 		g.drawHint(board, v.Hint)
-		g.drawUnitList(board, v.Units)
-		g.drawZOC(board, v.Board)
-		if v.HasFrame {
-			g.strokeCell(board, v.Frame, cursorColor)
+		for _, l := range rewindLayers {
+			switch l {
+			case layerUnits:
+				g.drawUnitList(board, v.Units)
+			case layerZOC:
+				g.drawZOC(board, v.Board)
+			case layerFrame:
+				if v.HasFrame {
+					g.strokeCell(board, v.Frame, cursorColor)
+				}
+			}
 		}
 	}
 	if v.Notice != "" {

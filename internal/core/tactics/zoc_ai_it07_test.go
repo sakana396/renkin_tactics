@@ -31,3 +31,37 @@ func TestZOCAICloseness(t *testing.T) {
 		}
 	})
 }
+
+// 出発マスか集合先が ZOC の中にある非対称の盤面（REV-100 F-05）。逆向きの探索は進入先（cur）の
+// Cost+Z を数え、前向きの費用と一致する。出発マスの Z は数えず、集合先の Z は数える。
+func TestZOCTerrainDistancesAsymmetric(t *testing.T) {
+	plain := Terrain{Name: "平地", Cost: 1}
+	weapon := Weapon{Name: "剣", Type: Sword, MinRange: 1, MaxRange: 1}
+	row := func() []Terrain { return []Terrain{plain, plain, plain, plain, plain} }
+	for _, tc := range []struct {
+		name  string
+		armor Pos
+		want  int
+	}{
+		{"集合先が ZOC の中", Pos{4, 0}, 5},
+		{"出発マスが ZOC の中", Pos{0, 0}, 4},
+	} {
+		t.Run("TC-FR-BTL-07-23 "+tc.name, func(t *testing.T) {
+			s := Setup{Terrain: [][]Terrain{row(), row(), row()}, Units: []UnitSetup{
+				{Name: "主人公", Side: Player, Stats: Stats{HP: 20}, Pos: Pos{2, 2}, Weapon: weapon, Lord: true},
+				{Name: "重騎士", Side: Player, Stats: Stats{HP: 20}, Pos: tc.armor, Weapon: weapon, ClassSkills: []Skill{{Name: "通せんぼ", Effect: ZOC}}},
+				{Name: "敵", Side: Enemy, Level: 1, Stats: Stats{HP: 20, Mov: 3}, Pos: Pos{0, 1}, Weapon: weapon, Boss: true},
+			}}
+			b, _, err := New(s, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := b.terrainDistances(Pos{0, 1}, false, Enemy)[Pos{4, 1}]; got != tc.want {
+				t.Errorf("前向き (0,1)→(4,1) = %d, want %d", got, tc.want)
+			}
+			if got := b.terrainDistances(Pos{4, 1}, true, Enemy)[Pos{0, 1}]; got != tc.want {
+				t.Errorf("逆向き (0,1)→(4,1) = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
