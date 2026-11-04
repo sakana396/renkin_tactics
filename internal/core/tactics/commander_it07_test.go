@@ -1,8 +1,34 @@
 package tactics
 
 import (
+	"errors"
 	"testing"
 )
+
+// Setup も小隊長の無効な組合せを拒み、戦闘状態を作らない（TC-FR-SYS-04-46、DES-DAT-05）。
+func TestCommanderSetupValidationIt07(t *testing.T) {
+	w := Weapon{Name: "剣", Type: Sword, MinRange: 1, MaxRange: 1}
+	base := UnitSetup{Name: "小隊長", Side: Enemy, Level: 1, AI: Hold, Approach: GroupApproach, Group: "g", Commander: true, Stats: Stats{HP: 10}, Pos: Pos{1, 0}, Weapon: w}
+	player := UnitSetup{Name: "主人公", Side: Player, Lord: true, Level: 1, Stats: Stats{HP: 10}, Pos: Pos{0, 0}, Weapon: w}
+	for _, tc := range []struct {
+		name string
+		edit func(*UnitSetup)
+	}{
+		{"ai=charge", func(u *UnitSetup) { u.AI = Charge }},
+		{"boss", func(u *UnitSetup) { u.Boss = true }},
+		{"approach=direct", func(u *UnitSetup) { u.Approach = Direct }},
+		{"一団の名前なし", func(u *UnitSetup) { u.Group = "" }},
+	} {
+		t.Run("TC-FR-SYS-04-46 "+tc.name, func(t *testing.T) {
+			u := base
+			tc.edit(&u)
+			b, events, err := New(Setup{Terrain: [][]Terrain{{{Cost: 1}, {Cost: 1}}}, Units: []UnitSetup{player, u}}, 1)
+			if !errors.Is(err, ErrInvalidSetup) || b != nil || events != nil {
+				t.Fatalf("無効な小隊長を受理した: 戦闘=%v 出来事=%v 誤り=%v", b, events, err)
+			}
+		})
+	}
+}
 
 func commanderBattleIt07(t *testing.T) *Battle {
 	t.Helper()
@@ -59,6 +85,78 @@ func checkCommanderCollapseIt07(t *testing.T) {
 	}
 }
 
+// 未突入の一団でも、撃破後は残った集合先を参照せず自軍へ寄る（TC-FR-BTL-07-24、DES-AI-03）。
+func checkCommanderUnenteredIt07(t *testing.T) {
+	b := commanderBattleIt07(t)
+	key := b.groupKey("g", b.units[1].Pos)
+	b.groupPlan = map[int]Pos{2: {7, 0}}
+	b.groupDanger = map[int]map[Pos]bool{2: {{5, 1}: true}}
+	b.groupGathering[key] = true
+	b.fall(nil, 1)
+	if b.groupEntered[key] {
+		t.Fatal("一団が突入済みになった")
+	}
+	before := b.units[2].Pos
+	b.actEnemy(nil, 2)
+	if b.units[2].Pos.X >= before.X || b.units[2].AI != Charge {
+		t.Fatalf("集合先を無視して自軍へ寄らない: %+v", b.units[2])
+	}
+}
+
+// 敵番の始めに崩れた配下を計画にも集合先の予約にも入れない（TC-FR-BTL-07-24、DES-AI-03）。
+func checkCommanderNextPhaseIt07(t *testing.T) {
+	b := commanderBattleIt07(t)
+	b.groupPlan = map[int]Pos{2: {2, 0}}
+	b.fall(nil, 1)
+	b.units[0].Pos = Pos{4, 1}
+	b.planEnemyGroups(len(b.units))
+	if _, ok := b.groupDanger[2]; ok {
+		t.Fatal("崩れた配下を一団の計画に入れた")
+	}
+	// 残った集合先は古い状態として保持するが、他の一団の予約には使わない。
+	other := b.units[2]
+	other.Group, other.Collapsed, other.Pos, other.AI = "other", false, Pos{3, 0}, Charge
+	b.units = append(b.units, other)
+	b.units[0].Pos = Pos{0, 1}
+	b.units[0].Weapons[0].MaxRange = 2
+	b.planEnemyGroups(len(b.units))
+	if b.groupPlan[4] != (Pos{2, 0}) {
+		t.Fatalf("生きた一団の集合先を奪った: %+v", b.groupPlan)
+	}
+}
+
+// 崩れた配下を、生存する別の一団の近さの判定に数えない（TC-FR-BTL-07-24、DES-AI-03）。
+func checkCommanderGroupMoveIt07(t *testing.T) {
+	b := commanderBattleIt07(t)
+	for y := range b.terrain {
+		for len(b.terrain[y]) < 18 {
+			b.terrain[y] = append(b.terrain[y], Terrain{Cost: 1})
+		}
+	}
+	b.units[1].Pos = Pos{1, 1}
+	b.units[1].Stats.Mov = 12
+	b.units[2].Pos = Pos{2, 1}
+	other := b.units[2]
+	other.Pos, other.Collapsed = Pos{10, 1}, true
+	b.units = append(b.units, other)
+	to, ok := b.groupMove(1, b.Reachable(1), Pos{12, 1})
+	if !ok || to.X > 9 {
+		t.Fatalf("崩れた配下を仲間に数えた: %v, %v", to, ok)
+	}
+}
+
+// 小隊長自身も生存中は一団の集合判断に参加する（TC-FR-BTL-07-24、DES-AI-03）。
+func checkCommanderLeaderPlannedIt07(t *testing.T) {
+	b := commanderBattleIt07(t)
+	b.mapState.charged = map[string]bool{}
+	b.mapState.charged["g"] = true
+	b.groupGathering[b.groupKey("g", b.units[1].Pos)] = true
+	b.planEnemyGroups(len(b.units))
+	if _, ok := b.groupDanger[1]; !ok {
+		t.Fatal("小隊長を一団の判断から外した")
+	}
+}
+
 // 敵軍の番の途中で小隊長を失うと、未行動の配下だけがその番に動く（TC-FR-BTL-07-25、DES-AI-03）。
 func checkCommanderMidPhaseIt07(t *testing.T) {
 	b := commanderBattleIt07(t)
@@ -71,6 +169,7 @@ func checkCommanderMidPhaseIt07(t *testing.T) {
 	b.units = []Unit{b.units[0], firstFollower, b.units[1], b.units[2], b.units[3]}
 	b.groupEntered[b.groupKey("g", b.units[2].Pos)] = true
 	first := b.units[1].Pos
+	later := b.units[3].Pos
 	events, err := b.EndPhase()
 	if err != nil {
 		t.Fatal(err)
@@ -81,7 +180,7 @@ func checkCommanderMidPhaseIt07(t *testing.T) {
 			fall = true
 		}
 	}
-	if !fall || b.units[1].Pos != first || !b.units[1].Collapsed || !b.units[3].Collapsed || b.units[3].AI != Charge {
+	if !fall || b.units[1].Pos != first || b.units[1].AI != Hold || !b.units[1].Collapsed || !b.units[3].Collapsed || b.units[3].AI != Charge || b.units[3].Pos == later || distance(b.units[3].Pos, b.units[0].Pos) >= distance(later, b.units[0].Pos) {
 		t.Fatalf("配下の切替: %+v / %+v", b.units[1], b.units[3])
 	}
 }
@@ -222,6 +321,10 @@ func checkCommanderSeparateRegionIt07(t *testing.T) {
 // 小隊長の規則を試験ケースごとに実行する（DES-AI-03）。
 func TestCommanderRulesIt07(t *testing.T) {
 	t.Run("TC-FR-BTL-07-24 撃破直後", checkCommanderCollapseIt07)
+	t.Run("TC-FR-BTL-07-24 未突入の残った集合先", checkCommanderUnenteredIt07)
+	t.Run("TC-FR-BTL-07-24 次の敵番の計画と予約", checkCommanderNextPhaseIt07)
+	t.Run("TC-FR-BTL-07-24 崩れた仲間を数えない", checkCommanderGroupMoveIt07)
+	t.Run("TC-FR-BTL-07-24 小隊長も集合判断に参加", checkCommanderLeaderPlannedIt07)
 	t.Run("TC-FR-BTL-07-24 離れた同名の一団", checkCommanderSeparateRegionIt07)
 	t.Run("TC-FR-BTL-07-25 敵番途中", checkCommanderMidPhaseIt07)
 	t.Run("TC-FR-BTL-07-26 上限", checkCommanderReinforcementIt07)
