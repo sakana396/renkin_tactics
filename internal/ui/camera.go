@@ -87,7 +87,11 @@ func (c *Controller) Wheel(x, y int, delta float64, shift bool) bool {
 	if delta == 0 {
 		return false
 	}
-	if c.state == Targeting && c.target >= 0 && !c.rewind.open && x >= MapSize && x < ScreenWidth && y >= 0 && y < 360 {
+	// 詳しい画面の間はカメラも武器も動かさない（DES-UI-31）。巻き戻しの一覧はその上に開くので、一覧の送りは通す。
+	if c.detailOpen && !c.rewind.open {
+		return true
+	}
+	if c.state == Targeting && c.target >= 0 && !c.rewind.open && c.forecastContains(x, y) {
 		step := 1
 		if delta > 0 {
 			step = -1

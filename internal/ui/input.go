@@ -109,8 +109,10 @@ type Controller struct {
 	// hints は通常の盤面に出す増援の予兆領域。再生の完了後と巻き戻しの成功後だけ取り直す（DES-UI-24）。
 	hints []tactics.ReinforcementHint
 
-	// infoPage は情報欄のユニットのページ（DES-UI-28）。表示だけに使う。
-	infoPage InfoPage
+	// detailOpen・detailUnit・detailSection は詳しい画面の重ね表示（DES-UI-31）。
+	detailOpen    bool
+	detailUnit    int
+	detailSection DetailSection
 	// lastCell は、直前にカーソルを置いた盤面のマス（DES-UI-28）。カーソルが情報欄の上にあるときの表示に使う。
 	lastCell   tactics.Pos
 	lastCellOK bool

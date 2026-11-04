@@ -89,6 +89,10 @@ type SceneController struct {
 	deployment     map[int]bool
 	// infoPage は準備と配置の情報欄のページ（DES-UI-28）。表示だけに使う。
 	infoPage InfoPage
+	// 配置中の詳しい画面（DES-UI-31）。
+	detailOpen    bool
+	detailUnit    int
+	detailSection DetailSection
 	// deployNav は配置の全体図と次の味方の UI だけの状態（DES-UI-30）。
 	deployNav deployNav
 }

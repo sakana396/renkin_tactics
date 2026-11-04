@@ -179,7 +179,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 			t.Errorf("カーソルで固定が変わった: %v、カーソル %d", c.watched, c.CursorEnemy())
 		}
 		// 情報欄の敵の名前の横に、カーソルの線と同じ印を置く（名前の右 4 px、10×10、情報欄の中）。
-		iv := c.InfoView(cellCenter(boss))
+		iv := c.BattleInfoView(cellCenter(boss))
 		name := textOf(t, iv, "ボス　★ボス")
 		mark, ok := c.cursorNameMark(iv)
 		if wantMark := image.Rect(name.X+textWidth(name.Text)+4, name.Y+3, name.X+textWidth(name.Text)+14, name.Y+13); !ok || mark != wantMark {
@@ -189,7 +189,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 			t.Errorf("名前の横の印 %v が情報欄の外", mark)
 		}
 		c.SetCursor(cellCenter(empty))
-		if _, ok := c.cursorNameMark(c.InfoView(cellCenter(empty))); ok {
+		if _, ok := c.cursorNameMark(c.BattleInfoView(cellCenter(empty))); ok {
 			t.Error("カーソルが敵の上にないのに印を出す")
 		}
 
@@ -327,7 +327,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-FR-UNT-09-27 範囲の状態と「消す」は情報欄の中身と重ねない。武器 5 本と地形の「能力」のページでは地形の行と重なる「全敵 Q」「固定 n」を描かず、重ならない「消す」は残す（REV-096 F-03）", func(t *testing.T) {
+	t.Run("TC-FR-UNT-09-27 範囲の状態と「消す」は情報欄の中身と重ねない。武器 5 本でも右欄の上下 2 段は y < 304 に収まり、すべて描く（REV-096 F-03、#166）", func(t *testing.T) {
 		killer := tactics.Weapon{Name: "アーマーキラー", Type: tactics.Lance, Might: 5, Hit: 80, MinRange: 1, MaxRange: 1}
 		fire := tactics.Weapon{Name: "ファイア", Type: tactics.Magic, DamageType: tactics.Magical, Might: 5, Hit: 90, MinRange: 1, MaxRange: 2}
 		five := func() tactics.Setup {
@@ -364,17 +364,18 @@ func TestEnemyRangeIT07(t *testing.T) {
 				}
 			}
 		}
-		// 武器 5 本のレオン（平地）にカーソルを合わせる。「能力」のページは地形の行が y = 288 から 2 行で、2 行目が y = 304〜320 に来る。
+		// 武器 5 本のレオン（平地）にカーソルを合わせる。右欄は上下 2 段で y < 296 に収まる（#166、DES-UI-31）ので、
+		// 範囲の状態と「消す」をすべて描いて重ならない。
 		c := newIdleWith(t, five)
 		g := &Game{ctrl: c}
 		hx, hy := cellCenter(tactics.Pos{X: 0, Y: 0})
 		c.SetCursor(hx, hy)
-		v := c.InfoView(hx, hy)
-		if terrain := textOf(t, v, "地形: 平地"); terrain.Y < 280 || v.Bottom <= 304 {
-			t.Fatalf("前提: 地形の行 y = %d、一番下 %d（地形の 2 行目が操作行 y = 304〜 に来るはず）", terrain.Y, v.Bottom)
+		v := c.BattleInfoView(hx, hy)
+		if terrain := textOf(t, v, "地形: 平地　回避 0　守備 0　回復 0%"); terrain.Y+lineHeight > infoControlTop || v.Bottom > infoControlTop {
+			t.Fatalf("前提: 地形の行 y = %d、一番下 %d（操作行 y = 304〜 より上のはず）", terrain.Y, v.Bottom)
 		}
 		s := c.RangeStatusIn(v)
-		if !s.HideTexts || s.HideClear {
+		if s.HideTexts || s.HideClear {
 			t.Errorf("武器 5 本: 文を隠す %v、消すを隠す %v", s.HideTexts, s.HideClear)
 		}
 		noOverlap("武器 5 本", v, s)
@@ -389,16 +390,16 @@ func TestEnemyRangeIT07(t *testing.T) {
 		if c.WatchedCount() != 0 {
 			t.Errorf("武器 5 本の情報欄のときの消す: 固定 %d", c.WatchedCount())
 		}
-		// 「装備・スキル」のページと、武器 1 本のユニット（地形の行は 304 より上）では、すべて描いて重ならない。
-		c.ToggleInfoPage()
-		v = c.InfoView(hx, hy)
+		// レオンを選んで敵にカーソルを合わせ、上下 2 段を出しても重ならない。武器 1 本のユニットでも同じ。
+		c.Click(tactics.Pos{X: 0, Y: 0})
+		v = c.BattleInfoView(cellCenter(tactics.Pos{X: 1, Y: 0}))
 		if s := c.RangeStatusIn(v); s.HideTexts || s.HideClear {
-			t.Errorf("装備・スキルのページで隠した: %+v", s)
+			t.Errorf("上下 2 段で隠した: %+v", s)
 		} else {
-			noOverlap("装備・スキル", v, s)
+			noOverlap("上下 2 段", v, s)
 		}
 		one := newIdle(t)
-		v = one.InfoView(hx, hy)
+		v = one.BattleInfoView(hx, hy)
 		if s := one.RangeStatusIn(v); s.HideTexts || s.HideClear {
 			t.Errorf("武器 1 本で隠した: %+v", s)
 		} else {

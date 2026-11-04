@@ -231,7 +231,7 @@ func (s *SceneController) Click(x, y int) {
 		s.syncRewind()
 		return
 	}
-	// 勝敗が決まった Over でも、情報欄のページの印は先に受ける（DES-UI-28、REV-071 F-02）。
+	// 勝敗が決まった Over では、右欄の「詳細 I」の位置のクリックを先に受けて何もしない（Over は新しい操作を受けない。DES-IT07 3.1 節）。
 	if s.scene == Battle && s.battle != nil && s.battle.State() == Over && s.battle.InfoClick(x, y) {
 		return
 	}
@@ -273,6 +273,9 @@ func (s *SceneController) Click(x, y int) {
 
 // infoTabClick は準備と配置の情報欄のページの印のクリックを受ける（DES-UI-28）。印を出しているときだけ受け、表示だけを変える。
 func (s *SceneController) infoTabClick(x, y int) bool {
+	if s.scene != Prepare {
+		return false
+	}
 	v := s.View()
 	if v.Info == nil {
 		return false
@@ -289,7 +292,7 @@ func (s *SceneController) infoTabClick(x, y int) bool {
 
 // ToggleInfoPage は準備と配置での Tab キーの処理（DES-UI-28）。表示だけを変える。
 func (s *SceneController) ToggleInfoPage() {
-	if s.scene == Prepare || s.scene == Deploy {
+	if s.scene == Prepare {
 		s.infoPage = s.infoPage.next()
 	}
 }

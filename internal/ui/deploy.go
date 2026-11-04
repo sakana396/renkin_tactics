@@ -151,6 +151,22 @@ func (s *SceneController) deployInfoUnit(units []tactics.Unit, selected int) int
 	return -1
 }
 
+// deployTerrain は配置の右欄の最下行に出す地形を返す（DES-UI-31）。カーソルのマス、盤面の外なら情報欄に出すユニットのマス。
+func deployTerrain(d *DeployView, cursor tactics.Pos, unit int) *tactics.Terrain {
+	p := cursor
+	if p.Y < 0 || p.Y >= len(d.Terrain) || p.X < 0 || p.X >= len(d.Terrain[p.Y]) {
+		if unit < 0 {
+			return nil
+		}
+		p = d.Units[unit].Pos
+	}
+	if p.Y < 0 || p.Y >= len(d.Terrain) || p.X < 0 || p.X >= len(d.Terrain[p.Y]) {
+		return nil
+	}
+	t := d.Terrain[p.Y][p.X]
+	return &t
+}
+
 // ToggleDeployDanger は配置だけの Q の押し始めを受ける（DES-UI-23）。
 func (s *SceneController) ToggleDeployDanger() {
 	if s.scene == Deploy {
@@ -219,8 +235,8 @@ func (s *SceneController) deployView() SceneView {
 	mm := s.deployMinimap(d)
 	v.Minimap = &mm
 	if i := s.deployInfoUnit(d.Units, d.Selected); i >= 0 {
-		// 敵の能力も、味方と同じ 2 ページで出す（DES-UI-27、REV-071）。まだ出ていない増援は配置の盤面にいない。
-		info := (Panel{Unit: &d.Units[i], Page: s.infoPage, Tabs: true}).View()
+		// 配置でも上段をカーソルの下、下段を選択中にする（DES-UI-31）。まだ出ていない増援は配置の盤面にいない。
+		info := twoTierInfo(d.Units, i, d.Selected, deployTerrain(d, s.deployCursor, i))
 		v.Info = &info
 		if u := d.Units[i]; u.Side == tactics.Enemy && u.Pos == s.deployCursor && d.Blue != nil {
 			// カーソルの敵の範囲を出しているとき、その敵の名前の横に同じ青白の印を置く（DES-UI-29）。
