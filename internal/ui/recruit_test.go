@@ -92,30 +92,42 @@ func TestRecruitPrepare(t *testing.T) {
 			}
 		}
 	})
-	t.Run("TC-IF-01-38 長い案内は盤面の幅で折り返して配置へと重ならない", func(t *testing.T) {
-		s := recruitScenes(t, "ch08", core.Withdraw)
-		// 8 人・品 2 種類で案内の位置を下げ、従来の全画面幅では盤面をはみ出す長さを使う。
-		s.campaign.Stock = []defs.ItemCount{{Item: "potion", Count: 1}, {Item: "potion", Count: 2}}
-		s.message = "案内\n" + strings.Repeat("案内", 20)
-		v := s.View()
-		var lines []string
-		for _, tx := range v.Texts {
-			if tx.Style != StyleBad {
-				continue
-			}
-			lines = append(lines, tx.Text)
-			r := image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+16)
-			if !r.In(image.Rect(48, 0, MapSize-8, ScreenHeight)) {
-				t.Fatal("案内が盤面の幅を超えた", r)
-			}
+	t.Run("TC-IF-01-38 長い案内は下欄で折り返して配置へと重ならない", func(t *testing.T) {
+		for _, tab := range []string{"名簿", "持ち物"} {
+			s := recruitScenes(t, "ch08", core.Withdraw)
+			// 8 人・品 2 種類。理由は下欄 (0,512)〜(832,576) の「配置へ」の左に置く（DES-UI-32）。下欄の幅を超える長さを使う。
+			s.campaign.Stock = []defs.ItemCount{{Item: "potion", Count: 1}, {Item: "potion", Count: 2}}
+			clickPrepareTab(t, s, tab)
+			s.message = "案内\n" + strings.Repeat("案内", 40)
+			v := s.View()
+			var lines []string
+			var deploy image.Rectangle
 			for _, b := range v.Buttons {
-				if r.Overlaps(b.Rect) {
-					t.Fatal("案内がボタンと重複", r, b)
+				if b.Label == "配置へ" {
+					deploy = b.Rect
 				}
 			}
-		}
-		if len(lines) < 2 || strings.Join(lines, "") != strings.ReplaceAll(s.message, "\n", "") {
-			t.Fatal("案内の折り返し・内容", lines)
+			if !deploy.In(image.Rect(0, 512, 832, 576)) {
+				t.Fatal("配置へが下欄の外", deploy)
+			}
+			for _, tx := range v.Texts {
+				if tx.Style != StyleBad {
+					continue
+				}
+				lines = append(lines, tx.Text)
+				r := image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+16)
+				if !r.In(image.Rect(0, 512, deploy.Min.X, 576)) {
+					t.Fatal("案内が下欄の外", tab, r)
+				}
+				for _, b := range v.Buttons {
+					if r.Overlaps(b.Rect) {
+						t.Fatal("案内がボタンと重複", r, b)
+					}
+				}
+			}
+			if len(lines) < 3 || strings.Join(lines, "") != strings.ReplaceAll(s.message, "\n", "") {
+				t.Fatal("案内の折り返し・内容", tab, lines)
+			}
 		}
 	})
 	t.Run("TC-IF-01-38 7・8・9人と品0・1・2種類の配置とクリック", func(t *testing.T) {
@@ -161,7 +173,8 @@ func TestRecruitPrepare(t *testing.T) {
 						n := len(v.Rows)
 						var rects []image.Rectangle
 						for i, r := range v.Rows {
-							if r.Rect != image.Rect(56, 72+i*24, 504, 96+i*24) || r.Mark != image.Rect(16, 72+i*24, 52, 96+i*24) || v.Icons[i].Y != 72+i*24 {
+							// 名簿の行は左列 (16,56)〜(400,472) の y = 64 から 24 px ごと（DES-UI-32、DES-IT06 12.1 節）。
+							if r.Rect != image.Rect(56, 64+i*24, 400, 88+i*24) || r.Mark != image.Rect(16, 64+i*24, 52, 88+i*24) || v.Icons[i].Y != 64+i*24 {
 								t.Fatal(r, v.Icons[i])
 							}
 							rects = append(rects, r.Rect, r.Mark)
@@ -181,40 +194,59 @@ func TestRecruitPrepare(t *testing.T) {
 								t.Fatal("印の選択", i)
 							}
 						}
-						// 元の品数の画面で矩形を確認する。
+						if n != min(len(s.livingMembers()), 8) {
+							t.Fatal("名簿の行数", n)
+						}
+						// 元の品数の画面で矩形を確認する。理由は下欄の左上 (16, 516) に置く（DES-UI-32）。
 						for _, b := range v.Buttons {
 							rects = append(rects, b.Rect)
 						}
-						// #122 で行を 24 px、品のボタンを 22 px ごとに詰め、手持ちの列に武器（鉄の剣）も並べた。
-						inventoryY := 72 + n*24 + 12
-						messageY := inventoryY + 24
-						if rows := max(stock, hand+len(s.campaign.Roster[0].Weapons)); rows > 0 {
-							messageY += rows*22 + 4
-						}
 						for _, tx := range v.Texts {
-							if strings.HasPrefix(tx.Text, "在庫:") {
-								if tx.Y != inventoryY {
+							if tx.Text == "主人公は必ず出撃します" {
+								if tx.X != 16 || tx.Y != 516 {
 									t.Fatal(tx)
 								}
 								rects = append(rects, image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+16))
 							}
-							if tx.Text == "主人公は必ず出撃します" {
-								if tx.Y != messageY {
-									t.Fatal(tx, messageY)
-								}
-								rects = append(rects, image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+16))
+						}
+						// 持ち物のタブ: 在庫の品のボタンは品の数、5 枠は常に 5 行。行・ボタン・理由は重ならない。
+						clickPrepareTab(t, s, "持ち物")
+						s.prepareMember = 0
+						s.message = "主人公は必ず出撃します"
+						iv := s.View()
+						stockButtons, slots := 0, 0
+						for _, b := range iv.Buttons {
+							if strings.HasPrefix(b.Label, "手持ちへ: ") {
+								stockButtons++
+							}
+							if b.Rect.Min.X == 40 {
+								slots++
 							}
 						}
-						for i, r := range rects {
-							if !r.In(image.Rect(0, 0, 512, 576)) {
-								t.Fatal("窓外", r)
-							}
-							for _, other := range rects[i+1:] {
-								if r.Overlaps(other) {
-									t.Fatal("重複", r, other)
+						if stockButtons != stock || slots != 5 {
+							t.Fatal("在庫の品・5 枠の行", stockButtons, slots)
+						}
+						check := func(rects []image.Rectangle) {
+							for i, r := range rects {
+								if !r.In(image.Rect(0, 0, ScreenWidth, ScreenHeight)) {
+									t.Fatal("窓外", r)
+								}
+								for _, other := range rects[i+1:] {
+									if r.Overlaps(other) {
+										t.Fatal("重複", r, other)
+									}
 								}
 							}
 						}
+						check(rects)
+						var irects []image.Rectangle
+						for _, b := range iv.Buttons {
+							irects = append(irects, b.Rect)
+						}
+						for _, tx := range iv.Texts {
+							irects = append(irects, image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+16))
+						}
+						check(irects)
 					})
 				}
 			}
