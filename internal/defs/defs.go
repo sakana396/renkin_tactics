@@ -20,6 +20,8 @@ const (
 	EffectSnipe   = "snipe"
 	// EffectCanto は再移動。兵種のスキルに使い、数値はない（DES-BTL-10、DES-DAT-04）。
 	EffectCanto = "canto"
+	// EffectZOC は相手軍の移動費を増やす兵種のスキル（DES-DAT-05）。
+	EffectZOC = "zoc"
 )
 
 // 敵の動き方（DES-DAT-01、E-13 P-03）。

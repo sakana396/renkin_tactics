@@ -592,6 +592,36 @@ func TestEnemyRangeIT07(t *testing.T) {
 		m, a = coreRanges(c.Battle(), 2)
 		watchedIs(t, c, "通路の巻き戻しのあと", m, a)
 		checkMinimap("通路の巻き戻しのあと", c, []tactics.Pos{{X: 4}})
+
+		// 相手軍の重騎士がいる盤面（#173、DES-BTL-11）: 範囲は ZOC を含む core の Reachable から求める。
+		// 敵 (0,1) は移動 2。(1,0)・(2,1) は自軍の重騎士 (2,0) の隣なので入る費用が 2 で届かず、
+		// 重騎士 (2,0) と (3,1) は攻撃できない（ZOC がなければどちらも攻撃できる）。
+		z := newIdleWith(t, func() tactics.Setup {
+			armor := tactics.UnitSetup{Name: "重騎士", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 2, Y: 0}, Weapon: testLance, ClassSkills: []tactics.Skill{{Name: "通せんぼ", Effect: tactics.ZOC}}}
+			enemy := tactics.UnitSetup{Name: "敵", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 20, Mov: 2}, Pos: tactics.Pos{X: 0, Y: 1}, Weapon: testSword, AI: tactics.Hold}
+			boss := tactics.UnitSetup{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 5, Y: 0}, Weapon: testSword, Boss: true, AI: tactics.Hold}
+			return tactics.Setup{Terrain: field(6, 3), Units: []tactics.UnitSetup{{Name: "主人公", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 5, Y: 2}, Weapon: testSword, Lord: true}, armor, enemy, boss}}
+		})
+		gz := &Game{ctrl: z}
+		z.ToggleDanger()
+		z.SetCursor(-1, -1)
+		gz.leftClick(cellCenter(tactics.Pos{X: 0, Y: 1}))
+		zocDanger := posSet(
+			tactics.Pos{X: 0, Y: 0}, tactics.Pos{X: 1, Y: 0},
+			tactics.Pos{X: 0, Y: 1}, tactics.Pos{X: 1, Y: 1}, tactics.Pos{X: 2, Y: 1},
+			tactics.Pos{X: 0, Y: 2}, tactics.Pos{X: 1, Y: 2}, tactics.Pos{X: 2, Y: 2},
+			tactics.Pos{X: 4, Y: 0}, tactics.Pos{X: 5, Y: 1},
+		)
+		if got := z.Danger(); !reflect.DeepEqual(got, zocDanger) || !reflect.DeepEqual(got, coreDanger(z.Battle(), 2, 3)) {
+			t.Errorf("ZOC の盤面の全敵 %v\nwant %v", got, zocDanger)
+		}
+		m, a = coreRanges(z.Battle(), 2)
+		if m[tactics.Pos{X: 1, Y: 0}] || m[tactics.Pos{X: 2, Y: 1}] || a[tactics.Pos{X: 3, Y: 1}] {
+			t.Fatalf("前提: core の到達が ZOC を数えていない %v %v", m, a)
+		}
+		watchedIs(t, z, "ZOC の盤面の固定", m, a)
+		z.SetCursor(cellCenter(tactics.Pos{X: 0, Y: 1}))
+		cursorIs(t, z, "ZOC の盤面のカーソル", m, a)
 	})
 
 	t.Run("TC-FR-CMP-11-13 配置の Q は戦闘と同じ層で塗り、入れ替えごとに求め直し、まだ出ない増援を含めない。カーソルの敵は青白の線と名前の印。敵のクリックで配置は変わらない", func(t *testing.T) {

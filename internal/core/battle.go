@@ -425,6 +425,8 @@ func convertSkill(cat *defs.Catalog, id string) (tactics.Skill, error) {
 		effect = tactics.Snipe
 	case defs.EffectCanto:
 		effect = tactics.Canto
+	case defs.EffectZOC:
+		effect = tactics.ZOC
 	default:
 		return tactics.Skill{}, fmt.Errorf("スキル %q の効果の種類 %q は使えません", id, s.Effect)
 	}

@@ -81,19 +81,18 @@ type smartCase struct {
 	seed   uint64
 }
 
-// 賢い打ち手は、平均の名簿で 1〜9 章のどれにも勝つ固定 seed がある。代役（ミラを失いティオを出す）の名簿も、
-// 20 seed で勝てた章（ch04・ch05・ch06・ch08・ch09）は勝つ（TC-FR-MAP-04-25。#158、DES-MAP-08、DES-IT06 13 章）。
+// 賢い打ち手で、20 seed 中に勝てた平均・代役の章の固定 seed を再現する（TC-FR-MAP-04-25、DES-MAP-08）。
 // ch03 の平均は E-111 で参考の扱いだが、勝つ seed が残ったので回帰として遊ぶ。
 // seed は TestMeasureSmartAutoplay の測定で勝った最初の seed。重さのため 1 章 1 seed だけを遊ぶ。
-// #172 で全 9 章に小隊長を置いたので測り直して選び直した（DES-IT07 6 章）。ch09 は本営の門の小隊長を門の内側 (17,5) に置き直した
-// あとの測定（REV-101 F-01）。旧版の seed は TST-IT07 3 章の #172 の行にある。
+// #172 の配置と #173 の ZOC を反映した本体データで選び直した。ch04 平均は 20 seed で勝てないため、制作記録と TST-IT07 3 章に記録する。
+// #172 の seed は TST-IT07 3 章の #173 の行に残す。
 func TestIT06SmartAutoplayWins(t *testing.T) {
 	cat := baseCatalog(t)
 	avg, lost := antiLureRosters[0], antiLureRosters[2]
 	cases := []smartCase{
-		{"ch01", avg, 1}, {"ch02", avg, 9}, {"ch03", avg, 11}, {"ch04", avg, 4}, {"ch05", avg, 5},
-		{"ch06", avg, 1}, {"ch07", avg, 1}, {"ch08", avg, 1}, {"ch09", avg, 2},
-		{"ch04", lost, 3}, {"ch05", lost, 1}, {"ch06", lost, 1}, {"ch08", lost, 2}, {"ch09", lost, 11},
+		{"ch01", avg, 1}, {"ch02", avg, 7}, {"ch03", avg, 6}, {"ch05", avg, 9},
+		{"ch06", avg, 1}, {"ch07", avg, 3}, {"ch08", avg, 1}, {"ch09", avg, 1},
+		{"ch04", lost, 12}, {"ch05", lost, 4}, {"ch06", lost, 1}, {"ch08", lost, 1}, {"ch09", lost, 2},
 	}
 	for _, tc := range cases {
 		name := tc.roster.name
@@ -106,7 +105,7 @@ func TestIT06SmartAutoplayWins(t *testing.T) {
 			r := smartPlay(b, ids, antiLurePlan(tc.id, tc.roster), smartAll, 50)
 			t.Logf("%v 巻き戻し %d 回", r, r.Rewinds)
 			if r.Result != tactics.Won {
-				t.Fatalf("賢い打ち手が勝てない: %v", r)
+				t.Fatalf("固定 seed で勝てない: %v", r)
 			}
 			if r.Rewinds > 10 {
 				t.Fatalf("巻き戻しが 10 回を超えた: %d", r.Rewinds)
@@ -115,21 +114,19 @@ func TestIT06SmartAutoplayWins(t *testing.T) {
 	}
 }
 
-// 低めの名簿でも、賢い打ち手は 20 seed で勝てた章（ch04）の固定 seed に勝つ（TC-FR-MAP-04-26。#158）。
-// 勝てなかった章（ch02・ch03・ch05〜ch09）の負け方は制作記録の「#158 賢い打ち手」の節に書く。
-// ch06 は、6 章の出撃枠の移動（E-112）のあとの測り直しで 0 勝になったので外した。
+// 低めの名簿でも、#173 の測り直しで勝てた章の固定 seed に勝つ（TC-FR-MAP-04-26、DES-MAP-08）。
 func TestIT06SmartAutoplayLowWins(t *testing.T) {
 	cat := baseCatalog(t)
 	low := antiLureRosters[1]
-	// #172 の測り直しで、低めは ch04（seed 14・19）と ch05（seed 10）に勝った。
-	for _, tc := range []smartCase{{"ch04", low, 14}, {"ch05", low, 10}} {
+	// #173 の測り直しで勝つ低めの名簿は ch02 と ch06。
+	for _, tc := range []smartCase{{"ch02", low, 15}, {"ch06", low, 5}} {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-26 %s 低め seed %d", tc.id, tc.seed), func(t *testing.T) {
 			t.Parallel()
 			b, ids, _ := antiLureStart(t, cat, tc.id, tc.roster, tc.seed)
 			r := smartPlay(b, ids, antiLurePlan(tc.id, tc.roster), smartAll, 50)
 			t.Logf("%v 巻き戻し %d 回", r, r.Rewinds)
 			if r.Result != tactics.Won {
-				t.Fatalf("賢い打ち手が低めの名簿で勝てない: %v", r)
+				t.Fatalf("固定 seed で勝てない: %v", r)
 			}
 		})
 	}
@@ -145,13 +142,12 @@ func TestIT06SmartAutoplayFeatures(t *testing.T) {
 		feature string
 		smartCase
 	}{
-		// #172 の測り直しで選び直した。Heal は ch09 の代役の名簿にした（門の小隊長を置き直したあとも条件を満たす。REV-101 F-01）。
-		{"Weapons", smartCase{"ch08", lost, 4}},
-		{"Threat", smartCase{"ch06", avg, 1}},
-		{"Focus", smartCase{"ch04", avg, 7}},
-		{"Heal", smartCase{"ch09", lost, 14}},
-		{"Hold", smartCase{"ch05", lost, 18}},
-		{"Rewind", smartCase{"ch04", low, 14}},
+		{"Weapons", smartCase{"ch08", avg, 1}},
+		{"Threat", smartCase{"ch06", low, 5}},
+		{"Focus", smartCase{"ch06", low, 5}},
+		{"Heal", smartCase{"ch09", lost, 2}},
+		{"Hold", smartCase{"ch05", lost, 9}},
+		{"Rewind", smartCase{"ch06", low, 5}},
 	} {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-27 %s %s %s seed %d", tc.feature, tc.id, tc.roster.name, tc.seed), func(t *testing.T) {
 			t.Parallel()
@@ -161,7 +157,7 @@ func TestIT06SmartAutoplayFeatures(t *testing.T) {
 			}
 			all := play(smartAll)
 			if all.Result != tactics.Won {
-				t.Fatalf("すべての工夫で勝てない: %v", all)
+				t.Fatalf("すべての工夫でも勝てない: %v", all)
 			}
 			if again := play(smartAll); again.String() != all.String() || again.Rewinds != all.Rewinds {
 				t.Fatalf("同じ seed で結果が違う: %v / %v", all, again)

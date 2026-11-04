@@ -537,7 +537,7 @@ func (s *SceneController) prepareUnit(i int) tactics.Unit {
 		it, _ := s.cfg.Catalog.Item(ic.Item)
 		u.Items = append(u.Items, tactics.ItemStack{Item: tactics.Item{ID: it.ID, Name: it.Name, Heal: it.Heal}, Count: ic.Count})
 	}
-	effects := map[string]tactics.SkillEffect{"inspire": tactics.Inspire, "pavise": tactics.Pavise, "wrath": tactics.Wrath, "snipe": tactics.Snipe, "canto": tactics.Canto}
+	effects := map[string]tactics.SkillEffect{"inspire": tactics.Inspire, "pavise": tactics.Pavise, "wrath": tactics.Wrath, "snipe": tactics.Snipe, "canto": tactics.Canto, "zoc": tactics.ZOC}
 	if sk, ok := s.cfg.Catalog.Skill(ch.Skill); ok {
 		u.Skill = tactics.Skill{Name: sk.Name, Effect: effects[string(sk.Effect)], Range: sk.Range, Hit: sk.Hit, Avoid: sk.Avoid, Chance: sk.Chance, Multiplier: sk.Multiplier}
 	}

@@ -533,11 +533,16 @@ func (s *ids) check(path, id string) {
 	s.seen[id] = path
 }
 
-// classSkills は兵種のスキルの参照と重なりを確かめる（DES-IT06 8.1 節、DES-DAT-04）。
+// classSkills は兵種のスキルの参照と効果の重なりを確かめる（DES-IT06 8.1 節、DES-DAT-04、DES-DAT-05）。
 // スキルの定義を読んだあとに呼ぶ。参照のない ID と、同じ ID の重なりを拒む。
-func (v *validator) classSkills(ref refs, classes []rawClass) {
+func (v *validator) classSkills(ref refs, classes []rawClass, skills []rawSkill) {
+	effects := map[string]string{}
+	for _, sk := range skills {
+		effects[sk.ID] = sk.Effect
+	}
 	for i, r := range classes {
 		seen := map[string]bool{}
+		seenEffects := map[string]bool{}
 		for j, id := range r.Skills {
 			p := fmt.Sprintf("classes[%d].skills[%d]", i, j)
 			if !ref.skillIDs[id] {
@@ -549,6 +554,10 @@ func (v *validator) classSkills(ref refs, classes []rawClass) {
 				continue
 			}
 			seen[id] = true
+			if seenEffects[effects[id]] {
+				v.add(FileClasses, p, "兵種のスキルの効果 %q が重なっています", effects[id])
+			}
+			seenEffects[effects[id]] = true
 		}
 	}
 }
@@ -761,7 +770,10 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 	for i, r := range rd.skills {
 		p := fmt.Sprintf("skills[%d]", i)
 		sid.check(p, r.ID)
-		v.oneOf(FileSkills, p+".effect", "スキルの効果の種類", r.Effect, defs.EffectInspire, defs.EffectPavise, defs.EffectWrath, defs.EffectSnipe, defs.EffectCanto)
+		v.oneOf(FileSkills, p+".effect", "スキルの効果の種類", r.Effect, defs.EffectInspire, defs.EffectPavise, defs.EffectWrath, defs.EffectSnipe, defs.EffectCanto, defs.EffectZOC)
+		if r.Effect == defs.EffectZOC && (r.Range != 0 || r.Hit != 0 || r.Avoid != 0 || r.Chance != 0 || r.Multiplier != 0) {
+			v.add(FileSkills, p, "通せんぼには数値を付けられません")
+		}
 		v.atLeast(FileSkills, p+".range", r.Range, 0)
 		v.atLeast(FileSkills, p+".hit", r.Hit, 0)
 		v.atLeast(FileSkills, p+".avoid", r.Avoid, 0)
@@ -774,7 +786,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		skills[i] = defs.SkillDef{ID: r.ID, Name: r.Name, Effect: r.Effect, Range: r.Range, Hit: r.Hit, Avoid: r.Avoid, Chance: r.Chance, Multiplier: r.Multiplier}
 		ref.skillIDs[r.ID] = true
 	}
-	v.classSkills(ref, rd.classes)
+	v.classSkills(ref, rd.classes, rd.skills)
 
 	// キャラ（規則 2、3、5、6、16、17）。
 	characters := make([]defs.CharacterDef, len(rd.characters))

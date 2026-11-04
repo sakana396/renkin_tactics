@@ -329,7 +329,12 @@ func (c *Controller) BattleInfoView(x, y int) InfoView {
 		t := c.battle.TerrainAt(cell)
 		terrain = &t
 	}
-	return twoTierInfo(units, upper, selected, terrain)
+	v := twoTierInfo(units, upper, selected, terrain)
+	if terrain != nil && hasZOCAt(c.battle.BoardView(), cell) {
+		// 上段の要約の下に置き、下段の地形と操作行を避ける（DES-UI-29、DES-UI-31）。
+		v.text(summaryX, infoLowerTop-lineHeight-8, zocNote, StyleLabel)
+	}
+	return v
 }
 
 // liveUnitIndex は units のうちマス p にいる生きているユニットの添字を返す。いなければ −1。

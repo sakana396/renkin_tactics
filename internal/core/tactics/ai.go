@@ -214,7 +214,7 @@ func (b *Battle) approach(unit int, reach map[Pos]int) (Pos, bool) {
 // closeness は、マスの「近さ」を返す関数を作る（DES-AI-01）。
 //
 // 近さは、あるマスから生きている自軍のいるマスのどれかまでの最小の費用。
-// ユニットはいないものとし、通るマスに入る費用（地形の Cost）の和で数える。
+// 占有は無視し、敵が通るマスに入る費用（地形の Cost と ZOC）の和で数える（DES-BTL-11）。
 // 出発するマスの費用は数えず、自軍のいるマスに入る費用は数える。Cost が 1 未満のマスは通れない。
 // どの自軍にもたどり着けないマスは unreachable（無限大）を返す。
 func (b *Battle) closeness() func(Pos) int {
@@ -239,6 +239,7 @@ func (b *Battle) closeness() func(Pos) int {
 		if c < 1 {
 			continue
 		}
+		c += zocCost(b.units, Enemy, cur.pos)
 		for _, d := range directions {
 			next := Pos{cur.pos.X + d.X, cur.pos.Y + d.Y}
 			if !b.inMap(next) {

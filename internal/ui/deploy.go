@@ -10,11 +10,15 @@ import (
 // deployButtonTop は配置のボタンの上端（DES-UI-20、DES-UI-28）。ページの印（y = 336〜）の上に置く。
 const deployButtonTop = infoTabTop - 40
 
+// deployZOCNoteX は、配置の案内欄で移動費の説明を置く x（「Q: 敵の危険範囲 OFF」の右。DES-UI-29）。
+const deployZOCNoteX = 240
+
 // DeployView は戦闘を作らずに表示する地形・初期敵・出撃枠と仮配置（DES-UI-20、DES-UI-23）。
 // Blue・Red はカーソルの敵の移動できるマス（青白の実線）と攻撃できるマス（青白の破線）、
 // Danger は Q の全敵の危険範囲（赤紫の塗り）（DES-UI-29）。
 // NameMark は、カーソルの敵を情報欄に出しているときの名前の横の印（なければ空）。
 type DeployView struct {
+	Board             tactics.BoardView
 	Terrain           [][]tactics.Terrain
 	Units             []tactics.Unit
 	Slots             []tactics.Pos
@@ -184,6 +188,7 @@ func (s *SceneController) deployView() SceneView {
 	if err != nil {
 		s.message = err.Error()
 	} else {
+		d.Board = board
 		d.Selected = s.deploySelected
 		d.Units = board.Units()
 		for y := 0; y < board.Height(); y++ {
@@ -252,5 +257,9 @@ func (s *SceneController) deployView() SceneView {
 	}
 	v.Texts = append(v.Texts, SceneText{Text: cameraGuide, X: 528, Y: 520, Style: StyleLabel})
 	v.Texts = append(v.Texts, SceneText{Text: "Q: 敵の危険範囲 " + state, X: 16, Y: 552, Style: StyleLabel})
+	// 配置の情報欄には地形の行がないので、カーソルの下の移動費の説明は案内欄の Q の右に出す（DES-UI-29、DES-IT07 3.8 節）。
+	if err == nil && hasZOCAt(board, s.deployCursor) {
+		v.Texts = append(v.Texts, SceneText{Text: zocNote, X: deployZOCNoteX, Y: 552, Style: StyleLabel})
+	}
 	return v
 }

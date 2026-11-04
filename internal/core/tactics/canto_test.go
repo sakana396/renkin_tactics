@@ -2,6 +2,7 @@ package tactics_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
@@ -376,7 +377,7 @@ func TestClassSkillsTactics(t *testing.T) {
 			class []tactics.Skill
 		}{
 			{"効果なし", []tactics.Skill{{Name: "なし"}}},
-			{"範囲外の効果", []tactics.Skill{{Name: "?", Effect: tactics.Canto + 1}}},
+			{"範囲外の効果", []tactics.Skill{{Name: "?", Effect: tactics.ZOC + 1}}},
 			{"同じ効果の重なり", []tactics.Skill{cantoSkill, cantoSkill}},
 			{"確率 101", []tactics.Skill{{Name: "大盾", Effect: tactics.Pavise, Chance: 101}}},
 			{"怒りの倍率", []tactics.Skill{{Name: "怒り", Effect: tactics.Wrath, Multiplier: 3}}},
@@ -393,6 +394,30 @@ func TestClassSkillsTactics(t *testing.T) {
 		s.Units[1].Skill = tactics.Skill{Name: "再移動", Effect: tactics.Canto}
 		if _, _, err := tactics.New(s, 1); err != nil {
 			t.Errorf("キャラと兵種の両方の再移動: %v", err)
+		}
+	})
+
+	t.Run("TC-FR-SYS-04-45 tactics でも通せんぼに数値を付けると拒み、数値なしは受け付ける", func(t *testing.T) {
+		for _, tc := range []struct {
+			name  string
+			skill tactics.Skill
+		}{
+			{"範囲", tactics.Skill{Name: "通せんぼ", Effect: tactics.ZOC, Range: 1}},
+			{"命中", tactics.Skill{Name: "通せんぼ", Effect: tactics.ZOC, Hit: 1}},
+			{"回避", tactics.Skill{Name: "通せんぼ", Effect: tactics.ZOC, Avoid: 1}},
+			{"確率", tactics.Skill{Name: "通せんぼ", Effect: tactics.ZOC, Chance: 1}},
+			{"倍率", tactics.Skill{Name: "通せんぼ", Effect: tactics.ZOC, Multiplier: 1}},
+		} {
+			s := cantoSetup()
+			s.Units[1].ClassSkills = []tactics.Skill{tc.skill}
+			if _, _, err := tactics.New(s, 1); !errors.Is(err, tactics.ErrInvalidSetup) || !strings.Contains(err.Error(), "通せんぼには数値を付けられません") {
+				t.Errorf("%s: err = %v, want 通せんぼの数値の誤り", tc.name, err)
+			}
+		}
+		s := cantoSetup()
+		s.Units[1].ClassSkills = []tactics.Skill{{Name: "通せんぼ", Effect: tactics.ZOC}}
+		if _, _, err := tactics.New(s, 1); err != nil {
+			t.Errorf("数値なしの通せんぼ: %v", err)
 		}
 	})
 

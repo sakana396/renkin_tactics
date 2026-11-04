@@ -73,6 +73,8 @@ const (
 	Snipe
 	// Canto は再移動。兵種のスキルとして持ち、攻撃・回復・道具のあと残りの移動力で動ける（DES-BTL-10）。
 	Canto
+	// ZOC は相手軍の隣接マスへの進入費を増やす（DES-BTL-11）。
+	ZOC
 )
 
 // AI は敵の動き方（DES-BTL-01、DES-AI-01）。

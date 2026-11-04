@@ -53,6 +53,28 @@ const (
 	groupLeavePhases = 4
 )
 
+// zocLateGroupKey は、攻撃した自軍の重騎士の ZOC で集合が遅れる一団の一員を表す（TC-FR-MAP-04-23、DES-BTL-11）。
+type zocLateGroupKey struct{ chapter, group, target, unit string }
+
+// zocLateGroups は、攻撃した重騎士の ZOC で集合が遅れる組と、持ち場を離れるまでの敵軍の番の上限。
+// ch09 の outer_east_front: ガルドが (26,9) から anti_lure_ch09_5 を攻撃すると、アーチャーが (26,10) の ZOC で
+// 1 回目の番に集合先 (26,11) へ届かず、集合先にいる anti_lure_ch09_5 と小隊長が 4 回の番は待つ。5 回目にそろって動く
+// （ZOC を外すと 3 回目に動く。#173 で調べた）。
+var zocLateGroups = map[zocLateGroupKey]int{
+	{chapter: "ch09", group: "outer_east_front", target: "anti_lure_ch09_5", unit: "anti_lure_ch09_5"}:           6,
+	{chapter: "ch09", group: "outer_east_front", target: "anti_lure_ch09_5", unit: "commander_outer_east_front"}: 6,
+}
+
+// hasZOC はユニットが通せんぼを持つかを返す（DES-BTL-11）。
+func hasZOC(u tactics.UnitSetup) bool {
+	for _, sk := range u.ClassSkills {
+		if sk.Effect == tactics.ZOC {
+			return true
+		}
+	}
+	return false
+}
+
 // 小隊長を除いた初期敵の数を、初期突撃 4 割の分母にする（DES-IT07 5.5 節）。
 func initialEnemiesWithoutCommanders(enemies []defs.EnemyPlacement) int {
 	count := 0
@@ -381,8 +403,30 @@ func checkGroupsCharge(t *testing.T, cat *defs.Catalog, id string, m defs.MapDef
 				}
 			}
 			for i, p := range start {
-				if u := b.Units()[i]; u.Alive && !acted[i] && b.Result == tactics.Ongoing {
+				u := b.Units()[i]
+				if !u.Alive || acted[i] || b.Result != tactics.Ongoing {
+					continue
+				}
+				// 攻撃した自軍が重騎士なら、その ZOC で仲間が 1 回目の番に集合先へ届かず、一団の集合が遅れることがある（DES-BTL-11）。
+				// 記録した組だけは、延ばした番の数のうちに持ち場を離れることを確かめる。
+				key := zocLateGroupKey{chapter: id, group: group, target: target.ID, unit: u.ID}
+				limit, late := zocLateGroups[key]
+				if !late || !hasZOC(setup.Units[attacker]) {
 					t.Fatalf("%s の %s を攻撃したあとの敵軍の番 %d 回で、%s が (%d,%d) から動かない", group, target.ID, groupLeavePhases, u.ID, p.X, p.Y)
+				}
+				for phase := groupLeavePhases + 1; phase <= limit && !acted[i] && b.Result == tactics.Ongoing; phase++ {
+					enemyEvents, err := b.EndPhase()
+					if err != nil {
+						t.Fatal(err)
+					}
+					for _, e := range enemyEvents {
+						if e.Unit == i && (e.Kind == tactics.EventStrike || e.Kind == tactics.EventMove) {
+							acted[i] = true
+						}
+					}
+				}
+				if !acted[i] && b.Result == tactics.Ongoing {
+					t.Fatalf("%s の %s を攻撃した重騎士の ZOC で遅れた %s が、敵軍の番 %d 回でも (%d,%d) から動かない", group, target.ID, u.ID, limit, p.X, p.Y)
 				}
 			}
 		}
