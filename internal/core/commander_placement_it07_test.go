@@ -29,7 +29,6 @@ func TestIT07CommanderPlacement(t *testing.T) {
 		"ch08": {16, 18, []string{"forest_west_front", "forest_north_front"}, []string{"forest_road_reserve", "forest_north_reserve"}},
 		"ch09": {26, 29, []string{"keep_gate_front", "outer_west_front", "outer_east_front"}, []string{"gate_west_reserve", "gate_east_reserve", "gate_inner_reserve"}},
 	}
-	totalInitial, totalEvents := 0, 0
 	for ch := 1; ch <= 9; ch++ {
 		id := fmt.Sprintf("ch%02d", ch)
 		w := want[id]
@@ -43,14 +42,6 @@ func TestIT07CommanderPlacement(t *testing.T) {
 			for _, e := range m.Enemies {
 				if e.Commander {
 					commanders++
-				}
-			}
-			totalInitial += commanders
-			for _, event := range m.Events {
-				for _, e := range event.Enemies {
-					if e.Commander {
-						totalEvents++
-					}
 				}
 			}
 			if len(m.Enemies) != w.after || len(m.Enemies)-commanders != w.before || len(m.Enemies) > 39 {
@@ -182,9 +173,31 @@ func TestIT07CommanderPlacement(t *testing.T) {
 			}
 		})
 	}
-	if totalInitial != 14 || totalEvents != 15 {
-		t.Fatalf("小隊長は初期 %d・出来事 %d、期待 14・15（DES-IT07 5.5 節）", totalInitial, totalEvents)
-	}
+	// 合計は専用のサブテストで全 9 章を数える（-run で 1 章だけを流しても落ちないようにする。REV-101 F-05）。
+	t.Run("TC-FR-MAP-04-30 小隊長の合計は初期 14・出来事 15", func(t *testing.T) {
+		initial, events := 0, 0
+		for ch := 1; ch <= 9; ch++ {
+			m, ok := cat.Map(fmt.Sprintf("ch%02d", ch))
+			if !ok {
+				t.Fatalf("ch%02d がない", ch)
+			}
+			for _, e := range m.Enemies {
+				if e.Commander {
+					initial++
+				}
+			}
+			for _, event := range m.Events {
+				for _, e := range event.Enemies {
+					if e.Commander {
+						events++
+					}
+				}
+			}
+		}
+		if initial != 14 || events != 15 {
+			t.Fatalf("小隊長は初期 %d・出来事 %d、期待 14・15（DES-IT07 5.5 節）", initial, events)
+		}
+	})
 }
 
 // containsGroup は、敵の列に一団 group の一員がいるかを返す。

@@ -1336,7 +1336,6 @@ boss = true
 x = 15
 y = 2
 
-# 3 ターン: 南西の背後
 # #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 keep_gate_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
 [[maps.enemies]]
 id = "commander_keep_gate_front"
@@ -1348,8 +1347,8 @@ weapons = ["iron_lance"]
 level = 11
 bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
 ai = "hold"
-x = 16
-y = 6
+x = 17
+y = 5
 
 # #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 outer_west_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
 [[maps.enemies]]
@@ -1379,6 +1378,7 @@ ai = "hold"
 x = 26
 y = 9
 
+# 3 ターン: 南西の背後
 [[maps.reinforcements]]
 id = "anti_lure_turn_09_1"
 turn = 3
@@ -3263,7 +3263,6 @@ ai = "hold"
 x = 11
 y = 1
 
-# 3 ターン: 南西の背後
 # #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 convoy_valley_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
 [[maps.enemies]]
 id = "commander_convoy_valley_front"
@@ -3278,6 +3277,7 @@ ai = "hold"
 x = 8
 y = 5
 
+# 3 ターン: 南西の背後
 [[maps.reinforcements]]
 id = "anti_lure_turn_07_1"
 turn = 3

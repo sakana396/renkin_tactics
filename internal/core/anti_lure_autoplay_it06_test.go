@@ -70,8 +70,8 @@ func antiLureRoute(id string, roster antiLureRoster) ([]tactics.Pos, []string) {
 // it07NoSimpleWin は、#172（小隊長の配置）のあとに今の打ち手が 20 seed で勝てなくなった章・名簿と、賢い打ち手の結果。
 var it07NoSimpleWin = map[string]string{
 	"ch05 平均":          "賢い打ち手は 20 seed 中 6 勝（TC-FR-MAP-04-25 の seed 5）",
-	"ch07 ミラを失いティオを出す": "賢い打ち手も 0 勝（#172 の前から 0 勝。TST-IT06 3.22 節）",
-	"ch09 平均":          "賢い打ち手も 0 勝。詰まりの疑い（map-ch09.md）",
+	"ch07 ミラを失いティオを出す": "詰まりの疑い（勝てる打ち手がいない。賢い打ち手は #172 の前から 0 勝。再現条件は map-ch07.md）",
+	"ch09 平均":          "賢い打ち手は 20 seed 中 6 勝（TC-FR-MAP-04-25 の seed 2）",
 }
 
 // 想定名簿と既存の主な進路で、固定 20 seed の勝ち数を測る（DES-MAP-08、DES-IT06 13 章）。

@@ -179,6 +179,60 @@ func TestCommandMarks(t *testing.T) {
 			t.Fatal("下見を開いただけで本物の盤面の印が変わった")
 		}
 	})
+
+	t.Run("TC-FR-UNT-09-30 出来事で小隊長が出られずに出た配下は、初めから崩れの印（DES-IT07 5.3 節。REV-101 F-04）", func(t *testing.T) {
+		c := newIdleWith(t, reserveSetup)
+		c.act(tactics.Command{Unit: 0, To: tactics.Pos{X: 0, Y: 1}, Action: tactics.Attack, Target: 1})
+		playOut(c)
+		c.EndPhase()
+		playOut(c)
+		var follower *tactics.Unit
+		for i, u := range c.Units() {
+			if u.Commander && u.Alive {
+				t.Fatalf("出られないはずの小隊長が出た: %+v", u)
+			}
+			if u.ID == "foll" {
+				follower = &c.Units()[i]
+			}
+		}
+		if follower == nil || !follower.Alive {
+			t.Fatal("配下が出ない")
+		}
+		if CommandMarkOf(*follower) != CollapsedMark {
+			t.Fatalf("小隊長なしで出た配下の印 %v、期待は崩れ", CommandMarkOf(*follower))
+		}
+		if m, _, word, ok := infoMarkAt(t, c, follower.Pos); !ok || m.Mark != CollapsedMark || word.Text != "崩れ" {
+			t.Fatalf("右欄の印 %v 語 %q", m.Mark, word.Text)
+		}
+	})
+}
+
+// reserveSetup は 10 × 3 の平地。主人公 (0, 1) の隣の見張り（HP 1、ID watch）を倒すと、次の敵軍の番の始めに
+// 小隊長 (8, 1) と配下 (3, 2) の増援が出る。(8, 1) と距離 2 までのマスは動かない敵がふさぐので、小隊長は出られない。
+// 盤面はつながっているので、小隊長と配下は同じ到達領域の一団（DES-IT07 5.1 節）。
+//
+//	0: 主人公 1: 見張り 2: ボス 3〜: ふさぐ敵
+func reserveSetup() tactics.Setup {
+	strong := tactics.Weapon{Name: "剣", Type: tactics.Sword, Might: 50, Hit: 300, MinRange: 1, MaxRange: 1}
+	reserve := func(id string, x, y int) tactics.UnitSetup {
+		return tactics.UnitSetup{Name: "増援 " + id, ID: id, Side: tactics.Enemy, Level: 1, AI: tactics.Hold, Approach: tactics.GroupApproach, Group: "r", Stats: tactics.Stats{HP: 30, Mov: 1}, Pos: tactics.Pos{X: x, Y: y}, Weapon: testLance}
+	}
+	leader := reserve("lead", 8, 1)
+	leader.Commander = true
+	units := []tactics.UnitSetup{
+		{Name: "主人公", Side: tactics.Player, Lord: true, Stats: tactics.Stats{HP: 30, Mov: 3}, Pos: tactics.Pos{X: 0, Y: 1}, Weapon: strong},
+		{Name: "見張り", ID: "watch", Side: tactics.Enemy, Level: 1, AI: tactics.Hold, Stats: tactics.Stats{HP: 1}, Pos: tactics.Pos{X: 1, Y: 1}, Weapon: testLance},
+		{Name: "ボス", Side: tactics.Enemy, Level: 1, Boss: true, AI: tactics.Hold, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: 4, Y: 0}, Weapon: testLance},
+	}
+	for y := 0; y < 3; y++ {
+		for x := 6; x < 10; x++ {
+			if abs(x-8)+abs(y-1) <= 2 {
+				units = append(units, tactics.UnitSetup{Name: "ふさぐ敵", Side: tactics.Enemy, Level: 1, AI: tactics.Hold, Stats: tactics.Stats{HP: 30}, Pos: tactics.Pos{X: x, Y: y}, Weapon: testLance})
+			}
+		}
+	}
+	return tactics.Setup{Terrain: field(10, 3), Units: units,
+		Events: []tactics.MapEventSetup{{ID: "alarm", Trigger: tactics.TriggerEnemyDefeated, Unit: "watch", Effect: tactics.EffectReinforce, Enemies: []tactics.UnitSetup{leader, reserve("foll", 3, 2)}}}}
 }
 
 func equalMarks(a, b []CommandMark) bool {
