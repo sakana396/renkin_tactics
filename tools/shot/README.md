@@ -24,6 +24,7 @@ PNG は常に 832×576 px。セーブファイルは読み書きせず、乱数�
 | `rewind`、`rewindkey:Up`、`rewindkey:Down` | 巻き戻しを開く・一覧を動かす |
 | `scroll:X:Y` | 盤面のカメラを X・Y マス動かす |
 | `tick:N` | 出来事の再生を N フレーム進める |
+| `detail`、`detailtab` | 詳しい画面を開く（カーソルの下か選んでいるユニット）・節を送る（DES-UI-31） |
 | `endphase`、`danger` | 番を終える・敵の危険範囲を切り替える |
 | `overview`、`nextally` | 全体図を開く・閉じる（M）、次の味方へ移る（Z）。全体図の地図のクリックは `clickpx` で、全体図を開いている間は実際の入力と同じく全体図が受ける（DES-UI-30） |
 | `choose:N`、`advance`、`cancel` | 場面の選択、物語の送り、取り消し |

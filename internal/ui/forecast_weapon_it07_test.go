@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"image"
 	"reflect"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 
 // 画面からの予測中の武器の操作を確かめる（DES-UI-34）。
 func TestIT07ForecastWeapon(t *testing.T) {
+	window := func(c *Controller) image.Rectangle { w, _ := c.ForecastWindow(); return w.Rect }
 	click := func(g *Game, p tactics.Pos) {
 		pt := g.ctrl.Camera().Screen(p)
 		g.leftClick(pt.X+2, pt.Y+2)
@@ -49,12 +51,13 @@ func TestIT07ForecastWeapon(t *testing.T) {
 		if c.weapon != 0 || c.dest != (tactics.Pos{X: 1, Y: 1}) {
 			t.Fatalf("初期 %d %v", c.weapon, c.dest)
 		}
-		row := c.Panel(c.dest, true).View().Bottom - lineHeight
-		g.leftClick(MapSize+infoMargin+5, row+2)
+		r := window(c)
+		g.leftClick(r.Min.X+16, r.Max.Y-20)
 		if c.weapon != 1 || c.dest != (tactics.Pos{X: 1, Y: 0}) {
 			t.Fatalf("左 %d %v", c.weapon, c.dest)
 		}
-		c.Wheel(MapSize+10, 10, -1, false)
+		r = window(c)
+		c.Wheel(r.Min.X+10, r.Min.Y+10, -1, false)
 		if c.weapon != 0 {
 			t.Fatalf("ホイール %d", c.weapon)
 		}
@@ -62,7 +65,8 @@ func TestIT07ForecastWeapon(t *testing.T) {
 		if c.weapon != 0 {
 			t.Fatal("窓外で武器が送られた")
 		}
-		g.leftClick(MapSize+infoMargin+100, row+2)
+		r = window(c)
+		g.leftClick(r.Min.X+100, r.Max.Y-20)
 		if c.weapon != 1 || c.Panel(tactics.Pos{}, false).ForecastWeapons[0] != tactics.Bow {
 			t.Fatalf("右 %d", c.weapon)
 		}
@@ -77,8 +81,9 @@ func TestIT07ForecastWeapon(t *testing.T) {
 		if c.weapon != 0 {
 			t.Fatalf("初期武器 %d", c.weapon)
 		}
-		row := c.Panel(c.dest, true).View().Bottom - lineHeight
-		left, right := MapSize+infoMargin+5, MapSize+infoMargin+100
+		r := window(c)
+		row := r.Max.Y - 20
+		left, right := r.Min.X+16, r.Min.X+100
 		for _, step := range []struct {
 			name  string
 			input func()
@@ -88,8 +93,8 @@ func TestIT07ForecastWeapon(t *testing.T) {
 			{"▶", func() { g.leftClick(right, row+2) }, 0},
 			{"A", func() { c.battleKey("A") }, 2},
 			{"D", func() { c.battleKey("D") }, 0},
-			{"ホイール上", func() { c.Wheel(MapSize+10, 250, 1, false) }, 2},
-			{"ホイール下", func() { c.Wheel(MapSize+10, 250, -1, false) }, 0},
+			{"ホイール上", func() { c.Wheel(r.Min.X+10, r.Min.Y+10, 1, false) }, 2},
+			{"ホイール下", func() { c.Wheel(r.Min.X+10, r.Min.Y+10, -1, false) }, 0},
 		} {
 			step.input()
 			if c.weapon != step.want {
@@ -100,12 +105,12 @@ func TestIT07ForecastWeapon(t *testing.T) {
 		before := c.weapon
 		g.leftClick(left, row+2)
 		c.battleKey("A")
-		c.Wheel(MapSize+10, 250, 1, false)
+		c.Wheel(r.Min.X+10, r.Min.Y+10, 1, false)
 		if c.weapon != before {
 			t.Fatal("巻き戻し中に武器を送った")
 		}
 		c.battleKey("Esc")
-		g.leftClick(MapSize+infoMargin+285, row+2)
+		g.leftClick(r.Max.X-32, row+2)
 		if c.State() != Selected || c.weapon != -1 {
 			t.Fatalf("戻る: %v %d", c.State(), c.weapon)
 		}
@@ -229,8 +234,8 @@ func TestIT07ForecastWeapon(t *testing.T) {
 			t.Fatalf("直接クリックの取消し: %v", c.State())
 		}
 		click(g, tactics.Pos{X: 1, Y: 2})
-		row := c.Panel(c.dest, true).View().Bottom - lineHeight
-		g.leftClick(MapSize+infoMargin+230, row+2)
+		r := window(c)
+		g.leftClick(r.Max.X-80, r.Max.Y-20)
 		if c.State() != Playing {
 			t.Fatalf("窓の決定: %v", c.State())
 		}

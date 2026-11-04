@@ -288,6 +288,20 @@ func (g *shotGame) step(raw string) error {
 		} else {
 			return errors.New("盤面のある場面だけの操作です")
 		}
+	case "detail", "detailtab":
+		// 詳しい画面を開く・節を送る（DES-UI-31）。
+		switch {
+		case s.Scene() == Deploy && parts[0] == "detail":
+			s.OpenDeployDetail()
+		case s.Scene() == Deploy:
+			s.DeployDetailInput(true, false)
+		case s.Scene() == Battle && parts[0] == "detail":
+			s.BattleController().OpenDetail()
+		case s.Scene() == Battle:
+			s.BattleController().DetailInput(true, false)
+		default:
+			return errors.New("盤面のある場面だけの操作です")
+		}
 	case "overview", "nextally":
 		// 全体図（M）と次の味方（Z）を、実際の入力と同じ navInput に通す（DES-UI-30）。
 		k := navKeys{Overview: parts[0] == "overview", Next: parts[0] == "nextally"}

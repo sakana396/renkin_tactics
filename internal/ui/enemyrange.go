@@ -206,7 +206,7 @@ func (c *Controller) RangeStatus() RangeStatusView {
 // RangeClick は「消す」ボタンのクリックを受ける（DES-UI-29）。ボタンの中なら真を返し、盤面・情報欄には渡さない。
 // 巻き戻しの一覧の間は巻き戻しの操作を優先するので受けない（偽を返す）。
 func (c *Controller) RangeClick(x, y int) bool {
-	if c.rewind.open || !image.Pt(x, y).In(rangeClearRect) || c.RangeStatusIn(c.InfoView(x, y)).HideClear {
+	if c.rewind.open || !image.Pt(x, y).In(rangeClearRect) || c.RangeStatusIn(c.BattleInfoView(x, y)).HideClear {
 		return false
 	}
 	c.ClearWatched()

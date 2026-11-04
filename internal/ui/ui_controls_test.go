@@ -94,7 +94,7 @@ func overlayIs(t *testing.T, c *Controller, what string, wantBlue, wantRed map[t
 }
 
 func TestUIControls(t *testing.T) {
-	t.Run("TC-FR-CMP-11-12 配置で初めの敵にカーソルを当てると能力を 2 ページで出し、クリックしても配置を変えない。まだ出ていない増援は見せない", func(t *testing.T) {
+	t.Run("TC-FR-CMP-11-12 配置で初めの敵にカーソルを当てると右欄の上段に能力と装備を出し、クリックしても配置を変えない。まだ出ていない増援は見せない（DES-UI-31）", func(t *testing.T) {
 		s := deployRangeScenes(t)
 		baseline := campaignBytes(t, s)
 		infoRows := func() []string {
@@ -103,8 +103,8 @@ func TestUIControls(t *testing.T) {
 			if v.Info == nil {
 				return nil
 			}
-			if len(v.Info.Tabs) != 2 {
-				t.Errorf("ページの印 %d 個", len(v.Info.Tabs))
+			if len(v.Info.Tabs) != 0 {
+				t.Errorf("ページの印 %d 個（配置の右欄は上下 2 段で印を出さない）", len(v.Info.Tabs))
 			}
 			return rows(*v.Info)
 		}
@@ -114,15 +114,15 @@ func TestUIControls(t *testing.T) {
 				t.Errorf("%s: 選択 %d、枠 %v（%d・%v のはず）", what, s.deploySelected, s.deploySlots, selected, slots)
 			}
 		}
-		// 選んでいない。弓兵 (4, 0) にカーソルを当てると、弓兵の能力（「能力」のページ）を出し、案内の文は出さない。
+		// 選んでいない。弓兵 (4, 0) にカーソルを当てると、上段に弓兵の能力を出し、案内の文は出さない。
 		s.SetDeployCursor(cellCenter(tactics.Pos{X: 4}))
 		got := infoRows()
-		if len(got) < 2 || got[0] != "弓兵" || !strings.Contains(strings.Join(got, "\n"), "力 4") || strings.Contains(viewStrings(s.View()), "配置する味方を選んでください") {
+		if len(got) < 2 || got[0] != "弓兵" || !strings.Contains(strings.Join(got, "\n"), "力/魔力 4/") || strings.Contains(viewStrings(s.View()), "配置する味方を選んでください") {
 			t.Errorf("弓兵: %q", got)
 		}
-		// Tab で「装備・スキル」に切り替えると、弓兵の武器を出す。表示だけで、選択と配置は変わらない。
+		// 装備は上段に常に出し、Tab は配置中のページを切り替えない（DES-UI-31）。
 		s.ToggleInfoPage()
-		if got := strings.Join(infoRows(), "\n"); !strings.Contains(got, "武器: 弓（弓）") {
+		if got := strings.Join(infoRows(), "\n"); !strings.Contains(got, "装備 E 弓（弓）") {
 			t.Errorf("弓兵の装備: %q", got)
 		}
 		unchanged("Tab", -1, []int{0, 1})
@@ -154,14 +154,14 @@ func TestUIControls(t *testing.T) {
 		clickDeployCell(s, tactics.Pos{X: 4})
 		clickDeployCell(s, tactics.Pos{X: 6})
 		unchanged("敵のクリック", 0, []int{0, 1})
-		// 選択を外し、ボスを見てから情報欄の印へ動かすと、ボスを出し続け、印のクリックでページを変える。
+		// 選択を外し、ボスを見てから右欄の上へ動かすと、ボスを出し続ける。元の印の位置のクリックは何も変えない。
 		s.Cancel()
 		s.SetDeployCursor(cellCenter(tactics.Pos{X: 6}))
 		tab := InfoTabRects()[1]
 		s.SetDeployCursor(tab.Min.X+2, tab.Min.Y+2)
 		s.Click(tab.Min.X+2, tab.Min.Y+2)
-		if got := strings.Join(infoRows(), "\n"); s.infoPage != PageEquip || !strings.HasPrefix(got, "騎兵 1　★ボス") || !strings.Contains(got, "武器: 剣（剣）") {
-			t.Errorf("印のクリック: ページ %d、%q", s.infoPage, got)
+		if got := strings.Join(infoRows(), "\n"); !strings.HasPrefix(got, "騎兵 1　★ボス") || !strings.Contains(got, "装備 E 剣（剣）") {
+			t.Errorf("右欄の上: %q", got)
 		}
 		// ミニマップの上では出し続けない。
 		s.SetDeployCursor(650, 400)
@@ -171,12 +171,12 @@ func TestUIControls(t *testing.T) {
 		unchanged("印のクリック", -1, []int{0, 1})
 	})
 
-	t.Run("TC-FR-UNT-09-21 情報欄は 予測 → カーソルの下のユニット → 選んでいるユニット → 地形 の順に出し、盤の外や空いたマスでは選んでいるユニットに戻る", func(t *testing.T) {
+	t.Run("TC-FR-UNT-09-21 右欄の上段は カーソルの下のユニット → 選んでいるユニット の順に出し、盤の外や空いたマスでは選んでいるユニットに戻る。地形は最下行。予測は共通の窓に出す（DES-UI-31）", func(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
 		leon, boss := tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3}
 		first := func(x, y int) string {
 			t.Helper()
-			got := rows(c.InfoView(x, y))
+			got := rows(c.BattleInfoView(x, y))
 			if len(got) == 0 {
 				return ""
 			}
@@ -184,10 +184,11 @@ func TestUIControls(t *testing.T) {
 		}
 		last := func(x, y int) string {
 			t.Helper()
-			got := rows(c.InfoView(x, y))
+			got := rows(c.BattleInfoView(x, y))
 			for _, r := range got {
 				if strings.HasPrefix(r, "地形: ") {
-					return r
+					// 最下行は「地形: 平地　回避 0　守備 0　回復 0%」。名前の部分だけを比べる。
+					return strings.SplitN(r, "　", 2)[0]
 				}
 			}
 			return ""
@@ -200,7 +201,7 @@ func TestUIControls(t *testing.T) {
 		}{
 			{"レオン", 2*CellSize + 16, 3*CellSize + 16, "レオン", "地形: 平地"},
 			{"ボス", 3*CellSize + 16, 3*CellSize + 16, "ソルジャー 3　★ボス", "地形: 森"},
-			{"空きマス", 16, 16, "地形: 平地", "地形: 平地"},
+			{"空きマス", 16, 16, "地形: 平地　回避 0　守備 0　回復 0%", "地形: 平地"},
 			{"案内欄", 100, 540, "", ""},
 			{"ミニマップ", 650, 400, "", ""},
 		} {
@@ -228,14 +229,17 @@ func TestUIControls(t *testing.T) {
 		if got := first(cellCenter(tactics.Pos{X: 2, Y: 2})); got != "レオン" {
 			t.Errorf("Moved の移動先のマス: %q", got)
 		}
-		// 今いるマスにとどめて攻撃し、相手を選ぶと、予測の表示を優先する（ユニットの行とページの印を出さない）。
+		// 今いるマスにとどめて攻撃し、相手を選ぶと、予測は共通の窓に出し、右欄は上下 2 段のまま（予測の行もページの印も出さない）。
 		c.Cancel()
 		c.Click(leon)
 		c.ChooseAction(tactics.Attack)
 		c.Click(boss)
+		if _, ok := c.ForecastWindow(); !ok {
+			t.Error("予測の窓がない")
+		}
 		for _, xy := range [][2]int{{16, 16}, {bx, by}, {100, 540}} {
-			v := c.InfoView(xy[0], xy[1])
-			if got := strings.Join(rows(v), "\n"); len(v.Tabs) != 0 || strings.Contains(got, "クラス: ") || !strings.Contains(got, "命中率") {
+			v := c.BattleInfoView(xy[0], xy[1])
+			if got := strings.Join(rows(v), "\n"); len(v.Tabs) != 0 || strings.Contains(got, "5×2") || strings.Contains(got, "63%") || !strings.Contains(got, "レオン") {
 				t.Errorf("予測 %v: 印 %d、%q", xy, len(v.Tabs), got)
 			}
 		}

@@ -72,8 +72,14 @@ func (g *Game) Update() error {
 	s := g.scenes
 	left := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 	cancel := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) || inpututil.IsKeyJustPressed(ebiten.KeyEscape)
-	if inpututil.IsKeyJustPressed(ebiten.KeyT) {
-		s.rewindKey("T")
+	x, y := ebiten.CursorPosition()
+	if g.priorityInput(priorityKeys{
+		Rewind: inpututil.IsKeyJustPressed(ebiten.KeyT), Tab: inpututil.IsKeyJustPressed(ebiten.KeyTab),
+		Close: cancel, Detail: inpututil.IsKeyJustPressed(ebiten.KeyI), Click: left,
+		Danger: inpututil.IsKeyJustPressed(ebiten.KeyQ),
+		X:      x, Y: y,
+	}) {
+		return nil
 	}
 	if s.Scene() == Battle || s.Scene() == GameOver {
 		c := s.BattleController()
@@ -121,7 +127,7 @@ func (g *Game) Update() error {
 			x, y := ebiten.CursorPosition()
 			_, wheel := ebiten.Wheel()
 			s.DeployInput(dx, dy, x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift), left && !cancel)
-			if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+			if inpututil.IsKeyJustPressed(ebiten.KeyQ) && !left {
 				s.ToggleDeployDanger()
 			}
 		}
@@ -139,10 +145,6 @@ func (g *Game) Update() error {
 		_, wheel := ebiten.Wheel()
 		scrolled := c.Wheel(x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift)) || dx != 0 || dy != 0
 		c.SetCursor(x, y)
-		// Tab は勝敗が決まった Over でも受ける（DES-UI-28、REV-071 F-02）。
-		if inpututil.IsKeyJustPressed(ebiten.KeyTab) {
-			c.ToggleInfoPage()
-		}
 		if c.State() == Over {
 			if left {
 				s.Click(ebiten.CursorPosition())
@@ -179,6 +181,55 @@ func (g *Game) Update() error {
 	return nil
 }
 
+// priorityKeys は Game.Update が先に処理するキーとカーソルの写し（DES-IT07 3.1 節）。
+type priorityKeys struct {
+	Rewind, Tab, Close, Detail, Click, Danger bool
+	X, Y                                      int
+}
+
+// priorityInput は最優先の入力が成立したフレームを消費する（DES-IT07 3.1 節）。
+func (g *Game) priorityInput(k priorityKeys) bool {
+	s := g.scenes
+	if k.Rewind && (s.Scene() == Battle || s.Scene() == GameOver) && s.BattleController() != nil {
+		s.rewindKey("T")
+		if s.BattleController().rewind.open {
+			return true
+		}
+	}
+	if s.Scene() == Deploy {
+		if s.detailOpen {
+			s.DeployDetailInput(k.Tab, k.Close || k.Detail)
+			return true
+		}
+		if s.deployNav.overview {
+			return false
+		}
+		if k.Detail {
+			s.SetDeployCursor(k.X, k.Y)
+			if s.OpenDeployDetail() {
+				return true
+			}
+		}
+	}
+	if s.Scene() == Battle && s.BattleController() != nil {
+		c := s.BattleController()
+		if c.detailOpen {
+			c.DetailInput(k.Tab, k.Close || k.Detail)
+			return true
+		}
+		if c.OverviewOpen() {
+			return false
+		}
+		if k.Detail {
+			c.SetCursor(k.X, k.Y)
+			if c.OpenDetail() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // sceneKeys は戦闘以外の場面へ渡す、そのフレームの入力（DES-UI-09）。Deploy は配置の入力を先に渡したこと。
 type sceneKeys struct {
 	Tab, Left, Cancel, Deploy, Advance bool
@@ -201,10 +252,11 @@ func (g *Game) sceneInput(k sceneKeys, x, y int) {
 }
 
 // leftClick は左クリックを、ボタンか盤面のマスの操作に読み替える（DES-UI-02）。
-// 判定はミニマップ → 範囲の「消す」 → 情報欄 → 盤面の順（DES-UI-28、DES-UI-29）。
+// 判定は詳しい画面 → 予測の窓 → ミニマップ → 範囲の「消す」 → 情報欄 → 盤面の順（DES-UI-28、DES-UI-29、DES-IT07 3.1 節）。
+// 詳しい画面を出している間は、どこをクリックしても何もしない（閉じるのは I・Esc・右クリック）。
 func (g *Game) leftClick(x, y int) {
 	c := g.ctrl
-	if c.MinimapClick(x, y) || c.RangeClick(x, y) || c.InfoClick(x, y) {
+	if c.detailOpen || c.ForecastClick(x, y) || c.MinimapClick(x, y) || c.RangeClick(x, y) || c.InfoClick(x, y) {
 		return
 	}
 	if labels := c.MenuLabels(); len(labels) > 0 {
@@ -243,6 +295,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			if g.scenes.Scene() == Deploy {
 				g.drawDeployNav(screen)
 			}
+			if g.scenes.Scene() == Deploy && g.scenes.detailOpen {
+				v := g.scenes.deployView()
+				if g.scenes.detailUnit >= 0 && g.scenes.detailUnit < len(v.Deploy.Units) {
+					g.drawUnitDetail(screen, v.Deploy.Units[g.scenes.detailUnit], g.scenes.detailSection)
+				}
+			}
 			if g.scenes.Scene() == GameOver {
 				g.ctrl = g.scenes.BattleController()
 				g.drawRewind(screen)
@@ -274,11 +332,28 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		cx, cy = g.shotCursor.X, g.shotCursor.Y
 	}
 	g.drawInfo(screen, cx, cy)
+	if w, ok := g.ctrl.ForecastWindow(); ok {
+		g.drawForecastWindow(screen, w)
+	}
 	g.drawMinimap(screen, g.ctrl.Minimap())
 	g.drawGuide(screen)
 	g.drawHintText(screen, hint)
 	g.drawRewind(screen)
 	g.drawBattleNav(screen)
+	if g.ctrl.detailOpen {
+		units := g.ctrl.Units()
+		if g.ctrl.detailUnit >= 0 && g.ctrl.detailUnit < len(units) {
+			g.drawUnitDetail(screen, units[g.ctrl.detailUnit], g.ctrl.detailSection)
+		}
+	}
+}
+
+// drawUnitDetail は盤面と右欄 (0,0)〜(832,512) に詳しい画面を、下 (0,512)〜(832,576) に操作の案内を描く（DES-UI-31）。
+func (g *Game) drawUnitDetail(dst *ebiten.Image, u tactics.Unit, section DetailSection) {
+	fillImageRect(dst, image.Rect(0, 0, ScreenWidth, MapSize), panelColor)
+	g.drawInfoView(dst, DetailView(u, section))
+	fillImageRect(dst, image.Rect(0, MapSize, ScreenWidth, ScreenHeight), bgColor)
+	g.label(dst, detailGuide, 16, 536, muted)
 }
 
 // drawHint は増援の予兆領域の外周を黄土色の破線で、中央付近に「…」を描く（DES-UI-24）。
@@ -579,14 +654,35 @@ func (g *Game) drawOver(dst *ebiten.Image) {
 // (cx, cy) はカーソルの画面の座標で、マスは CellAt で引く。
 func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 	vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
-	// 予測・ユニット・地形・ページの印は、位置を決めた InfoView のとおりに描く（DES-UI-06、DES-UI-07、DES-UI-28）。
-	v := g.ctrl.InfoView(cx, cy)
-	g.drawInfoView(dst, v)
-	if r, ok := g.ctrl.cursorNameMark(v); ok {
-		g.drawNameMark(dst, r)
+	w, forecast := g.ctrl.ForecastWindow()
+	if !forecast || !w.Fallback {
+		v := g.ctrl.BattleInfoView(cx, cy)
+		g.drawInfoView(dst, v)
+		if r, ok := g.ctrl.cursorNameMark(v); ok {
+			g.drawNameMark(dst, r)
+		}
+		g.drawRangeStatus(dst, g.ctrl.RangeStatusIn(v))
+		g.drawDetailButton(dst, g.ctrl.DetailButton())
 	}
-	g.drawRangeStatus(dst, g.ctrl.RangeStatusIn(v))
 	g.label(dst, cameraGuide, rewindLeft, cameraGuideY, muted)
+}
+
+// drawDetailButton は操作行の「詳細 I」を「消す」と同じ形で描く（DES-UI-31）。
+func (g *Game) drawDetailButton(dst *ebiten.Image, b SceneButton) {
+	fill, border, text := menuColor, menuBorder, white
+	if !b.Enabled {
+		fill, border, text = bgColor, muted, muted
+	}
+	fillImageRect(dst, b.Rect, fill)
+	vector.StrokeRect(dst, float32(b.Rect.Min.X), float32(b.Rect.Min.Y), float32(b.Rect.Dx()), float32(b.Rect.Dy()), 1, border, false)
+	g.label(dst, b.Label, b.Rect.Min.X+(b.Rect.Dx()-textWidth(b.Label))/2, b.Rect.Min.Y+(b.Rect.Dy()-lineHeight)/2, text)
+}
+
+// drawForecastWindow は盤面または右欄に共通の予測を描く（DES-UI-31）。
+func (g *Game) drawForecastWindow(dst *ebiten.Image, w ForecastWindow) {
+	fillImageRect(dst, w.Rect, panelColor)
+	vector.StrokeRect(dst, float32(w.Rect.Min.X), float32(w.Rect.Min.Y), float32(w.Rect.Dx()), float32(w.Rect.Dy()), 2, menuBorder, false)
+	g.drawInfoView(dst, w.View)
 }
 
 // drawInfoView は戦闘と準備で情報欄の描画を共有する（DES-UI-06、13）。
