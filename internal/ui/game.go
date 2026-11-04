@@ -82,7 +82,11 @@ func (g *Game) Update() error {
 			x, y := ebiten.CursorPosition()
 			c.Wheel(x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift))
 			if cancel {
-				c.Cancel()
+				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+					c.battleKey("RightClick")
+				} else {
+					c.battleKey("Esc")
+				}
 			} else if left && wheel == 0 {
 				// 入力の判定はミニマップ → 右欄 → 盤面の順（DES-UI-28）。
 				if x, y := ebiten.CursorPosition(); !c.MinimapClick(x, y) {
@@ -148,7 +152,16 @@ func (g *Game) Update() error {
 				g.leftClick(ebiten.CursorPosition())
 			}
 			if cancel {
-				c.Cancel()
+				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+					c.battleKey("RightClick")
+				} else {
+					c.battleKey("Esc")
+				}
+			}
+			if inpututil.IsKeyJustPressed(ebiten.KeyA) {
+				c.battleKey("A")
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyD) {
+				c.battleKey("D")
 			}
 			if inpututil.IsKeyJustPressed(ebiten.KeyE) {
 				c.EndPhase()
@@ -249,6 +262,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawHint(board, hint)
 	g.drawUnits(board)
 	g.drawEnemyRanges(board, g.ctrl.EnemyRangeLayers())
+	g.drawEquipMarks(board, g.ctrl.Units())
 	g.drawWatchedPins(board, g.ctrl.WatchedPins(), g.ctrl.Units())
 	g.drawSelection(board)
 	g.drawTargetLabel(board)
@@ -364,7 +378,7 @@ func (g *Game) drawUnits(dst *ebiten.Image) {
 	g.drawUnitList(dst, g.ctrl.Units())
 }
 
-// drawUnitList は戦闘と配置で同じユニットの絵を描く（DES-UI-03、DES-UI-20）。
+// drawUnitList は戦闘と配置で同じユニットの絵を描く（DES-UI-03、DES-UI-20）。装備の印は drawEquipMarks で範囲の線の上に描く（DES-UI-33）。
 func (g *Game) drawUnitList(dst *ebiten.Image, units []tactics.Unit) {
 	for _, u := range units {
 		if !u.Alive || !g.drawCamera.Visible(u.Pos) {
@@ -386,15 +400,25 @@ func (g *Game) drawUnitList(dst *ebiten.Image, units []tactics.Unit) {
 			vector.StrokeRect(dst, px+1, py+1, CellSize-2, CellSize-2, 2, gold, false)
 		}
 		g.drawTile(dst, unitTile(u), int(px), int(py), scale)
-		// HP の棒。
-		w := float32(CellSize - 4)
-		vector.DrawFilledRect(dst, px+2, py+CellSize-5, w, 4, hpBack, false)
+		// HP の棒。右下の装備の印と重ねない（DES-UI-33）。
+		bar := unitHPBarRect(pt)
+		fillImageRect(dst, bar, hpBack)
 		if u.Stats.HP > 0 {
-			vector.DrawFilledRect(dst, px+2, py+CellSize-5, w*float32(u.HP)/float32(u.Stats.HP), 4, hpFront, false)
+			w := float32(bar.Dx()) * float32(u.HP) / float32(u.Stats.HP)
+			vector.DrawFilledRect(dst, float32(bar.Min.X), float32(bar.Min.Y), w, float32(bar.Dy()), hpFront, false)
 		}
 		if u.Boss {
 			g.label(dst, "★", int(px)+CellSize-12, int(py)-1, gold)
 		}
+	}
+}
+
+// drawEquipMarks は、ユニットの右下に装備の印を、暗い下地の上へ種類の絵で描く（DES-UI-33）。
+// 敵の範囲の線の上に描き、固定のピン（右上）と同じく線に隠れないようにする。
+func (g *Game) drawEquipMarks(dst *ebiten.Image, units []tactics.Unit) {
+	for _, m := range equipMarks(units, g.drawCamera) {
+		fillImageRect(dst, m.Rect, hpBack)
+		g.drawTileSize(dst, m.Tile, m.Rect.Min.X, m.Rect.Min.Y, m.Rect.Dx())
 	}
 }
 
@@ -809,6 +833,7 @@ func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 	}
 	// 全敵の塗りとカーソルの敵の線は、戦闘と同じ層の順に重ねる（DES-UI-29）。
 	g.drawEnemyRanges(dst, d.RangeLayers())
+	g.drawEquipMarks(dst, d.Units)
 	if d.Selected >= 0 {
 		g.strokeCell(dst, d.Units[d.Selected].Pos, cursorColor)
 	}
@@ -829,6 +854,7 @@ func (g *Game) drawRewindPreview(dst *ebiten.Image) {
 		g.drawBoardTerrain(board, v.Board)
 		g.drawHint(board, v.Hint)
 		g.drawUnitList(board, v.Units)
+		g.drawEquipMarks(board, v.Units)
 		if v.HasFrame {
 			g.strokeCell(board, v.Frame, cursorColor)
 		}

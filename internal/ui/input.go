@@ -35,7 +35,7 @@ const HealTargeting State = Over + 1
 // ほかのユニットは操作できず、番も終えられない。
 const Canto State = HealTargeting + 1
 
-// WeaponMenu は攻撃に使う武器を選ぶ状態、StaffMenu は回復に使う杖を選ぶ状態（DES-UI-26、DES-IT06 12.1 節）。
+// WeaponMenu は旧攻撃一覧の状態（IT07 の攻撃では入らない）、StaffMenu は回復の杖を選ぶ状態（DES-UI-26、DES-UI-34）。
 // 決定するまで core の装備は変えない。
 const (
 	WeaponMenu State = Canto + 1
@@ -70,7 +70,7 @@ type Controller struct {
 	unit   int
 	dest   tactics.Pos
 	target int
-	// weapon は攻撃・回復に選んだ武器の列の添字（選んでいなければ -1）。
+	// weapon は攻撃の予測中に仮選択した武器か、回復に選んだ杖の列の添字（選んでいなければ -1）。
 	// weaponMenu は武器・杖の一覧を出したこと（取り消しで一覧へ戻るか、行動の一覧へ戻るかを分ける。DES-IT06 12.1 節）。
 	weapon     int
 	weaponMenu bool
@@ -78,7 +78,7 @@ type Controller struct {
 	// 自軍を選んだり行動したりしても保ち、戦死した敵は除く。別の Battle（新しい Controller）では空になる。
 	watched map[int]bool
 	// quickSpots は、移動先を選んでいる状態で敵 quickTarget をクリックしたときの、武器ごとの仮の移動先（DES-UI-27）。
-	// 武器の一覧（WeaponMenu）をこの操作で出している間だけ nil でない。届く移動先のない武器は入れない。
+	// 直接クリックの予測中だけ保持する。届く移動先のない武器は入れない。
 	quickSpots  map[int]tactics.Pos
 	quickTarget int
 	// cursorX と cursorY は、カーソルの画面の座標（DES-UI-08）。まだ知らなければ盤面の外の (-1, -1)。
@@ -185,6 +185,12 @@ func (c *Controller) Click(p tactics.Pos) {
 			c.act(tactics.Command{Unit: c.unit, To: p, Action: tactics.CantoMove})
 		}
 	case Targeting, HealTargeting:
+		if c.state == Targeting && c.quickSpots != nil {
+			if i, ok := c.unitAt(p); ok && i != c.target && c.battle.Units()[i].Side == tactics.Enemy {
+				c.quickAttack(i)
+				return
+			}
+		}
 		targets, action := c.Targets(), tactics.Attack
 		if c.state == HealTargeting {
 			targets, action = c.HealTargets(), tactics.Heal
@@ -197,6 +203,10 @@ func (c *Controller) Click(p tactics.Pos) {
 				// 同じ相手をもう一度クリックすると決定する。選んだ武器・杖をコマンドで渡す（DES-ITM-02）。
 				w := c.weapon
 				c.act(tactics.Command{Unit: c.unit, To: c.dest, Action: action, Target: t, Weapon: &w})
+			} else if action == tactics.Attack {
+				if !c.selectAttackTarget(t) {
+					return
+				}
 			} else {
 				c.target = t
 			}
@@ -217,7 +227,7 @@ func (c *Controller) ChooseAction(a tactics.Action) {
 	case tactics.Wait:
 		c.act(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Wait})
 	case tactics.Attack:
-		c.chooseWeapons(c.attackWeapons(), WeaponMenu, Targeting)
+		c.state, c.target, c.weapon, c.weaponMenu = Targeting, -1, -1, false
 	case tactics.Heal:
 		c.chooseWeapons(c.staffWeapons(), StaffMenu, HealTargeting)
 	case tactics.UseItem:
@@ -264,11 +274,6 @@ func (c *Controller) ChooseWeapon(k int) {
 		c.message = reason
 		return
 	}
-	if c.quickSpots != nil {
-		// 敵をクリックして出した一覧では、その武器の仮の移動先から相手を選んだ予測へ進む（DES-UI-27）。
-		c.startQuick(ws[k], true)
-		return
-	}
 	c.state, c.weapon, c.target, c.message = next, ws[k], -1, ""
 	targets := c.Targets()
 	if next == HealTargeting {
@@ -308,15 +313,16 @@ func (c *Controller) Cancel() {
 	case Moved:
 		c.state = Selected
 	case Targeting, HealTargeting:
-		// 予測 → 相手 → 武器 → 行動の一覧 の順に戻る（DES-IT06 12.1 節、UC-02 5c）。
-		// 相手を選んで予測を出しているときは、相手の選択を外すだけにする。一覧を飛ばしたときは行動の一覧へ戻る。
+		// 攻撃の直接クリックは予測から移動先選択へ、それ以外は予測 → 相手 → 行動一覧へ戻る（DES-UI-34）。
+		if c.state == Targeting && c.quickSpots != nil {
+			c.state, c.target, c.weapon, c.quickSpots, c.quickTarget = Selected, -1, -1, nil, -1
+			return
+		}
 		if c.target >= 0 {
-			c.target = -1
+			c.target, c.weapon = -1, -1
 			return
 		}
 		switch {
-		case c.weaponMenu && c.state == Targeting:
-			c.state = WeaponMenu
 		case c.weaponMenu:
 			c.state = StaffMenu
 		default:
@@ -458,12 +464,12 @@ func (c *Controller) Actions() []tactics.Action {
 }
 
 // Targets は、選んだ自軍が移動先から攻撃できる、生きている敵の添字を返す（DES-UI-02、DES-BTL-04、DES-ITM-02）。
-// Targeting では選んだ武器で届く敵、Moved では手持ちのどれかの攻撃の武器で届く敵を返す。ほかの状態では nil。
+// Targeting・Moved では手持ちの攻撃武器のどれかで届く敵を返す。ほかの状態では nil。
 // 届くかは core の予測の検証で決め、画面で射程を計算し直さない。
 func (c *Controller) Targets() []int {
 	switch c.state {
 	case Targeting:
-		return c.targetsWith(c.weapon)
+		return unionTargets(c.attackWeapons(), c.targetsWith)
 	case Moved:
 		return unionTargets(c.attackWeapons(), c.targetsWith)
 	}
@@ -545,9 +551,91 @@ func (c *Controller) weaponReason(w int) string {
 	return ""
 }
 
-// quickAttack は、移動先を選んでいる状態で敵 e をクリックしたときの処理（DES-UI-27、DES-IT06 12.4 節）。
-// 攻撃の武器ごとに仮の移動先を求め、武器の一覧へ進む。攻撃の武器が 1 本だけなら一覧を省き、相手を選んだ予測へ進む。
-// どの武器でも届く移動先がなければ、理由を知らせて移動先の選択の状態を保つ。予測だけを使い、乱数は引かない。
+// attackChoices は相手に届く武器を手持ち順に返す（DES-UI-34）。
+func (c *Controller) attackChoices(target int) []int {
+	var out []int
+	for _, w := range c.attackWeapons() {
+		p := c.dest
+		if c.quickSpots != nil {
+			var ok bool
+			p, ok = c.quickSpots[w]
+			if !ok {
+				continue
+			}
+		}
+		if _, err := c.battle.Forecast(tactics.Command{Unit: c.unit, To: p, Action: tactics.Attack, Target: target, Weapon: &w}); err == nil {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
+// selectAttackTarget は対象を選び、装備中か手持ち順の届く武器を仮選択する（DES-UI-34）。
+func (c *Controller) selectAttackTarget(target int) bool {
+	ws := c.attackChoices(target)
+	if len(ws) == 0 {
+		c.message = fmt.Sprintf("%s に届く攻撃の武器がありません", c.battle.Units()[target].Name)
+		return false
+	}
+	chosen := ws[0]
+	for _, w := range ws {
+		if w == c.battle.Units()[c.unit].Equipped {
+			chosen = w
+			break
+		}
+	}
+	c.target, c.weapon, c.message = target, chosen, ""
+	if c.quickSpots != nil {
+		c.dest = c.quickSpots[chosen]
+		c.camera.Focus(c.dest)
+	}
+	return true
+}
+
+// ShiftForecastWeapon は予測中の届く武器を循環して仮選択する（DES-UI-34）。
+func (c *Controller) ShiftForecastWeapon(delta int) {
+	if c.state != Targeting || c.target < 0 || c.rewind.open || c.battle.NeedsResume() {
+		return
+	}
+	ws := c.attackChoices(c.target)
+	if len(ws) < 2 {
+		return
+	}
+	for i, w := range ws {
+		if w == c.weapon {
+			j := (i + delta%len(ws) + len(ws)) % len(ws)
+			c.weapon = ws[j]
+			if c.quickSpots != nil {
+				c.dest = c.quickSpots[c.weapon]
+				c.camera.Focus(c.dest)
+			}
+			return
+		}
+	}
+}
+
+// battleKey は戦闘中の武器送りと取消しのキーを受ける（DES-UI-34）。
+func (c *Controller) battleKey(key string) {
+	switch key {
+	case "A":
+		c.ShiftForecastWeapon(-1)
+	case "D":
+		c.ShiftForecastWeapon(1)
+	case "Esc", "RightClick":
+		c.Cancel()
+	}
+}
+
+// ConfirmForecast は予測中の攻撃を決定する（DES-UI-34）。
+func (c *Controller) ConfirmForecast() {
+	if c.state != Targeting || c.target < 0 || c.rewind.open || c.battle.NeedsResume() {
+		return
+	}
+	w := c.weapon
+	c.act(tactics.Command{Unit: c.unit, To: c.dest, Action: tactics.Attack, Target: c.target, Weapon: &w})
+}
+
+// quickAttack は敵の直接クリックから武器ごとの仮の位置を求め、予測へ進む（DES-UI-27、DES-UI-34）。
 func (c *Controller) quickAttack(e int) {
 	ws := c.attackWeapons()
 	name := c.battle.Units()[e].Name
@@ -565,21 +653,12 @@ func (c *Controller) quickAttack(e int) {
 		c.message = fmt.Sprintf("%s を攻撃できる移動先がありません", name)
 		return
 	}
-	c.quickSpots, c.quickTarget, c.message = spots, e, ""
-	if len(ws) == 1 {
-		c.startQuick(ws[0], false)
+	c.quickSpots, c.quickTarget = spots, e
+	if !c.selectAttackTarget(e) {
+		c.quickSpots, c.quickTarget = nil, -1
 		return
 	}
-	c.state, c.weapon, c.weaponMenu, c.target = WeaponMenu, -1, true, -1
-	c.dest = c.battle.Units()[c.unit].Pos
-}
-
-// startQuick は、武器の列の w 番目と仮の移動先で、敵をクリックした相手を選んだ予測（Targeting）へ進む（DES-UI-27）。
-// menu は武器の一覧を出したこと（取り消しで一覧へ戻るか、行動の一覧へ戻るか。DES-IT06 12.1 節）。
-func (c *Controller) startQuick(w int, menu bool) {
-	c.state, c.dest, c.weapon, c.target, c.weaponMenu = Targeting, c.quickSpots[w], w, c.quickTarget, menu
-	c.quickSpots, c.quickTarget, c.message = nil, -1, ""
-	c.camera.Focus(c.dest)
+	c.state = Targeting
 }
 
 // attackSpot は、武器の列の w 番目で敵 e を攻撃できる仮の移動先を返す（DES-UI-27、DES-IT06 12.4 節）。
@@ -831,8 +910,7 @@ func (c *Controller) ranges(i int) (blue, red map[tactics.Pos]bool) {
 func (c *Controller) act(cmd tactics.Command) {
 	events, err := c.log.Act(c.battle, cmd)
 	if err != nil {
-		// 画面ではできる行動だけを出すので、ふつうは来ない。状態は変わっていない（DES-ERR-01）。
-		c.state, c.quickSpots, c.quickTarget = Idle, nil, -1
+		// 決定に失敗したら仮選択を保ち、戦闘の状態も変えない（DES-UI-34）。
 		c.message = fmt.Sprintf("行動できません: %v", err)
 		return
 	}

@@ -122,7 +122,7 @@ func (c *Controller) RewindEnter() {
 	c.rewind = rewindMenu{}
 	c.events, c.index, c.frame = nil, 0, 0
 	// 出している敵の範囲は、同じ添字の集まりを戻った盤面に照らし、生きている敵だけを残す（DES-UI-27）。
-	c.unit, c.target = -1, -1
+	c.unit, c.target, c.weapon = -1, -1, -1
 	c.quickSpots, c.quickTarget = nil, -1
 	c.pruneWatched()
 	c.dest = tactics.Pos{}
