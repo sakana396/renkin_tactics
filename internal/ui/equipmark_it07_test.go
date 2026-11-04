@@ -131,6 +131,44 @@ func TestEquipMarkIT07(t *testing.T) {
 		}
 	})
 
+	t.Run("TC-FR-UNT-09-26 杖・ファイアの順で持つ錬金術師は、攻撃武器を持っていても初めの印は杖、ファイアで攻撃を決定したあとは魔法", func(t *testing.T) {
+		alchemist, enemy := tactics.Pos{X: 1, Y: 1}, tactics.Pos{X: 1, Y: 3}
+		c := newIdleWith(t, func() tactics.Setup {
+			return tactics.Setup{Terrain: field(7, 7), Units: []tactics.UnitSetup{
+				{Name: "錬金術師", ClassName: "錬金術師", Side: tactics.Player, Lord: true, Stats: tactics.Stats{HP: 30, Mag: 5}, Pos: alchemist,
+					Weapons: []tactics.Weapon{menuStaff, menuFire}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Staff, tactics.Magic}},
+				{Name: "ボス", Side: tactics.Enemy, Level: 1, Boss: true, AI: tactics.Hold, Stats: tactics.Stats{HP: 30}, Pos: enemy, Weapon: ironAxe},
+			}}
+		})
+		checkMark := func(when string, want assets.Tile, equipped int) {
+			t.Helper()
+			if m, ok := markAt(c.EquipMarks(), alchemist); !ok || m.Tile != want {
+				t.Errorf("%s: 盤面の印 %+v、%v のはず", when, m, want)
+			}
+			if got := c.battle.Units()[0].Equipped; got != equipped {
+				t.Errorf("%s: 装備 %d、%d のはず", when, got, equipped)
+			}
+		}
+		checkMark("出撃時", assets.WeaponStaff, 0)
+		c.Click(alchemist)
+		c.Click(alchemist)
+		c.ChooseAction(tactics.Attack)
+		if c.State() == WeaponMenu {
+			c.ChooseWeapon(0)
+		}
+		c.Click(enemy)
+		if c.State() != Targeting {
+			t.Fatalf("予測の状態 %v、Targeting のはず", c.State())
+		}
+		checkMark("ファイアの予測", assets.WeaponStaff, 0)
+		c.Click(enemy)
+		if c.State() != Playing {
+			t.Fatalf("決定のあと %v、Playing のはず（%s）", c.State(), c.message)
+		}
+		playOut(c)
+		checkMark("ファイアで攻撃を決定", assets.WeaponMagic, 1)
+	})
+
 	t.Run("TC-FR-UNT-09-26 印の置き場所: 装備は右下、固定のピンは右上、ボスの ★ は右上、指揮官のための左上は空ける。HP の棒は装備の印の手前で止め、重ならない", func(t *testing.T) {
 		c := newIdleWith(t, equipSetup)
 		// ボスを固定する（Idle で敵をクリック）。
