@@ -119,6 +119,8 @@ func TestBaseData(t *testing.T) {
 			{Level: 3, Class: "fighter", Weapons: []string{"iron_axe"}, AI: "hold", X: 13, Y: 8},
 			{Level: 1, ID: "anti_lure_ch01_6", Group: "fort_front", Approach: "group", Class: "archer", Weapons: []string{"iron_bow"}, AI: "hold", X: 12, Y: 7},
 			{Level: 7, Name: "ハーゲン", Class: "soldier", Weapons: []string{"iron_lance"}, Bonus: defs.Stats{HP: 8, Str: 3, Skl: 3, Spd: 2, Def: 3}, AI: "hold", Boss: true, X: 13, Y: 1},
+			// #172: 砦の前の一団の小隊長（DES-IT07 5.5 節）。Lv は配下の上限 3 の +1、bonus は配下と同じ 0。
+			{Level: 4, ID: "commander_fort_front", Group: "fort_front", Approach: "group", Commander: true, Class: "soldier", Weapons: []string{"iron_lance"}, AI: "hold", X: 11, Y: 8},
 		}
 		if !reflect.DeepEqual(m.Enemies, enemies) {
 			t.Errorf("敵の配置 = %+v", m.Enemies)

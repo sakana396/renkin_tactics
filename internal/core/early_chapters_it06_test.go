@@ -53,9 +53,13 @@ func TestIT06EarlyChapters(t *testing.T) {
 					continue
 				}
 				reinforce++
-				eventEnemies += len(event.Enemies)
-				all = append(all, event.Enemies...)
 				for _, e := range event.Enemies {
+					// IT07 #172 の小隊長は TC-FR-MAP-04-30 で確かめる（Lv は配下の上限 +1 で、目安を超えうる。DES-IT07 5.1 節）。
+					if e.Commander {
+						continue
+					}
+					eventEnemies++
+					all = append(all, e)
 					if e.Level < tc.minL || e.Level > tc.maxL {
 						t.Fatalf("出来事の増援 %s の Lv%d が目安 %d〜%d の外", e.ID, e.Level, tc.minL, tc.maxL)
 					}

@@ -64,8 +64,9 @@ func TestNewBattleCh01(t *testing.T) {
 			t.Errorf("出来事 = %+v", events)
 		}
 		units := b.Units()
-		if len(units) != 13 {
-			t.Fatalf("ユニットの数 = %d（自軍 5、敵 8）", len(units))
+		// 敵は 10.4 節の 8 体と、IT07 #172 の砦前の小隊長 1 体（DES-IT07 5.5 節）。
+		if len(units) != 14 {
+			t.Fatalf("ユニットの数 = %d（自軍 5、敵 9）", len(units))
 		}
 		want := []tactics.Unit{
 			{Level: 1, Growth: tactics.Growth{HP: 55, Str: 45, Skl: 65, Spd: 70, Def: 20, Lck: 40, Mag: 20, Res: 20}, Name: "レオン", ClassName: "ロード", Side: tactics.Player, Stats: tactics.Stats{HP: 19, Str: 7, Skl: 11, Spd: 12, Def: 4, Mov: 5, Lck: 6, Mag: 2, Res: 2}, HP: 19, Pos: tactics.Pos{X: 1, Y: 14}, Weapons: []tactics.Weapon{sword}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Sword}, Items: []tactics.ItemStack{{Item: potion, Count: 2}}, Skill: inspire, Lord: true, Alive: true},
@@ -119,7 +120,8 @@ func TestNewBattleCh01(t *testing.T) {
 			got = append(got, u.Name)
 		}
 		// アーチャーは初めの敵に 1 体だが、出来事の増援（#131 の border_east_archer）も通して数えるので番号が付く。
-		want := []string{"ソルジャー 1", "ソルジャー 2", "剣士 1", "剣士 2", "ファイター 1", "ファイター 2", "アーチャー 1", "ハーゲン"}
+		// 末尾は IT07 #172 の小隊長（ソルジャー）。名前のないソルジャーが 1 体増えたので、増援のソルジャーは 4 番になる。
+		want := []string{"ソルジャー 1", "ソルジャー 2", "剣士 1", "剣士 2", "ファイター 1", "ファイター 2", "アーチャー 1", "ハーゲン", "ソルジャー 3"}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("敵の名前 = %q, want %q", got, want)
 		}
@@ -131,7 +133,7 @@ func TestNewBattleCh01(t *testing.T) {
 		for _, r := range setup.Reinforcements {
 			got = append(got, r.Unit.Name)
 		}
-		want = []string{"ファイター 3", "ソルジャー 3", "剣士 3"}
+		want = []string{"ファイター 3", "ソルジャー 4", "剣士 3"}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("増援の名前 = %q, want %q", got, want)
 		}
@@ -278,7 +280,7 @@ func TestNewBattleCh01(t *testing.T) {
 		}
 		want := []tactics.ReinforcementSetup{
 			{Turn: 3, Unit: tactics.UnitSetup{Name: "ファイター 3", ClassName: "ファイター", Side: tactics.Enemy, Level: 1, Stats: fighterBase, Pos: tactics.Pos{X: 0, Y: 3}, Weapons: []tactics.Weapon{axe}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Axe}, AI: tactics.Charge}},
-			{Turn: 3, Unit: tactics.UnitSetup{Name: "ソルジャー 3", ClassName: "ソルジャー", Side: tactics.Enemy, Level: 2, Stats: soldierBase, Pos: tactics.Pos{X: 0, Y: 4}, Weapons: []tactics.Weapon{lance}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Lance}, AI: tactics.Charge}},
+			{Turn: 3, Unit: tactics.UnitSetup{Name: "ソルジャー 4", ClassName: "ソルジャー", Side: tactics.Enemy, Level: 2, Stats: soldierBase, Pos: tactics.Pos{X: 0, Y: 4}, Weapons: []tactics.Weapon{lance}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Lance}, AI: tactics.Charge}},
 			{Turn: 5, Unit: tactics.UnitSetup{Name: "剣士 3", ClassName: "剣士", Side: tactics.Enemy, Level: 3, Stats: myrmidonBase, Pos: tactics.Pos{X: 15, Y: 15}, Weapons: []tactics.Weapon{sword}, AllowedWeaponTypes: []tactics.WeaponType{tactics.Sword}, AI: tactics.Charge}},
 		}
 		if !reflect.DeepEqual(setup.Reinforcements, want) {

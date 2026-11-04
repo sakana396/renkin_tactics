@@ -10,11 +10,10 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 )
 
-// 1 章の実際の命令を再生し、砦前の一団の距離を調べる（TC-FR-MAP-04-28、DES-AI-02）。
+// 1 章の #173 で採り直した行動の記録を再生し、砦前の一団の距離を調べる（TC-FR-MAP-04-28、DES-AI-02）。
 func TestCh01FortFrontStaysTogether(t *testing.T) {
 	t.Run("TC-FR-MAP-04-28 ch01 の行動記録", func(t *testing.T) {
-		t.Skip("ZOC により旧版の行動記録の命令が成立しない。新版の記録は #174 で採る")
-		f, err := os.Open("testdata/play156-ch01.jsonl")
+		f, err := os.Open("testdata/play173-ch01.jsonl")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -74,7 +73,7 @@ func TestCh01FortFrontStaysTogether(t *testing.T) {
 					t.Fatalf("未知の行動 %s", rec.Cmd.Action)
 				}
 				if _, err := b.Act(tactics.Command{Unit: rec.Cmd.Unit, To: tactics.Pos{X: rec.Cmd.To[0], Y: rec.Cmd.To[1]}, Action: a, Target: rec.Cmd.Target, Item: rec.Cmd.Item, Weapon: rec.Cmd.Weapon}); err != nil {
-					t.Fatalf("%d ターン目: %v", rec.Turn, err)
+					t.Fatalf("%d ターン目 %s unit=%d to=%v target=%d: %v", rec.Turn, rec.Cmd.Action, rec.Cmd.Unit, rec.Cmd.To, rec.Cmd.Target, err)
 				}
 			case "end_phase":
 				if _, err := b.EndPhase(); err != nil {

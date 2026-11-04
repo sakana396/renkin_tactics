@@ -22,8 +22,9 @@ func TestIT06LateChapters(t *testing.T) {
 		groups                      map[string]int // 出来事の増援の一団ごとの人数
 		minLevel, maxLevel          int
 	}{
-		{"ch08", 6, 2, 7, defs.Stats{HP: 5, Str: 3, Skl: 3, Spd: 2, Def: 3}, map[string]int{"forest_road_reserve": 3, "forest_north_reserve": 4}, 8, 11},
-		{"ch09", 7, 3, 12, defs.Stats{HP: 6, Str: 3, Skl: 3, Spd: 2, Def: 3}, map[string]int{"gate_west_reserve": 3, "gate_east_reserve": 3, "gate_inner_reserve": 6}, 9, 12},
+		// #172 で出来事の一団ごとに小隊長を 1 体足した（DES-IT07 5.5 節。ch08 は 2 体、ch09 は 3 体）。
+		{"ch08", 6, 2, 9, defs.Stats{HP: 5, Str: 3, Skl: 3, Spd: 2, Def: 3}, map[string]int{"forest_road_reserve": 4, "forest_north_reserve": 5}, 8, 11},
+		{"ch09", 7, 3, 15, defs.Stats{HP: 6, Str: 3, Skl: 3, Spd: 2, Def: 3}, map[string]int{"gate_west_reserve": 4, "gate_east_reserve": 4, "gate_inner_reserve": 7}, 9, 12},
 	} {
 		t.Run("TC-FR-MAP-04-20 "+tc.id, func(t *testing.T) {
 			m, ok := cat.Map(tc.id)
@@ -46,7 +47,12 @@ func TestIT06LateChapters(t *testing.T) {
 				total += len(e.Enemies)
 				all = append(all, e.Enemies...)
 				for _, enemy := range e.Enemies {
-					if enemy.Bonus != tc.bonus || enemy.Level < tc.minLevel || enemy.Level > tc.maxLevel {
+					// 小隊長の Lv は配下の上限 +1 で、章の目安を 1 つ超えうる（DES-IT07 5.1 節）。
+					maxLevel := tc.maxLevel
+					if enemy.Commander {
+						maxLevel++
+					}
+					if enemy.Bonus != tc.bonus || enemy.Level < tc.minLevel || enemy.Level > maxLevel {
 						t.Fatalf("増援 %s の能力・レベル: %+v", enemy.ID, enemy)
 					}
 					graph[e.Unit] = append(graph[e.Unit], enemy.ID)

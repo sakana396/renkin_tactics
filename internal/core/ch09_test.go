@@ -75,7 +75,8 @@ func TestCh09Map(t *testing.T) {
 		if !reflect.DeepEqual(m.Slots, wantSlots) {
 			t.Errorf("出撃の枠 = %v", m.Slots)
 		}
-		if len(m.Enemies) != 26 || len(m.Reinforcements) != 14 {
+		// 初期敵は IT07 #172 の小隊長を除いて数える（小隊長は TC-FR-MAP-04-30）。
+		if initialEnemiesWithoutCommanders(m.Enemies) != 26 || len(m.Reinforcements) != 14 {
 			t.Fatalf("敵 %d・増援 %d", len(m.Enemies), len(m.Reinforcements))
 		}
 		// ボスはちょうど 1 体で、本営の奥（玉座の砦 (15,2)）にいる。
@@ -113,7 +114,7 @@ func TestCh09Map(t *testing.T) {
 		if len(got) != 14 || !reflect.DeepEqual(got[:8], want) {
 			t.Errorf("増援 = %v", got)
 		}
-		// 組み立てた戦闘: 自軍 7・敵 26 で始まる（DES-IT06 13 章）。
+		// 組み立てた戦闘: 自軍 7・敵 26 で始まる（DES-IT06 13 章）。IT07 #172 の小隊長 3 体を足して敵 29（DES-IT07 5.5 節）。
 		c, err := core.NewCampaignAt(cat, core.Withdraw, "ch09")
 		if err != nil {
 			t.Fatal(err)
@@ -122,7 +123,7 @@ func TestCh09Map(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if n := len(s.Battle.Units()); n != 33 {
+		if n := len(s.Battle.Units()); n != 36 {
 			t.Errorf("初めのユニット = %d", n)
 		}
 		setup, err := core.NewSetup(cat, "ch09")
@@ -133,7 +134,7 @@ func TestCh09Map(t *testing.T) {
 		for _, r := range setup.Reinforcements {
 			turns = append(turns, r.Turn)
 		}
-		if len(turns) != 14 || len(m.Slots)+len(m.Enemies)+len(m.Reinforcements) != 47 {
+		if len(turns) != 14 || len(m.Slots)+initialEnemiesWithoutCommanders(m.Enemies)+len(m.Reinforcements) != 47 {
 			t.Errorf("増援のターン = %v、総数 = %d", turns, len(m.Slots)+len(m.Enemies)+len(m.Reinforcements))
 		}
 		// 敵の能力のボーナス（E-52 で ch08 の後の名簿に合わせて強くし直した。#102 は 4/2/2/1/1・ボス 12/4/4/3/4）。

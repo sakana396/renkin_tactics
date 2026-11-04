@@ -28,7 +28,8 @@ func TestCh04To06Maps(t *testing.T) {
 			if !ok {
 				t.Fatal("マップがない")
 			}
-			if len(m.Rows) != tc.size || len(m.Slots) != tc.slots || len(m.Enemies) != tc.enemies || len(m.Reinforcements) != tc.reinforcements {
+			// 初期敵は台帳の数で、IT07 #172 の小隊長は除いて数える（小隊長は TC-FR-MAP-04-30）。
+			if len(m.Rows) != tc.size || len(m.Slots) != tc.slots || initialEnemiesWithoutCommanders(m.Enemies) != tc.enemies || len(m.Reinforcements) != tc.reinforcements {
 				t.Fatalf("制作台帳と不一致: %+v", m)
 			}
 			for _, r := range m.Rows {

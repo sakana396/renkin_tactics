@@ -93,9 +93,19 @@ func TestRun(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sortie, events, err := c.StartBattle([]int{0, 1, 2, 3, 4}, cfg.NextSeed())
-		if err != nil || len(sortie.Battle.Units()) != 13 || len(events) != 1 {
-			t.Fatal(sortie, events, err)
+		members := []int{0, 1, 2, 3, 4}
+		chapter := cfg.Catalog.Chapters()[c.Chapter]
+		chapterMap, ok := cfg.Catalog.Map(chapter.Map)
+		if !ok {
+			t.Fatal(chapter.Map)
+		}
+		sortie, events, err := c.StartBattle(members, cfg.NextSeed())
+		if err != nil {
+			t.Fatal(err)
+		}
+		// 初期盤面は出撃者と章の定義にある初期配置の敵から成る（DES-CMD-02）。
+		if want := len(members) + len(chapterMap.Enemies); len(sortie.Battle.Units()) != want || len(events) != 1 {
+			t.Fatal(len(sortie.Battle.Units()), want, events)
 		}
 		s := ui.NewSceneController(cfg)
 		if s.Scene() != ui.Title {

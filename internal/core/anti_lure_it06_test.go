@@ -58,10 +58,11 @@ type zocLateGroupKey struct{ chapter, group, target, unit string }
 
 // zocLateGroups は、攻撃した重騎士の ZOC で集合が遅れる組と、持ち場を離れるまでの敵軍の番の上限。
 // ch09 の outer_east_front: ガルドが (26,9) から anti_lure_ch09_5 を攻撃すると、アーチャーが (26,10) の ZOC で
-// 1 回目の番に集合先 (26,11) へ届かず、集合先にいる anti_lure_ch09_5 が 4 回の番は待つ。5 回目にそろって動く
+// 1 回目の番に集合先 (26,11) へ届かず、集合先にいる anti_lure_ch09_5 と小隊長が 4 回の番は待つ。5 回目にそろって動く
 // （ZOC を外すと 3 回目に動く。#173 で調べた）。
 var zocLateGroups = map[zocLateGroupKey]int{
-	{chapter: "ch09", group: "outer_east_front", target: "anti_lure_ch09_5", unit: "anti_lure_ch09_5"}: 6,
+	{chapter: "ch09", group: "outer_east_front", target: "anti_lure_ch09_5", unit: "anti_lure_ch09_5"}:           6,
+	{chapter: "ch09", group: "outer_east_front", target: "anti_lure_ch09_5", unit: "commander_outer_east_front"}: 6,
 }
 
 // hasZOC はユニットが通せんぼを持つかを返す（DES-BTL-11）。
@@ -95,16 +96,17 @@ func TestIT06AntiLure(t *testing.T) {
 	})
 	cat := baseCatalog(t)
 	// 守りの一団は、主な守りの場所ごとに待つ一員だけで作る（E-100 ②）。
+	// 人数は #172 で足した小隊長を含めて数える（DES-IT07 9.1 節。3〜5 体の決まりは小隊長を含めても全章で満たす）。
 	wantGroups := map[string]map[string]int{
-		"ch01": {"fort_front": 2},                                                    // 砦の手前の剣士と弓兵（E-100 の 1 章の例外）
-		"ch02": {"road_east_front": 3},                                               // ボスの砦の前
-		"ch03": {"wall_west_front": 3},                                               // 外の城壁の西の切れ目
-		"ch04": {"west_gate_front": 3, "east_gate_front": 3},                         // 城壁の西門・東門
-		"ch05": {"gate_north": 3},                                                    // 北の門
-		"ch06": {"pass_center_front": 3, "pass_north_front": 3},                      // 峠の中央・本営の前
-		"ch07": {"convoy_valley_front": 3},                                           // 谷の中だけ（F-02）
-		"ch08": {"forest_west_front": 3, "forest_north_front": 3},                    // 西の砦・北の砦の前
-		"ch09": {"keep_gate_front": 4, "outer_west_front": 3, "outer_east_front": 3}, // 本営の門・外壁の西と東の切れ目
+		"ch01": {"fort_front": 3},                                                    // 砦の手前の剣士と弓兵（E-100 の 1 章の例外）と小隊長
+		"ch02": {"road_east_front": 4},                                               // ボスの砦の前
+		"ch03": {"wall_west_front": 4},                                               // 外の城壁の西の切れ目
+		"ch04": {"west_gate_front": 4, "east_gate_front": 4},                         // 城壁の西門・東門
+		"ch05": {"gate_north": 4},                                                    // 北の門
+		"ch06": {"pass_center_front": 4, "pass_north_front": 4},                      // 峠の中央・本営の前
+		"ch07": {"convoy_valley_front": 4},                                           // 谷の中だけ（F-02）
+		"ch08": {"forest_west_front": 4, "forest_north_front": 4},                    // 西の砦・北の砦の前
+		"ch09": {"keep_gate_front": 5, "outer_west_front": 4, "outer_east_front": 4}, // 本営の門・外壁の西と東の切れ目
 	}
 	for ch := 1; ch <= 9; ch++ {
 		id := fmt.Sprintf("ch%02d", ch)
@@ -139,7 +141,8 @@ func TestIT06AntiLure(t *testing.T) {
 				t.Fatalf("守りの一団は %v、期待 %v", gotGroups, wantGroups[id])
 			}
 			if ch == 1 {
-				if len(m.Enemies) != 8 || charge != 2 || len(m.Reinforcements) != 3 {
+				// 初期の敵は E-100 の 8 体に、#172 の小隊長 1 体を足した 9 体（DES-IT07 5.5 節）。
+				if len(m.Enemies) != 9 || charge != 2 || len(m.Reinforcements) != 3 {
 					t.Fatalf("1 章の例外: 敵 %d 突撃 %d ターン増援 %d", len(m.Enemies), charge, len(m.Reinforcements))
 				}
 				// #151 の出来事の増援 3 体を残す（E-100、F-03）。
