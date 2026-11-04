@@ -55,6 +55,15 @@
 | 制作 | ch07 の制作記録（反復 6） | [iterations/it06/map-ch07.md](iterations/it06/map-ch07.md) | v0.2（#132。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
 | 制作 | ch08 の制作記録（反復 6） | [iterations/it06/map-ch08.md](iterations/it06/map-ch08.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
 | 制作 | ch09 の制作記録（反復 6） | [iterations/it06/map-ch09.md](iterations/it06/map-ch09.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | ch01 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch01.md](iterations/it07/map-ch01.md) | v0.1（#172。小隊長の配置・敵の数・自動の試し遊びの旧新。開発者の試遊は未実施） |
+| 制作 | ch02 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch02.md](iterations/it07/map-ch02.md) | v0.1（#172。小隊長の配置・敵の数・自動の試し遊びの旧新。開発者の試遊は未実施） |
+| 制作 | ch03 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch03.md](iterations/it07/map-ch03.md) | v0.1（#172。小隊長の配置・敵の数・自動の試し遊びの旧新。開発者の試遊は未実施） |
+| 制作 | ch04 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch04.md](iterations/it07/map-ch04.md) | v0.1（#172。小隊長の配置・敵の数・自動の試し遊びの旧新。開発者の試遊は未実施） |
+| 制作 | ch05 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch05.md](iterations/it07/map-ch05.md) | v0.1（#172。小隊長の配置・敵の数・自動の試し遊びの旧新。開発者の試遊は未実施） |
+| 制作 | ch06 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch06.md](iterations/it07/map-ch06.md) | v0.1（#172。小隊長の配置・敵の数・自動の試し遊びの旧新。開発者の試遊は未実施） |
+| 制作 | ch07 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch07.md](iterations/it07/map-ch07.md) | v0.1（#172。小隊長の配置・敵の数・自動の試し遊びの旧新。開発者の試遊は未実施） |
+| 制作 | ch08 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch08.md](iterations/it07/map-ch08.md) | v0.1（#172。小隊長の配置・敵の数・自動の試し遊びの旧新。開発者の試遊は未実施） |
+| 制作 | ch09 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch09.md](iterations/it07/map-ch09.md) | v0.1（#172。小隊長の配置・敵の数・自動の試し遊びの旧新。開発者の試遊は未実施） |
 | 制作 | ch06 の制作記録（反復 5） | [iterations/it05/map-ch06.md](iterations/it05/map-ch06.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch07 の制作記録（反復 5） | [iterations/it05/map-ch07.md](iterations/it05/map-ch07.md) | v0.1（#104。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch08 の制作記録（反復 5） | [iterations/it05/map-ch08.md](iterations/it05/map-ch08.md) | v0.1（#104。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |

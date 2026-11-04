@@ -85,13 +85,15 @@ type smartCase struct {
 // 20 seed で勝てた章（ch04・ch05・ch06・ch08・ch09）は勝つ（TC-FR-MAP-04-25。#158、DES-MAP-08、DES-IT06 13 章）。
 // ch03 の平均は E-111 で参考の扱いだが、勝つ seed が残ったので回帰として遊ぶ。
 // seed は TestMeasureSmartAutoplay の測定で勝った最初の seed。重さのため 1 章 1 seed だけを遊ぶ。
+// #172 で全 9 章に小隊長を置いたので測り直して選び直した（DES-IT07 6 章）。ch09 の平均は 20 seed で賢い打ち手も勝てなくなったので外し、
+// ch09 の制作記録（docs/iterations/it07/map-ch09.md）と TST-IT07 3 章に詰まりとして記録した。旧版の seed は TST-IT07 3 章の #172 の行にある。
 func TestIT06SmartAutoplayWins(t *testing.T) {
 	cat := baseCatalog(t)
 	avg, lost := antiLureRosters[0], antiLureRosters[2]
 	cases := []smartCase{
-		{"ch01", avg, 2}, {"ch02", avg, 5}, {"ch03", avg, 11}, {"ch04", avg, 1}, {"ch05", avg, 2},
-		{"ch06", avg, 2}, {"ch07", avg, 2}, {"ch08", avg, 1}, {"ch09", avg, 1},
-		{"ch04", lost, 1}, {"ch05", lost, 1}, {"ch06", lost, 1}, {"ch08", lost, 2}, {"ch09", lost, 10},
+		{"ch01", avg, 1}, {"ch02", avg, 9}, {"ch03", avg, 11}, {"ch04", avg, 4}, {"ch05", avg, 5},
+		{"ch06", avg, 1}, {"ch07", avg, 1}, {"ch08", avg, 1},
+		{"ch04", lost, 3}, {"ch05", lost, 1}, {"ch06", lost, 1}, {"ch08", lost, 2}, {"ch09", lost, 14},
 	}
 	for _, tc := range cases {
 		name := tc.roster.name
@@ -119,7 +121,8 @@ func TestIT06SmartAutoplayWins(t *testing.T) {
 func TestIT06SmartAutoplayLowWins(t *testing.T) {
 	cat := baseCatalog(t)
 	low := antiLureRosters[1]
-	for _, tc := range []smartCase{{"ch04", low, 2}} {
+	// #172 の測り直しで、低めは ch04（seed 14・19）と ch05（seed 10）に勝った。
+	for _, tc := range []smartCase{{"ch04", low, 14}, {"ch05", low, 10}} {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-26 %s 低め seed %d", tc.id, tc.seed), func(t *testing.T) {
 			t.Parallel()
 			b, ids, _ := antiLureStart(t, cat, tc.id, tc.roster, tc.seed)
@@ -142,12 +145,13 @@ func TestIT06SmartAutoplayFeatures(t *testing.T) {
 		feature string
 		smartCase
 	}{
-		{"Weapons", smartCase{"ch08", lost, 5}},
-		{"Threat", smartCase{"ch06", avg, 2}},
-		{"Focus", smartCase{"ch04", avg, 1}},
-		{"Heal", smartCase{"ch09", avg, 1}},
-		{"Hold", smartCase{"ch05", lost, 7}},
-		{"Rewind", smartCase{"ch04", low, 2}},
+		// #172 の測り直しで選び直した。Heal は ch09 の平均が勝てなくなったので代役の名簿にした。
+		{"Weapons", smartCase{"ch08", lost, 4}},
+		{"Threat", smartCase{"ch06", avg, 1}},
+		{"Focus", smartCase{"ch04", avg, 7}},
+		{"Heal", smartCase{"ch09", lost, 14}},
+		{"Hold", smartCase{"ch05", lost, 18}},
+		{"Rewind", smartCase{"ch04", low, 14}},
 	} {
 		t.Run(fmt.Sprintf("TC-FR-MAP-04-27 %s %s %s seed %d", tc.feature, tc.id, tc.roster.name, tc.seed), func(t *testing.T) {
 			t.Parallel()

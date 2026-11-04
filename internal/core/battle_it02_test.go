@@ -19,8 +19,9 @@ func TestNewBattlePartySlots(t *testing.T) {
 			pos     []tactics.Pos
 			enemies int
 		}{
-			{"ch02", []tactics.Pos{{X: 1, Y: 7}, {X: 1, Y: 6}, {X: 1, Y: 8}, {X: 0, Y: 6}, {X: 0, Y: 8}}, 8},
-			{"ch03", []tactics.Pos{{X: 7, Y: 14}, {X: 6, Y: 15}, {X: 8, Y: 15}, {X: 7, Y: 15}, {X: 8, Y: 14}}, 10},
+			// 敵の数は IT07 #172 の小隊長 1 体を含む（DES-IT07 5.5 節）。
+			{"ch02", []tactics.Pos{{X: 1, Y: 7}, {X: 1, Y: 6}, {X: 1, Y: 8}, {X: 0, Y: 6}, {X: 0, Y: 8}}, 9},
+			{"ch03", []tactics.Pos{{X: 7, Y: 14}, {X: 6, Y: 15}, {X: 8, Y: 15}, {X: 7, Y: 15}, {X: 8, Y: 14}}, 11},
 		}
 		for _, tt := range tests {
 			b, _, err := core.NewBattle(cat, tt.mapID, 1)
