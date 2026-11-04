@@ -263,6 +263,7 @@ func enemyUnit(cat *defs.Catalog, e defs.EnemyPlacement, name string) (tactics.U
 		Items:              items,
 		ClassSkills:        classSkills,
 		Boss:               e.Boss,
+		Commander:          e.Commander,
 		AI:                 ai,
 		Approach:           convertApproach(e.Approach),
 		ID:                 e.ID,
