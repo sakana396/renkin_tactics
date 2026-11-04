@@ -183,6 +183,9 @@ func (b *Battle) strike(events []Event, s, r int, still bool) ([]Event, bool) {
 // fall はユニット i を倒れた状態にし、マップから外す（DES-BTL-06、E-15）。
 // 倒れたユニットは Alive が偽になり、移動・攻撃の対象・鼓舞から外れる（添字は変わらない）。
 func (b *Battle) fall(events []Event, i int) []Event {
+	if b.units[i].Commander {
+		b.collapseGroup(b.groupKey(b.units[i].Group, b.units[i].Pos))
+	}
 	b.units[i].HP = 0
 	b.units[i].Alive = false
 	return b.emit(events, Event{Kind: EventFall, Unit: i})

@@ -222,6 +222,7 @@ type UnitSetup struct {
 	ClassSkills []Skill
 	Lord        bool
 	Boss        bool
+	Commander   bool // 小隊長（DES-AI-03）。
 	AI          AI
 	Approach    Approach
 	// ID・Group は敵の識別子と一団の名前（DES-MAP-07）。戦闘の中で比べるだけで、定義を引く手がかりにしない。
@@ -271,6 +272,8 @@ type Unit struct {
 	ClassSkills []Skill
 	Lord        bool
 	Boss        bool
+	Commander   bool // 小隊長（DES-AI-03）。
+	Collapsed   bool // 崩れた配下（DES-AI-03）。
 	AI          AI
 	Approach    Approach
 	Acted       bool

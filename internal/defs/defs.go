@@ -185,16 +185,17 @@ type Slot struct {
 //
 // Weapons は武器の ID の列で、先頭が初めの装備（DES-ITM-02）。古い weapon は 1 本の列に直してある。
 type EnemyPlacement struct {
-	Name     string
-	Class    string
-	Weapons  []string
-	Bonus    Stats
-	Items    []ItemCount
-	Approach string
-	AI       string
-	Boss     bool
-	X        int
-	Y        int
+	Name      string
+	Class     string
+	Weapons   []string
+	Bonus     Stats
+	Items     []ItemCount
+	Approach  string
+	AI        string
+	Boss      bool
+	Commander bool // 小隊長の印（DES-DAT-05）。
+	X         int
+	Y         int
 	// Level は敵のレベル 1〜20（キー level、省略は 1）。撃破の経験の式に使い、能力は補正しない（DES-IT06 7.3 節）。
 	Level int
 	// ID はマップの中で、初めの敵・すべての増援を通して重ならない敵の ID（DES-MAP-07）。

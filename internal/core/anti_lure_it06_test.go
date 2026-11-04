@@ -53,8 +53,25 @@ const (
 	groupLeavePhases = 4
 )
 
+// 小隊長を除いた初期敵の数を、初期突撃 4 割の分母にする（DES-IT07 5.5 節）。
+func initialEnemiesWithoutCommanders(enemies []defs.EnemyPlacement) int {
+	count := 0
+	for _, e := range enemies {
+		if !e.Commander {
+			count++
+		}
+	}
+	return count
+}
+
 // E-100 の章ごとの初期突撃、守りの一団と連動、継続増援を検査する（DES-AI-02、DES-MAP-08、DES-IT06 10.1 節・13 章）。
 func TestIT06AntiLure(t *testing.T) {
+	t.Run("TC-FR-MAP-04-23 小隊長を分母から除く", func(t *testing.T) {
+		enemies := []defs.EnemyPlacement{{AI: defs.AICharge}, {AI: defs.AIHold}, {Commander: true}}
+		if got := initialEnemiesWithoutCommanders(enemies); got != 2 {
+			t.Fatalf("小隊長を除いた初期敵 = %d、期待 2", got)
+		}
+	})
 	cat := baseCatalog(t)
 	// 守りの一団は、主な守りの場所ごとに待つ一員だけで作る（E-100 ②）。
 	wantGroups := map[string]map[string]int{
@@ -118,8 +135,9 @@ func TestIT06AntiLure(t *testing.T) {
 					t.Fatal("出来事の増援 border_east_entry がない")
 				}
 			} else {
-				if charge*5 < len(m.Enemies)*2 {
-					t.Fatalf("一団の外の初期突撃は %d/%d で 4 割未満", charge, len(m.Enemies))
+				denominator := initialEnemiesWithoutCommanders(m.Enemies)
+				if charge*5 < denominator*2 {
+					t.Fatalf("一団の外の初期突撃は %d/%d で 4 割未満", charge, denominator)
 				}
 				for group, members := range groups {
 					if len(members) < 3 || len(members) > 5 {
