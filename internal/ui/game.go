@@ -115,16 +115,11 @@ func (g *Game) Update() error {
 				s.ToggleDeployDanger()
 			}
 		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyTab) {
-			s.ToggleInfoPage()
-		}
-		if cancel {
-			s.Cancel()
-		} else if left && !deploy {
-			s.Click(ebiten.CursorPosition())
-		} else if s.Scene() == Story && (inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeySpace)) {
-			s.Advance()
-		}
+		x, y := ebiten.CursorPosition()
+		g.sceneInput(sceneKeys{
+			Tab: inpututil.IsKeyJustPressed(ebiten.KeyTab), Left: left, Cancel: cancel, Deploy: deploy,
+			Advance: inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeySpace),
+		}, x, y)
 	} else {
 		c := s.BattleController()
 		g.ctrl = c
@@ -163,6 +158,27 @@ func (g *Game) Update() error {
 		return ebiten.Termination
 	}
 	return nil
+}
+
+// sceneKeys は戦闘以外の場面へ渡す、そのフレームの入力（DES-UI-09）。Deploy は配置の入力を先に渡したこと。
+type sceneKeys struct {
+	Tab, Left, Cancel, Deploy, Advance bool
+}
+
+// sceneInput は戦闘以外の場面の Tab・取消し・左クリック・送りを場面へ渡す（DES-UI-09、DES-UI-32）。
+// 準備の実入力は Game.Update → sceneInput → SceneController.Click・Cancel の経路を通る。
+func (g *Game) sceneInput(k sceneKeys, x, y int) {
+	s := g.scenes
+	if k.Tab {
+		s.ToggleInfoPage()
+	}
+	if k.Cancel {
+		s.Cancel()
+	} else if k.Left && !k.Deploy {
+		s.Click(x, y)
+	} else if s.Scene() == Story && k.Advance {
+		s.Advance()
+	}
 }
 
 // leftClick は左クリックを、ボタンか盤面のマスの操作に読み替える（DES-UI-02）。
@@ -541,8 +557,10 @@ func (g *Game) drawInfoView(dst *ebiten.Image, v InfoView) {
 		g.label(dst, tab.Label, r.Min.X+(r.Dx()-textWidth(tab.Label))/2, r.Min.Y+(r.Dy()-lineHeight)/2, white)
 	}
 	if len(v.Tabs) > 0 {
+		// 案内は印と一緒にずらす（準備では右列へずらしてある。DES-UI-32）。
 		t := InfoTabGuide()
-		g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
+		d := v.Tabs[0].Rect.Min.Sub(InfoTabRects()[0].Min)
+		g.label(dst, t.Text, t.X+d.X, t.Y+d.Y, infoStyleColor(t.Style))
 	}
 }
 
@@ -693,11 +711,27 @@ func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
 		g.drawDeploy(dst, *v.Deploy)
 	}
 	if v.Info != nil {
-		vector.DrawFilledRect(dst, MapSize, 0, InfoWidth, ScreenHeight, panelColor, false)
+		// 下地は既定では右の情報欄の全体。準備の名簿では右列だけを塗る（DES-UI-32）。
+		area := v.InfoArea
+		if area.Empty() {
+			area = image.Rect(MapSize, 0, ScreenWidth, ScreenHeight)
+		}
+		vector.DrawFilledRect(dst, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), panelColor, false)
 		g.drawInfoView(dst, *v.Info)
 		if v.Deploy != nil && !v.Deploy.NameMark.Empty() {
 			g.drawNameMark(dst, v.Deploy.NameMark)
 		}
+	}
+	// 準備の「名簿」「持ち物」のタブは、選んでいるものを塗る（DES-UI-32）。
+	for _, tab := range v.Tabs {
+		r := tab.Rect
+		fill := menuColor
+		if tab.Selected {
+			fill = playerBase
+		}
+		vector.DrawFilledRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), fill, false)
+		vector.StrokeRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), 1, menuBorder, false)
+		g.label(dst, tab.Label, r.Min.X+(r.Dx()-textWidth(tab.Label))/2, r.Min.Y+(r.Dy()-lineHeight)/2, white)
 	}
 	if v.Minimap != nil {
 		g.drawMinimap(dst, *v.Minimap)
