@@ -210,37 +210,39 @@ type (
 		// Level は敵のレベル。省略を 1 と読むので、ポインタにする（DES-IT06 7.3 節）。
 		Level *int `toml:"level"`
 		// Name は、省略と空の文字列を見分けるので、ポインタにする（規則 19）。
-		Name     *string        `toml:"name"`
-		Class    string         `toml:"class"`
-		Weapon   string         `toml:"weapon"`
-		Weapons  []string       `toml:"weapons"`
-		Bonus    rawStats       `toml:"bonus"`
-		Items    []rawItemCount `toml:"items"`
-		Approach string         `toml:"approach"`
-		AI       string         `toml:"ai"`
-		Boss     bool           `toml:"boss"`
-		X        int            `toml:"x"`
-		Y        int            `toml:"y"`
+		Name      *string        `toml:"name"`
+		Class     string         `toml:"class"`
+		Weapon    string         `toml:"weapon"`
+		Weapons   []string       `toml:"weapons"`
+		Bonus     rawStats       `toml:"bonus"`
+		Items     []rawItemCount `toml:"items"`
+		Approach  string         `toml:"approach"`
+		AI        string         `toml:"ai"`
+		Boss      bool           `toml:"boss"`
+		Commander bool           `toml:"commander"`
+		X         int            `toml:"x"`
+		Y         int            `toml:"y"`
 		// ID は、省略と空の文字列を見分けるので、ポインタにする（DES-MAP-07）。
 		ID    *string `toml:"id"`
 		Group string  `toml:"group"`
 	}
 	rawReinforcement struct {
-		Level    *int           `toml:"level"`
-		Turn     int            `toml:"turn"`
-		Name     *string        `toml:"name"`
-		Class    string         `toml:"class"`
-		Weapon   string         `toml:"weapon"`
-		Weapons  []string       `toml:"weapons"`
-		Bonus    rawStats       `toml:"bonus"`
-		Items    []rawItemCount `toml:"items"`
-		Approach string         `toml:"approach"`
-		AI       string         `toml:"ai"`
-		Boss     bool           `toml:"boss"`
-		X        int            `toml:"x"`
-		Y        int            `toml:"y"`
-		ID       *string        `toml:"id"`
-		Group    string         `toml:"group"`
+		Level     *int           `toml:"level"`
+		Turn      int            `toml:"turn"`
+		Name      *string        `toml:"name"`
+		Class     string         `toml:"class"`
+		Weapon    string         `toml:"weapon"`
+		Weapons   []string       `toml:"weapons"`
+		Bonus     rawStats       `toml:"bonus"`
+		Items     []rawItemCount `toml:"items"`
+		Approach  string         `toml:"approach"`
+		AI        string         `toml:"ai"`
+		Boss      bool           `toml:"boss"`
+		Commander bool           `toml:"commander"`
+		X         int            `toml:"x"`
+		Y         int            `toml:"y"`
+		ID        *string        `toml:"id"`
+		Group     string         `toml:"group"`
 	}
 	// rawArea は出来事の範囲（DES-MAP-07）。両端を含む。
 	rawArea struct {
@@ -1234,6 +1236,58 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 			checkApproach(fmt.Sprintf("%s.events[%d].enemies[%d]", p, j, k), e)
 		}
 	}
+	// 小隊長は一団名と通れる地形の連結領域の組で一意にする（DES-DAT-05）。
+	region := func(x, y int) string {
+		if y < 0 || y >= len(grid) || x < 0 || x >= len(grid[y]) {
+			return ""
+		}
+		type point struct{ x, y int }
+		seen := map[point]bool{{x, y}: true}
+		queue := []point{{x, y}}
+		first := point{x, y}
+		for len(queue) > 0 {
+			at := queue[0]
+			queue = queue[1:]
+			if at.y < first.y || (at.y == first.y && at.x < first.x) {
+				first = at
+			}
+			for _, d := range []point{{0, -1}, {-1, 0}, {1, 0}, {0, 1}} {
+				next := point{at.x + d.x, at.y + d.y}
+				if seen[next] || next.y < 0 || next.y >= len(grid) || next.x < 0 || next.x >= len(grid[next.y]) {
+					continue
+				}
+				t, ok := ref.bySymbol[string(grid[next.y][next.x])]
+				if !ok || t.Cost < 1 {
+					continue
+				}
+				seen[next] = true
+				queue = append(queue, next)
+			}
+		}
+		return fmt.Sprintf("%d:%d", first.x, first.y)
+	}
+	commanders := map[string]string{}
+	checkCommander := func(q string, e defs.EnemyPlacement) {
+		if !e.Commander || e.Group == "" {
+			return
+		}
+		key := e.Group + ":" + region(e.X, e.Y)
+		if first, ok := commanders[key]; ok {
+			v.add(f, q+".commander", "同じ到達領域の一団 %q に小隊長が 2 体います（%s と同じ）", e.Group, first)
+		}
+		commanders[key] = q
+	}
+	for j, e := range m.Enemies {
+		checkCommander(fmt.Sprintf("%s.enemies[%d]", p, j), e)
+	}
+	for j, e := range m.Reinforcements {
+		checkCommander(fmt.Sprintf("%s.reinforcements[%d]", p, j), e.EnemyPlacement)
+	}
+	for j, event := range m.Events {
+		for k, e := range event.Enemies {
+			checkCommander(fmt.Sprintf("%s.events[%d].enemies[%d]", p, j, k), e)
+		}
+	}
 	return m
 }
 
@@ -1243,7 +1297,7 @@ func (v *validator) mapDef(ref refs, p string, r rawMap) defs.MapDef {
 func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyIDSet) defs.EnemyPlacement {
 	const f = FileMaps
 	weapons := v.weaponList(f, q, e.Weapon, e.Weapons)
-	ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapons: weaponIDs(weapons), Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Approach: e.Approach, Boss: e.Boss, X: e.X, Y: e.Y, Group: e.Group}
+	ep := defs.EnemyPlacement{Name: v.enemyName(q, e.Name), Class: e.Class, Weapons: weaponIDs(weapons), Bonus: toStats(e.Bonus), Items: toItems(e.Items), AI: e.AI, Approach: e.Approach, Boss: e.Boss, Commander: e.Commander, X: e.X, Y: e.Y, Group: e.Group}
 	// level の省略は 1 と読む。0 と 21 以上は拒む（DES-IT06 7.3 節）。
 	ep.Level = 1
 	if e.Level != nil {
@@ -1251,6 +1305,23 @@ func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyI
 	}
 	v.between(FileMaps, q+".level", ep.Level, 1, maxLevel)
 	ep.ID = ids.check(q, generated, e.ID, e.Group)
+	if ep.Commander {
+		if e.ID == nil || ep.ID == "" {
+			v.add(f, q+".id", "小隊長には一意の id が必要です")
+		}
+		if ep.Approach != defs.ApproachGroup {
+			v.add(f, q+".approach", "小隊長の寄り方は group にしてください")
+		}
+		if ep.Group == "" {
+			v.add(f, q+".group", "小隊長には一団の名前が必要です")
+		}
+		if ep.Boss {
+			v.add(f, q+".boss", "小隊長はボスにできません")
+		}
+		if ep.AI != defs.AIHold {
+			v.add(f, q+".ai", "小隊長は hold にしてください")
+		}
+	}
 	v.unit(ref, f, q, e.Class, weapons, ep.Bonus)
 	v.noStaff(ref, weapons)
 	v.hand(ref, f, q, e.Items, false, len(weapons))
@@ -1266,7 +1337,7 @@ func (v *validator) enemy(ref refs, q, generated string, e rawEnemy, ids *enemyI
 
 // enemy は増援の、ターンを除いた敵の欄を返す。
 func (r rawReinforcement) enemy() rawEnemy {
-	return rawEnemy{Level: r.Level, Name: r.Name, Class: r.Class, Weapon: r.Weapon, Weapons: r.Weapons, Bonus: r.Bonus, Items: r.Items, AI: r.AI, Approach: r.Approach, Boss: r.Boss, X: r.X, Y: r.Y, ID: r.ID, Group: r.Group}
+	return rawEnemy{Level: r.Level, Name: r.Name, Class: r.Class, Weapon: r.Weapon, Weapons: r.Weapons, Bonus: r.Bonus, Items: r.Items, AI: r.AI, Approach: r.Approach, Boss: r.Boss, Commander: r.Commander, X: r.X, Y: r.Y, ID: r.ID, Group: r.Group}
 }
 
 // maxLiveEnemies は一度に生きている敵の上限（DES-IT06 9.3 節、E-91）。tactics の maxLiveEnemies と同じ値。
