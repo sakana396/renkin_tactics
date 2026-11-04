@@ -87,6 +87,34 @@ func TestCommandMarks(t *testing.T) {
 		}
 	})
 
+	t.Run("TC-FR-UNT-09-26 / TC-FR-UNT-09-30 同じユニットの指揮の印（左上）は、装備の印（右下）・固定のピン（右上）・HP の棒と重ならない", func(t *testing.T) {
+		c := newIdleWith(t, commandSetup)
+		cam := c.Camera()
+		marks := equipMarks(c.Units(), cam)
+		checked := 0
+		for _, u := range c.Units() {
+			if CommandMarkOf(u) == NoCommandMark {
+				continue
+			}
+			pt := cam.Screen(u.Pos)
+			cmd := CommandMarkRect(pt)
+			var equip image.Rectangle
+			for _, m := range marks {
+				if m.Pos == u.Pos {
+					equip = m.Rect
+				}
+			}
+			head, stem := pinShape(pt, false)
+			if equip.Empty() || cmd.Overlaps(equip) || cmd.Overlaps(head) || cmd.Overlaps(stem) || cmd.Overlaps(unitHPBarRect(pt)) {
+				t.Fatalf("%s: 指揮の印 %v、装備の印 %v、ピン %v %v、HP の棒 %v", u.Name, cmd, equip, head, stem, unitHPBarRect(pt))
+			}
+			checked++
+		}
+		if checked != 2 {
+			t.Fatalf("指揮の印のあるユニット %d 体、期待 2（小隊長と配下）", checked)
+		}
+	})
+
 	t.Run("TC-FR-UNT-09-30 右欄の名前の横に同じ形の印と「小隊長／配下」の語を置き、ごろつき・ボス・自軍には置かない", func(t *testing.T) {
 		c := newIdleWith(t, commandSetup)
 		for _, tc := range []struct {

@@ -213,13 +213,9 @@ func (g *shotGame) step(raw string) error {
 			g.shotCursor = &image.Point{X: x, Y: y}
 			if s.Scene() == Battle {
 				g.ctrl = s.BattleController()
-				if g.ctrl.RewindClick(x, y) {
-					s.syncRewind()
-				} else {
-					g.leftClick(x, y)
-				}
-			} else {
-				s.Click(x, y)
+			}
+			if !g.navInput(navKeys{Left: true}, x, y) {
+				g.shotClick(x, y)
 			}
 		case "cursor":
 			g.shotCursor = &image.Point{X: x, Y: y}
@@ -292,6 +288,13 @@ func (g *shotGame) step(raw string) error {
 		} else {
 			return errors.New("盤面のある場面だけの操作です")
 		}
+	case "overview", "nextally":
+		// 全体図（M）と次の味方（Z）を、実際の入力と同じ navInput に通す（DES-UI-30）。
+		k := navKeys{Overview: parts[0] == "overview", Next: parts[0] == "nextally"}
+		if s.Scene() == Battle {
+			g.ctrl = s.BattleController()
+		}
+		g.navInput(k, -1, -1)
 	case "endphase":
 		c, err := battle()
 		if err != nil {
@@ -302,4 +305,18 @@ func (g *shotGame) step(raw string) error {
 		return errors.New("知らない操作です")
 	}
 	return nil
+}
+
+// shotClick は clickpx の左クリックを、全体図・盤面の移動のボタンのあとの判定（巻き戻し → leftClick、または場面のクリック）へ渡す。
+func (g *shotGame) shotClick(x, y int) {
+	s := g.scenes
+	if s.Scene() == Battle {
+		if g.ctrl.RewindClick(x, y) {
+			s.syncRewind()
+		} else {
+			g.leftClick(x, y)
+		}
+	} else {
+		s.Click(x, y)
+	}
 }

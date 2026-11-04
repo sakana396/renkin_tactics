@@ -114,6 +114,9 @@ type Controller struct {
 	// lastCell は、直前にカーソルを置いた盤面のマス（DES-UI-28）。カーソルが情報欄の上にあるときの表示に使う。
 	lastCell   tactics.Pos
 	lastCellOK bool
+
+	// nav は全体図と次の味方の UI だけの状態（DES-UI-30）。
+	nav battleNav
 }
 
 // NewController は、newBattle で戦闘を作り、初めの出来事の再生から始める（DES-UI-02、DES-UI-04）。
