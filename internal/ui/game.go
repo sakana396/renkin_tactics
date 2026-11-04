@@ -80,7 +80,11 @@ func (g *Game) Update() error {
 			x, y := ebiten.CursorPosition()
 			c.Wheel(x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift))
 			if cancel {
-				c.Cancel()
+				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+					c.battleKey("RightClick")
+				} else {
+					c.battleKey("Esc")
+				}
 			} else if left && wheel == 0 {
 				// 入力の判定はミニマップ → 右欄 → 盤面の順（DES-UI-28）。
 				if x, y := ebiten.CursorPosition(); !c.MinimapClick(x, y) {
@@ -142,7 +146,16 @@ func (g *Game) Update() error {
 				g.leftClick(ebiten.CursorPosition())
 			}
 			if cancel {
-				c.Cancel()
+				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
+					c.battleKey("RightClick")
+				} else {
+					c.battleKey("Esc")
+				}
+			}
+			if inpututil.IsKeyJustPressed(ebiten.KeyA) {
+				c.battleKey("A")
+			} else if inpututil.IsKeyJustPressed(ebiten.KeyD) {
+				c.battleKey("D")
 			}
 			if inpututil.IsKeyJustPressed(ebiten.KeyE) {
 				c.EndPhase()

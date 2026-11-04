@@ -100,6 +100,13 @@ func TestTexts(t *testing.T) {
 		if got := c.Guide(); !reflect.DeepEqual(got[1:], []string{"ファイター を攻撃する。もう一度クリックで決定　右クリック・Esc: 戻る", "Q: 敵の危険範囲"}) {
 			t.Errorf("Targeting（相手を選んだ） = %q", got)
 		}
+		multi := newIdleWith(t, quickSetup)
+		multi.Click(tactics.Pos{X: 1, Y: 1})
+		multi.Click(tactics.Pos{X: 1, Y: 2})
+		if got := multi.Guide()[1]; got != "近くの敵 を攻撃する。A・D: 武器　もう一度クリックで決定　右クリック・Esc: 戻る" {
+			t.Errorf("武器が複数の案内 = %q", got)
+		}
+		fits(multi.Guide())
 		fits(c.Guide())
 		c.Click(tactics.Pos{X: 1, Y: 0})
 		if got := c.Guide(); len(got) != 3 || got[0] != "ターン 1　自軍の番" || got[2] != "Space・Enter（押している間）: 早送り" {
