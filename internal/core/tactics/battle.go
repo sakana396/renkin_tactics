@@ -24,6 +24,7 @@ type Battle struct {
 	groupPlan      map[int]Pos
 	groupDanger    map[int]map[Pos]bool
 	groupRegions   map[Pos]Pos
+	groupCollapsed map[string]bool // 小隊長を失った一団（DES-AI-03）。
 	// canto は待っている再移動（DES-BTL-10）。
 	canto cantoState
 
@@ -71,6 +72,7 @@ func New(setup Setup, seed uint64) (*Battle, []Event, error) {
 	b.mapState = eventState{fired: make([]bool, len(b.mapEvents))}
 	b.groupEntered = make(map[string]bool)
 	b.groupGathering = make(map[string]bool)
+	b.groupCollapsed = make(map[string]bool)
 	return b, b.startPlayerPhase(nil), nil
 }
 
@@ -99,6 +101,7 @@ func newUnit(us UnitSetup) Unit {
 		ClassSkills:        us.ClassSkills,
 		Lord:               us.Lord,
 		Boss:               us.Boss,
+		Commander:          us.Commander,
 		AI:                 us.AI,
 		Approach:           us.Approach,
 		Alive:              true,
@@ -311,6 +314,9 @@ func validateUnit(u UnitSetup) error {
 	}
 	if u.Approach < Direct || u.Approach > GroupApproach || (u.Approach == GroupApproach && (u.Side != Enemy || u.Group == "")) {
 		return fmt.Errorf("寄り方 %d と一団 %q が正しくありません", u.Approach, u.Group)
+	}
+	if u.Commander && (u.Side != Enemy || u.Boss || u.Approach != GroupApproach || u.Group == "" || u.AI != Hold) {
+		return fmt.Errorf("小隊長は敵の hold・group の一団で、ボス以外にしてください")
 	}
 	// 規則 6: スキルの数値（DES-DAT-03 の規則 6 と同じ範囲）。
 	if err := validateSkill(u.Skill); err != nil {
