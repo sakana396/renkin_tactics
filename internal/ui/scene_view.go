@@ -243,6 +243,10 @@ func (s *SceneController) Click(x, y int) {
 		if s.deployMinimapClick(x, y) || s.infoTabClick(x, y) {
 			return
 		}
+		if image.Pt(x, y).In(deployDetailButtonRect) {
+			s.OpenDeployDetail()
+			return
+		}
 		for i, b := range s.View().Buttons {
 			if image.Pt(x, y).In(b.Rect) && b.Enabled {
 				s.Choose(i)

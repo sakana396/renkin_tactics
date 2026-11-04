@@ -72,16 +72,13 @@ func (g *Game) Update() error {
 	s := g.scenes
 	left := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 	cancel := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) || inpututil.IsKeyJustPressed(ebiten.KeyEscape)
-	if inpututil.IsKeyJustPressed(ebiten.KeyT) {
-		s.rewindKey("T")
-	}
-	// 詳しい画面は元の入力状態を保ち、Tab と閉じる操作だけを受ける（DES-UI-31）。T は上で巻き戻しの一覧を先に開く（DES-IT07 3.1 節）。
-	if s.Scene() == Deploy && s.detailOpen {
-		s.DeployDetailInput(inpututil.IsKeyJustPressed(ebiten.KeyTab), cancel || inpututil.IsKeyJustPressed(ebiten.KeyI))
-		return nil
-	}
-	if s.Scene() == Battle && s.BattleController() != nil && s.BattleController().detailOpen && !s.BattleController().rewind.open {
-		s.BattleController().DetailInput(inpututil.IsKeyJustPressed(ebiten.KeyTab), cancel || inpututil.IsKeyJustPressed(ebiten.KeyI))
+	x, y := ebiten.CursorPosition()
+	if g.priorityInput(priorityKeys{
+		Rewind: inpututil.IsKeyJustPressed(ebiten.KeyT), Tab: inpututil.IsKeyJustPressed(ebiten.KeyTab),
+		Close: cancel, Detail: inpututil.IsKeyJustPressed(ebiten.KeyI), Click: left,
+		Danger: inpututil.IsKeyJustPressed(ebiten.KeyQ),
+		X:      x, Y: y,
+	}) {
 		return nil
 	}
 	if s.Scene() == Battle || s.Scene() == GameOver {
@@ -130,11 +127,8 @@ func (g *Game) Update() error {
 			x, y := ebiten.CursorPosition()
 			_, wheel := ebiten.Wheel()
 			s.DeployInput(dx, dy, x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift), left && !cancel)
-			if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+			if inpututil.IsKeyJustPressed(ebiten.KeyQ) && !left {
 				s.ToggleDeployDanger()
-			}
-			if inpututil.IsKeyJustPressed(ebiten.KeyI) {
-				s.OpenDeployDetail()
 			}
 		}
 		x, y := ebiten.CursorPosition()
@@ -151,10 +145,6 @@ func (g *Game) Update() error {
 		_, wheel := ebiten.Wheel()
 		scrolled := c.Wheel(x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift)) || dx != 0 || dy != 0
 		c.SetCursor(x, y)
-		// I は詳しい画面を開く（DES-UI-31）。開いたフレームはほかの入力を受けない。
-		if inpututil.IsKeyJustPressed(ebiten.KeyI) && c.OpenDetail() {
-			return nil
-		}
 		if c.State() == Over {
 			if left {
 				s.Click(ebiten.CursorPosition())
@@ -189,6 +179,55 @@ func (g *Game) Update() error {
 		return ebiten.Termination
 	}
 	return nil
+}
+
+// priorityKeys は Game.Update が先に処理するキーとカーソルの写し（DES-IT07 3.1 節）。
+type priorityKeys struct {
+	Rewind, Tab, Close, Detail, Click, Danger bool
+	X, Y                                      int
+}
+
+// priorityInput は最優先の入力が成立したフレームを消費する（DES-IT07 3.1 節）。
+func (g *Game) priorityInput(k priorityKeys) bool {
+	s := g.scenes
+	if k.Rewind && (s.Scene() == Battle || s.Scene() == GameOver) && s.BattleController() != nil {
+		s.rewindKey("T")
+		if s.BattleController().rewind.open {
+			return true
+		}
+	}
+	if s.Scene() == Deploy {
+		if s.detailOpen {
+			s.DeployDetailInput(k.Tab, k.Close || k.Detail)
+			return true
+		}
+		if s.deployNav.overview {
+			return false
+		}
+		if k.Detail {
+			s.SetDeployCursor(k.X, k.Y)
+			if s.OpenDeployDetail() {
+				return true
+			}
+		}
+	}
+	if s.Scene() == Battle && s.BattleController() != nil {
+		c := s.BattleController()
+		if c.detailOpen {
+			c.DetailInput(k.Tab, k.Close || k.Detail)
+			return true
+		}
+		if c.OverviewOpen() {
+			return false
+		}
+		if k.Detail {
+			c.SetCursor(k.X, k.Y)
+			if c.OpenDetail() {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // sceneKeys は戦闘以外の場面へ渡す、そのフレームの入力（DES-UI-09）。Deploy は配置の入力を先に渡したこと。

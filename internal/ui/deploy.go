@@ -228,6 +228,7 @@ func (s *SceneController) deployView() SceneView {
 	v := SceneView{Deploy: d, Buttons: []SceneButton{
 		{"戦闘開始", image.Rect(528, deployButtonTop, 668, deployButtonTop+32), true},
 		{"準備に戻る", image.Rect(676, deployButtonTop, 816, deployButtonTop+32), true},
+		{"詳細 I", deployDetailButtonRect, s.deployInfoUnit(d.Units, d.Selected) >= 0},
 	}, Texts: []SceneText{
 		{Text: "左クリック: 味方を選ぶ・交換・空き出撃マスへ移す", X: 16, Y: 516, Style: StyleLabel},
 		{Text: "右クリック・Esc: 選択を解除／未選択なら準備に戻る", X: 16, Y: 534, Style: StyleLabel},

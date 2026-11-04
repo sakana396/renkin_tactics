@@ -40,10 +40,8 @@ type forecastLayout struct {
 }
 
 var (
-	// 盤面の 416×240: 帯 (8,8)〜(408,36)、名前 (16,40)・(280,40)、武器 (16,60)〜(400,92)、表 (16,92)〜(400,184)、
-	// スキル (16,184)〜(400,216)、武器送り (16,216)〜(400,240)。文字の行の高さ 16 px を保つと 6 行の表は 96 px なので、
-	// 表の下端・スキル・武器送りを 4 px ずつ下げる（表 (16,92)〜(400,188)、スキル (16,188)〜(400,220)、武器送り (16,220)〜(400,236)）。
-	// 設計への提案に書く。
+	// 盤面の 416×240: 帯 (8,8)〜(408,36)、名前 (16,40)・(280,40)、武器 (16,60)〜(400,92)、
+	// 表 (16,92)〜(400,188)、スキル (16,188)〜(400,220)、武器送り (16,220)〜(400,236)（E-127）。
 	forecastBoardLayout = forecastLayout{bannerBottom: 36, defX: 280, nameY: 40, weaponY: 60, tableY: 92, skillY: 188, controlY: 220, rowGap: lineHeight, skillLines: 2}
 	// 右欄の 320×360: 帯 (8,8)〜(312,40)、名前 (16,44)・(224,44)、武器 (16,68)〜(304,100)、表 (16,104)〜(304,240)、
 	// スキル (16,248)〜(304,296)、武器送り (16,304)〜(304,352)。
@@ -100,7 +98,9 @@ func (c *Controller) ForecastWindow() (ForecastWindow, bool) {
 	if heal {
 		// 回復は同じ窓の枠に HealForecast の値を出す。杖の選択順は変えない（DES-UI-18）。
 		add(16, l.nameY, "回復の予測", StyleTitle)
-		add(16, l.nameY+lineHeight, fitRewind(h.Healer+" → "+h.Target, width-32), StylePlain)
+		for i, line := range wrapWidth(h.Healer+" → "+h.Target, width-32) {
+			add(16, l.nameY+lineHeight+i*lineHeight, line, StylePlain)
+		}
 		add(16, l.tableY, "HP "+hpText(h.HP, h.After), StylePlain)
 		add(16, l.tableY+l.rowGap, fmt.Sprintf("回復 +%d", h.Amount), StyleGood)
 		add(16, l.tableY+2*l.rowGap, fmt.Sprintf("杖 残り %d → %d/%d", h.Uses, h.Uses-1, h.MaxUses), StylePlain)
@@ -119,11 +119,30 @@ func (c *Controller) ForecastWindow() (ForecastWindow, bool) {
 		add(16, 8+(l.bannerBottom-8-lineHeight)/2, label, fg)
 	}
 	attackerW, defenderW := width-l.defX, l.defX-16 // 守る側・攻撃する側の欄の幅の上限
-	add(16, l.nameY, fitRewind(forecastName(f.Attacker, units[c.unit].Boss), defenderW-8), StyleTitle)
-	add(l.defX, l.nameY, fitRewind(forecastName(f.Defender, units[c.target].Boss), attackerW-16), StyleTitle)
+	aw, dw := units[c.unit].Weapons[c.weapon], units[c.target].EquippedWeapon()
+	// 帯がないときは上余白も使える。長い名前や右欄の狭い武器欄には、上部を折り返し用の行にする。
+	compactHeader := v.Banner == nil && (len(wrapWidth(forecastName(f.Attacker, units[c.unit].Boss), defenderW-8)) > 1 ||
+		len(wrapWidth(forecastName(f.Defender, units[c.target].Boss), attackerW-16)) > 1 ||
+		len(wrapWidth("▲ "+aw.Name+"（"+weaponTypeName(aw.Type)+"）", defenderW-weaponTextX-8)) > 2 ||
+		len(wrapWidth("▲ "+dw.Name+"（"+weaponTypeName(dw.Type)+"）", attackerW-weaponTextX-16)) > 2)
+	for _, side := range []struct {
+		x, room int
+		name    string
+	}{{16, defenderW - 8, forecastName(f.Attacker, units[c.unit].Boss)}, {l.defX, attackerW - 16, forecastName(f.Defender, units[c.target].Boss)}} {
+		lines := wrapWidth(side.name, side.room)
+		y := l.nameY
+		if compactHeader {
+			y = 8
+		} else if len(lines) > 1 {
+			// 長い名前は帯のない盤面窓の上余白、または右欄の名前の高さを使う（DES-UI-31）。
+			y -= 4
+		}
+		for i, line := range lines {
+			add(side.x, y+i*lineHeight, line, StyleTitle)
+		}
+	}
 
 	// 武器の欄: 両側に種類の絵（WeaponIconSize）と名前・種類、その下に相性の印。攻撃する側は仮選択の武器、守る側は装備（DES-ITM-02）。
-	aw, dw := units[c.unit].Weapons[c.weapon], units[c.target].EquippedWeapon()
 	tri := Triangle(aw.Type, dw.Type)
 	for i, side := range []struct {
 		x, room int
@@ -135,16 +154,38 @@ func (c *Controller) ForecastWindow() (ForecastWindow, bool) {
 		}
 		tx := side.x + weaponTextX
 		room := side.room - weaponTextX - 8
-		add(tx, l.weaponY, fitRewind(side.w.Name+"（"+weaponTypeName(side.w.Type)+"）", room), StylePlain)
-		switch side.mark {
-		case 1:
-			add(tx, l.weaponY+lineHeight, "▲", StyleGood)
-		case -1:
-			add(tx, l.weaponY+lineHeight, "▼", StyleBad)
+		textY := l.weaponY
+		if compactHeader {
+			textY = 40
+		}
+		weaponName := side.w.Name + "（" + weaponTypeName(side.w.Type) + "）"
+		weaponLines := wrapWidth(weaponName, room)
+		if len(weaponLines) == 1 {
+			add(tx, textY, weaponName, StylePlain)
+			switch side.mark {
+			case 1:
+				add(tx, textY+lineHeight, "▲", StyleGood)
+			case -1:
+				add(tx, textY+lineHeight, "▼", StyleBad)
+			}
+		} else {
+			// 絵の右の 2 行を武器名に使い、相性は絵の上端に置く（DES-UI-31）。
+			mark := ""
+			if side.mark > 0 {
+				mark = "▲"
+			} else if side.mark < 0 {
+				mark = "▼"
+			}
+			if mark != "" {
+				weaponLines = wrapWidth(mark+" "+weaponName, room)
+			}
+			for j, line := range weaponLines {
+				add(tx, textY+j*lineHeight, line, StylePlain)
+			}
 		}
 		// 直接クリックで武器ごとに仮の位置が違うときは、窓に仮の移動先を示す（DES-UI-34）。
-		if i == 0 && c.quickSpots != nil {
-			add(tx+20, l.weaponY+lineHeight, fitRewind(fmt.Sprintf("位置 %d,%d", c.dest.X, c.dest.Y), room-20), StyleLabel)
+		if i == 0 && c.quickSpots != nil && len(weaponLines) == 1 {
+			add(tx+20, textY+lineHeight, fitRewind(fmt.Sprintf("位置 %d,%d", c.dest.X, c.dest.Y), room-20), StyleLabel)
 		}
 	}
 
@@ -187,7 +228,11 @@ func (c *Controller) ForecastWindow() (ForecastWindow, bool) {
 
 	// 武器送り・決定・戻る（DES-UI-34）。押せる範囲は ForecastClick と同じ。
 	room := width - 2*forecastButtonWidth - 8 - 16 - textWidth("◀  ▶　仮選択")
-	add(16, l.controlY, "◀ "+fitRewind(aw.Name, room)+" ▶　仮選択", StyleTitle)
+	controlName := aw.Name
+	if textWidth(controlName) > room {
+		controlName = "武器"
+	}
+	add(16, l.controlY, "◀ "+controlName+" ▶　仮選択", StyleTitle)
 	add(width-2*forecastButtonWidth, l.controlY, "決定", StyleGood)
 	add(width-forecastButtonWidth, l.controlY, "戻る", StylePlain)
 	v.Bottom = r.Max.Y

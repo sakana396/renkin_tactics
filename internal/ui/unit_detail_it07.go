@@ -28,6 +28,9 @@ const (
 // detailGuide は詳しい画面の下の操作の案内。
 const detailGuide = "Tab: 節を送る　I・Esc・右クリック: 戻る"
 
+// deployDetailButtonRect は配置の既存ボタンの下に置く詳細の入口（DES-UI-31）。
+var deployDetailButtonRect = image.Rect(752, 336, 824, 356)
+
 // 詳しい画面の配置（DES-IT07 3.4 節）。左の列 x = 16〜304 に能力と武器の短い行・スキル、右の列 x = 320〜816 に手持ち 5 枠と全武器。
 const (
 	detailLeftX      = 16

@@ -205,7 +205,7 @@ func TestIT07BattleWindows(t *testing.T) {
 			if len(v.Icons) != 2 || v.Icons[0] != (InfoIcon{X: o.X + 16, Y: o.Y + 60, Size: WeaponIconSize, Tile: mustTile(t, tactics.Sword)}) || v.Icons[1].X != o.X+280 || v.Icons[1].Size != WeaponIconSize {
 				t.Errorf("%s: 武器の絵 %+v", tc.name, v.Icons)
 			}
-			// 6 行の表 (16,92)〜(400,188)（16 px の行の高さを保つため、設計の 184 より 4 px 下まで。設計への提案）。値は Battle.Forecast と一致し、必殺・大盾は予測後 HP に入れない。
+			// 6 行の表 (16,92)〜(400,188)（DES-IT07 v0.7、E-127）。値は Battle.Forecast と一致し、必殺・大盾は予測後 HP に入れない。
 			f := forecastOf(c)
 			labels := []string{"HP", "ダメージ", "命中", "必殺", "速さ", "反撃"}
 			attacker := []string{tc.after[0], fmt.Sprintf("%d×%d", f.Attacker.Damage, f.Attacker.Count), fmt.Sprintf("%d%%", f.Attacker.HitRate), fmt.Sprintf("%d%%", f.Attacker.CritRate), fmt.Sprint(f.Attacker.AttackSpeed), "―"}
@@ -709,6 +709,112 @@ func mustTile(t *testing.T, w tactics.WeaponType) assets.Tile {
 		t.Fatalf("%v の絵がない", w)
 	}
 	return tile
+}
+
+// Game.Update が最初に通す入口の優先順位と、配置の詳細ボタンを確かめる（DES-IT07 3.1・3.4 節）。
+func TestIT07PriorityAndDeployDetail(t *testing.T) {
+	t.Run("TC-IF-01-46 詳細中の T と Esc は巻き戻しだけを受ける", func(t *testing.T) {
+		c := newIdleWith(t, example1Setup)
+		c.SetCursor(cellCenter(tactics.Pos{X: 2, Y: 3}))
+		if !c.OpenDetail() {
+			t.Fatal("詳細を開けない")
+		}
+		g := &Game{scenes: &SceneController{scene: Battle, battle: c}}
+		if !g.priorityInput(priorityKeys{Rewind: true, Close: true}) || !c.rewind.open || !c.DetailOpen() {
+			t.Fatalf("T と Esc: 一覧 %v、詳細 %v", c.rewind.open, c.DetailOpen())
+		}
+	})
+	t.Run("TC-IF-01-46 配置の I とクリック・Q は詳細だけを受ける", func(t *testing.T) {
+		for _, other := range []string{"クリック", "Q"} {
+			s := deployRangeScenes(t)
+			g := &Game{scenes: s}
+			x, y := cellCenter(tactics.Pos{X: 4})
+			before := append([]int(nil), s.deploySlots...)
+			k := priorityKeys{Detail: true, X: x, Y: y}
+			if other == "クリック" {
+				k.Click = true
+			} else {
+				k.Danger = true
+			}
+			if !g.priorityInput(k) || !s.detailOpen {
+				t.Fatalf("%s: I で開かない", other)
+			}
+			// Update はここで戻るので、このフレームのクリック・Q は配置へ届かない。
+			if s.deployDanger || !reflect.DeepEqual(before, s.deploySlots) || s.deploySelected != -1 {
+				t.Errorf("%s: 同時入力で配置が変わった", other)
+			}
+		}
+	})
+	t.Run("TC-IF-01-46 全体図の間は I で詳細を開かない", func(t *testing.T) {
+		c := newIdleWith(t, example1Setup)
+		c.SetCursor(cellCenter(tactics.Pos{X: 2, Y: 3}))
+		if !c.OpenOverview() {
+			t.Fatal("全体図を開けない")
+		}
+		g := &Game{scenes: &SceneController{scene: Battle, battle: c}}
+		if g.priorityInput(priorityKeys{Detail: true, X: c.cursorX, Y: c.cursorY}) || c.DetailOpen() {
+			t.Error("全体図の間に詳細を開いた")
+		}
+	})
+	t.Run("TC-FR-UNT-09-25 配置の詳細 I は描画とクリックで同じ座標", func(t *testing.T) {
+		s := deployRangeScenes(t)
+		s.SetDeployCursor(cellCenter(tactics.Pos{X: 4}))
+		v := s.View()
+		button := v.Buttons[2]
+		if button.Label != "詳細 I" || button.Rect != deployDetailButtonRect || !button.Enabled {
+			t.Fatalf("詳細のボタン %+v", button)
+		}
+		for _, b := range v.Buttons[:2] {
+			if b.Rect.Overlaps(button.Rect) {
+				t.Errorf("既存ボタンと重なる: %+v", b)
+			}
+		}
+		s.Click(button.Rect.Min.X+2, button.Rect.Min.Y+2)
+		if !s.detailOpen || s.detailUnit < 0 || s.View().Deploy.Units[s.detailUnit].Name != "弓兵" {
+			t.Errorf("詳細ボタンのクリック: 開く %v、ユニット %d", s.detailOpen, s.detailUnit)
+		}
+	})
+}
+
+// 長い名前・武器名を盤面と右欄の両方で全文読めることを確かめる（DES-UI-31、REV-102 F-03）。
+func TestIT07LongForecastNames(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		setup    func() tactics.Setup
+		from, to tactics.Pos
+		fallback bool
+	}{
+		{"盤面", example1Setup, tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3}, false},
+		{"右欄", fallbackSetup, tactics.Pos{X: 5, Y: 8}, tactics.Pos{X: 5, Y: 7}, true},
+	} {
+		t.Run("TC-FR-BTL-08-31 / TC-FR-BTL-08-32 "+tc.name+"の長い名前と武器名", func(t *testing.T) {
+			attackerName := strings.Repeat("長", 24)
+			defenderName := strings.Repeat("敵", 9)
+			weaponName := strings.Repeat("剣", 16)
+			setup := func() tactics.Setup {
+				s := tc.setup()
+				s.Units[0].Name, s.Units[1].Name = attackerName, defenderName
+				s.Units[0].Weapon.Name = weaponName
+				return s
+			}
+			c := newIdleWith(t, setup)
+			target(t, c, tc.from, tc.to)
+			w, ok := c.ForecastWindow()
+			if !ok || w.Fallback != tc.fallback {
+				t.Fatalf("窓 %+v、あり %v", w, ok)
+			}
+			checkForecastWindow(t, tc.name, w)
+			all := strings.Join(rows(w.View), "")
+			for _, want := range []string{attackerName, defenderName, weaponName} {
+				if !strings.Contains(all, want) {
+					t.Errorf("%q の全文がない: %q", want, all)
+				}
+			}
+			if strings.Contains(all, "…") {
+				t.Errorf("省略記号で切った: %q", all)
+			}
+		})
+	}
 }
 
 // cellPt はマス p の中央の画面の座標。
