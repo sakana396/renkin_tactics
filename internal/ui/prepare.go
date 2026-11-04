@@ -170,9 +170,10 @@ type prepareButton struct {
 // prepareLine は持ち物の右列の在庫の 1 行。見出し（武器・杖・道具）か品のボタン（DES-UI-32）。
 type prepareLine struct {
 	heading string
-	label   string
-	act     func() error
-	item    prepareItem
+	// name は品名、suffix は個数（2 つ以上のときの「 ×n」）。ボタンの文は「手持ちへ: 」＋品名＋個数。
+	name, suffix string
+	act          func() error
+	item         prepareItem
 }
 
 // prepareStock は在庫を武器・杖・道具の見出しで分けた行に並べる（DES-UI-32）。
@@ -180,17 +181,17 @@ type prepareLine struct {
 func (s *SceneController) prepareStock() []prepareLine {
 	c := s.campaign
 	m := s.prepareMember
-	count := func(label string, n int) string {
+	count := func(n int) string {
 		if n > 1 {
-			label += fmt.Sprintf(" ×%d", n)
+			return fmt.Sprintf(" ×%d", n)
 		}
-		return label
+		return ""
 	}
 	var weapons, staves, items []prepareLine
 	for _, wc := range c.StockWeapons {
 		w, _ := s.cfg.Catalog.Weapon(wc.Weapon)
 		id := w.ID
-		l := prepareLine{label: count("手持ちへ: "+w.Name, wc.Count), act: func() error { return c.TakeWeapon(m, id) }, item: prepareItem{ok: true, weapon: true, id: id}}
+		l := prepareLine{name: w.Name, suffix: count(wc.Count), act: func() error { return c.TakeWeapon(m, id) }, item: prepareItem{ok: true, weapon: true, id: id}}
 		if w.Type == defs.WeaponStaff {
 			staves = append(staves, l)
 		} else {
@@ -200,7 +201,7 @@ func (s *SceneController) prepareStock() []prepareLine {
 	for _, ic := range c.Stock {
 		it, _ := s.cfg.Catalog.Item(ic.Item)
 		id := ic.Item
-		items = append(items, prepareLine{label: count("手持ちへ: "+it.Name, ic.Count), act: func() error { return c.TakeItem(m, id) }, item: prepareItem{ok: true, id: id}})
+		items = append(items, prepareLine{name: it.Name, suffix: count(ic.Count), act: func() error { return c.TakeItem(m, id) }, item: prepareItem{ok: true, id: id}})
 	}
 	var out []prepareLine
 	for _, g := range []struct {
@@ -268,15 +269,15 @@ func (s *SceneController) prepareButtons() []prepareButton {
 			case sl.weapon >= 0:
 				n := sl.weapon
 				item := prepareItem{ok: true, weapon: true, id: c.Roster[m].Weapons[n]}
-				bs = append(bs, prepareButton{SceneButton: SceneButton{"在庫へ: " + sl.name, main, true}, act: func() error { return c.StoreWeapon(m, n) }, item: item})
+				bs = append(bs, prepareButton{SceneButton: SceneButton{fitLabel("在庫へ: ", sl.name, "", main), main, true}, act: func() error { return c.StoreWeapon(m, n) }, item: item})
 				if n == 0 {
 					bs = append(bs, prepareButton{SceneButton: SceneButton{"初めの装備", side, false}})
 				} else {
-					bs = append(bs, prepareButton{SceneButton: SceneButton{"先頭へ: " + sl.name, side, true}, act: func() error { return c.MoveWeaponFirst(m, n) }, item: item})
+					bs = append(bs, prepareButton{SceneButton: SceneButton{fitLabel("先頭へ: ", sl.name, "", side), side, true}, act: func() error { return c.MoveWeaponFirst(m, n) }, item: item})
 				}
 			default:
 				id := sl.item
-				bs = append(bs, prepareButton{SceneButton: SceneButton{"在庫へ: " + sl.name, main, true}, act: func() error { return c.StoreItem(m, id) }, item: prepareItem{ok: true, id: id}})
+				bs = append(bs, prepareButton{SceneButton: SceneButton{fitLabel("在庫へ: ", sl.name, "", main), main, true}, act: func() error { return c.StoreItem(m, id) }, item: prepareItem{ok: true, id: id}})
 			}
 		}
 		lines := s.prepareStock()
@@ -289,7 +290,8 @@ func (s *SceneController) prepareButtons() []prepareButton {
 				continue
 			}
 			y := prepareStockY + (k-top)*prepareStockStep
-			bs = append(bs, prepareButton{SceneButton: SceneButton{l.label, image.Rect(432, y, 800, y+20), true}, act: l.act, item: l.item})
+			r := image.Rect(432, y, 800, y+20)
+			bs = append(bs, prepareButton{SceneButton: SceneButton{fitLabel("手持ちへ: ", l.name, l.suffix, r), r, true}, act: l.act, item: l.item})
 		}
 		if total > prepareStockLines {
 			y := prepareStockY + prepareStockLines*prepareStockStep
@@ -386,6 +388,12 @@ func fitText(s string, width int) string {
 		r = r[:len(r)-1]
 	}
 	return string(r) + "…"
+}
+
+// fitLabel はボタンの文「prefix 品名 suffix」を、描くときの左の余白 12 px を除いたボタンの幅に収める（DES-UI-32）。
+// 収まらなければ品名だけを「…」で縮め、操作の言葉と個数は残す。
+func fitLabel(prefix, name, suffix string, r image.Rectangle) string {
+	return prefix + fitText(name, r.Dx()-12-textWidth(prefix)-textWidth(suffix)) + suffix
 }
 
 // prepareView は準備の画面を作る。タブ、左列・右列（名簿／持ち物）、下欄の理由と「配置へ」（DES-UI-13、DES-UI-32）。

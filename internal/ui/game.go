@@ -115,16 +115,11 @@ func (g *Game) Update() error {
 				s.ToggleDeployDanger()
 			}
 		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyTab) {
-			s.ToggleInfoPage()
-		}
-		if cancel {
-			s.Cancel()
-		} else if left && !deploy {
-			s.Click(ebiten.CursorPosition())
-		} else if s.Scene() == Story && (inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeySpace)) {
-			s.Advance()
-		}
+		x, y := ebiten.CursorPosition()
+		g.sceneInput(sceneKeys{
+			Tab: inpututil.IsKeyJustPressed(ebiten.KeyTab), Left: left, Cancel: cancel, Deploy: deploy,
+			Advance: inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeySpace),
+		}, x, y)
 	} else {
 		c := s.BattleController()
 		g.ctrl = c
@@ -163,6 +158,27 @@ func (g *Game) Update() error {
 		return ebiten.Termination
 	}
 	return nil
+}
+
+// sceneKeys は戦闘以外の場面へ渡す、そのフレームの入力（DES-UI-09）。Deploy は配置の入力を先に渡したこと。
+type sceneKeys struct {
+	Tab, Left, Cancel, Deploy, Advance bool
+}
+
+// sceneInput は戦闘以外の場面の Tab・取消し・左クリック・送りを場面へ渡す（DES-UI-09、DES-UI-32）。
+// 準備の実入力は Game.Update → sceneInput → SceneController.Click・Cancel の経路を通る。
+func (g *Game) sceneInput(k sceneKeys, x, y int) {
+	s := g.scenes
+	if k.Tab {
+		s.ToggleInfoPage()
+	}
+	if k.Cancel {
+		s.Cancel()
+	} else if k.Left && !k.Deploy {
+		s.Click(x, y)
+	} else if s.Scene() == Story && k.Advance {
+		s.Advance()
+	}
 }
 
 // leftClick は左クリックを、ボタンか盤面のマスの操作に読み替える（DES-UI-02）。

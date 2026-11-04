@@ -183,6 +183,12 @@ func handColumn(v SceneView) ([]string, []image.Rectangle) {
 // longNameCatalog は主人公の名前だけを長くした目録を作る（DES-UI-32 の長い名前の確認）。
 func longNameCatalog(t *testing.T, name string) *defs.Catalog {
 	t.Helper()
+	return renamedCatalog(t, map[string][2]string{"characters.toml": {"レオン", name}})
+}
+
+// renamedCatalog は、定義のファイルごとに 1 つの名前（name = "…"）を置き換えた目録を作る。
+func renamedCatalog(t *testing.T, renames map[string][2]string) *defs.Catalog {
+	t.Helper()
 	source := fstest.MapFS{}
 	if err := fs.WalkDir(data.Base(), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
@@ -194,11 +200,14 @@ func longNameCatalog(t *testing.T, name string) *defs.Catalog {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	src := string(source["characters.toml"].Data)
-	if !strings.Contains(src, `name = "レオン"`) {
-		t.Fatal("前提: 主人公の名前")
+	for file, r := range renames {
+		src := string(source[file].Data)
+		old := fmt.Sprintf("name = %q", r[0])
+		if !strings.Contains(src, old) {
+			t.Fatal("前提: 名前", file, r[0])
+		}
+		source[file].Data = []byte(strings.Replace(src, old, fmt.Sprintf("name = %q", r[1]), 1))
 	}
-	source["characters.toml"].Data = []byte(strings.Replace(src, `name = "レオン"`, fmt.Sprintf("name = %q", name), 1))
 	cat, err := defload.Load(source)
 	if err != nil {
 		t.Fatal(err)
@@ -511,6 +520,121 @@ func TestIT07PrepareItems(t *testing.T) {
 		clickSceneButton(t, s, "戦闘開始")
 		if s.Scene() != Battle || !reflect.DeepEqual(s.sortie.Members, selected) {
 			t.Fatal("戦闘を始められない", s.Scene())
+		}
+	})
+	t.Run("TC-FR-CMP-03-16 長い品名でもボタンの文は枠に収め、操作の言葉と個数は残す", func(t *testing.T) {
+		longWeapon := "アーマーキラー・オブ・ザ・とても長い名前の剣・改"
+		longItem := "とても長い名前の回復薬・大瓶入り特製・旅の商人のおすすめ品"
+		cat := renamedCatalog(t, map[string][2]string{"weapons.toml": {"アーマーキラー", longWeapon}, "items.toml": {"回復薬", longItem}})
+		s := recruitScenes(t, "ch09", core.Withdraw)
+		s.cfg.Catalog = cat
+		c, err := core.NewCampaignAt(cat, core.Withdraw, "ch09")
+		if err != nil {
+			t.Fatal(err)
+		}
+		s.campaign = c
+		s.enterPrepare()
+		leon := memberOf(t, s, "leon")
+		s.campaign.Roster[leon].Weapons = []string{"iron_sword", "armor_killer"}
+		s.campaign.StockWeapons = []core.WeaponCount{{Weapon: "armor_killer", Count: 2}}
+		s.campaign.Stock = []defs.ItemCount{{Item: "potion", Count: 3}}
+		selectMember(t, s, leon)
+		clickPrepareTab(t, s, "持ち物")
+		v := s.View()
+		// ボタンの文は枠（左の余白 12 px を除く）に収まる。重なりと領域も確かめる。
+		checkPrepareLayout(t, "長い品名", v)
+		want := map[string]bool{}
+		for _, b := range v.Buttons {
+			switch {
+			case strings.HasPrefix(b.Label, "手持ちへ: アーマーキラー") && strings.HasSuffix(b.Label, "… ×2"):
+				want["在庫の武器"] = true
+			case strings.HasPrefix(b.Label, "手持ちへ: とても長い") && strings.HasSuffix(b.Label, "… ×3"):
+				want["在庫の道具"] = true
+			case strings.HasPrefix(b.Label, "在庫へ: アーマーキラー") && strings.HasSuffix(b.Label, "…"):
+				want["手持ちの武器"] = true
+			case strings.HasPrefix(b.Label, "先頭へ: アーマーキラー") && strings.HasSuffix(b.Label, "…"):
+				want["先頭へ"] = true
+			case strings.HasPrefix(b.Label, "在庫へ: とても長い") && strings.HasSuffix(b.Label, "…"):
+				want["手持ちの道具"] = true
+			}
+		}
+		if len(want) != 5 {
+			t.Fatal("長い品名を縮めたボタン", want)
+		}
+		// 縮めたボタンも、その品を出し入れする。選んだ品の欄は全名を右列の幅で折り返す。
+		for _, b := range v.Buttons {
+			if strings.HasPrefix(b.Label, "手持ちへ: アーマーキラー") {
+				s.Click(b.Rect.Min.X, b.Rect.Min.Y)
+				break
+			}
+		}
+		if w := s.campaign.Roster[leon].Weapons; !reflect.DeepEqual(w, []string{"iron_sword", "armor_killer", "armor_killer"}) {
+			t.Fatal(w)
+		}
+		joined := ""
+		for _, tx := range s.View().Texts {
+			if tx.X >= it07RightArea.Min.X && tx.Y >= 360 {
+				joined += tx.Text
+			}
+		}
+		if !strings.Contains(joined, "選んだ品: "+longWeapon) {
+			t.Fatal("選んだ品の全名", joined)
+		}
+		checkPrepareLayout(t, "長い品名の選択", s.View())
+	})
+	t.Run("TC-FR-CMP-03-16 / TC-FR-CMP-03-17 実入力の経路（Game.Update の場面の入力 → SceneController）でタブ・出し入れ・Tab・取消し", func(t *testing.T) {
+		s := recruitScenes(t, "ch09", core.Withdraw)
+		g := &Game{scenes: s}
+		click := func(x, y int) { g.sceneInput(sceneKeys{Left: true}, x, y) }
+		cancel := func() { g.sceneInput(sceneKeys{Cancel: true}, 0, 0) }
+		gald := memberOf(t, s, "gald")
+		baseline := campaignBytes(t, s)
+		// 名簿の行（y = 64 から 24 px ごと、x 56〜399）を押して仲間を選ぶ。
+		row := -1
+		for i, r := range s.View().Rows {
+			if r.Member == gald {
+				row = i
+			}
+		}
+		click(100, 64+row*24+2)
+		if s.prepareMember != gald {
+			t.Fatal("行を押して選べない", s.prepareMember)
+		}
+		// Tab キーは名簿の情報のページを送る。状態は変わらない。
+		g.sceneInput(sceneKeys{Tab: true}, 0, 0)
+		if s.infoPage != PageEquip || !bytes.Equal(campaignBytes(t, s), baseline) {
+			t.Fatal("Tab", s.infoPage)
+		}
+		// タブ (16,16)〜(496,48) の右半分（持ち物）を押す。
+		click(400, 30)
+		if !s.View().Tabs[1].Selected || s.prepareMember != gald || !bytes.Equal(campaignBytes(t, s), baseline) {
+			t.Fatal("持ち物のタブ")
+		}
+		// 5 枠の 2 行目（y = 120〜147、x 40〜231）はガルドの回復薬。押すと在庫へ戻す。
+		click(100, 130)
+		if len(s.campaign.Roster[gald].Items) != 0 || !strings.Contains(viewStrings(s.View()), "選んだ品: 回復薬") {
+			t.Fatal("在庫へ", s.campaign.Roster[gald].Items)
+		}
+		// 1 行目の鉄の槍は最後の 1 本なので、状態は変わらず理由を出す。
+		before := campaignBytes(t, s)
+		click(100, 100)
+		if !bytes.Equal(campaignBytes(t, s), before) || !strings.Contains(viewStrings(s.View()), core.ErrLastWeapon.Error()) {
+			t.Fatal("最後の 1 本")
+		}
+		// 取消し: 品の選択 → 名簿のタブ → 準備のまま。
+		cancel()
+		if strings.Contains(viewStrings(s.View()), "選んだ品") || !s.View().Tabs[1].Selected {
+			t.Fatal("1 回目の取消し")
+		}
+		cancel()
+		cancel()
+		if !s.View().Tabs[0].Selected || s.Scene() != Prepare || !bytes.Equal(campaignBytes(t, s), before) {
+			t.Fatal("2・3 回目の取消し")
+		}
+		// 下欄の「配置へ」(672,528)〜(816,568) で配置へ進む。
+		click(700, 540)
+		if s.Scene() != Deploy {
+			t.Fatal("配置へ", s.Scene())
 		}
 	})
 }
