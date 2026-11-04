@@ -43,6 +43,8 @@ type Game struct {
 	hintLayer *ebiten.Image
 	// shotCursor は開発用撮影で情報欄のカーソル位置を固定する。
 	shotCursor *image.Point
+	// drag は中ボタンで盤面をつかむ操作の途中の値（DES-UI-30）。
+	drag boardDrag
 }
 
 // Run はタイトルからキャンペーンを始める（DES-UI-09、DES-CMD-02）。
@@ -103,6 +105,10 @@ func (g *Game) Update() error {
 		if left && c.RewindClick(ebiten.CursorPosition()) {
 			return nil
 		}
+	}
+	// 全体図・次の味方・中ボタンのドラッグ（DES-UI-30）。全体図を出している間はほかの入力を渡さない。
+	if x, y := ebiten.CursorPosition(); g.navInput(readNavKeys(left, cancel), x, y) {
+		return nil
 	}
 	if s.Scene() != Battle {
 		deploy := s.Scene() == Deploy
@@ -221,6 +227,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 		if g.scenes.Scene() != Battle {
 			g.drawScene(screen)
+			if g.scenes.Scene() == Deploy {
+				g.drawDeployNav(screen)
+			}
 			if g.scenes.Scene() == GameOver {
 				g.ctrl = g.scenes.BattleController()
 				g.drawRewind(screen)
@@ -255,6 +264,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawGuide(screen)
 	g.drawHintText(screen, hint)
 	g.drawRewind(screen)
+	g.drawBattleNav(screen)
 }
 
 // drawHint は増援の予兆領域の外周を黄土色の破線で、中央付近に「…」を描く（DES-UI-24）。

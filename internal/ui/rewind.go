@@ -127,6 +127,8 @@ func (c *Controller) RewindEnter() {
 	c.pruneWatched()
 	c.dest = tactics.Pos{}
 	c.confirmEnd, c.fast, c.message = false, false, ""
+	// 巻き戻しの成功では、開く前の全体図も消す（DES-IT07 3.1 節）。
+	c.nav.overview = false
 	c.shownTurn, c.shownSide = c.battle.Turn, c.battle.Phase
 	c.state = Idle
 	c.refreshHints()
