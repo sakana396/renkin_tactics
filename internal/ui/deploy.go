@@ -11,6 +11,9 @@ import (
 const deployButtonTop = infoTabTop - 40
 
 // DeployView は戦闘を作らずに表示する地形・初期敵・出撃枠と仮配置（DES-UI-20、DES-UI-23）。
+// Blue・Red はカーソルの敵の移動できるマス（青白の実線）と攻撃できるマス（青白の破線）、
+// Danger は Q の全敵の危険範囲（赤紫の塗り）（DES-UI-29）。
+// NameMark は、カーソルの敵を情報欄に出しているときの名前の横の印（なければ空）。
 type DeployView struct {
 	Board             tactics.BoardView
 	Terrain           [][]tactics.Terrain
@@ -18,6 +21,7 @@ type DeployView struct {
 	Slots             []tactics.Pos
 	Selected          int
 	Blue, Red, Danger map[tactics.Pos]bool
+	NameMark          image.Rectangle
 }
 
 // enterDeploy は出撃者の写しと連番の枠から配置を始める（DES-UI-13、DES-UI-20）。
@@ -219,6 +223,10 @@ func (s *SceneController) deployView() SceneView {
 		// 敵の能力も、味方と同じ 2 ページで出す（DES-UI-27、REV-071）。まだ出ていない増援は配置の盤面にいない。
 		info := (Panel{Unit: &d.Units[i], Page: s.infoPage, Tabs: true}).View()
 		v.Info = &info
+		if u := d.Units[i]; u.Side == tactics.Enemy && u.Pos == s.deployCursor && d.Blue != nil {
+			// カーソルの敵の範囲を出しているとき、その敵の名前の横に同じ青白の印を置く（DES-UI-29）。
+			d.NameMark, _ = nameMarkRect(info, unitName(u))
+		}
 	} else {
 		v.Texts = append(v.Texts, SceneText{Text: "配置する味方を選んでください", X: 528, Y: 24, Style: StyleLabel})
 	}

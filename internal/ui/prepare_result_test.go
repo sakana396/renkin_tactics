@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"image"
 	"reflect"
 	"strings"
 	"testing"
@@ -32,6 +33,18 @@ func clickSceneButton(t *testing.T, s *SceneController, label string) {
 	}
 	t.Fatalf("ボタン %s がない", label)
 }
+
+// clickPrepareTab は準備のタブ（DES-UI-32）を実際のクリックで切り替える。
+func clickPrepareTab(t *testing.T, s *SceneController, label string) {
+	t.Helper()
+	for _, tab := range s.View().Tabs {
+		if tab.Label == label {
+			s.Click(tab.Rect.Min.X, tab.Rect.Min.Y)
+			return
+		}
+	}
+	t.Fatalf("タブ %s がない", label)
+}
 func TestPrepare(t *testing.T) {
 	t.Run("TC-FR-CMP-03-07 初期選択と生存者の表示", func(t *testing.T) {
 		for _, skip := range []bool{false, true} {
@@ -57,8 +70,9 @@ func TestPrepare(t *testing.T) {
 		s.campaign.Roster[1].Alive = false
 		s.enterPrepare()
 		v := s.View()
+		// 名簿の文は左列 (16,56)〜(400,472)、見出しはタブの右で画面の右端の 16 px 内に収める（DES-UI-32）。
 		for _, tx := range v.Texts {
-			if tx.X+textWidth(tx.Text) > MapSize {
+			if (tx.X < 400 && tx.X+textWidth(tx.Text) > 400) || tx.X+textWidth(tx.Text) > 816 {
 				t.Fatalf("左の欄から文字が出る: %+v 幅 %d", tx, textWidth(tx.Text))
 			}
 		}
@@ -107,6 +121,7 @@ func TestPrepare(t *testing.T) {
 	})
 	t.Run("TC-FR-CMP-03-09 入れ替えと上限の理由", func(t *testing.T) {
 		s := prepareScenes(t)
+		clickPrepareTab(t, s, "持ち物")
 		clickSceneButton(t, s, "在庫へ: 回復薬")
 		if s.campaign.Roster[0].Items[0].Count != 1 || s.campaign.Stock[0].Count != 1 {
 			t.Fatal(s.campaign)
@@ -169,6 +184,10 @@ func TestPrepare(t *testing.T) {
 		var texts []string
 		for _, tx := range v.Info.Texts {
 			texts = append(texts, tx.Text)
+			// 名簿のタブの能力・装備は右列 (416,56)〜(816,472) に置く（DES-UI-32）。
+			if r := image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+lineHeight); !r.In(image.Rect(416, 56, 816, 472)) {
+				t.Fatalf("情報が右列の外: %+v", tx)
+			}
 		}
 		var levelLines []string
 		for _, tx := range texts {
@@ -203,6 +222,8 @@ func TestPrepare(t *testing.T) {
 		}
 		s.ToggleInfoPage()
 		s.Click(row.Mark.Min.X, row.Mark.Min.Y)
+		// 出し入れは「持ち物」のタブで、名簿で選んだ仲間に対して行う（DES-UI-32）。
+		clickPrepareTab(t, s, "持ち物")
 		clickSceneButton(t, s, "在庫へ: 回復薬")
 		if len(s.campaign.Roster[1].Items) != 0 || s.campaign.Roster[0].Items[0].Count != 2 {
 			t.Fatal("選んでいない仲間を変更した")

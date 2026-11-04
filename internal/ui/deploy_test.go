@@ -27,6 +27,7 @@ func TestDeploy(t *testing.T) {
 			t.Run(fmt.Sprintf("%d人", count), func(t *testing.T) {
 				s := prepareScenes(t)
 				// 準備で変更した手持ちと、主人公が途中の名簿も保つ。
+				clickPrepareTab(t, s, "持ち物")
 				clickSceneButton(t, s, "在庫へ: 回復薬")
 				s.campaign.Roster[0], s.campaign.Roster[2] = s.campaign.Roster[2], s.campaign.Roster[0]
 				s.enterPrepare()

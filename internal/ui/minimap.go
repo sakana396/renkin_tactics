@@ -134,8 +134,11 @@ type MinimapView struct {
 	Cells     []MinimapCell
 	Units     []MinimapUnit
 	// Hints は分かっている予兆の範囲。View は今の盤面の表示範囲（白い枠）。
-	Hints  []image.Rectangle
-	View   image.Rectangle
+	Hints []image.Rectangle
+	View  image.Rectangle
+	// Danger は全敵の危険範囲のマス（薄い着色）、Pins は固定した敵のマス（金の印）（DES-UI-29）。範囲の線は描かない。
+	Danger []image.Rectangle
+	Pins   []image.Rectangle
 	Legend []MinimapLegend
 	Texts  []SceneText
 }
@@ -240,7 +243,11 @@ func (c *Controller) Minimap() MinimapView {
 	if h := c.ReinforcementHintView(); h.Visible {
 		hints = h.Areas
 	}
-	return buildMinimap(c.battle, c.Units(), hints, c.camera)
+	v := buildMinimap(c.battle, c.Units(), hints, c.camera)
+	// 盤面と同じ全敵の危険範囲と固定した敵を、マスの色とピンで示す（DES-UI-29）。
+	v.Danger = minimapDanger(v.Layout, c.Danger())
+	v.Pins = minimapPins(v.Layout, c.WatchedPins())
+	return v
 }
 
 // MinimapClick はミニマップの欄のクリックを受ける（DES-UI-28）。欄の中なら真を返し、盤面・情報欄には渡さない。
@@ -279,7 +286,10 @@ func (s *SceneController) deployMinimap(d *DeployView) MinimapView {
 	if len(d.Terrain) == 0 {
 		return unavailableMinimap()
 	}
-	return buildMinimap(gridTerrain(d.Terrain), d.Units, nil, s.deployCamera)
+	v := buildMinimap(gridTerrain(d.Terrain), d.Units, nil, s.deployCamera)
+	// 配置の全敵の危険範囲も、戦闘と同じくマスの色で示す（DES-UI-29）。配置では固定を使わない。
+	v.Danger = minimapDanger(v.Layout, d.Danger)
+	return v
 }
 
 // deployMinimapClick は配置のミニマップのクリックで配置のカメラを動かす（DES-UI-28）。仮配置と選択は変えない。

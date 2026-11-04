@@ -250,28 +250,29 @@ func TestUIControls(t *testing.T) {
 		c.Click(tactics.Pos{X: 2})
 		c.Click(tactics.Pos{X: 4})
 		c.SetCursor(-1, -1)
-		overlayIs(t, c, "A と B", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
+		watchedIs(t, c, "A と B", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
 		// もう一度 A をクリックすると A だけ消える。
 		c.Click(tactics.Pos{X: 2})
-		overlayIs(t, c, "A を消す", rowSet(3, 4, 5), rowSet(2, 6))
-		// カーソルを合わせた A の範囲は、出している B の範囲と合わせて出す（B を隠さない）。
+		watchedIs(t, c, "A を消す", rowSet(3, 4, 5), rowSet(2, 6))
+		// カーソルを合わせた A の範囲は、固定した B の範囲とは別の層（カーソル）で出す（B を隠さず、固定も変えない。DES-UI-29）。
+		// A は青 (1, 0)〜(3, 0)、赤 (0, 0)・(4, 0)。
 		c.SetCursor(cellCenter(tactics.Pos{X: 2}))
-		overlayIs(t, c, "A に合わせる", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
+		watchedIs(t, c, "A に合わせる", rowSet(3, 4, 5), rowSet(2, 6))
+		cursorIs(t, c, "A に合わせる", rowSet(1, 2, 3), rowSet(0, 4))
 		c.SetCursor(-1, -1)
 		c.Click(tactics.Pos{X: 2})
 		// 空いたマスのクリック、スクロール、Q の切り替えでは集まりを変えない。Q の危険範囲は別に出す。
 		c.Click(tactics.Pos{X: 0})
 		c.Scroll(1, 0)
 		c.ToggleDanger()
-		overlayIs(t, c, "空きマス・スクロール・Q", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
+		watchedIs(t, c, "空きマス・スクロール・Q", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
 		if got := c.Danger(); !reflect.DeepEqual(got, rowSet(0, 1, 2, 3, 4, 5, 6)) {
 			t.Errorf("Q の危険範囲 %v", got)
 		}
 		c.ToggleDanger()
-		overlayIs(t, c, "Q を消す", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
-		if c.RangeStyle() != StyleBad {
-			t.Error("敵の範囲の色が赤でない")
-		}
+		watchedIs(t, c, "Q を消す", rowSet(1, 2, 3, 4, 5), rowSet(0, 6))
+		// 敵の範囲は自軍の範囲の塗り（Overlay）に入れない（DES-UI-29）。
+		overlayIs(t, c, "Idle の塗り", nil, nil)
 
 		// 位置が変わったら計算し直す: 通路でソルジャー (4, 0) とボス (0, 0) を出す。
 		// ソルジャーはレオン (2, 0) を通れず、青 (3, 0)〜(5, 0)、赤 (2, 0)・(6, 0)。ボスは青 (0, 0)、赤 (1, 0)。
@@ -279,14 +280,14 @@ func TestUIControls(t *testing.T) {
 		c.Click(tactics.Pos{X: 4})
 		c.Click(tactics.Pos{X: 0})
 		c.SetCursor(-1, -1)
-		overlayIs(t, c, "ソルジャーとボス", rowSet(0, 3, 4, 5), rowSet(1, 2, 6))
+		watchedIs(t, c, "ソルジャーとボス", rowSet(0, 3, 4, 5), rowSet(1, 2, 6))
 		// レオンを選ぶと自軍の範囲を出し、集まりは保つ。レオンを (1, 0) へ動かして待機すると、自軍は全員行動済みなので
 		// 敵軍の番になり、ソルジャーが (2, 0) に動いてレオンを攻撃する。ソルジャーは (2, 0) から右へ (5, 0) まで動けるので、
 		// 青 (2, 0)〜(5, 0)、赤 (1, 0)・(6, 0)。ボスの赤 (1, 0) と合わせる。
 		c.Click(tactics.Pos{X: 2})
 		own, ownRed := c.ranges(0)
 		overlayIs(t, c, "レオンを選ぶ", own, ownRed)
-		// 自軍を選んで動かしている間も、出している敵の範囲を枠（WatchedFrames）で残す（E-60）。
+		// 自軍を選んで動かしている間も、固定した敵の範囲を橙の線（WatchedFrames）で残す（E-60、DES-UI-29）。
 		if blue, red := c.WatchedFrames(); !reflect.DeepEqual(blue, rowSet(0, 3, 4, 5)) || !reflect.DeepEqual(red, rowSet(1, 2, 6)) {
 			t.Errorf("Selected の敵の範囲の枠: 青 %v、赤 %v", blue, red)
 		}
@@ -304,7 +305,7 @@ func TestUIControls(t *testing.T) {
 		if c.Battle().Units()[2].Pos != (tactics.Pos{X: 2}) {
 			t.Fatalf("前提: ソルジャーの位置 %v", c.Battle().Units()[2].Pos)
 		}
-		overlayIs(t, c, "レオンが動いたあと", rowSet(0, 2, 3, 4, 5), rowSet(1, 6))
+		watchedIs(t, c, "レオンが動いたあと", rowSet(0, 2, 3, 4, 5), rowSet(1, 6))
 		// 2 ターン目の番を終えると、敵軍の番に増援 (9, 0) が現れる。範囲は保つ。
 		c.EndPhase()
 		c.EndPhase()
@@ -312,10 +313,10 @@ func TestUIControls(t *testing.T) {
 		if c.State() != Idle || len(c.Battle().Units()) != 4 {
 			t.Fatalf("3 ターン目: 状態 %v、ユニット %d", c.State(), len(c.Battle().Units()))
 		}
-		overlayIs(t, c, "敵軍の番のあと", rowSet(0, 2, 3, 4, 5), rowSet(1, 6))
+		watchedIs(t, c, "敵軍の番のあと", rowSet(0, 2, 3, 4, 5), rowSet(1, 6))
 		// 増援 (9, 0) も足す（青 (9, 0)、赤 (8, 0)）。
 		c.Click(tactics.Pos{X: 9})
-		overlayIs(t, c, "増援を足す", rowSet(0, 2, 3, 4, 5, 9), rowSet(1, 6, 8))
+		watchedIs(t, c, "増援を足す", rowSet(0, 2, 3, 4, 5, 9), rowSet(1, 6, 8))
 		// 巻き戻しに成功したら、同じ集まりを戻った盤面に照らす。最初の行動（レオンの待機）の前へ戻ると、増援はまだいないので除き、
 		// ソルジャーとボスは戻った盤面（レオン (2, 0)、ソルジャー (4, 0)）で出す。
 		c.OpenRewind()
@@ -333,7 +334,7 @@ func TestUIControls(t *testing.T) {
 		if !reflect.DeepEqual(c.watched, map[int]bool{1: true, 2: true}) {
 			t.Errorf("巻き戻しのあとの集まり %v", c.watched)
 		}
-		overlayIs(t, c, "巻き戻しのあと", rowSet(0, 3, 4, 5), rowSet(1, 2, 6))
+		watchedIs(t, c, "巻き戻しのあと", rowSet(0, 3, 4, 5), rowSet(1, 2, 6))
 
 		// 戦死した敵は除く。弱い敵とボスを出し、主人公が弱い敵を倒すと、ボスの範囲だけが残る。
 		k := newIdleWith(t, killSetup)
@@ -352,145 +353,74 @@ func TestUIControls(t *testing.T) {
 		if !reflect.DeepEqual(k.watched, map[int]bool{1: true}) {
 			t.Errorf("戦死のあとの集まり %v", k.watched)
 		}
-		overlayIs(t, k, "戦死のあと", posSet(tactics.Pos{X: 5, Y: 5}), posSet(tactics.Pos{X: 4, Y: 5}, tactics.Pos{X: 5, Y: 4}))
+		watchedIs(t, k, "戦死のあと", posSet(tactics.Pos{X: 5, Y: 5}), posSet(tactics.Pos{X: 4, Y: 5}, tactics.Pos{X: 5, Y: 4}))
 		// Esc は集まりを空にする。別の Battle（新しい Controller）では空。
 		k.Cancel()
-		overlayIs(t, k, "Esc", nil, nil)
+		watchedIs(t, k, "Esc", nil, nil)
 		if fresh := newIdleWith(t, killSetup); len(fresh.watched) != 0 {
 			t.Errorf("新しい戦闘の集まり %v", fresh.watched)
 		}
 	})
 
-	t.Run("TC-IF-01-43 移動先を選んでいるときに敵をクリックすると、武器を選び、仮の移動先から予測を出す。候補がなければ理由を出し、取り消しは 予測 → 相手 → 武器 → 行動の一覧 → 移動先", func(t *testing.T) {
+	t.Run("TC-IF-01-43 敵の直接クリックから予測と武器送りに進み、取消しで移動先に戻る", func(t *testing.T) {
 		c := newIdleWith(t, quickSetup)
 		before := c.Battle().Units()
 		history := len(c.Battle().History())
-		still := func(what string) {
-			t.Helper()
-			if !reflect.DeepEqual(c.Battle().Units(), before) || len(c.Battle().History()) != history {
-				t.Errorf("%s: 決定の前に戦闘が変わった", what)
-			}
-		}
 		c.Click(tactics.Pos{X: 1, Y: 1})
-		// 遠くの敵 (6, 6) には、どの武器でも届く移動先がない。理由を出して移動先の選択を保つ（範囲も出さない）。
 		c.Click(tactics.Pos{X: 6, Y: 6})
-		if c.State() != Selected || c.Message() != "遠くの敵 を攻撃できる移動先がありません" || len(c.watched) != 0 {
-			t.Errorf("候補なし: 状態 %v、知らせ %q、範囲 %v", c.State(), c.Message(), c.watched)
+		if c.State() != Selected || c.Message() != "遠くの敵 を攻撃できる移動先がありません" {
+			t.Fatalf("候補なし: %v %q", c.State(), c.Message())
 		}
-		if !strings.Contains(strings.Join(c.Guide(), "\n"), "遠くの敵 を攻撃できる移動先がありません") {
-			t.Error("案内欄に理由がない")
-		}
-		// 武器ごとの仮の移動先（今の位置 → 費用が最も小さい → Y・X の小さい）。
 		for _, tc := range []struct {
-			name   string
-			enemy  tactics.Pos
-			target int
-			labels []string
-			dest   [2]tactics.Pos // 剣・弓の仮の移動先
+			enemy         tactics.Pos
+			first, second tactics.Pos
 		}{
-			// 隣の敵: 剣は今の位置。弓は最小の射程 2 のため、費用 1 の (1, 0)・(0, 1)・(2, 1) のうち Y の小さい (1, 0)。
-			{"近くの敵", tactics.Pos{X: 1, Y: 2}, 1, []string{"剣", "弓"}, [2]tactics.Pos{{X: 1, Y: 1}, {X: 1, Y: 0}}},
-			// 距離 4 の敵: 剣は費用 3 の (3, 2)・(2, 3) のうち Y の小さい (3, 2)。弓は費用 2 の (3, 1)・(2, 2) のうち (3, 1)。
-			{"敵", tactics.Pos{X: 3, Y: 3}, 2, []string{"剣", "弓"}, [2]tactics.Pos{{X: 3, Y: 2}, {X: 3, Y: 1}}},
-			// 壁の向こうの敵: 隣へは行けないので剣は使えない。弓は (3, 1)。
-			{"壁の向こうの敵", tactics.Pos{X: 5, Y: 1}, 3, []string{"剣（使えない）", "弓"}, [2]tactics.Pos{{}, {X: 3, Y: 1}}},
+			{tactics.Pos{X: 1, Y: 2}, tactics.Pos{X: 1, Y: 1}, tactics.Pos{X: 1, Y: 0}},
+			{tactics.Pos{X: 3, Y: 3}, tactics.Pos{X: 3, Y: 2}, tactics.Pos{X: 3, Y: 1}},
 		} {
 			c.Click(tc.enemy)
-			if c.State() != WeaponMenu || !reflect.DeepEqual(c.MenuLabels(), tc.labels) || c.dest != (tactics.Pos{X: 1, Y: 1}) || len(c.watched) != 0 {
-				t.Fatalf("%s: 状態 %v、一覧 %v、移動先 %v", tc.name, c.State(), c.MenuLabels(), c.dest)
+			if c.State() != Targeting || c.dest != tc.first || c.weapon != 0 || c.target < 0 {
+				t.Fatalf("直接クリック: 状態 %v、位置 %v、武器 %d、相手 %d", c.State(), c.dest, c.weapon, c.target)
 			}
-			still(tc.name + " の一覧")
-			for w := range 2 {
-				if tc.labels[w] == "剣（使えない）" {
-					c.ChooseWeapon(w)
-					if c.State() != WeaponMenu || c.Message() != "剣 では 壁の向こうの敵 を攻撃できる移動先がありません" {
-						t.Errorf("%s の剣: 状態 %v、知らせ %q", tc.name, c.State(), c.Message())
-					}
-					continue
-				}
-				c.ChooseWeapon(w)
-				if c.State() != Targeting || c.dest != tc.dest[w] || c.weapon != w || c.target != tc.target {
-					t.Errorf("%s の武器 %d: 状態 %v、移動先 %v、武器 %d、相手 %d", tc.name, w, c.State(), c.dest, c.weapon, c.target)
-				}
-				// 予測の上で移動先を示す（描くユニットは仮の移動先）。予測は選んだ武器で出す。
-				p := c.Panel(tactics.Pos{}, false)
-				if c.Units()[0].Pos != tc.dest[w] || len(p.Forecast) == 0 || p.ForecastWeapons[0] != []tactics.WeaponType{tactics.Sword, tactics.Bow}[w] {
-					t.Errorf("%s の武器 %d の予測: 位置 %v、武器 %v", tc.name, w, c.Units()[0].Pos, p.ForecastWeapons)
-				}
-				still(tc.name + " の予測")
-				// 予測 → 相手 → 武器の一覧（仮の移動先で） → 行動の一覧 → 移動先の選択。
-				for i, want := range []struct {
-					state  State
-					target int
-				}{{Targeting, -1}, {WeaponMenu, -1}, {Moved, -1}, {Selected, -1}} {
-					c.Cancel()
-					if c.State() != want.state || c.target != want.target {
-						t.Errorf("%s の武器 %d の取り消し %d: 状態 %v、相手 %d", tc.name, w, i+1, c.State(), c.target)
-					}
-					if want.state != Selected && c.dest != tc.dest[w] {
-						t.Errorf("%s の武器 %d の取り消し %d: 移動先 %v", tc.name, w, i+1, c.dest)
-					}
-				}
-				still(tc.name + " の取り消し")
-				c.Click(tc.enemy)
+			c.ShiftForecastWeapon(1)
+			if c.dest != tc.second || c.weapon != 1 || c.Panel(tactics.Pos{}, false).ForecastWeapons[0] != tactics.Bow {
+				t.Fatalf("武器送り: 位置 %v、武器 %d", c.dest, c.weapon)
 			}
-			// 敵をクリックして出した一覧の取り消しは、移動先の選択へ戻る。
+			if !reflect.DeepEqual(c.Battle().Units(), before) || len(c.Battle().History()) != history {
+				t.Fatal("決定前に戦闘が変わった")
+			}
 			c.Cancel()
 			if c.State() != Selected {
-				t.Errorf("%s の一覧の取り消し: 状態 %v", tc.name, c.State())
+				t.Fatalf("取消し: %v", c.State())
 			}
 		}
-
-		// 決定はふつうの確認（同じ相手をもう一度クリック）で行う。同じ入力をふつうの流れで行った戦闘と結果が一致する（乱数を引かない）。
-		control := newIdleWith(t, quickSetup)
-		control.Click(tactics.Pos{X: 1, Y: 1})
-		control.Click(tactics.Pos{X: 3, Y: 1})
-		control.ChooseAction(tactics.Attack)
-		control.ChooseWeapon(1)
-		control.Click(tactics.Pos{X: 3, Y: 3})
-		control.Click(tactics.Pos{X: 3, Y: 3})
-		c.Click(tactics.Pos{X: 3, Y: 3})
-		c.ChooseWeapon(1)
-		c.Click(tactics.Pos{X: 3, Y: 3})
-		if c.State() != Playing || control.State() != Playing {
-			t.Fatalf("決定: 状態 %v・%v", c.State(), control.State())
+		c.Click(tactics.Pos{X: 5, Y: 1})
+		if c.State() != Targeting || c.weapon != 1 || c.dest != (tactics.Pos{X: 3, Y: 1}) {
+			t.Fatalf("壁の向こう: %v %d %v", c.State(), c.weapon, c.dest)
 		}
-		if !reflect.DeepEqual(c.events, control.events) || !reflect.DeepEqual(c.Battle().Units(), control.Battle().Units()) {
-			t.Error("敵をクリックした攻撃とふつうの流れで結果が違う")
-		}
-
-		// 攻撃の武器が 1 本だけなら一覧を省く。仮の移動先は費用 3 の (2, 2)・(4, 2) のうち X の小さい (2, 2)。
-		// 取り消しは 予測 → 相手 → 行動の一覧 → 移動先。
+		c.Cancel()
 		one := newIdleWith(t, quickOneSetup)
 		one.Click(tactics.Pos{X: 3, Y: 0})
 		one.Click(tactics.Pos{X: 3, Y: 2})
-		if one.State() != Targeting || one.dest != (tactics.Pos{X: 2, Y: 2}) || one.target != 1 || one.weapon != 0 {
-			t.Fatalf("武器 1 本: 状態 %v、移動先 %v、相手 %d、武器 %d", one.State(), one.dest, one.target, one.weapon)
+		if one.State() != Targeting || one.dest != (tactics.Pos{X: 2, Y: 2}) {
+			t.Fatalf("武器1本: %v %v", one.State(), one.dest)
 		}
-		for i, want := range []State{Targeting, Moved, Selected} {
-			one.Cancel()
-			if one.State() != want || one.target != -1 {
-				t.Errorf("武器 1 本の取り消し %d: 状態 %v、相手 %d", i+1, one.State(), one.target)
-			}
+		one.ShiftForecastWeapon(1)
+		if one.weapon != 0 {
+			t.Fatal("武器1本が送られた")
 		}
-
-		// 攻撃の武器がなければ理由を出す。Idle の敵のクリックは、今までどおり範囲を足す操作。
-		healer := newIdleWith(t, func() tactics.Setup {
-			s := quickOneSetup()
-			s.Units[0].Weapon = tactics.Weapon{}
-			s.Units[0].Weapons = []tactics.Weapon{menuStaff}
-			s.Units[0].AllowedWeaponTypes = []tactics.WeaponType{tactics.Staff}
-			return s
-		})
-		healer.Click(tactics.Pos{X: 3, Y: 0})
-		healer.Click(tactics.Pos{X: 3, Y: 2})
-		if healer.State() != Selected || healer.Message() != "攻撃の武器がないので 壁の下の敵 を攻撃できません" {
-			t.Errorf("武器なし: 状態 %v、知らせ %q", healer.State(), healer.Message())
+		one.Cancel()
+		if one.State() != Selected {
+			t.Fatalf("武器1本の取消し: %v", one.State())
 		}
-		healer.Cancel()
-		healer.Click(tactics.Pos{X: 3, Y: 2})
-		if !reflect.DeepEqual(healer.watched, map[int]bool{1: true}) || healer.State() != Idle {
-			t.Errorf("Idle の敵のクリック: 状態 %v、範囲 %v", healer.State(), healer.watched)
+		staff := quickOneSetup()
+		staff.Units[0].Weapon = menuStaff
+		staff.Units[0].AllowedWeaponTypes = []tactics.WeaponType{tactics.Staff}
+		onlyStaff := newIdleWith(t, func() tactics.Setup { return staff })
+		onlyStaff.Click(tactics.Pos{X: 3, Y: 0})
+		onlyStaff.Click(tactics.Pos{X: 3, Y: 2})
+		if onlyStaff.State() != Selected || onlyStaff.Message() != "攻撃の武器がないので 壁の下の敵 を攻撃できません" {
+			t.Fatalf("杖だけ: %v %q", onlyStaff.State(), onlyStaff.Message())
 		}
 	})
 }

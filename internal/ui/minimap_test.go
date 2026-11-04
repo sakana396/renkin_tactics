@@ -839,7 +839,16 @@ func TestInfoPagesLayout(t *testing.T) {
 		if v.Info == nil || len(v.Info.Tabs) != 2 || v.Minimap != nil {
 			t.Fatalf("準備の情報欄 %+v、ミニマップ %v", v.Info, v.Minimap)
 		}
+		// 準備の情報欄は右列 (416,56)〜(816,472) にずらす（DES-UI-32）。印も同じだけずれる。
+		pr := v.Info.Tabs[1].Rect
+		if pr != r.Add(image.Pt(416-MapSize, 56)) {
+			t.Errorf("準備の印 %v", pr)
+		}
 		p.Click(r.Min.X+2, r.Min.Y+2)
+		if p.infoPage != PageStats {
+			t.Errorf("準備で配置の印の位置を受けた: %d", p.infoPage)
+		}
+		p.Click(pr.Min.X+2, pr.Min.Y+2)
 		if p.infoPage != PageEquip || p.prepareMember != member || !reflect.DeepEqual(p.SelectedMembers(), selected) || p.Scene() != Prepare {
 			t.Errorf("準備の印のクリック: ページ %d、仲間 %d", p.infoPage, p.prepareMember)
 		}
