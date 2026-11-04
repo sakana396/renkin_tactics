@@ -109,6 +109,20 @@ boss = true
 x = 13
 y = 1
 
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 fort_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_fort_front"
+group = "fort_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 4
+bonus = { hp = 0, str = 0, skl = 0, spd = 0, def = 0, mov = 0 }
+ai = "hold"
+x = 11
+y = 8
+
 [[maps.reinforcements]]
 turn = 3
 class = "fighter"
@@ -185,6 +199,15 @@ group = "fort_front"
 id = "anti_lure_fort_front_6"
 trigger = "enemy_attacked"
 unit = "anti_lure_ch01_6"
+effect = "charge_group"
+group = "fort_front"
+
+# #172（DES-IT07 5.1 節）: 小隊長を攻撃しても、一団の全員が動き出す
+
+[[maps.events]]
+id = "commander_fort_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_fort_front"
 effect = "charge_group"
 group = "fort_front"
 
@@ -306,6 +329,20 @@ bonus = { hp = 8, str = 2, skl = 3, spd = 2, def = 1, mov = 0 }
 ai = "hold"
 boss = true
 x = 14
+y = 8
+
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 road_east_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_road_east_front"
+group = "road_east_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 6
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 12
 y = 8
 
 [[maps.reinforcements]]
@@ -439,6 +476,19 @@ id = "road_north_alarm"
 trigger = "enemy_defeated"
 unit = "road_guard"
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 road_north の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_road_north"
+group = "road_north"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 6
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 7
+y = 1
 [[maps.events.enemies]]
 id = "road_north_soldier"
 group = "road_north"
@@ -479,6 +529,19 @@ id = "road_south_entry"
 trigger = "player_entered"
 area = { min_x = 4, min_y = 9, max_x = 9, max_y = 12 }
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 road_south の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_road_south"
+group = "road_south"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 6
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 6
+y = 14
 [[maps.events.enemies]]
 id = "road_south_cavalier"
 group = "road_south"
@@ -524,6 +587,29 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch02_6"
 effect = "charge_group"
 group = "road_east_front"
+
+# #172（DES-IT07 5.1 節）: 小隊長を攻撃しても、一団の全員が動き出す
+
+[[maps.events]]
+id = "commander_road_east_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_road_east_front"
+effect = "charge_group"
+group = "road_east_front"
+
+[[maps.events]]
+id = "commander_road_north_attacked"
+trigger = "enemy_attacked"
+unit = "commander_road_north"
+effect = "charge_group"
+group = "road_north"
+
+[[maps.events]]
+id = "commander_road_south_attacked"
+trigger = "enemy_attacked"
+unit = "commander_road_south"
+effect = "charge_group"
+group = "road_south"
 
 # 3 章（設計書（反復 2）10.6 節）。敵のボーナスは、ボスを除き 3/2/1/1/1（増援も同じ）
 
@@ -670,6 +756,20 @@ boss = true
 x = 8
 y = 1
 
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 wall_west_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_wall_west_front"
+group = "wall_west_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 8
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 5
+y = 5
+
 [[maps.reinforcements]]
 id = "anti_lure_turn_03_1"
 turn = 4
@@ -760,6 +860,19 @@ id = "wall_west_falls"
 trigger = "enemy_defeated"
 unit = "wall_west_guard"
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 wall_west の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_wall_west"
+group = "wall_west"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 7
+bonus = { hp = 3, str = 2, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 0
+y = 10
 [[maps.events.enemies]]
 id = "wall_west_cavalier"
 group = "wall_west"
@@ -858,6 +971,22 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch03_5"
 effect = "charge_group"
 group = "wall_west_front"
+
+# #172（DES-IT07 5.1 節）: 小隊長を攻撃しても、一団の全員が動き出す
+
+[[maps.events]]
+id = "commander_wall_west_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_wall_west_front"
+effect = "charge_group"
+group = "wall_west_front"
+
+[[maps.events]]
+id = "commander_wall_west_attacked"
+trigger = "enemy_attacked"
+unit = "commander_wall_west"
+effect = "charge_group"
+group = "wall_west"
 
 # 9 章（DES-MAP-08。反復 6 の制作記録は docs/iterations/it06/map-ch09.md）。初期敵 26＋ターン増援 14（#154）。
 # 敵のボーナスは、ボスを除き 6/3/3/2/3（増援も同じ）。ボスは 14/5/5/4/6。#104 で ch08 の後の名簿に合わせて強くし直した（E-52。#102 は 4/2/2/1/1・ボス 12/4/4/3/4）
@@ -1208,6 +1337,48 @@ x = 15
 y = 2
 
 # 3 ターン: 南西の背後
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 keep_gate_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_keep_gate_front"
+group = "keep_gate_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 16
+y = 6
+
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 outer_west_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_outer_west_front"
+group = "outer_west_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 12
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 5
+y = 9
+
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 outer_east_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_outer_east_front"
+group = "outer_east_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 13
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 26
+y = 9
+
 [[maps.reinforcements]]
 id = "anti_lure_turn_09_1"
 turn = 3
@@ -1378,6 +1549,19 @@ id = "gate_west_alarm"
 trigger = "enemy_defeated"
 unit = "west_entrance_soldier"
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 gate_west_reserve の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_gate_west_reserve"
+group = "gate_west_reserve"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 13
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 2
+y = 19
 [[maps.events.enemies]]
 id = "gate_west_cavalier_1"
 group = "gate_west_reserve"
@@ -1418,6 +1602,19 @@ id = "gate_east_alarm"
 trigger = "enemy_defeated"
 unit = "east_vanguard_cavalier"
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 gate_east_reserve の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_gate_east_reserve"
+group = "gate_east_reserve"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 13
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 29
+y = 19
 [[maps.events.enemies]]
 id = "gate_east_cavalier_1"
 group = "gate_east_reserve"
@@ -1458,6 +1655,19 @@ id = "gate_inner_alarm"
 trigger = "enemy_defeated"
 unit = "inner_gate_armor"
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 gate_inner_reserve の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_gate_inner_reserve"
+group = "gate_inner_reserve"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 13
+bonus = { hp = 6, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 17
+y = 3
 [[maps.events.enemies]]
 id = "gate_inner_armor"
 group = "gate_inner_reserve"
@@ -1596,6 +1806,50 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch09_24"
 effect = "charge_group"
 group = "outer_east_front"
+
+# #172（DES-IT07 5.1 節）: 小隊長を攻撃しても、一団の全員が動き出す
+
+[[maps.events]]
+id = "commander_keep_gate_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_keep_gate_front"
+effect = "charge_group"
+group = "keep_gate_front"
+
+[[maps.events]]
+id = "commander_outer_west_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_outer_west_front"
+effect = "charge_group"
+group = "outer_west_front"
+
+[[maps.events]]
+id = "commander_outer_east_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_outer_east_front"
+effect = "charge_group"
+group = "outer_east_front"
+
+[[maps.events]]
+id = "commander_gate_west_reserve_attacked"
+trigger = "enemy_attacked"
+unit = "commander_gate_west_reserve"
+effect = "charge_group"
+group = "gate_west_reserve"
+
+[[maps.events]]
+id = "commander_gate_east_reserve_attacked"
+trigger = "enemy_attacked"
+unit = "commander_gate_east_reserve"
+effect = "charge_group"
+group = "gate_east_reserve"
+
+[[maps.events]]
+id = "commander_gate_inner_reserve_attacked"
+trigger = "enemy_attacked"
+unit = "commander_gate_inner_reserve"
+effect = "charge_group"
+group = "gate_inner_reserve"
 
 # ch04〜ch06（DES-MAP-06、DES-CMP-09）。制作記録は docs/iterations/it05/map-ch04.md〜map-ch06.md
 
@@ -1761,6 +2015,34 @@ ai = "hold"
 x = 9
 y = 2
 
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 west_gate_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_west_gate_front"
+group = "west_gate_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 7
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 3
+y = 6
+
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 east_gate_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_east_gate_front"
+group = "east_gate_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 7
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 12
+y = 6
+
 [[maps.reinforcements]]
 id = "anti_lure_turn_04_2"
 turn = 4
@@ -1827,6 +2109,19 @@ id = "west_gate_falls"
 trigger = "enemy_defeated"
 unit = "west_gate_armor"
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 village_west の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_village_west"
+group = "village_west"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 7
+bonus = { hp = 2, str = 1, skl = 1, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 1
+y = 3
 [[maps.events.enemies]]
 id = "village_west_cavalier"
 group = "village_west"
@@ -1956,6 +2251,29 @@ unit = "anti_lure_ch04_9"
 effect = "charge_group"
 group = "east_gate_front"
 
+# #172（DES-IT07 5.1 節）: 小隊長を攻撃しても、一団の全員が動き出す
+
+[[maps.events]]
+id = "commander_west_gate_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_west_gate_front"
+effect = "charge_group"
+group = "west_gate_front"
+
+[[maps.events]]
+id = "commander_east_gate_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_east_gate_front"
+effect = "charge_group"
+group = "east_gate_front"
+
+[[maps.events]]
+id = "commander_village_west_attacked"
+trigger = "enemy_attacked"
+unit = "commander_village_west"
+effect = "charge_group"
+group = "village_west"
+
 [[maps]]
 id = "ch05"
 name = "狭間の関所"
@@ -2080,6 +2398,20 @@ ai = "hold"
 x = 8
 y = 2
 
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 gate_north の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_gate_north"
+group = "gate_north"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 9
+bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 7
+y = 4
+
 [[maps.reinforcements]]
 id = "anti_lure_turn_05_1"
 turn = 4
@@ -2197,6 +2529,19 @@ id = "gate_east_alarm"
 trigger = "enemy_defeated"
 unit = "gate_armor"
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 gate_east の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_gate_east"
+group = "gate_east"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 8
+bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 13
+y = 2
 [[maps.events.enemies]]
 id = "gate_east_cavalier_1"
 group = "gate_east"
@@ -2237,6 +2582,19 @@ id = "gate_inner_entry"
 trigger = "player_entered"
 area = { min_x = 3, min_y = 1, max_x = 12, max_y = 6 }
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 gate_reserve の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_gate_reserve"
+group = "gate_reserve"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 8
+bonus = { hp = 3, str = 2, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+x = 14
+y = 0
 [[maps.events.enemies]]
 id = "gate_reserve_cavalier"
 group = "gate_reserve"
@@ -2282,6 +2640,29 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch05_4"
 effect = "charge_group"
 group = "gate_north"
+
+# #172（DES-IT07 5.1 節）: 小隊長を攻撃しても、一団の全員が動き出す
+
+[[maps.events]]
+id = "commander_gate_north_attacked"
+trigger = "enemy_attacked"
+unit = "commander_gate_north"
+effect = "charge_group"
+group = "gate_north"
+
+[[maps.events]]
+id = "commander_gate_east_attacked"
+trigger = "enemy_attacked"
+unit = "commander_gate_east"
+effect = "charge_group"
+group = "gate_east"
+
+[[maps.events]]
+id = "commander_gate_reserve_attacked"
+trigger = "enemy_attacked"
+unit = "commander_gate_reserve"
+effect = "charge_group"
+group = "gate_reserve"
 
 [[maps]]
 id = "ch06"
@@ -2469,6 +2850,34 @@ ai = "hold"
 x = 10
 y = 2
 
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 pass_center_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_pass_center_front"
+group = "pass_center_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 11
+y = 8
+
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 pass_north_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_pass_north_front"
+group = "pass_north_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 12
+y = 5
+
 [[maps.reinforcements]]
 id = "anti_lure_turn_06_1"
 turn = 3
@@ -2543,6 +2952,19 @@ id = "pass_vanguard_falls"
 trigger = "enemy_defeated"
 unit = "pass_vanguard"
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 pass_center の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_pass_center"
+group = "pass_center"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 9
+bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 9
+y = 9
 [[maps.events.enemies]]
 id = "pass_group_soldier"
 group = "pass_center"
@@ -2583,6 +3005,19 @@ id = "pass_east_entry"
 trigger = "player_entered"
 area = { min_x = 12, min_y = 6, max_x = 16, max_y = 11 }
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 pass_east の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_pass_east"
+group = "pass_east"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 4, str = 2, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 16
+y = 4
 [[maps.events.enemies]]
 id = "pass_east_cavalier"
 group = "pass_east"
@@ -2649,6 +3084,36 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch06_12"
 effect = "charge_group"
 group = "pass_north_front"
+
+# #172（DES-IT07 5.1 節）: 小隊長を攻撃しても、一団の全員が動き出す
+
+[[maps.events]]
+id = "commander_pass_center_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_pass_center_front"
+effect = "charge_group"
+group = "pass_center_front"
+
+[[maps.events]]
+id = "commander_pass_north_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_pass_north_front"
+effect = "charge_group"
+group = "pass_north_front"
+
+[[maps.events]]
+id = "commander_pass_center_attacked"
+trigger = "enemy_attacked"
+unit = "commander_pass_center"
+effect = "charge_group"
+group = "pass_center"
+
+[[maps.events]]
+id = "commander_pass_east_attacked"
+trigger = "enemy_attacked"
+unit = "commander_pass_east"
+effect = "charge_group"
+group = "pass_east"
 
 # 7 章（DES-IT05 6 章の制作台帳、DES-MAP-06。制作記録は docs/iterations/it06/map-ch07.md）。16×16・出撃 6・初期敵 10＋ターン増援 9（#154）＋出来事。
 # 敵のボーナスは、ボスを除き 5/3/2/2/2（増援も同じ）。ボスは 12/5/4/3/4
@@ -2799,6 +3264,20 @@ x = 11
 y = 1
 
 # 3 ターン: 南西の背後
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 convoy_valley_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_convoy_valley_front"
+group = "convoy_valley_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 8
+y = 5
+
 [[maps.reinforcements]]
 id = "anti_lure_turn_07_1"
 turn = 3
@@ -2912,6 +3391,19 @@ id = "convoy_valley_falls"
 trigger = "player_entered"
 area = { min_x = 8, min_y = 4, max_x = 9, max_y = 6 }
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 convoy_valley の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_convoy_valley"
+group = "convoy_valley"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 10
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 8
+y = 2
 [[maps.events.enemies]]
 id = "convoy_valley_soldier"
 group = "convoy_valley"
@@ -2941,6 +3433,19 @@ id = "convoy_east_entry"
 trigger = "player_entered"
 area = { min_x = 13, min_y = 8, max_x = 15, max_y = 12 }
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 convoy_east の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_convoy_east"
+group = "convoy_east"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 5, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 14
+y = 12
 [[maps.events.enemies]]
 id = "convoy_east_cavalier"
 group = "convoy_east"
@@ -3048,6 +3553,29 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch07_4"
 effect = "charge_group"
 group = "convoy_valley_front"
+
+# #172（DES-IT07 5.1 節）: 小隊長を攻撃しても、一団の全員が動き出す
+
+[[maps.events]]
+id = "commander_convoy_valley_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_convoy_valley_front"
+effect = "charge_group"
+group = "convoy_valley_front"
+
+[[maps.events]]
+id = "commander_convoy_valley_attacked"
+trigger = "enemy_attacked"
+unit = "commander_convoy_valley"
+effect = "charge_group"
+group = "convoy_valley"
+
+[[maps.events]]
+id = "commander_convoy_east_attacked"
+trigger = "enemy_attacked"
+unit = "commander_convoy_east"
+effect = "charge_group"
+group = "convoy_east"
 
 # 8 章（DES-MAP-08。反復 6 の制作記録は docs/iterations/it06/map-ch08.md）。24×24・出撃 6・初期敵 16＋ターン増援 12（#154）。
 # 敵のボーナスは、ボスを除き 5/3/3/2/3（増援も同じ）。ボスは 12/5/5/3/5
@@ -3275,6 +3803,34 @@ x = 12
 y = 1
 
 # 4 ターン: 北西の端
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 forest_west_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_forest_west_front"
+group = "forest_west_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 5
+y = 10
+
+# #172（DES-MAP-09、DES-IT07 5.5 節）: 一団 forest_north_front の小隊長。Lv は配下の上限 +1、bonus は配下と同じ（上乗せなし）
+[[maps.enemies]]
+id = "commander_forest_north_front"
+group = "forest_north_front"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 11
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 14
+y = 1
+
 [[maps.reinforcements]]
 id = "anti_lure_turn_08_1"
 turn = 4
@@ -3424,6 +3980,19 @@ id = "forest_road_alarm"
 trigger = "enemy_defeated"
 unit = "forest_road_cavalier"
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 forest_road_reserve の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_forest_road_reserve"
+group = "forest_road_reserve"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 12
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 12
+y = 16
 [[maps.events.enemies]]
 id = "forest_road_cavalier_1"
 group = "forest_road_reserve"
@@ -3464,6 +4033,19 @@ id = "forest_north_alarm"
 trigger = "enemy_defeated"
 unit = "forest_north_armor"
 effect = "reinforce"
+# #172（DES-IT07 5.3・5.5 節）: 一団 forest_north_reserve の小隊長を出来事の列の先頭に置く
+[[maps.events.enemies]]
+id = "commander_forest_north_reserve"
+group = "forest_north_reserve"
+approach = "group"
+commander = true
+class = "soldier"
+weapons = ["iron_lance"]
+level = 12
+bonus = { hp = 5, str = 3, skl = 3, spd = 2, def = 3, mov = 0 }
+ai = "hold"
+x = 12
+y = 2
 [[maps.events.enemies]]
 id = "forest_north_cavalier_1"
 group = "forest_north_reserve"
@@ -3552,3 +4134,33 @@ trigger = "enemy_attacked"
 unit = "anti_lure_ch08_14"
 effect = "charge_group"
 group = "forest_north_front"
+
+# #172（DES-IT07 5.1 節）: 小隊長を攻撃しても、一団の全員が動き出す
+
+[[maps.events]]
+id = "commander_forest_west_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_forest_west_front"
+effect = "charge_group"
+group = "forest_west_front"
+
+[[maps.events]]
+id = "commander_forest_north_front_attacked"
+trigger = "enemy_attacked"
+unit = "commander_forest_north_front"
+effect = "charge_group"
+group = "forest_north_front"
+
+[[maps.events]]
+id = "commander_forest_road_reserve_attacked"
+trigger = "enemy_attacked"
+unit = "commander_forest_road_reserve"
+effect = "charge_group"
+group = "forest_road_reserve"
+
+[[maps.events]]
+id = "commander_forest_north_reserve_attacked"
+trigger = "enemy_attacked"
+unit = "commander_forest_north_reserve"
+effect = "charge_group"
+group = "forest_north_reserve"

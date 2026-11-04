@@ -114,16 +114,22 @@ func TestBaseDataIt02(t *testing.T) {
 				want = append(want, placement)
 			}
 			strip := func(list []defs.EnemyPlacement) []defs.EnemyPlacement {
-				out := append([]defs.EnemyPlacement(nil), list...)
-				for i := range out {
-					out[i].AI, out[i].ID, out[i].Group, out[i].Approach = "", "", "", ""
+				var out []defs.EnemyPlacement
+				for _, e := range list {
+					// #172 で足した小隊長は 10.5・10.6 節の表にないので除き、TC-FR-MAP-04-30 で確かめる（DES-IT07 5.5 節）。
+					if e.Commander {
+						continue
+					}
+					e.AI, e.ID, e.Group, e.Approach = "", "", "", ""
+					out = append(out, e)
 				}
 				return out
 			}
-			if !reflect.DeepEqual(strip(m.Enemies), strip(want)) {
+			enemies := strip(m.Enemies)
+			if !reflect.DeepEqual(enemies, strip(want)) {
 				t.Errorf("%s の敵 =\n%+v\nwant\n%+v", tt.id, m.Enemies, want)
 			}
-			boss := m.Enemies[len(m.Enemies)-1]
+			boss := enemies[len(enemies)-1]
 			if s := statsOf(boss.Class, boss.Bonus); s != tt.bossStats {
 				t.Errorf("%s のボスの能力 = %+v、期待 %+v", tt.id, s, tt.bossStats)
 			}

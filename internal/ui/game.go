@@ -402,6 +402,41 @@ func (g *Game) drawUnitList(dst *ebiten.Image, units []tactics.Unit) {
 		if u.Boss {
 			g.label(dst, "★", int(px)+CellSize-12, int(py)-1, gold)
 		}
+		// 小隊長・配下・崩れの印は絵の左上に置く（DES-UI-35、DES-IT07 3.6 節）。
+		g.drawCommandMark(dst, CommandMarkOf(u), CommandMarkRect(pt))
+	}
+}
+
+// drawCommandMark は、箱 r に指揮の印を描く（DES-UI-35）。縁を 1 px 大きく先に描き、その上に金または灰で形を描く。
+// 菱形は横の線を重ねて描き、ドットの絵のように角をはっきりさせる。崩れは小点に縁の色の割れ目を入れる。
+func (g *Game) drawCommandMark(dst *ebiten.Image, m CommandMark, r image.Rectangle) {
+	shape := m.shape()
+	if shape == shapeNone {
+		return
+	}
+	clr := m.color()
+	cx, cy := float32(r.Min.X)+float32(r.Dx())/2, float32(r.Min.Y)+float32(r.Dy())/2
+	switch shape {
+	case shapeDiamond:
+		diamond := func(radius int, c color.Color) {
+			for dy := -radius; dy <= radius; dy++ {
+				half := radius - max(dy, -dy)
+				vector.DrawFilledRect(dst, cx-float32(half)-0.5, cy+float32(dy)-0.5, float32(2*half+1), 1, c, false)
+			}
+		}
+		radius := r.Dx() / 2
+		diamond(radius, commandMarkEdge)
+		diamond(radius-1, clr)
+	case shapeDot, shapeCrackedDot:
+		radius := float32(r.Dx()) / 4
+		vector.DrawFilledCircle(dst, cx, cy, radius+1, commandMarkEdge, true)
+		vector.DrawFilledCircle(dst, cx, cy, radius, clr, true)
+		if shape == shapeCrackedDot {
+			// 割れ目: 右上から中央を通って左下へ折れる線。
+			vector.StrokeLine(dst, cx+radius, cy-radius, cx, cy, 1.5, commandMarkEdge, true)
+			vector.StrokeLine(dst, cx, cy, cx-radius/2, cy+radius/4, 1.5, commandMarkEdge, true)
+			vector.StrokeLine(dst, cx-radius/2, cy+radius/4, cx-radius, cy+radius, 1.5, commandMarkEdge, true)
+		}
 	}
 }
 
@@ -539,6 +574,9 @@ func (g *Game) drawInfoView(dst *ebiten.Image, v InfoView) {
 	}
 	for _, ic := range v.Icons {
 		g.drawTileSize(dst, ic.Tile, ic.X, ic.Y, ic.Size)
+	}
+	for _, m := range v.Marks {
+		g.drawCommandMark(dst, m.Mark, m.Rect)
 	}
 	for _, b := range v.Bars {
 		if b.Frame > 0 {
