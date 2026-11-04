@@ -182,6 +182,12 @@ func (c *Controller) Click(p tactics.Pos) {
 			c.act(tactics.Command{Unit: c.unit, To: p, Action: tactics.CantoMove})
 		}
 	case Targeting, HealTargeting:
+		if c.state == Targeting && c.quickSpots != nil {
+			if i, ok := c.unitAt(p); ok && i != c.target && c.battle.Units()[i].Side == tactics.Enemy {
+				c.quickAttack(i)
+				return
+			}
+		}
 		targets, action := c.Targets(), tactics.Attack
 		if c.state == HealTargeting {
 			targets, action = c.HealTargets(), tactics.Heal
@@ -602,6 +608,18 @@ func (c *Controller) ShiftForecastWeapon(delta int) {
 			}
 			return
 		}
+	}
+}
+
+// battleKey は戦闘中の武器送りと取消しのキーを受ける（DES-UI-34）。
+func (c *Controller) battleKey(key string) {
+	switch key {
+	case "A":
+		c.ShiftForecastWeapon(-1)
+	case "D":
+		c.ShiftForecastWeapon(1)
+	case "Esc", "RightClick":
+		c.Cancel()
 	}
 }
 

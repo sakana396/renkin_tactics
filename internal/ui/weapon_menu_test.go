@@ -2,6 +2,7 @@ package ui
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
@@ -70,6 +71,11 @@ func TestWeaponMenu(t *testing.T) {
 		playOut(c)
 		if u := c.Battle().Units()[0]; u.Equipped != 1 || !u.Acted {
 			t.Fatalf("決定のあと 装備 %d、行動 %v", u.Equipped, u.Acted)
+		}
+		c.infoPage = PageEquip
+		pos := c.Camera().Screen(c.Battle().Units()[0].Pos)
+		if got := strings.Join(rows(c.InfoView(pos.X+2, pos.Y+2)), "\n"); !strings.Contains(got, "ほかの武器: ") || !strings.Contains(got, "鉄の剣") {
+			t.Fatalf("決定後の装備・スキル: %q", got)
 		}
 	})
 	t.Run("TC-IF-01-41 回復は 行動 → 杖 → 相手 で、選んだ杖の回数だけ減り、装備は変えない", func(t *testing.T) {

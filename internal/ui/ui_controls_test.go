@@ -418,7 +418,7 @@ func TestUIControls(t *testing.T) {
 		onlyStaff := newIdleWith(t, func() tactics.Setup { return staff })
 		onlyStaff.Click(tactics.Pos{X: 3, Y: 0})
 		onlyStaff.Click(tactics.Pos{X: 3, Y: 2})
-		if onlyStaff.State() != Selected || !strings.Contains(onlyStaff.Message(), "攻撃の武器がない") {
+		if onlyStaff.State() != Selected || onlyStaff.Message() != "攻撃の武器がないので 壁の下の敵 を攻撃できません" {
 			t.Fatalf("杖だけ: %v %q", onlyStaff.State(), onlyStaff.Message())
 		}
 	})

@@ -195,7 +195,11 @@ func (c *Controller) Guide() []string {
 		lines = append(lines, "左クリック: 行動を選ぶ　右クリック・Esc: 移動を取り消す", guideEnemyRange)
 	case Targeting:
 		if c.target >= 0 {
-			lines = append(lines, fmt.Sprintf("%s を攻撃する。A・D: 武器　もう一度クリックで決定　右クリック・Esc: 戻る", b.Units()[c.target].Name))
+			weapons := ""
+			if len(c.attackChoices(c.target)) >= 2 {
+				weapons = "A・D: 武器　"
+			}
+			lines = append(lines, fmt.Sprintf("%s を攻撃する。%sもう一度クリックで決定　右クリック・Esc: 戻る", b.Units()[c.target].Name, weapons))
 		} else {
 			lines = append(lines, "左クリック: 攻撃する敵を選ぶ　右クリック・Esc: 戻る")
 		}

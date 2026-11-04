@@ -222,7 +222,7 @@ func (c *Controller) InfoClick(x, y int) bool {
 		}
 		row := c.Panel(c.dest, true).View().Bottom - lineHeight
 		if y < row || y >= row+lineHeight {
-			return true
+			return false
 		}
 		switch {
 		case x < MapSize+infoMargin+24:
