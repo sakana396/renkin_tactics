@@ -80,8 +80,13 @@ func fillImageRect(dst *ebiten.Image, r image.Rectangle, clr color.Color) {
 
 // drawRangeStatus は右欄の操作行に「全敵 Q」「固定 n」と「消す」ボタンを描く（DES-UI-29）。
 func (g *Game) drawRangeStatus(dst *ebiten.Image, v RangeStatusView) {
-	for _, t := range []InfoText{v.Danger, v.Watched} {
-		g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
+	if !v.HideTexts {
+		for _, t := range []InfoText{v.Danger, v.Watched} {
+			g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
+		}
+	}
+	if v.HideClear {
+		return
 	}
 	b := v.Clear
 	fill, border, text := menuColor, menuBorder, white

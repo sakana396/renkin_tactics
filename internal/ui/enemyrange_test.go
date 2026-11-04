@@ -217,7 +217,7 @@ func TestEnemyRange(t *testing.T) {
 		}
 		watchedIs(t, c, "Selected でボスをクリックして離す", bossBlue, bossRed)
 		overlayIs(t, c, "Selected でボスをクリックして離す", ownBlue, ownRed)
-		// 移動先 (0, 1) を選んだ Moved でも固定の線で残す。相手を選ぶ状態では出さない。
+		// 移動先 (0, 1) を選んだ Moved でも固定の線で残す。相手を選ぶ Targeting でも、入力を待つ間は出し続ける（E-124）。
 		c.Click(tactics.Pos{X: 0, Y: 1})
 		watchedIs(t, c, "Moved", bossBlue, bossRed)
 		c.Cancel()
@@ -226,7 +226,10 @@ func TestEnemyRange(t *testing.T) {
 		if c.State() != Targeting {
 			t.Fatalf("状態 = %v", c.State())
 		}
-		watchedIs(t, c, "Targeting", nil, nil)
+		watchedIs(t, c, "Targeting", bossBlue, bossRed)
+		if pins := c.WatchedPins(); !reflect.DeepEqual(pins, []tactics.Pos{boss}) {
+			t.Errorf("Targeting のピン %v", pins)
+		}
 		c.Cancel()
 		c.Cancel()
 		// 取り消して Idle に戻っても、ボスの範囲は固定の線で出す（塗りにはしない）。

@@ -684,18 +684,17 @@ func (c *Controller) shownEnemy() int {
 }
 
 // shownWatched は、クリックして範囲を出している敵のうち、今の盤面で生きている敵の添字を、添字の順に返す（DES-UI-27）。
-// 出すのは、敵の範囲を出す状態（Idle・Selected・Moved）のとき。自軍を選んで動かしている間も残す（E-60、DES-IT06 12.4 節）。
+// 入力を待つ状態ではずっと出す（E-60、DES-IT06 12.4 節、E-124）。再生中（Playing）・Over・巻き戻しの一覧の間は出さない。
 func (c *Controller) shownWatched() []int {
-	switch c.state {
-	case Idle, Selected, Moved:
-		return c.aliveWatched()
+	if c.rewind.open || c.state == Playing || c.state == Over {
+		return nil
 	}
-	return nil
+	return c.aliveWatched()
 }
 
 // WatchedFrames は、固定した敵（クリックして範囲を出している敵）の範囲を返す（DES-UI-27、DES-UI-29）。
 // 青は移動できるマス（橙の実線）、赤は攻撃できるマス（橙の破線。unionRanges と同じ）。
-// Idle・Selected・Moved で出し、自軍の範囲の塗り（Overlay）とは別の層にする。ほかの状態は shownWatched が空。
+// 入力を待つ状態（Playing・Over・巻き戻しの一覧の間を除く）で出し、自軍の範囲の塗り（Overlay）とは別の層にする（E-124）。
 func (c *Controller) WatchedFrames() (blue, red map[tactics.Pos]bool) {
 	ws := c.shownWatched()
 	if len(ws) == 0 {

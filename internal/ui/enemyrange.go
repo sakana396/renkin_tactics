@@ -92,7 +92,7 @@ func (c *Controller) EnemyRangeLayers() []EnemyRangeLayer {
 }
 
 // CursorFrames は、カーソルを合わせた敵の移動できるマス（青白の実線）と攻撃できるマス（青白の破線）を返す（DES-UI-29）。
-// Idle・Selected・Moved で、カーソルが生きている敵の上にある間だけ出す。固定の集まりは変えない。
+// Idle・Selected・Moved で、カーソルが生きている敵の上にある間だけ出す（固定は入力を待つ状態でずっと出す。E-124）。固定の集まりは変えない。
 func (c *Controller) CursorFrames() (move, attack map[tactics.Pos]bool) {
 	e := c.shownEnemy()
 	if e < 0 {
@@ -144,6 +144,49 @@ type RangeStatusView struct {
 	Danger, Watched InfoText
 	// Clear は固定を一括で外すボタン。Enabled は固定した敵がいて、受け付ける状態であること。
 	Clear SceneButton
+	// HideTexts・HideClear は、情報欄の中身と重なるので「全敵 Q」「固定 n」・「消す」を描かないこと（REV-096 F-03）。
+	// 今の情報欄は y = 336 まで使うので、武器 5 本の「能力」のページなどで地形の行が操作行に来る。情報欄を
+	// y < 304 に収める #166 までの手当て。描かない「消す」はクリックも受けない。
+	HideTexts, HideClear bool
+}
+
+// RangeStatusIn は、情報欄 v を描いた上に重ならない形の範囲の状態を返す（DES-UI-29、REV-096 F-03）。
+func (c *Controller) RangeStatusIn(v InfoView) RangeStatusView {
+	s := c.RangeStatus()
+	for _, t := range []InfoText{s.Danger, s.Watched} {
+		if infoOverlaps(v, image.Rect(t.X, t.Y, t.X+textWidth(t.Text), t.Y+lineHeight)) {
+			s.HideTexts = true
+		}
+	}
+	s.HideClear = infoOverlaps(v, s.Clear.Rect)
+	return s
+}
+
+// infoOverlaps は、情報欄 v の文・絵・棒・帯のどれかが r と重なるかを返す。
+func infoOverlaps(v InfoView, r image.Rectangle) bool {
+	var rects []image.Rectangle
+	if v.Banner != nil {
+		rects = append(rects, v.Banner.Rect)
+	}
+	for _, t := range v.Texts {
+		scale := 1
+		if t.Big {
+			scale = 2
+		}
+		rects = append(rects, image.Rect(t.X, t.Y, t.X+scale*textWidth(t.Text), t.Y+scale*lineHeight))
+	}
+	for _, ic := range v.Icons {
+		rects = append(rects, image.Rect(ic.X, ic.Y, ic.X+ic.Size, ic.Y+ic.Size))
+	}
+	for _, b := range v.Bars {
+		rects = append(rects, image.Rect(b.X, b.Y, b.X+max(b.Fill, b.Frame), b.Y+barHeight))
+	}
+	for _, q := range rects {
+		if q.Overlaps(r) {
+			return true
+		}
+	}
+	return false
 }
 
 // RangeStatus は右欄の操作行の範囲の状態を返す（DES-UI-29）。
@@ -163,7 +206,7 @@ func (c *Controller) RangeStatus() RangeStatusView {
 // RangeClick は「消す」ボタンのクリックを受ける（DES-UI-29）。ボタンの中なら真を返し、盤面・情報欄には渡さない。
 // 巻き戻しの一覧の間は巻き戻しの操作を優先するので受けない（偽を返す）。
 func (c *Controller) RangeClick(x, y int) bool {
-	if c.rewind.open || !image.Pt(x, y).In(rangeClearRect) {
+	if c.rewind.open || !image.Pt(x, y).In(rangeClearRect) || c.RangeStatusIn(c.InfoView(x, y)).HideClear {
 		return false
 	}
 	c.ClearWatched()

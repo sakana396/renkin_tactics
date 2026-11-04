@@ -500,7 +500,7 @@ func (g *Game) drawInfo(dst *ebiten.Image, cx, cy int) {
 	if r, ok := g.ctrl.cursorNameMark(v); ok {
 		g.drawNameMark(dst, r)
 	}
-	g.drawRangeStatus(dst, g.ctrl.RangeStatus())
+	g.drawRangeStatus(dst, g.ctrl.RangeStatusIn(v))
 	g.label(dst, cameraGuide, rewindLeft, cameraGuideY, muted)
 }
 

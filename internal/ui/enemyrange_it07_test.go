@@ -242,9 +242,153 @@ func TestEnemyRangeIT07(t *testing.T) {
 		if !c.RangeClick(clearXY[0], clearXY[1]) || len(c.watched) != 1 {
 			t.Errorf("Playing の消す: 固定 %v", c.watched)
 		}
+		// 再生中は固定の線もピンも出さない（E-124）。
+		watchedIs(t, c, "Playing", nil, nil)
+		if len(c.WatchedPins()) != 0 {
+			t.Errorf("Playing のピン %v", c.WatchedPins())
+		}
 		playOut(c)
 		if c.RangeClick(751, 320) || c.RangeClick(788, 336) {
 			t.Error("ボタンの外を受けた")
+		}
+		// 再生のあとの入力待ちでは出す。巻き戻しの一覧の間は出さず、閉じると戻る（E-124）。
+		watchedIs(t, c, "再生のあと", bossBlue, bossRed)
+		c.OpenRewind()
+		if !c.rewind.open {
+			t.Fatal("巻き戻しの一覧が開かない")
+		}
+		watchedIs(t, c, "巻き戻しの一覧", nil, nil)
+		if len(c.WatchedPins()) != 0 {
+			t.Errorf("巻き戻しの一覧のピン %v", c.WatchedPins())
+		}
+		c.Cancel()
+		watchedIs(t, c, "巻き戻しの一覧を閉じる", bossBlue, bossRed)
+
+		// 入力を待つ状態はすべて固定を出す（E-124）: ItemMenu・Targeting（相手を選んだ予測を含む）。
+		d := damaged(t)
+		dg := &Game{ctrl: d}
+		dg.leftClick(cellCenter(boss))
+		d.Click(tactics.Pos{X: 0, Y: 0})
+		d.Click(tactics.Pos{X: 0, Y: 1})
+		d.ChooseAction(tactics.UseItem)
+		if d.State() != ItemMenu {
+			t.Fatalf("状態 = %v", d.State())
+		}
+		watchedIs(t, d, "ItemMenu", bossBlue, bossRed)
+		d.Cancel()
+		d.Cancel()
+		d.Click(tactics.Pos{X: 0, Y: 0})
+		d.ChooseAction(tactics.Attack)
+		d.Click(fighter)
+		if d.State() != Targeting {
+			t.Fatalf("状態 = %v", d.State())
+		}
+		watchedIs(t, d, "Targeting の予測", bossBlue, bossRed)
+		if !reflect.DeepEqual(d.WatchedPins(), []tactics.Pos{boss}) {
+			t.Errorf("Targeting の予測のピン %v", d.WatchedPins())
+		}
+
+		// Over では出さない。
+		lost := func() tactics.Setup {
+			s := basicSetup()
+			s.Units[0].Stats.HP = 1
+			return s
+		}
+		o := newIdleWith(t, lost)
+		o.Click(boss)
+		o.EndPhase()
+		o.EndPhase()
+		playOut(o)
+		if o.State() != Over {
+			t.Fatalf("状態 = %v", o.State())
+		}
+		watchedIs(t, o, "Over", nil, nil)
+		if len(o.WatchedPins()) != 0 {
+			t.Errorf("Over のピン %v", o.WatchedPins())
+		}
+	})
+
+	t.Run("TC-FR-UNT-09-27 範囲の状態と「消す」は情報欄の中身と重ねない。武器 5 本と地形の「能力」のページでは地形の行と重なる「全敵 Q」「固定 n」を描かず、重ならない「消す」は残す（REV-096 F-03）", func(t *testing.T) {
+		killer := tactics.Weapon{Name: "アーマーキラー", Type: tactics.Lance, Might: 5, Hit: 80, MinRange: 1, MaxRange: 1}
+		fire := tactics.Weapon{Name: "ファイア", Type: tactics.Magic, DamageType: tactics.Magical, Might: 5, Hit: 90, MinRange: 1, MaxRange: 2}
+		five := func() tactics.Setup {
+			s := basicSetup()
+			s.Units[0].Weapon, s.Units[0].Items = tactics.Weapon{}, nil
+			s.Units[0].Weapons = []tactics.Weapon{ironSword, killer, ironAxe, ironBow, fire}
+			s.Units[0].AllowedWeaponTypes = []tactics.WeaponType{tactics.Sword, tactics.Lance, tactics.Axe, tactics.Bow, tactics.Magic}
+			return s
+		}
+		visible := func(v InfoView, s RangeStatusView) []image.Rectangle {
+			var out []image.Rectangle
+			if !s.HideTexts {
+				for _, tx := range []InfoText{s.Danger, s.Watched} {
+					out = append(out, rectOfText(tx.X, tx.Y, tx.Text, false))
+				}
+			}
+			if !s.HideClear {
+				out = append(out, s.Clear.Rect)
+			}
+			return out
+		}
+		noOverlap := func(what string, v InfoView, s RangeStatusView) {
+			t.Helper()
+			for _, r := range visible(v, s) {
+				for _, tx := range v.Texts {
+					if q := rectOfText(tx.X, tx.Y, tx.Text, tx.Big); q.Overlaps(r) {
+						t.Errorf("%s: 範囲の状態 %v が情報欄の %q %v と重なる", what, r, tx.Text, q)
+					}
+				}
+				for _, ic := range v.Icons {
+					if q := image.Rect(ic.X, ic.Y, ic.X+ic.Size, ic.Y+ic.Size); q.Overlaps(r) {
+						t.Errorf("%s: 範囲の状態 %v が情報欄の絵 %v と重なる", what, r, q)
+					}
+				}
+			}
+		}
+		// 武器 5 本のレオン（平地）にカーソルを合わせる。「能力」のページは地形の行が y = 288 から 2 行で、2 行目が y = 304〜320 に来る。
+		c := newIdleWith(t, five)
+		g := &Game{ctrl: c}
+		hx, hy := cellCenter(tactics.Pos{X: 0, Y: 0})
+		c.SetCursor(hx, hy)
+		v := c.InfoView(hx, hy)
+		if terrain := textOf(t, v, "地形: 平地"); terrain.Y < 280 || v.Bottom <= 304 {
+			t.Fatalf("前提: 地形の行 y = %d、一番下 %d（地形の 2 行目が操作行 y = 304〜 に来るはず）", terrain.Y, v.Bottom)
+		}
+		s := c.RangeStatusIn(v)
+		if !s.HideTexts || s.HideClear {
+			t.Errorf("武器 5 本: 文を隠す %v、消すを隠す %v", s.HideTexts, s.HideClear)
+		}
+		noOverlap("武器 5 本", v, s)
+		// 描いている「消す」はクリックを受ける。
+		g.leftClick(cellCenter(tactics.Pos{X: 5, Y: 5}))
+		c.SetCursor(hx, hy)
+		if c.WatchedCount() != 1 {
+			t.Fatalf("前提: 固定 %d", c.WatchedCount())
+		}
+		c.SetCursor(clearXY[0], clearXY[1])
+		g.leftClick(clearXY[0], clearXY[1])
+		if c.WatchedCount() != 0 {
+			t.Errorf("武器 5 本の情報欄のときの消す: 固定 %d", c.WatchedCount())
+		}
+		// 「装備・スキル」のページと、武器 1 本のユニット（地形の行は 304 より上）では、すべて描いて重ならない。
+		c.ToggleInfoPage()
+		v = c.InfoView(hx, hy)
+		if s := c.RangeStatusIn(v); s.HideTexts || s.HideClear {
+			t.Errorf("装備・スキルのページで隠した: %+v", s)
+		} else {
+			noOverlap("装備・スキル", v, s)
+		}
+		one := newIdle(t)
+		v = one.InfoView(hx, hy)
+		if s := one.RangeStatusIn(v); s.HideTexts || s.HideClear {
+			t.Errorf("武器 1 本で隠した: %+v", s)
+		} else {
+			noOverlap("武器 1 本", v, s)
+		}
+		// 情報欄の「消す」の位置に中身が重なる場合は、描かずクリックも受けない（盤面へ渡す）。
+		blocked := InfoView{Texts: []InfoText{{X: 760, Y: 310, Text: "長い行"}}}
+		if s := one.RangeStatusIn(blocked); !s.HideClear {
+			t.Error("重なる消すを隠さない")
 		}
 	})
 
