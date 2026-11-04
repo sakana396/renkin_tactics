@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"image"
 	"reflect"
 	"testing"
@@ -286,6 +287,24 @@ func TestEnemyRangeIT07(t *testing.T) {
 		watchedIs(t, d, "Targeting の予測", bossBlue, bossRed)
 		if !reflect.DeepEqual(d.WatchedPins(), []tactics.Pos{boss}) {
 			t.Errorf("Targeting の予測のピン %v", d.WatchedPins())
+		}
+
+		// 入力を待つ状態を一つずつ当てても、固定の線とピンは消えない。武器・杖の一覧（Canto の次の 2 つ）も含める（E-124）。
+		w := newIdle(t)
+		w.Click(boss)
+		for _, st := range []State{Idle, Selected, Moved, Targeting, ItemMenu, HealTargeting, Canto, Canto + 1, Canto + 2} {
+			w.state = st
+			watchedIs(t, w, fmt.Sprintf("状態 %d", st), bossBlue, bossRed)
+			if !reflect.DeepEqual(w.WatchedPins(), []tactics.Pos{boss}) {
+				t.Errorf("状態 %d のピン %v", st, w.WatchedPins())
+			}
+		}
+		for _, st := range []State{Playing, Over} {
+			w.state = st
+			watchedIs(t, w, fmt.Sprintf("状態 %d", st), nil, nil)
+			if len(w.WatchedPins()) != 0 {
+				t.Errorf("状態 %d のピン %v", st, w.WatchedPins())
+			}
 		}
 
 		// Over では出さない。
@@ -580,7 +599,25 @@ func TestEnemyRangeIT07(t *testing.T) {
 		if ls := layers(); len(ls) != 0 {
 			t.Fatalf("初め: %v", ls)
 		}
+		// 配置の全敵 Q の状態は、右欄の操作行ではなく案内欄 (16,552) に出す（E-124、DES-IT07 v0.5 3.2 節の配置の例外）。
+		guideIs := func(what, want string) {
+			t.Helper()
+			found := false
+			for _, tx := range s.View().Texts {
+				if tx.Text == want && tx.X == 16 && tx.Y == 552 {
+					found = true
+				}
+				if tx.Text == "全敵 Q ON" || tx.Text == "全敵 Q OFF" {
+					t.Errorf("%s: 配置に右欄の範囲の状態 %+v がある", what, tx)
+				}
+			}
+			if !found {
+				t.Errorf("%s: 案内欄 (16,552) に %q がない", what, want)
+			}
+		}
+		guideIs("初め", "Q: 敵の危険範囲 OFF")
 		s.ToggleDeployDanger()
+		guideIs("Q", "Q: 敵の危険範囲 ON")
 		// TC-FR-CMP-11-10 の盤面: 弓 (4,0) は Mov 2・射程 2 で主人公 (2,0)・仲間 (0,0) を通れない。ボス (6,0) は Mov 0。
 		// 全敵は x=1,2,3,5,6。3 ターン目の増援 (5,0) は含めない。
 		ls := layers()
