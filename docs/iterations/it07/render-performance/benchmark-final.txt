@@ -1,0 +1,10 @@
+goos: windows
+goarch: amd64
+pkg: github.com/sakana396/renkin_tactics/internal/ui
+cpu: Intel(R) Core(TM) i5-10400F CPU @ 2.90GHz
+BenchmarkIT07SharedFrameRanges-12    	     769	   4822209 ns/op	 1980076 B/op	   21076 allocs/op
+--- BENCH: BenchmarkIT07SharedFrameRanges-12
+    performance_it07_test.go:251: input={synthetic map=32x32 player=7 enemy=39 seed=1 controller_units=46 player=7 enemy=39 danger_cells=257 watched=[7 8] cursor_enemy=7 camera=(0,0)}
+    performance_it07_test.go:251: input={synthetic map=32x32 player=7 enemy=39 seed=1 controller_units=46 player=7 enemy=39 danger_cells=257 watched=[7 8] cursor_enemy=7 camera=(0,0)}
+    performance_it07_test.go:251: input={synthetic map=32x32 player=7 enemy=39 seed=1 controller_units=46 player=7 enemy=39 danger_cells=257 watched=[7 8] cursor_enemy=7 camera=(0,0)}
+PASS

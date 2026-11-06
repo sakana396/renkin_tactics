@@ -1,0 +1,6 @@
+=== RUN   TestIT07FrameTiming
+=== RUN   TestIT07FrameTiming/TC-NFR-01-03
+    performance_it07_test.go:225: OS=windows arch=amd64 Go=go1.23.5 input={chapter=ch01 max_deploy=5 seed=1 controller_units=14 player=5 enemy=9 danger_cells=194 watched=[5 6] cursor_enemy=5 camera=(0,0)} window=832x576 vsync=true device_scale=1.00 warmup=2s samples_fps=[143.86880276450353 144.03659681851966 144.16501067467337 139.92926575616025 143.97189668576692] lowest_fps=139.929 worst_frame_gap=18.4237ms
+--- PASS: TestIT07FrameTiming (0.00s)
+    --- PASS: TestIT07FrameTiming/TC-NFR-01-03 (0.00s)
+PASS

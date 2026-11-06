@@ -1,0 +1,24 @@
+File: \\wsl.localhost\Ubuntu\tmp\renkin189-before-ui.test.exe
+Build ID: \\wsl.localhost\Ubuntu\tmp\renkin189-before-ui.test.exe2026-11-07 00:31:52.7055289 +0900 JST
+Type: cpu
+Time: Nov 7, 2026 at 12:32am (JST)
+Duration: 3.71s, Total samples = 3.58s (96.40%)
+Showing nodes accounting for 3.33s, 93.02% of 3.58s total
+Dropped 42 nodes (cum <= 0.02s)
+Showing top 15 nodes out of 64
+      flat  flat%   sum%        cum   cum%
+     1.80s 50.28% 50.28%      1.80s 50.28%  runtime.duffcopy
+     0.68s 18.99% 69.27%      2.27s 63.41%  github.com/sakana396/renkin_tactics/internal/core/tactics.rangeCells
+     0.25s  6.98% 76.26%      0.33s  9.22%  github.com/sakana396/renkin_tactics/internal/core/tactics.distance (inline)
+     0.09s  2.51% 78.77%      0.70s 19.55%  github.com/sakana396/renkin_tactics/internal/core/tactics.zocCost
+     0.08s  2.23% 81.01%      0.08s  2.23%  github.com/sakana396/renkin_tactics/internal/core/tactics.abs (inline)
+     0.07s  1.96% 82.96%      0.11s  3.07%  runtime.mapaccess2
+     0.05s  1.40% 84.36%      0.99s 27.65%  github.com/sakana396/renkin_tactics/internal/core/tactics.BoardView.reachableWithin
+     0.05s  1.40% 85.75%      0.05s  1.40%  github.com/sakana396/renkin_tactics/internal/core/tactics.inRange (inline)
+     0.05s  1.40% 87.15%      0.11s  3.07%  runtime.mapassign
+     0.05s  1.40% 88.55%      0.05s  1.40%  runtime.nextFreeFast (inline)
+     0.05s  1.40% 89.94%      0.05s  1.40%  runtime.stdcall1
+     0.03s  0.84% 90.78%      0.03s  0.84%  aeshashbody
+     0.03s  0.84% 91.62%      0.04s  1.12%  runtime.mapiternext
+     0.03s  0.84% 92.46%      0.03s  0.84%  runtime.stdcall2
+     0.02s  0.56% 93.02%      0.09s  2.51%  runtime.mallocgc

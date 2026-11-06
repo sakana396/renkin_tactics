@@ -76,7 +76,8 @@ func (b BoardView) reachableWithin(unit, mov int) map[Pos]int {
 
 // zocCost は進入先が相手軍の生存する重騎士の隣なら 1 を返す（DES-BTL-11）。
 func zocCost(units []Unit, mover Side, at Pos) int {
-	for _, u := range units {
+	for i := range units {
+		u := &units[i]
 		if !u.Alive || u.Side == mover || distance(u.Pos, at) != 1 {
 			continue
 		}
@@ -93,7 +94,8 @@ func (b BoardView) ZOCSides(at Pos) [2]bool {
 	if !b.inMap(at) || b.TerrainAt(at).Cost < 1 {
 		return sides
 	}
-	for _, u := range b.units {
+	for i := range b.units {
+		u := &b.units[i]
 		if !u.Alive || distance(u.Pos, at) != 1 {
 			continue
 		}
@@ -144,15 +146,31 @@ func (b BoardView) WeaponRange(unit int, from Pos, weapon int) []Pos {
 	return rangeCells(b.Width(), b.Height(), from, b.units[unit].Weapons[weapon:weapon+1])
 }
 
-// rangeCells は、from からの距離が ws のどれかの射程に入るマスを y・x の小さい順に返す。
+// rangeCells は、from からの距離が ws のどれかの射程に入るマスを y・x の小さい順に返す（DES-BTL-01）。
 func rangeCells(width, height int, from Pos, ws []Weapon) []Pos {
 	var out []Pos
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	minX, minY, maxX, maxY := 0, 0, width-1, height-1
+	if from.X >= 0 && from.X < width && from.Y >= 0 && from.Y < height {
+		radius := 0
+		for i := range ws {
+			if ws[i].MaxRange > radius {
+				radius = ws[i].MaxRange
+			}
+		}
+		// 各軸の盤面内差分は max(width,height) 未満なので、それ以上の射程は
+		// 候補の矩形は盤面全体を覆う。上限を置き、巨大な MaxRange との加算を避ける。
+		if limit := max(width, height); radius > limit {
+			radius = limit
+		}
+		minX, minY = max(0, from.X-radius), max(0, from.Y-radius)
+		maxX, maxY = min(width-1, from.X+radius), min(height-1, from.Y+radius)
+	}
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
 			p := Pos{x, y}
 			d := distance(from, p)
-			for _, w := range ws {
-				if inRange(w, d) {
+			for i := range ws {
+				if inRange(ws[i], d) {
 					out = append(out, p)
 					break
 				}

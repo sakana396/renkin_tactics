@@ -229,6 +229,14 @@ func (c *Camera) CenterOn(p tactics.Pos) {
 // 盤面に描いているものと同じ元を使う。戦闘では再生中の写しや移動先に置いた写し（Units）と、表示中の予兆だけを描く。
 func (c *Controller) Minimap() MinimapView {
 	if c.rewind.open {
+		return c.minimapWithDanger(nil)
+	}
+	return c.minimapWithDanger(c.Danger())
+}
+
+// minimapWithDanger は、同じフレーム内で得た全敵の危険範囲を再利用する（DES-UI-28・29）。
+func (c *Controller) minimapWithDanger(danger map[tactics.Pos]bool) MinimapView {
+	if c.rewind.open {
 		v := c.RewindBoard()
 		if !v.Available {
 			return unavailableMinimap()
@@ -245,7 +253,7 @@ func (c *Controller) Minimap() MinimapView {
 	}
 	v := buildMinimap(c.battle, c.Units(), hints, c.camera)
 	// 盤面と同じ全敵の危険範囲と固定した敵を、マスの色とピンで示す（DES-UI-29）。
-	v.Danger = minimapDanger(v.Layout, c.Danger())
+	v.Danger = minimapDanger(v.Layout, danger)
 	v.Pins = minimapPins(v.Layout, c.WatchedPins())
 	return v
 }

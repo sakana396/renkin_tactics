@@ -1,0 +1,11 @@
+2026-11-07 / Windows amd64 / Go1.23.5 / Intel Core i5-10400F
+合成32x32、自軍7/敵39、全員ZOC/Mov7、全敵範囲・固定2・カーソル1。
+下記は実行ログから抽出したCPU照会のベンチマーク値。GPU描画は含めない。
+
+改善前（base2cd413c、共通の測定fixture追加）
+BenchmarkIT07EnemyRangeLayers-12  46  72185807 ns/op  3517576 B/op  40087 allocs/op
+
+射程とZOC値コピーのみ改善した中間版（公開APIの2照会）
+BenchmarkIT07EnemyRangeLayers-12  362  9489869 ns/op  3516805 B/op  40089 allocs/op
+
+最終版の同一フレーム共有は benchmark-final.txt に完全な実行ログを保存。
