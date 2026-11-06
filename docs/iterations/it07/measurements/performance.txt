@@ -1,0 +1,20 @@
+#174 / 2026-11-05 / 基準PCのWindowsネイティブ実行
+CPU: Intel Core i5-10400F / 12 logical CPUs
+GPU: NVIDIA GeForce GTX 1660 SUPER
+OS: Windows 11 / build 22631.6199
+DriverVersion: 32.0.15.6109
+Display: 1920x1080 / 74 Hz / device scale 1.00
+Go: go1.23.5 windows/amd64
+
+TC-NFR-02-03（全30seedが敵番を完走した最終測定）
+GoOS=windows GoArch=amd64 GoVersion=go1.23.5 NumCPU=12 GOMAXPROCS=12 RENKIN_IT07_PERF="1" count=30 min=227.1523ms(seed=15) mean=241.392716ms max=295.5438ms(seed=2) 参考閾値=1s以内
+PASS（測定の実行成功。この条件では1秒以内）
+
+TC-NFR-01-03（他の重い計測が終了した後の最終測定）
+OS=windows arch=amd64 Go=go1.23.5 seed=1 map=32x32 player=7 enemy=39 window=832x576 vsync=true device_scale=1.00 warmup=2s samples_fps=[12.943466819970416 12.42121130123845 12.484189494247236 12.580607825292905 12.612888994837157] lowest_fps=12.421 worst_frame_gap=114.7647ms
+PASS（測定の実行成功。60fpsの受入は未達）
+
+除外した試行:
+- 思考の最初の測定最大311.6856msは、seed4の主人公戦死で敵番が途中終了する条件だった。受入値に使わない。
+- 描画の最初の試行はRunGameがメインスレッド外で実行され終了時にGLFW DestroyWindowが失敗。受入値に使わない。
+- メインスレッド修正後の初回描画測定は自動試遊の並行中で最低7.778fps。上記の最終値は並行試遊が終了した後。

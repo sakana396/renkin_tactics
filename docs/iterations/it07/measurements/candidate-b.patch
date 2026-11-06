@@ -1,0 +1,8 @@
+--- a/data/base/maps.toml
++++ b/data/base/maps.toml
+@@ -1430 +1430 @@
+-turn = 7
++turn = 13
+@@ -1464 +1464 @@
+-turn = 9
++turn = 14
