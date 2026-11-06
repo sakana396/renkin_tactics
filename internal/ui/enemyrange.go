@@ -86,9 +86,14 @@ func enemyRangeLayers(danger, watchedMove, watchedAttack, cursorMove, cursorAtta
 // EnemyRangeLayers は、戦闘の盤面に重ねる敵の範囲の層を描く順に返す（DES-UI-29）。
 // どれも今の盤面（Battle）の Reachable と攻撃の射程で求め、UI で独自の移動費は計算しない。
 func (c *Controller) EnemyRangeLayers() []EnemyRangeLayer {
+	return c.enemyRangeLayersWithDanger(c.Danger())
+}
+
+// enemyRangeLayersWithDanger は、同じフレーム内で得た全敵の危険範囲を再利用する（DES-UI-29）。
+func (c *Controller) enemyRangeLayersWithDanger(danger map[tactics.Pos]bool) []EnemyRangeLayer {
 	wm, wa := c.WatchedFrames()
 	cm, ca := c.CursorFrames()
-	return enemyRangeLayers(c.Danger(), wm, wa, cm, ca)
+	return enemyRangeLayers(danger, wm, wa, cm, ca)
 }
 
 // CursorFrames は、カーソルを合わせた敵の移動できるマス（青白の実線）と攻撃できるマス（青白の破線）を返す（DES-UI-29）。

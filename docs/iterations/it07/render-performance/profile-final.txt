@@ -1,0 +1,24 @@
+File: \\wsl.localhost\Ubuntu\tmp\renkin189-final-ui.test.exe
+Build ID: \\wsl.localhost\Ubuntu\tmp\renkin189-final-ui.test.exe2026-11-07 00:39:15.0060947 +0900 JST
+Type: cpu
+Time: Nov 7, 2026 at 12:45am (JST)
+Duration: 4.42s, Total samples = 5020ms (113.63%)
+Showing nodes accounting for 3260ms, 64.94% of 5020ms total
+Dropped 108 nodes (cum <= 25.10ms)
+Showing top 15 nodes out of 124
+      flat  flat%   sum%        cum   cum%
+     490ms  9.76%  9.76%      660ms 13.15%  runtime.mapaccess2
+     470ms  9.36% 19.12%      580ms 11.55%  github.com/sakana396/renkin_tactics/internal/core/tactics.zocCost
+     300ms  5.98% 25.10%      820ms 16.33%  runtime.mapassign
+     280ms  5.58% 30.68%      280ms  5.58%  runtime.stdcall2
+     250ms  4.98% 35.66%      250ms  4.98%  aeshashbody
+     250ms  4.98% 40.64%      630ms 12.55%  runtime.mallocgc
+     220ms  4.38% 45.02%      220ms  4.38%  runtime.duffcopy
+     160ms  3.19% 48.21%      240ms  4.78%  container/heap.down
+     150ms  2.99% 51.20%      150ms  2.99%  runtime.stdcall1
+     140ms  2.79% 53.98%      330ms  6.57%  runtime.scanobject
+     130ms  2.59% 56.57%     2780ms 55.38%  github.com/sakana396/renkin_tactics/internal/core/tactics.BoardView.reachableWithin
+     110ms  2.19% 58.76%      180ms  3.59%  runtime.evacuate
+     110ms  2.19% 60.96%      470ms  9.36%  runtime.growslice
+     100ms  1.99% 62.95%      120ms  2.39%  github.com/sakana396/renkin_tactics/internal/core/tactics.distance (inline)
+     100ms  1.99% 64.94%      100ms  1.99%  runtime.memmove

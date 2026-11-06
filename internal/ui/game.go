@@ -312,6 +312,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.drawRewindPreview(screen)
 		return
 	}
+	// 盤面の敵範囲とミニマップで共有する。フレームをまたいで保持しない。
+	danger := g.ctrl.Danger()
 	g.drawCamera = g.ctrl.Camera()
 	board := screen.SubImage(image.Rect(0, 0, MapSize, MapSize)).(*ebiten.Image)
 	g.drawTerrain(board)
@@ -323,7 +325,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		case layerUnits:
 			g.drawUnits(board)
 		case layerEnemyRanges:
-			g.drawEnemyRanges(board, g.ctrl.EnemyRangeLayers())
+			g.drawEnemyRanges(board, g.ctrl.enemyRangeLayersWithDanger(danger))
 		case layerZOC:
 			g.drawZOC(board, g.ctrl.battle.BoardView())
 		case layerEquipMarks:
@@ -345,7 +347,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if w, ok := g.ctrl.ForecastWindow(); ok {
 		g.drawForecastWindow(screen, w)
 	}
-	g.drawMinimap(screen, g.ctrl.Minimap())
+	g.drawMinimap(screen, g.ctrl.minimapWithDanger(danger))
 	g.drawGuide(screen)
 	g.drawHintText(screen, hint)
 	g.drawRewind(screen)
