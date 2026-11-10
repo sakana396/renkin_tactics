@@ -59,6 +59,9 @@ func smartPlay(b *tactics.Battle, ids []string, plan autoPlan, f smartFeatures, 
 			}
 		}
 		records[turn] = rec
+		if plan.OnTurnStart != nil {
+			plan.OnTurnStart(turn)
+		}
 		p.firstID, p.hasFirst, p.endPos = 0, false, map[int]tactics.Pos{}
 		p.phase()
 		rec.firstID, rec.hasFirst, rec.endPos = p.firstID, p.hasFirst, p.endPos
@@ -88,6 +91,9 @@ func smartPlay(b *tactics.Battle, ids []string, plan autoPlan, f smartFeatures, 
 		}
 		if err := b.Rewind(target.firstID); err != nil {
 			continue
+		}
+		if plan.OnRewind != nil {
+			plan.OnRewind(back)
 		}
 		tries[back]++
 		p.step, p.lastKill, p.kills, p.deaths = target.step, target.lastKill, target.kills, p.deaths[:target.deaths]
