@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/sakana396/renkin_tactics/internal/core"
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 )
 
@@ -48,6 +49,10 @@ func TestIT07PathZOCMeasure(t *testing.T) {
 				[]tactics.Unit{it07Knight(foe, 2, 0, true)}, tactics.Pos{X: 0, Y: 0}, tactics.Pos{X: 1, Y: 1}, 0, 1, 1},
 			{"TC-FR-MAP-04-33 同じ最小費用の別経路（入る側を後から見つける向き）", 3, 3, it07Plain(tactics.Pos{X: 1, Y: 0}),
 				[]tactics.Unit{it07Knight(foe, 0, 2, true)}, tactics.Pos{X: 0, Y: 0}, tactics.Pos{X: 1, Y: 1}, 0, 1, 1},
+			{"TC-FR-MAP-04-33 1 マスに 2 体の重騎士が隣接しても加算は 1", 3, 3, it07Plain(),
+				[]tactics.Unit{it07Knight(foe, 2, 1, true), it07Knight(foe, 1, 2, true)}, tactics.Pos{X: 0, Y: 1}, tactics.Pos{X: 1, Y: 1}, 1, 1, 1},
+			{"TC-FR-MAP-04-33 味方のマスを通り抜けられ、そのマスが ZOC 内なら加算 1", 3, 2, it07Plain(),
+				[]tactics.Unit{it07Knight(foe, 1, 1, true), {Side: ally, Alive: true, Pos: tactics.Pos{X: 1, Y: 0}}}, tactics.Pos{X: 0, Y: 0}, tactics.Pos{X: 2, Y: 0}, 1, 1, 1},
 			{"TC-FR-MAP-04-33 着地点が ZOC のとき 1 回と追加費用 1", 3, 1, it07Plain(),
 				[]tactics.Unit{it07Knight(foe, 2, 0, true)}, tactics.Pos{X: 0, Y: 0}, tactics.Pos{X: 1, Y: 0}, 1, 1, 1},
 			{"TC-FR-MAP-04-33 戦死した重騎士の ZOC は数えない", 3, 1, it07Plain(),
@@ -117,11 +122,18 @@ func TestIT07PathTrackerRewindAndRemove(t *testing.T) {
 		if got := tr.AllTrials(); got.EnemyMove.Moves != 2 || got.EnemyRemove.Moves != 1 {
 			t.Fatalf("回復を受けたあとの集計 %+v", got)
 		}
+		// 待機のあとはゲームで再移動できないので、印にしない。
+		tr.PhaseStart()
+		tr.Event(tactics.Event{Kind: tactics.EventWait, Unit: 0}, units(tactics.Pos{X: 1}), tactics.Enemy)
+		move(tr, tactics.Pos{X: 1}, tactics.Pos{X: 0})
+		if got := tr.AllTrials(); got.EnemyMove.Moves != 3 || got.EnemyRemove.Moves != 1 {
+			t.Fatalf("待機のあとの集計 %+v", got)
+		}
 		// 次の番では印が消える。番の陣営と違う側の反撃は行動に数えない。
 		tr.PhaseStart()
 		tr.Event(tactics.Event{Kind: tactics.EventStrike, Unit: 0, Target: 1}, units(tactics.Pos{X: 1}), tactics.Player)
 		move(tr, tactics.Pos{X: 1}, tactics.Pos{X: 0})
-		if got := tr.AllTrials(); got.EnemyMove.Moves != 3 || got.EnemyRemove.Moves != 1 {
+		if got := tr.AllTrials(); got.EnemyMove.Moves != 4 || got.EnemyRemove.Moves != 1 {
 			t.Fatalf("次の番の集計 %+v", got)
 		}
 	})
@@ -173,4 +185,72 @@ func TestIT07PathTrackerRewindAndRemove(t *testing.T) {
 			t.Fatalf("最終経路で未出現 %v", got)
 		}
 	})
+}
+
+// 計測器の最小費用が tactics.Reachable と一致することを、本体の全 9 章の初期盤面で確かめる（#188 REV-106 F-05）。
+func TestIT07PathMatchesReachable(t *testing.T) {
+	cat := baseCatalog(t)
+	zocTiles := 0
+	for ch := 1; ch <= 9; ch++ {
+		id := fmt.Sprintf("ch%02d", ch)
+		t.Run("TC-FR-MAP-04-33 "+id+" の tactics.Reachable と一致", func(t *testing.T) {
+			setup, err := core.NewSetup(cat, id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// 初期の盤面には自軍が重騎士の近くにいないので、重騎士・ボス以外の敵を自軍に替えて、ZOC の費用が効く移動者を作る。
+			setup.Units = append([]tactics.UnitSetup(nil), setup.Units...)
+			setup.Events, setup.Reinforcements = nil, nil
+			for i, u := range setup.Units {
+				zoc := false
+				for _, sk := range u.ClassSkills {
+					zoc = zoc || sk.Effect == tactics.ZOC
+				}
+				if u.Side == tactics.Enemy && !zoc && !u.Boss && i%2 == 0 {
+					setup.Units[i].Side = tactics.Player
+					setup.Units[i].Group, setup.Units[i].Approach, setup.Units[i].Commander = "", 0, false
+				}
+			}
+			bv, err := tactics.NewBoardView(setup)
+			if err != nil {
+				t.Fatal(err)
+			}
+			units := bv.Units()
+			cost := func(p tactics.Pos) int { return bv.TerrainAt(p).Cost }
+			for i, u := range units {
+				if !u.Alive {
+					continue
+				}
+				got := it07ShortestZOC(units, i, u.Pos, cost, bv.Width(), bv.Height(), true)
+				plain := it07ShortestZOC(units, i, u.Pos, cost, bv.Width(), bv.Height(), false)
+				reach := bv.Reachable(i)
+				for pos, c := range reach {
+					if got.dist[pos] != c {
+						t.Fatalf("%s %v→%v: 計測器 %d、Reachable %d", u.Name, u.Pos, pos, got.dist[pos], c)
+					}
+					if got.dist[pos] != plain.dist[pos] {
+						zocTiles++
+					}
+				}
+				for pos, c := range got.dist {
+					if _, ok := reach[pos]; ok || c > u.Stats.Mov {
+						continue
+					}
+					occupied := false
+					for j, o := range units {
+						if j != i && o.Alive && o.Pos == pos {
+							occupied = true
+						}
+					}
+					// 味方のマスには止まれないので Reachable にない。それ以外は一致するはず。
+					if !occupied {
+						t.Fatalf("%s %v→%v: 計測器の費用 %d で行けるが Reachable にない", u.Name, u.Pos, pos, c)
+					}
+				}
+			}
+		})
+	}
+	if zocTiles == 0 {
+		t.Fatal("ZOC で費用が変わるマスが 1 つもなく、比較が空になっている")
+	}
 }

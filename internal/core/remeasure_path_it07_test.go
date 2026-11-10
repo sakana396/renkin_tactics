@@ -20,6 +20,9 @@ import (
 type it07PathMove struct {
 	Enemy, Remove       bool
 	Min, Max, ExtraCost int
+	// Unreachable は到着点に最小費用の経路が見つからなかった（規則上ありえない）。
+	// Violation は不変条件（下限 ≦ 上限 ≦ 追加費用）の違反。どちらも 0 でなければ計測器の誤り。
+	Unreachable, Violation bool
 }
 
 // it07PathStat は陣営・移動の種類ごとの集計。
@@ -28,6 +31,8 @@ type it07PathStat struct {
 	Moves, ZOCMoves, PossibleMoves int
 	// EntriesMin・EntriesMax は ZOC に入る回数の下限と上限の合計。ExtraCost は追加費用の合計。
 	EntriesMin, EntriesMax, ExtraCost int
+	// Unreachable・Violations は到達不能と不変条件の違反の回数（0 でなければ計測器の誤り。#188 REV-106 F-06）。
+	Unreachable, Violations int
 }
 
 // it07PathStats は自軍・敵軍の、通常の移動と再移動（攻撃などのあとの移動）の集計。
@@ -59,6 +64,12 @@ func (s *it07PathStats) add(m it07PathMove) {
 	t.EntriesMin += m.Min
 	t.EntriesMax += m.Max
 	t.ExtraCost += m.ExtraCost
+	if m.Unreachable {
+		t.Unreachable++
+	}
+	if m.Violation {
+		t.Violations++
+	}
 }
 
 type it07Obs struct {
@@ -112,8 +123,9 @@ func (t *it07PathTracker) Event(e tactics.Event, units []tactics.Unit, side tact
 			t.seen[id] = true
 			t.allSpawned = append(t.allSpawned, id)
 		}
-	case tactics.EventStrike, tactics.EventWait:
-		// EventHeal の Unit は回復を受けたユニットで、行動した側ではないので、行動の印には使わない。
+	case tactics.EventStrike:
+		// 再移動のきっかけは攻撃・回復・道具だが、EventHeal の Unit は回復を受けた側なので使えない。
+		// 待機のあとはゲームで再移動できない（canCanto、DES-BTL-10）ので、待機は印にしない。杖のあとの再移動は区別できない。
 		if u.Side == side {
 			t.acted[e.Unit] = true
 		}
@@ -150,9 +162,11 @@ func (t *it07PathTracker) measure(units []tactics.Unit, e tactics.Event) it07Pat
 	without := it07ShortestZOC(before, e.Unit, e.From, t.cost, t.w, t.h, false)
 	d, ok := withZ.dist[e.To]
 	if !ok {
-		return it07PathMove{}
+		return it07PathMove{Unreachable: true}
 	}
-	return it07PathMove{Min: withZ.minZ[e.To], Max: withZ.maxZ[e.To], ExtraCost: d - without.dist[e.To]}
+	m := it07PathMove{Min: withZ.minZ[e.To], Max: withZ.maxZ[e.To], ExtraCost: d - without.dist[e.To]}
+	m.Violation = m.Min > m.Max || m.Max > m.ExtraCost
+	return m
 }
 
 type it07Shortest struct {

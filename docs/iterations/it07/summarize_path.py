@@ -49,6 +49,15 @@ def main():
             b = sum(t[field] for t in base_games[k]["TurnDetails"])
             if a != b:
                 raise ValueError(f"{k}: {field} が #174 の新版と違う")
+    # 計測器の誤りの検査: 到達不能と不変条件（下限 ≦ 上限 ≦ 追加費用）の違反は 0 でなければならない。
+    for g in cur["Games"]:
+        for path in ("PathFinal", "PathAllTrials"):
+            for kind in KINDS:
+                st = g[path][kind]
+                if st["Unreachable"] != 0 or st["Violations"] != 0:
+                    raise ValueError(f"{key(g)} {path} {kind}: 到達不能 {st['Unreachable']}、不変条件の違反 {st['Violations']}")
+                if st["EntriesMin"] > st["EntriesMax"] or st["EntriesMax"] > st["ExtraCost"]:
+                    raise ValueError(f"{key(g)} {path} {kind}: 集計が不変条件に反する")
     groups = collections.defaultdict(list)
     for g in cur["Games"]:
         groups[key(g)[:3]].append(g)
@@ -57,8 +66,8 @@ def main():
     lines = [
         "# ZOC の移動経路の計測（最終経路、新版 920 試遊）",
         "",
-        "各 EventMove の直前の盤面で最小費用の経路を求めて数えた。追加費用は最小費用の差（正確）、入る回数は最小費用の経路のうち最少〜最多（実際の経路は不明）。",
-        "再移動は同じ番に攻撃・回復・待機のあとにした移動。自軍の打ち手は再移動を使わない。",
+        "各 EventMove の直前の盤面で最小費用の経路を求めて数えた。追加費用は最小費用の差（正確）、入る回数は最小費用の経路のうち最少〜最多。ゲームの規則に通過経路の定義はなく（移動は到着点の最小費用だけで決まる）、この幅が規則上の値の全体。全試遊で到達不能・不変条件の違反は 0。",
+        "再移動は、同じ番に同じユニットが攻撃（行動した側の EventStrike）をしたあとの移動。待機のあとはゲームで再移動できないので印を付けても影響しない。杖のあとは区別できない。自軍の打ち手は再移動を使わない。",
         "",
         "| 章 | 名簿 | 打ち手 | 敵 移動/再移動 | 敵 ZOC必須/可能 (通常) | 敵 入る回数 下限〜上限 (通常) | 敵 追加費用 (通常/再移動) | 自軍 移動 | 自軍 ZOC必須/可能 | 自軍 入る回数 下限〜上限 | 自軍 追加費用 |",
         "|---|---|---|---|---|---|---|---|---|---|---|",
