@@ -8,7 +8,7 @@ name = "水の止まった都"
 map = "ch01"
 before = "ch01_before"
 after = "ch01_after"
-reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }]
+reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }, { item = "bomb_far", count = 1 }]
 
 [[chapters]]
 id = "ch02"
@@ -26,4 +26,4 @@ name = "浄水施設"
 map = "ch03"
 before = "ch03_before"
 after = "ch03_after"
-reward = [{ item = "bomb_far", count = 2 }, { item = "bomb_small", count = 2 }]
+reward = [{ item = "bomb_far", count = 1 }, { item = "bomb_small", count = 2 }]

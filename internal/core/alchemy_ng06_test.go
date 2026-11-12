@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"fmt"
 	"io/fs"
 	"strings"
 	"testing"
@@ -87,10 +88,16 @@ func TestAlchemyData(t *testing.T) {
 				reward[ch.ID][ic.Item] = ic.Count
 			}
 		}
-		if reward["ch01"]["bomb_small"] != 3 || reward["ch02"]["bomb_large"] != 2 || reward["ch03"]["bomb_far"] != 2 {
-			t.Fatal(reward)
+		// 設計メモ 6.3 節の表: 1 章 回復薬 2・小さな爆弾 3・投げ火 1、2 章 回復薬 2・大きな爆弾 2、3 章 投げ火 1・小さな爆弾 2。
+		wantReward := map[string]map[string]int{
+			"ch01": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
+			"ch02": {"potion": 2, "bomb_large": 2},
+			"ch03": {"bomb_far": 1, "bomb_small": 2},
 		}
-		// 爆弾を持つキャラは、回復薬を先頭にする（自動の試遊は先頭の道具を薬として使う）。
+		if fmt.Sprint(reward) != fmt.Sprint(wantReward) {
+			t.Fatal(reward, wantReward)
+		}
+		// 道具を持つキャラは、回復薬を先頭にそろえる（準備の画面での並びと、既存の作品との一貫性のため）。
 		for _, id := range []string{"aoi", "dain", "tori", "nemu", "haru"} {
 			c, _ := cat.Character(id)
 			if len(c.Items) > 0 && c.Items[0].Item != "potion" {
@@ -227,8 +234,8 @@ func TestAlchemyAutoplay(t *testing.T) {
 		}
 	}
 	t.Logf("20 seed の通し: 章ごとの勝ち（到達した seed 数中）ch01 %d/%d、ch02 %d/%d、ch03 %d/%d。3 章とも勝った seed %d", wins["ch01"], reached["ch01"], wins["ch02"], reached["ch02"], wins["ch03"], reached["ch03"], cleared)
-	t.Run("TC-DES-NG-06-05 3 章すべてが、爆弾を使わない自動の試遊で勝てる（20 seed の通しの半数以上）", func(t *testing.T) {
-		if cleared < seeds/2 {
+	t.Run("TC-DES-NG-06-05 3 章すべてが、爆弾を使わない自動の試遊で勝てる（20 seed の通しの 15 以上）", func(t *testing.T) {
+		if cleared < 15 {
 			t.Fatalf("3 章とも勝った seed は %d / %d", cleared, seeds)
 		}
 		for _, id := range chapters {
