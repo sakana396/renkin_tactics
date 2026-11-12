@@ -37,7 +37,7 @@
 | TC-DES-NG-02-09 | NG-FR-02、DES-NG-02 | 在庫 2／在庫 1、HP は最大 | 使う | 在庫が 1 減る／0 になったら手持ちから消える。HP が最大でも使える | 自動・実装済み |
 | TC-DES-NG-02-10 | NG-FR-02、DES-NG-02 | 使用後 | 同じ使用者でもう一度 Act | `ErrAlreadyActed`。状態は変わらない | 自動・実装済み |
 | TC-DES-NG-02-11 | NG-FR-02、DES-NG-02 | 投げられる距離 3 | 距離ちょうど 3 の爆心 | 通る（境界） | 自動・実装済み |
-| TC-DES-NG-02-12 | NG-FR-02、DES-NG-02 | 同上 | 距離 4 の爆心／移動前は 2 だが移動後は 4 | `ErrOutOfThrowRange`。距離は移動後の位置から数える。状態・履歴は変わらず、`BlastForecast` も同じ誤り | 自動・実装済み |
+| TC-DES-NG-02-12 | NG-FR-02、DES-NG-02 | 同上 | 距離 4 の爆心／移動前は 3 だが移動後は 4 | `ErrOutOfThrowRange`。距離は移動後の位置から数える。状態・履歴は変わらず、`BlastForecast` も同じ誤り | 自動・実装済み |
 | TC-DES-NG-02-13 | NG-FR-02、DES-NG-02 | 9 × 9 | 爆心がマップの外（y = 9、x = -1） | `ErrBlastOutOfMap`。状態は変わらない | 自動・実装済み |
 | TC-DES-NG-02-14 | NG-FR-02、DES-NG-02 | 爆弾 | `Blast` なし | `ErrNoBlastCenter`。状態は変わらない | 自動・実装済み |
 | TC-DES-NG-02-15 | NG-FR-02、DES-NG-02 | 手持ち 1 種 | `Item = 1` | `ErrNoItem`。状態は変わらない | 自動・実装済み |
@@ -53,6 +53,7 @@
 | TC-DES-NG-02-25 | NG-FR-02、DES-NG-02 | `New` の入力 | 半径 0 の爆弾、回復薬 | 正しい | 自動・実装済み |
 | TC-DES-NG-02-26 | NG-FR-02、DES-NG-02 | `New` の入力 | 爆弾の回復量が 0 でない、ダメージ 0、距離 0、半径 -1、爆弾でないのに爆弾の値がある、回復量 0 の回復薬 | `ErrInvalidSetup` を包んだ誤り | 自動・実装済み |
 | TC-DES-NG-02-27 | NG-FR-02、DES-NG-02 | 敵が爆弾を持ち、自軍の近くにいる | 敵軍の番を進める | `EventBlast`・`EventBlastHit` が出ず、敵の爆弾は減らない | 自動・実装済み |
+| TC-DES-NG-02-28 | NG-FR-02、DES-NG-02 | 主人公とボスが隣り合い、半径 1・ダメージ 99 | 主人公の足元に使う。ユニットの並びは主人公が先／ボスが先の 2 通り | 両方が倒れ、どちらの並びでも `Result` が `Won`、最後の出来事が `EventWon`（ボス優先） | 自動・実装済み |
 
 ## 3. DES-NG-03 爆発の予想（`internal/core/tactics/blast_ng01_test.go`）
 

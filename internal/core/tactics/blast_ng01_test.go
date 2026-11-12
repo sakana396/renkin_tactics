@@ -222,7 +222,7 @@ func TestBlastValidation(t *testing.T) {
 	}{
 		{"TC-DES-NG-02-11 投げられる距離ちょうど（3）は通る", func() tactics.Command { return throwCmd(0, pos(3, 6), pos(3, 3)) }, nil},
 		{"TC-DES-NG-02-12 投げられる距離を 1 超える（4）と ErrOutOfThrowRange", func() tactics.Command { return throwCmd(0, pos(3, 6), pos(3, 2)) }, tactics.ErrOutOfThrowRange},
-		{"TC-DES-NG-02-12 距離は移動後の位置から数える（移動前は 2 だが、移動後は 4）", func() tactics.Command { return throwCmd(0, pos(3, 7), pos(3, 3)) }, tactics.ErrOutOfThrowRange},
+		{"TC-DES-NG-02-12 距離は移動後の位置から数える（移動前は 3 だが、移動後は 4）", func() tactics.Command { return throwCmd(0, pos(3, 7), pos(3, 3)) }, tactics.ErrOutOfThrowRange},
 		{"TC-DES-NG-02-13 マップの外は ErrBlastOutOfMap", func() tactics.Command { return throwCmd(0, pos(3, 6), pos(3, 9)) }, tactics.ErrBlastOutOfMap},
 		{"TC-DES-NG-02-13 負の座標もマップの外", func() tactics.Command { return throwCmd(0, pos(3, 6), pos(-1, 6)) }, tactics.ErrBlastOutOfMap},
 		{"TC-DES-NG-02-14 爆心がなければ ErrNoBlastCenter", func() tactics.Command {
@@ -315,6 +315,28 @@ func TestBlastJudge(t *testing.T) {
 		}
 		if b.Units()[0].Alive {
 			t.Error("主人公が倒れていない")
+		}
+	})
+
+	// 主人公とボスが同じ爆発で倒れたら、ユニットの並び順によらずボスの勝ちになる（F-01、判定はボス優先）。
+	t.Run("TC-DES-NG-02-28 主人公とボスが同時に倒れたら勝ち（主人公が先・ボスが先の両方）", func(t *testing.T) {
+		for _, order := range []string{"主人公が先", "ボスが先"} {
+			setup := blastSetup(bomb(99, 1, 3))
+			l, bs := 0, 7
+			if order == "ボスが先" {
+				setup.Units[0], setup.Units[7] = setup.Units[7], setup.Units[0]
+				l, bs = 7, 0
+			}
+			// 主人公 (3, 6) の足元に投げ、隣 (3, 7) のボスを巻き込む。ほかのユニットは範囲外。
+			setup.Units[bs] = boss(3, 7)
+			b := mustNewStill(t, setup)
+			events := mustAct(t, b, throwCmd(l, pos(3, 6), pos(3, 6)))
+			if b.Units()[l].Alive || b.Units()[bs].Alive {
+				t.Fatalf("%s: 主人公 %v・ボス %v が生きている", order, b.Units()[l].Alive, b.Units()[bs].Alive)
+			}
+			if b.Result != tactics.Won || events[len(events)-1].Kind != tactics.EventWon {
+				t.Errorf("%s: Result = %v, 最後の出来事 %v, 期待 Won / EventWon", order, b.Result, events[len(events)-1].Kind)
+			}
 		}
 	})
 }
