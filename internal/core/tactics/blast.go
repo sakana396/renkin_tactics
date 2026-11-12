@@ -2,7 +2,7 @@ package tactics
 
 // 爆弾（DES-NG-02、NG-FR-02）。
 
-// CellsWithin は、マップの中で center からのマンハッタン距離が radius 以下のマスを、Y・X の順で返す（DES-NG-02）。
+// CellsWithin は、マップの中で center からのマンハッタン距離が radius 以下のマスを、Y・X の順で返す（DES-NG-02、DES-NG-03）。
 // 爆発の範囲と、投げられる範囲の両方に使う。radius が負なら空。
 func (b *Battle) CellsWithin(center Pos, radius int) []Pos {
 	var out []Pos
