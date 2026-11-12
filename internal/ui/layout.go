@@ -72,7 +72,10 @@ func (c *Controller) ClickMenu(i int) {
 			c.ChooseAction(actions[i])
 		}
 	case ItemMenu:
-		c.ChooseItem(i)
+		// 一覧に出ているのは使えるアイテムだけなので、ボタンの番号を手持ちの添字に直す（DES-NG-05）。
+		if ks := usableItems(c.battle.Units()[c.unit]); i >= 0 && i < len(ks) {
+			c.ChooseItem(ks[i])
+		}
 	case WeaponMenu, StaffMenu:
 		c.ChooseWeapon(i)
 	case Canto:
@@ -92,8 +95,9 @@ func (c *Controller) MenuLabels() []string {
 			out = append(out, actionName(a))
 		}
 	case ItemMenu:
-		for _, s := range c.battle.Units()[c.unit].Items {
-			out = append(out, itemLabel(s))
+		u := c.battle.Units()[c.unit]
+		for _, k := range usableItems(u) {
+			out = append(out, itemLabel(u.Items[k]))
 		}
 	case WeaponMenu, StaffMenu:
 		// 武器の一覧は最大 5 行。選べない武器には印を付け、理由は案内欄に出す（DES-IT06 12.1 節）。
