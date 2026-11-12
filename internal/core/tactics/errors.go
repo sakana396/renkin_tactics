@@ -29,6 +29,15 @@ var (
 	// ErrFullHP は、HP が最大なので、回復薬を使えない（UseItem）、
 	// または回復できない（Heal。相手の HP）ことを表す（DES-HEL-01）。
 	ErrFullHP = errors.New("tactics: HP が最大なので使えません")
+	// 爆弾の誤り（DES-NG-02）。
+	// ErrNotBomb は、爆心を指定したアイテムが爆弾でないこと（または、爆弾でないアイテムの予想を求めたこと）を表す。
+	ErrNotBomb = errors.New("tactics: 爆弾でないアイテムに爆心は指定できません")
+	// ErrNoBlastCenter は、爆弾を使うのに爆心が指定されていないことを表す。
+	ErrNoBlastCenter = errors.New("tactics: 爆弾の爆心を指定してください")
+	// ErrBlastOutOfMap は、爆心がマップの外であることを表す。
+	ErrBlastOutOfMap = errors.New("tactics: 爆心がマップの外です")
+	// ErrOutOfThrowRange は、爆心が使う人（移動後）から投げられる距離を超えていることを表す。
+	ErrOutOfThrowRange = errors.New("tactics: 爆心が投げられる範囲の外です")
 	// ErrInvalidAction は、Action が定められた値でないこと、
 	// または Forecast に Attack でないコマンドを、HealForecast に Heal でないコマンドを渡したことを表す（DES-HEL-02）。
 	ErrInvalidAction = errors.New("tactics: 行動の種類が正しくありません")

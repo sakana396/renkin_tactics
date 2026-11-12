@@ -40,7 +40,15 @@ const guideCantoWait = "ほかのユニットの操作と番の終わりはで�
 
 // itemLabel はアイテムの一覧に出す文を返す（DES-UI-02）。
 func itemLabel(s tactics.ItemStack) string {
-	return fmt.Sprintf("%s ×%d（回復 %d）", s.Item.Name, s.Count, s.Item.Heal)
+	return fmt.Sprintf("%s ×%d（%s）", s.Item.Name, s.Count, itemEffect(s.Item))
+}
+
+// itemEffect はアイテムの効果の短い文を返す。回復薬は「回復 10」、爆弾は「爆弾 ダメージ 12　範囲 1　投げる 3」（DES-NG-05）。
+func itemEffect(it tactics.Item) string {
+	if it.Bomb {
+		return fmt.Sprintf("爆弾 ダメージ %d　範囲 %d　投げる %d", it.BlastDamage, it.BlastRadius, it.ThrowRange)
+	}
+	return fmt.Sprintf("回復 %d", it.Heal)
 }
 
 // weaponDetail は武器・杖の詳しい欄の 1 行（DES-UI-26、DES-IT06 12.1 節）。
@@ -139,6 +147,10 @@ func EventText(e tactics.Event) string {
 			return fmt.Sprintf("%s の攻撃 → %s：外れ", name(e.Unit), name(e.Target))
 		}
 		return fmt.Sprintf("%s の攻撃 → %s：%s", name(e.Unit), name(e.Target), StrikeText(e))
+	case tactics.EventBlast:
+		return fmt.Sprintf("%s が %s を投げた", name(e.Unit), e.Item)
+	case tactics.EventBlastHit:
+		return fmt.Sprintf("%s は爆発で %d ダメージ", name(e.Unit), e.Amount)
 	case tactics.EventFall:
 		return fmt.Sprintf("%s は倒れた", name(e.Unit))
 	case tactics.EventWait:
@@ -213,6 +225,9 @@ func (c *Controller) Guide() []string {
 		lines = append(lines, guideDanger)
 	case ItemMenu:
 		lines = append(lines, "左クリック: 使うアイテムを選ぶ　右クリック・Esc: 戻る", guideDanger)
+	case BombTargeting:
+		lines = append(lines, c.bombGuide()...)
+		lines = append(lines, guideDanger)
 	case WeaponMenu, StaffMenu:
 		what := "攻撃に使う武器"
 		if c.state == StaffMenu {

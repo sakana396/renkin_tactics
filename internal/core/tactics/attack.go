@@ -193,7 +193,7 @@ func (b *Battle) fall(events []Event, i int) []Event {
 
 // judge は、攻撃が終わるたびに勝ち負けを確かめる（DES-MAP-04、FR-MAP-05、FR-CMP-09）。
 // ボスが倒れていれば勝ち（Won を出す）、主人公が倒れていれば負け（Lost を出す）。
-// 1 回の攻撃で倒れるのは 1 体だけなので、両方が同時に起きることはない。
+// 攻撃では倒れるのは 1 体だけだが、爆弾（DES-NG-02）では同時に倒れることがある。そのときはボスの勝ちを先に判定する。
 func (b *Battle) judge(events []Event) []Event {
 	if b.Result != Ongoing {
 		return events

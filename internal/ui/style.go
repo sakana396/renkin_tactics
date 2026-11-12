@@ -12,6 +12,8 @@ var (
 	blueOverlay  = color.NRGBA{30, 90, 255, 130}
 	greenOverlay = color.NRGBA{30, 220, 80, 130}
 	redOverlay   = color.NRGBA{255, 30, 30, 140}
+	// blastOverlay は、仮選択した爆心の爆発の範囲の塗り（DES-NG-05）。投げられる範囲の赤より濃い橙。
+	blastOverlay = color.NRGBA{255, 140, 0, 190}
 	playerBase   = color.NRGBA{50, 110, 230, 210}
 	enemyBase    = color.NRGBA{220, 50, 50, 210}
 	hpBack       = color.NRGBA{20, 20, 20, 220}

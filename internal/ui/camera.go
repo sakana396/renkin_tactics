@@ -77,7 +77,7 @@ func (c *Controller) Scroll(dx, dy int) {
 		return
 	}
 	switch c.state {
-	case Idle, Selected, Targeting, HealTargeting, Canto:
+	case Idle, Selected, Targeting, HealTargeting, Canto, BombTargeting:
 		c.camera.Move(dx, dy)
 	}
 }
@@ -179,7 +179,9 @@ func (c *Controller) focusEvent(e tactics.Event) {
 		if e.Target >= 0 && e.Target < len(e.Units) {
 			c.camera.Focus(e.Units[e.Target].Pos)
 		}
-	case tactics.EventHeal, tactics.EventFall, tactics.EventWait, tactics.EventExp, tactics.EventLevelUp:
+	case tactics.EventBlast:
+		c.camera.Focus(e.To)
+	case tactics.EventHeal, tactics.EventFall, tactics.EventWait, tactics.EventExp, tactics.EventLevelUp, tactics.EventBlastHit:
 		if e.Unit >= 0 && e.Unit < len(e.Units) {
 			c.camera.Focus(e.Units[e.Unit].Pos)
 		}
