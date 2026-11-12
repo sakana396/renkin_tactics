@@ -315,6 +315,73 @@ func TestNG01BombUI(t *testing.T) {
 		}
 	})
 
+	t.Run("TC-DES-NG-05-14 手持ちの中身が変わったあとも、一覧の番号は手持ちの正しい項目に対応する", func(t *testing.T) {
+		// 主人公の爆弾で (4, 2) の味方（ガルド）を巻き込み、HP を 12 に減らす（TC-DES-NG-05-13 と同じ手順）。
+		hurt := func(items []tactics.ItemStack) (*Game, *Controller) {
+			c := newIdleWith(t, func() tactics.Setup {
+				s := bombSetup()
+				s.Units[1].Items = items
+				return s
+			})
+			g := &Game{ctrl: c}
+			g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
+			g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
+			clickMenuLabel(t, g, "アイテム")
+			c.ClickMenu(0)
+			for range 3 {
+				g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
+			}
+			playOut(c)
+			if hp := c.Battle().Units()[1].HP; hp != 12 {
+				t.Fatalf("味方の HP = %d, 期待 12", hp)
+			}
+			return g, c
+		}
+		openItems := func(g *Game) {
+			g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
+			g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
+			clickMenuLabel(t, g, "アイテム")
+		}
+
+		// [回復薬, 爆弾] で、回復薬を使い切って [爆弾] になる。次の番に一覧を開くと爆弾だけが出て、
+		// 1 番目の項目（爆弾）を選ぶと、手持ちの 0 番目（爆弾）で BombTargeting に入る。
+		g, c := hurt([]tactics.ItemStack{{Item: potion, Count: 1}, {Item: testBomb, Count: 1}})
+		openItems(g)
+		if labels := c.MenuLabels(); len(labels) != 2 || !strings.Contains(labels[0], "回復薬") {
+			t.Fatalf("使う前の一覧 = %v, 期待 回復薬・爆弾", labels)
+		}
+		c.ClickMenu(0)
+		playOut(c)
+		if u := c.Battle().Units()[1]; u.HP != 20 || len(u.Items) != 1 || !u.Items[0].Item.Bomb {
+			t.Fatalf("回復薬を使ったあとの HP %d、手持ち %+v, 期待 HP 20、[爆弾]", u.HP, u.Items)
+		}
+		// 自軍が全員行動したので番は自動で進み、次の番になっている。
+		openItems(g)
+		if labels := c.MenuLabels(); len(labels) != 1 || !strings.Contains(labels[0], "爆弾") {
+			t.Fatalf("[爆弾] になったあとの一覧 = %v, 期待 爆弾だけ", labels)
+		}
+		c.ClickMenu(0)
+		if c.State() != BombTargeting || c.item != 0 {
+			t.Errorf("状態 %v、手持ち %d, 期待 BombTargeting、0（爆弾）", c.State(), c.item)
+		}
+
+		// [爆弾, 回復薬] で HP が減っている。2 番目の項目は回復薬で、選ぶと爆心の選択に入らず使える。
+		g, c = hurt([]tactics.ItemStack{{Item: testBomb, Count: 1}, {Item: potion, Count: 1}})
+		openItems(g)
+		labels := c.MenuLabels()
+		if len(labels) != 2 || !strings.Contains(labels[0], "爆弾") || !strings.Contains(labels[1], "回復薬") {
+			t.Fatalf("一覧 = %v, 期待 爆弾・回復薬", labels)
+		}
+		c.ClickMenu(1)
+		if c.State() == BombTargeting {
+			t.Fatal("2 番目の項目（回復薬）を選んだのに爆心の選択に入った")
+		}
+		playOut(c)
+		if u := c.Battle().Units()[1]; u.HP != 20 || len(u.Items) != 1 || !u.Items[0].Item.Bomb {
+			t.Errorf("回復薬を使ったあとの HP %d、手持ち %+v, 期待 HP 20、[爆弾]", u.HP, u.Items)
+		}
+	})
+
 	t.Run("TC-DES-NG-05-10 爆弾の予想は core の BlastForecast と一致する（範囲と数は core が決める）", func(t *testing.T) {
 		_, c := bombGame(t, tactics.Pos{X: 2, Y: 2})
 		center := tactics.Pos{X: 4, Y: 2}
