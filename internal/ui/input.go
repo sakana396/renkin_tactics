@@ -469,7 +469,7 @@ func (c *Controller) Units() []tactics.Unit {
 }
 
 // Actions は、Moved でできる行動を攻撃（杖なら回復）・アイテム・待機の順に返す（DES-UI-02、DES-UI-18）。
-// 攻撃は射程に相手がいるとき、アイテムは手持ちがあって HP が最大でないときだけ出す。
+// 攻撃は射程に相手がいるとき、アイテムは、爆弾があれば常に、回復薬だけなら HP が最大でないときだけ出す（DES-NG-05）。
 func (c *Controller) Actions() []tactics.Action {
 	if c.state != Moved {
 		return nil
