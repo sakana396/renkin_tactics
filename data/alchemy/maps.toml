@@ -1,0 +1,375 @@
+# マップ（新作の試作 1〜3 章。DES-NG-06）。記法は data/base/maps.toml と同じ
+# rows の 1 文字が 1 マス（terrains.toml の symbol）。座標は左上が (0, 0)。slots の 1 番目は主人公の枠
+# ボス（boss = true）を倒すと勝ち。新しい勝利条件・出来事・増援は使わない
+
+# 1 章: 古代都市の入口。狭い通路（x = 6〜7、y = 3〜5）に野盗が固まっている。
+# 水路（y = 9）を橋（x = 6〜7）で渡り、通路の手前の広場（y = 6〜8）から爆弾で通路を狙う
+[[maps]]
+id = "ch01"
+name = "古代都市の入口"
+rows = [
+  "################", # y 0
+  "#..R........R..#", # y 1  ボスの間
+  "#..............#", # y 2
+  "######..########", # y 3  狭い通路
+  "######..########", # y 4
+  "######..########", # y 5
+  "#..............#", # y 6  広場
+  "#.RR......F.R..#", # y 7
+  "#..F...........#", # y 8
+  "~~~~~~..~~~~~~~~", # y 9  水路と橋
+  "#.......F......#", # y 10
+  "#..R...........#", # y 11
+  "#..............#", # y 12
+  "#....F.........#", # y 13
+  "#..............#", # y 14
+  "################", # y 15
+]
+slots = [
+  { x = 6, y = 14 },
+  { x = 5, y = 13 },
+  { x = 7, y = 13 },
+  { x = 4, y = 14 },
+  { x = 8, y = 14 },
+  { x = 6, y = 12 },
+]
+
+# 広場の野盗（寄ってくる）
+[[maps.enemies]]
+class = "bandit"
+weapon = "iron_axe"
+level = 1
+ai = "charge"
+x = 4
+y = 7
+
+[[maps.enemies]]
+name = "野盗の槍持ち"
+class = "spearman"
+weapon = "iron_lance"
+level = 1
+ai = "charge"
+x = 11
+y = 6
+
+# 通路の野盗（待ち構える。爆弾で一度に巻き込める並び）
+[[maps.enemies]]
+class = "bandit"
+weapon = "iron_axe"
+level = 1
+ai = "hold"
+x = 6
+y = 5
+
+[[maps.enemies]]
+class = "bandit"
+weapon = "iron_axe"
+level = 1
+ai = "hold"
+x = 7
+y = 5
+
+[[maps.enemies]]
+class = "bandit"
+weapon = "iron_axe"
+level = 1
+ai = "hold"
+x = 6
+y = 4
+
+[[maps.enemies]]
+class = "bandit"
+weapon = "iron_axe"
+level = 1
+ai = "hold"
+x = 7
+y = 4
+
+[[maps.enemies]]
+name = "野盗の射手"
+class = "bowman"
+weapon = "iron_bow"
+level = 1
+ai = "hold"
+x = 6
+y = 3
+
+# ボスの間
+[[maps.enemies]]
+name = "野盗の頭目"
+class = "bandit"
+weapon = "iron_axe"
+level = 3
+bonus = { hp = 8, str = 2, skl = 3, spd = 1, def = 2, mov = 0 }
+ai = "hold"
+boss = true
+x = 7
+y = 1
+
+[[maps.enemies]]
+class = "bandit"
+weapon = "iron_axe"
+level = 2
+ai = "hold"
+x = 5
+y = 2
+
+# 2 章: 水路沿い。水路（x = 7）に橋が 3 つ（y = 4・8・12）。隣の国の先遣隊が東の岸から橋へ寄ってくる。
+# 橋の東の端に敵が詰まるので、西の岸から爆弾を投げられる。橋は 1 マス幅で、重装兵が通せんぼで守れる
+[[maps]]
+id = "ch02"
+name = "水路の向こう"
+rows = [
+  "################", # y 0
+  "#......~.......#", # y 1
+  "#..R...~....R..#", # y 2
+  "#......~.......#", # y 3
+  "#..............#", # y 4  橋
+  "#.F....~......F#", # y 5
+  "#......~..RR...#", # y 6
+  "#......~.......#", # y 7
+  "#..............#", # y 8  橋
+  "#......~.......#", # y 9
+  "#..R...~.....R.#", # y 10
+  "#......~.......#", # y 11
+  "#..............#", # y 12 橋
+  "#.F....~.....F.#", # y 13
+  "#......~.......#", # y 14
+  "################", # y 15
+]
+slots = [
+  { x = 3, y = 13 },
+  { x = 2, y = 12 },
+  { x = 4, y = 12 },
+  { x = 2, y = 14 },
+  { x = 4, y = 14 },
+  { x = 5, y = 13 },
+]
+
+[[maps.enemies]]
+name = "先遣の槍兵"
+class = "spearman"
+weapon = "iron_lance"
+level = 2
+ai = "charge"
+x = 10
+y = 4
+
+[[maps.enemies]]
+name = "先遣の槍兵"
+class = "spearman"
+weapon = "iron_lance"
+level = 2
+ai = "charge"
+x = 10
+y = 8
+
+[[maps.enemies]]
+name = "先遣の剣士"
+class = "swordsman"
+weapon = "iron_sword"
+level = 2
+ai = "charge"
+x = 11
+y = 6
+
+[[maps.enemies]]
+name = "先遣の剣士"
+class = "swordsman"
+weapon = "iron_sword"
+level = 2
+ai = "charge"
+x = 11
+y = 11
+
+[[maps.enemies]]
+name = "先遣の弓兵"
+class = "bowman"
+weapon = "iron_bow"
+level = 2
+ai = "hold"
+x = 10
+y = 6
+
+[[maps.enemies]]
+name = "先遣の弓兵"
+class = "bowman"
+weapon = "iron_bow"
+level = 2
+ai = "hold"
+x = 10
+y = 10
+
+[[maps.enemies]]
+name = "先遣の重装兵"
+class = "heavy"
+weapon = "iron_lance"
+level = 3
+ai = "hold"
+x = 12
+y = 8
+
+[[maps.enemies]]
+name = "先遣の重装兵"
+class = "heavy"
+weapon = "iron_lance"
+level = 3
+ai = "hold"
+x = 12
+y = 3
+
+[[maps.enemies]]
+name = "先遣隊長ドルク"
+class = "captain"
+weapon = "relic_lance"
+level = 4
+bonus = { hp = 4, str = 0, skl = 0, spd = 0, def = 0, mov = 0 }
+ai = "hold"
+boss = true
+x = 13
+y = 5
+
+# 3 章: 浄水施設。施設（T）は北の部屋にあり、入口（x = 7〜8、y = 3）の前に敵が固まる。
+# 水路（y = 9）の橋（x = 3〜4 と x = 10〜11）の北の端にも敵がいる。ボスは隣の国の将で、施設の中にいる
+[[maps]]
+id = "ch03"
+name = "浄水施設"
+rows = [
+  "################", # y 0
+  "#..R.TTTTTT.R..#", # y 1  施設
+  "#....TTTTTT....#", # y 2
+  "######..########", # y 3  施設の入口
+  "#..............#", # y 4
+  "#.RR....F....R.#", # y 5
+  "#..............#", # y 6
+  "#.F.....RR.....#", # y 7
+  "#..............#", # y 8
+  "~~~..~~~~~..~~~~", # y 9  水路と橋
+  "#..............#", # y 10
+  "#.F.........F..#", # y 11
+  "#..............#", # y 12
+  "#..............#", # y 13
+  "#..............#", # y 14
+  "################", # y 15
+]
+slots = [
+  { x = 7, y = 14 },
+  { x = 6, y = 13 },
+  { x = 8, y = 13 },
+  { x = 5, y = 14 },
+  { x = 9, y = 14 },
+  { x = 7, y = 12 },
+]
+
+# 施設の入口の前（待ち構える。爆弾で巻き込める並び）
+[[maps.enemies]]
+name = "公国の重装兵"
+class = "heavy"
+weapon = "iron_lance"
+level = 4
+ai = "hold"
+x = 7
+y = 4
+
+[[maps.enemies]]
+name = "公国の槍兵"
+class = "spearman"
+weapon = "iron_lance"
+level = 3
+ai = "hold"
+x = 8
+y = 4
+
+[[maps.enemies]]
+name = "公国の剣士"
+class = "swordsman"
+weapon = "iron_sword"
+level = 3
+ai = "hold"
+x = 6
+y = 4
+
+[[maps.enemies]]
+name = "公国の剣士"
+class = "swordsman"
+weapon = "iron_sword"
+level = 3
+ai = "hold"
+x = 9
+y = 4
+
+[[maps.enemies]]
+name = "公国の弓兵"
+class = "bowman"
+weapon = "iron_bow"
+level = 3
+ai = "hold"
+x = 7
+y = 5
+
+# 橋の北の端
+[[maps.enemies]]
+name = "公国の槍兵"
+class = "spearman"
+weapon = "iron_lance"
+level = 3
+ai = "charge"
+x = 3
+y = 8
+
+[[maps.enemies]]
+name = "公国の剣士"
+class = "swordsman"
+weapon = "iron_sword"
+level = 3
+ai = "charge"
+x = 4
+y = 8
+
+[[maps.enemies]]
+name = "公国の槍兵"
+class = "spearman"
+weapon = "iron_lance"
+level = 3
+ai = "charge"
+x = 10
+y = 8
+
+[[maps.enemies]]
+name = "公国の弓兵"
+class = "bowman"
+weapon = "iron_bow"
+level = 3
+ai = "hold"
+x = 11
+y = 7
+
+# 施設の中（ボスと近衛）
+[[maps.enemies]]
+name = "将軍ベルナド"
+class = "captain"
+weapon = "relic_lance"
+level = 6
+bonus = { hp = 8, str = 1, skl = 2, spd = 1, def = 1, mov = 0 }
+ai = "hold"
+boss = true
+x = 7
+y = 1
+
+[[maps.enemies]]
+name = "公国の近衛"
+class = "heavy"
+weapon = "iron_lance"
+level = 4
+ai = "hold"
+x = 6
+y = 2
+
+[[maps.enemies]]
+name = "公国の近衛"
+class = "heavy"
+weapon = "iron_lance"
+level = 4
+ai = "hold"
+x = 9
+y = 2

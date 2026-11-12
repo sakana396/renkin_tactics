@@ -1,0 +1,59 @@
+# クラス（新作の試作。DES-NG-06）
+# 野盗・剣士・弓兵は HP 12。大きな爆弾（固定ダメージ 12）の 1 発で倒れる。槍兵（16）・重装兵（22）・隊長は爆弾だけでは倒れず、残りを武器で仕留める
+
+# 主人公の錬金術師。後衛。爆弾が主な攻撃
+[[classes]]
+id = "alchemist"
+name = "錬金術師"
+weapon_types = ["magic", "staff"]
+staff_heal_cap = 8
+base = { hp = 17, str = 2, skl = 5, spd = 6, def = 2, mov = 5, lck = 4, mag = 4, res = 3 }
+
+# 調合の見習い。後衛寄り。杖で治せる
+[[classes]]
+id = "assistant"
+name = "調合の見習い"
+weapon_types = ["staff", "magic"]
+staff_heal_cap = 8
+base = { hp = 15, str = 1, skl = 4, spd = 6, def = 1, mov = 5, lck = 5, mag = 4, res = 4 }
+
+# 護衛の兵（国から付く）。前衛で守る。通せんぼ（敵の動きを止める）を持つ
+[[classes]]
+id = "heavy"
+name = "重装兵"
+tags = ["armor"]
+skills = ["zoc"]
+weapon_type = "lance"
+base = { hp = 22, str = 6, skl = 4, spd = 3, def = 8, mov = 4, lck = 2, mag = 0, res = 1 }
+
+[[classes]]
+id = "spearman"
+name = "槍兵"
+weapon_type = "lance"
+base = { hp = 16, str = 5, skl = 5, spd = 5, def = 3, mov = 5, lck = 3, mag = 0, res = 1 }
+
+[[classes]]
+id = "swordsman"
+name = "剣士"
+weapon_type = "sword"
+base = { hp = 12, str = 4, skl = 7, spd = 7, def = 1, mov = 5, lck = 3, mag = 0, res = 1 }
+
+[[classes]]
+id = "bowman"
+name = "弓兵"
+weapon_type = "bow"
+base = { hp = 12, str = 4, skl = 6, spd = 5, def = 1, mov = 5, lck = 3, mag = 0, res = 1 }
+
+# 1 章の敵（遺跡に居座る野盗）
+[[classes]]
+id = "bandit"
+name = "野盗"
+weapon_type = "axe"
+base = { hp = 12, str = 5, skl = 2, spd = 3, def = 1, mov = 5, lck = 1, mag = 0, res = 0 }
+
+# 隣の国の将（ボス）。3 章の将はこの兵種に能力を足す
+[[classes]]
+id = "captain"
+name = "隊長"
+weapon_type = "lance"
+base = { hp = 24, str = 7, skl = 6, spd = 5, def = 5, mov = 5, lck = 3, mag = 0, res = 3 }
