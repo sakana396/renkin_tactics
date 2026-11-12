@@ -63,6 +63,10 @@ var (
 	Fort = Tile{Town, 125}
 	// Wall は壁（石の壁）。
 	Wall = Tile{Dungeon, 40}
+	// Canal は水路（石の溝。通れない地形。Tiny Dungeon 37 の横縞の石。新作の地形）。
+	Canal = Tile{Dungeon, 37}
+	// Purifier は浄水施設（緑の水がたまる石の台。Tiny Dungeon 32。新作の地形）。
+	Purifier = Tile{Dungeon, 32}
 )
 
 // ユニットのタイル（DES-UI-05）。騎兵のほかは Tiny Dungeon の人物。
