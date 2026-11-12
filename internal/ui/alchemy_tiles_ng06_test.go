@@ -16,7 +16,7 @@ func TestAlchemyTilesNG06(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Run("TC-DES-NG-06-11 新作の地形は名前で描き分け、水路と崩れた壁・浄水施設と砦が同じ絵にならない", func(t *testing.T) {
-		// 期待値は設計メモ 6.7 節の対応表から。瓦礫は山、植え込みは森、崩れた壁は壁、水路・浄水施設は専用の絵、石畳は平地（下地だけ）。
+		// 期待値は設計メモ 6.6 節の対応表から。瓦礫は山、植え込みは森、崩れた壁は壁、水路・浄水施設は専用の絵、石畳は平地（下地だけ）。
 		type want struct {
 			tile assets.Tile
 			ok   bool

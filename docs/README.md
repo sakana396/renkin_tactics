@@ -25,8 +25,8 @@
 | 試験 | テスト仕様書（反復 6） | [04_test/test-spec-it06.md](04_test/test-spec-it06.md) | v2.13（#120・#123・#124・#126・#127・#130・#149・#131・#132・#133・#154・#158）。能力・計算・予測・セーブ、回復と敵のレベル、出来事、再移動、一団の敵の思考の自動ケースを順次実装。旧自動試遊の一部は IT06 で一時停止（#130〜#133 で置き換え）。#154 で初期突撃・待つ守りの一団・一団の近さ・連続増援と 3 種の名簿の 20 seed の自動試遊を足した。#172・#173 の固定 seed を反映。後続の自動ケース・手動・基準の PC での測定は未実施 |
 | 試験 | テスト仕様書（反復 7） | [04_test/test-spec-it07.md](04_test/test-spec-it07.md) | v1.3（#188）。ZOCの経路計測と増援の最終経路・全試行の区別を追加し、新版920試遊を測り直し。v1.2（#189）は射程とフレーム内範囲共有の回帰を追加し、同じ基準PCの合成条件で最低79.808fps。人の試遊等は後続 |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
-| 試験 | テスト仕様書（新作の試作 NG01: 錬金の爆弾） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.1（未承認）。自動は実装済み、画面の見た目は手動・未実施 |
-| 試験 | テスト仕様書（新作の試作データ NG-06。TST-NG01 の 7 章） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.1（未承認）。データ・自動の試遊・`-game` は自動で実装済み。人の試遊（TC-DES-NG-06-10）は未実施 |
+| 試験 | テスト仕様書（新作の試作 NG01: 錬金の爆弾） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.2（未承認）。自動は実装済み、画面の見た目は手動・未実施 |
+| 試験 | テスト仕様書（新作の試作データ NG-06。TST-NG01 の 7 章） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.2（未承認）。データ・自動の試遊・`-game` は自動で実装済み。人の試遊（TC-DES-NG-06-10）は未実施 |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
 | 計画 | 反復 1 の振り返り | [iterations/it01/retrospective.md](iterations/it01/retrospective.md) | v0.2 承認（E-37） |
@@ -48,8 +48,8 @@
 | 試験 | 反復7 描画性能の改善 | [iterations/it07/render-performance.md](iterations/it07/render-performance.md) | #189。同じ合成条件で12.228→79.808fps。実章初期も別途測定 |
 | 計画 | 反復 7 計画書 | [iterations/it07/plan.md](iterations/it07/plan.md) | v0.3（承認（E-119））。画面の作り直し・指揮官・重騎士の ZOC（E-117・E-118）。REV-090 の指摘を反映 |
 | 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
-| 設計 | 設計メモ（新作の試作 NG01: 錬金の爆弾） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.1（未承認）。企画たたき台 2.7 節の最小の試作。既存の設計は変えない |
-| 設計 | 設計メモ（新作の試作データ NG-06。DES-NG01 の 6 章） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.1（未承認）。`data/alchemy`（1〜3 章）と `-game`。名前・文面は仮で、既存作品との重なりは未確認 |
+| 設計 | 設計メモ（新作の試作 NG01: 錬金の爆弾） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。企画たたき台 2.7 節の最小の試作。既存の設計は変えない |
+| 設計 | 設計メモ（新作の試作データ NG-06。DES-NG01 の 6 章） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。`data/alchemy`（1〜3 章）と `-game`。名前・文面は仮で、既存作品との重なりは未確認 |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
