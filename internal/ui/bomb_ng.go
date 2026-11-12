@@ -2,21 +2,29 @@ package ui
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 )
 
 // 爆弾の操作と表示（DES-NG-05、NG-FR-04）。
 
-// usableItem は、アイテムの使用を行動の一覧に出せるかを返す（DES-NG-05）。
-// 爆弾があれば、HP が最大でも出す。回復薬だけなら、今までどおり HP が最大でないときだけ出す。
-func usableItem(u tactics.Unit) bool {
-	for _, s := range u.Items {
-		if s.Item.Bomb {
-			return true
+// usableItems は、アイテムの一覧に出す手持ちの添字を返す（DES-NG-05）。
+// 爆弾は HP が最大でも常に出す。回復薬は、HP が最大でないときだけ出す（使えない回復薬は出さない）。
+func usableItems(u tactics.Unit) []int {
+	var out []int
+	for k, s := range u.Items {
+		if s.Item.Bomb || u.HP < u.Stats.HP {
+			out = append(out, k)
 		}
 	}
-	return len(u.Items) > 0 && u.HP < u.Stats.HP
+	return out
+}
+
+// usableItem は、アイテムの使用を行動の一覧に出せるかを返す（DES-NG-05）。
+// 一覧に出せるアイテムが 1 つでもあれば出す。回復薬だけなら、今までどおり HP が最大でないときだけ出す。
+func usableItem(u tactics.Unit) bool {
+	return len(usableItems(u)) > 0
 }
 
 // bombItem は、爆心を選んでいる爆弾を返す。BombTargeting でなければ ok が偽。
@@ -53,7 +61,7 @@ func (c *Controller) clickBlast(p tactics.Pos) {
 	if !ok {
 		return
 	}
-	if distance(c.dest, p) > it.ThrowRange {
+	if !slices.Contains(c.throwCells(), p) {
 		c.message = fmt.Sprintf("そのマスは投げられる範囲（%d マス）の外です", it.ThrowRange)
 		return
 	}
