@@ -179,15 +179,15 @@ func TestNG01BombUI(t *testing.T) {
 	t.Run("TC-DES-NG-05-06 決定の前に取り消せる: 爆心 → 選び直し → 一覧 → 行動の一覧。何も使わない", func(t *testing.T) {
 		g, c := bombGame(t, tactics.Pos{X: 2, Y: 2})
 		g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
-		c.Cancel()
+		c.battleKey("RightClick")
 		if _, ok := c.BombForecast(); ok || c.State() != BombTargeting {
 			t.Fatalf("1 回目の取消し: 状態 %v", c.State())
 		}
-		c.Cancel()
+		c.battleKey("Esc")
 		if c.State() != ItemMenu {
 			t.Fatalf("2 回目の取消し: 状態 %v", c.State())
 		}
-		c.Cancel()
+		c.battleKey("RightClick")
 		if c.State() != Moved {
 			t.Fatalf("3 回目の取消し: 状態 %v", c.State())
 		}
@@ -252,6 +252,66 @@ func TestNG01BombUI(t *testing.T) {
 			if a == tactics.UseItem {
 				t.Error("HP が最大の回復薬だけで「アイテム」が出ている")
 			}
+		}
+	})
+
+	t.Run("TC-DES-NG-05-12 仮選択のあとに範囲外をクリックしても、仮選択（爆心）は変わらない", func(t *testing.T) {
+		g, c := bombGame(t, tactics.Pos{X: 2, Y: 2})
+		center := tactics.Pos{X: 4, Y: 2}
+		g.leftClick(cellCenter(center))
+		g.leftClick(cellCenter(tactics.Pos{X: 7, Y: 7})) // 移動先 (2, 2) から距離 10。範囲外。
+		f, ok := c.BombForecast()
+		if !ok || f.Center != center {
+			t.Fatalf("範囲外のクリックのあとの予想 = %+v（ok %v）, 爆心は %v のまま", f, ok, center)
+		}
+		if c.State() != BombTargeting || c.Battle().Units()[0].Acted || c.Message() == "" {
+			t.Errorf("状態 %v、行動済み %v、案内 %q", c.State(), c.Battle().Units()[0].Acted, c.Message())
+		}
+	})
+
+	t.Run("TC-DES-NG-05-13 使えない回復薬は一覧に出さない（HP が最大なら爆弾だけ。HP が減っていれば両方）", func(t *testing.T) {
+		both := func() tactics.Setup {
+			s := bombSetup()
+			s.Units[1].Items = []tactics.ItemStack{{Item: potion, Count: 1}, {Item: testBomb, Count: 1}}
+			return s
+		}
+		// HP が最大: 爆弾だけが出る。ボタンの 0 番目は手持ちの 1 番目（爆弾）。
+		c := newIdleWith(t, both)
+		g := &Game{ctrl: c}
+		g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
+		g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
+		clickMenuLabel(t, g, "アイテム")
+		if labels := c.MenuLabels(); len(labels) != 1 || !strings.Contains(labels[0], "爆弾") {
+			t.Fatalf("HP が最大の一覧 = %v, 期待 爆弾だけ", labels)
+		}
+		c.ClickMenu(0)
+		if c.State() != BombTargeting || c.item != 1 {
+			t.Errorf("状態 %v、手持ち %d, 期待 BombTargeting、1（爆弾）", c.State(), c.item)
+		}
+
+		// HP が減っている: 主人公の爆弾で (4, 2) の味方を巻き込んでから、回復薬と爆弾の両方が出る。
+		c = newIdleWith(t, both)
+		g = &Game{ctrl: c}
+		g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
+		g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
+		clickMenuLabel(t, g, "アイテム")
+		c.ClickMenu(0)
+		g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
+		g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
+		playOut(c)
+		if hp := c.Battle().Units()[1].HP; hp != 12 {
+			t.Fatalf("味方の HP = %d, 期待 12", hp)
+		}
+		g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
+		g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
+		clickMenuLabel(t, g, "アイテム")
+		labels := c.MenuLabels()
+		if len(labels) != 2 || !strings.Contains(labels[0], "回復薬") || !strings.Contains(labels[1], "爆弾") {
+			t.Fatalf("HP が減っているときの一覧 = %v, 期待 回復薬・爆弾", labels)
+		}
+		c.ClickMenu(1)
+		if c.State() != BombTargeting || c.item != 1 {
+			t.Errorf("状態 %v、手持ち %d, 期待 BombTargeting、1（爆弾）", c.State(), c.item)
 		}
 	})
 
