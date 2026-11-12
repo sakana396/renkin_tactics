@@ -85,7 +85,7 @@ func (c *Controller) ClickMenu(i int) {
 	}
 }
 
-// MenuLabels は、ボタンに出す文を返す（DES-UI-02）。Moved では行動、ItemMenu では手持ちのアイテム、Canto では「終える」（DES-IT06 12.3 節）、
+// MenuLabels は、ボタンに出す文を返す（DES-UI-02）。Moved では行動、ItemMenu では使えるアイテムだけ（DES-NG-05。usableItems）、Canto では「終える」（DES-IT06 12.3 節）、
 // WeaponMenu・StaffMenu では武器・杖（DES-UI-26）、ほかは空。
 func (c *Controller) MenuLabels() []string {
 	var out []string
