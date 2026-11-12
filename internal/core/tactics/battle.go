@@ -263,8 +263,8 @@ func validateUnit(u UnitSetup) error {
 		if it.Count < 1 {
 			return fmt.Errorf("items[%d]: 数 %d は 1 以上でなければなりません", k, it.Count)
 		}
-		if it.Item.Heal < 1 {
-			return fmt.Errorf("items[%d]: 回復量 %d は 1 以上でなければなりません", k, it.Item.Heal)
+		if err := validateItemKind(it.Item); err != nil {
+			return fmt.Errorf("items[%d]: %w", k, err)
 		}
 		// 減らして比べ、大きな個数でも足し算があふれないようにする。
 		if it.Count > maxHand-slots {
@@ -337,6 +337,31 @@ func validateUnit(u UnitSetup) error {
 		}
 	}
 	return validateGrowth(u)
+}
+
+// validateItemKind は、アイテムが回復薬（回復量 1 以上、爆弾の値は 0）か、
+// 爆弾（回復量 0、固定ダメージ・投げられる距離は 1 以上、半径は 0 以上）のどちらかであることを確かめる（DES-NG-02）。
+func validateItemKind(it Item) error {
+	if !it.Bomb {
+		if it.BlastDamage != 0 || it.BlastRadius != 0 || it.ThrowRange != 0 {
+			return fmt.Errorf("爆弾でないアイテムに爆弾の値があります")
+		}
+		if it.Heal < 1 {
+			return fmt.Errorf("回復量 %d は 1 以上でなければなりません", it.Heal)
+		}
+		return nil
+	}
+	switch {
+	case it.Heal != 0:
+		return fmt.Errorf("爆弾は回復量 %d を持てません", it.Heal)
+	case it.BlastDamage < 1:
+		return fmt.Errorf("爆発のダメージ %d は 1 以上でなければなりません", it.BlastDamage)
+	case it.BlastRadius < 0:
+		return fmt.Errorf("爆発の半径 %d は 0 以上でなければなりません", it.BlastRadius)
+	case it.ThrowRange < 1:
+		return fmt.Errorf("投げられる距離 %d は 1 以上でなければなりません", it.ThrowRange)
+	}
+	return nil
 }
 
 // validateSkill はスキル 1 つの数値を確かめる（DES-DAT-03 の規則 6 と同じ範囲）。

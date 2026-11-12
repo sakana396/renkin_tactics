@@ -280,7 +280,7 @@ func (c *Controller) MinimapClick(x, y int) bool {
 		return true
 	}
 	switch c.state {
-	case Idle, Selected, Targeting, HealTargeting:
+	case Idle, Selected, Targeting, HealTargeting, BombTargeting:
 		if p, ok := minimapLayout(c.battle.Width(), c.battle.Height()).CellAt(x, y); ok {
 			c.camera.CenterOn(p)
 		}

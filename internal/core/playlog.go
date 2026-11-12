@@ -121,6 +121,8 @@ type logCommand struct {
 	Target int    `json:"target"`
 	Item   int    `json:"item"`
 	Weapon *int   `json:"weapon"`
+	// Blast は爆弾の爆心 [x, y]（DES-NG-04）。爆弾以外では書かない（既存の記録の形を変えない）。
+	Blast *logPos `json:"blast,omitempty"`
 }
 
 // logRecord は記録 1 行（DES-LOG-01）。Type ごとに決まった項目だけを書く。
@@ -179,6 +181,7 @@ var eventNames = map[tactics.EventKind]string{
 	tactics.EventMove: "move", tactics.EventStrike: "strike", tactics.EventFall: "fall", tactics.EventWait: "wait",
 	tactics.EventWon: "won", tactics.EventLost: "lost", tactics.EventExp: "exp", tactics.EventLevelUp: "level_up",
 	tactics.EventTrigger: "trigger", tactics.EventGroupCharge: "group_charge",
+	tactics.EventBlast: "blast", tactics.EventBlastHit: "blast_hit",
 }
 
 // toLogEvent は出来事を記録の形にする（DES-LOG-01）。
@@ -204,6 +207,10 @@ func toLogEvent(e tactics.Event) logEvent {
 		hit := e.Hit
 		out.Unit, out.Target, out.Hit, out.Amount, out.HP = intPtr(e.Unit), intPtr(e.Target), &hit, intPtr(e.Amount), hpOf(e.Target)
 		out.Crit, out.Pavise = e.Crit, e.Pavise
+	case tactics.EventBlast:
+		out.Unit, out.To, out.Item = intPtr(e.Unit), toLogPos(e.To), e.Item
+	case tactics.EventBlastHit:
+		out.Unit, out.Target, out.Amount, out.Item, out.HP = intPtr(e.Unit), intPtr(e.Target), intPtr(e.Amount), e.Item, hpOf(e.Unit)
 	case tactics.EventFall, tactics.EventWait:
 		out.Unit = intPtr(e.Unit)
 	case tactics.EventExp:
@@ -314,6 +321,9 @@ func (l *PlayLog) Act(b *tactics.Battle, cmd tactics.Command) ([]tactics.Event, 
 	lc := &logCommand{Unit: cmd.Unit, To: logPos{cmd.To.X, cmd.To.Y}, Action: actionNames[cmd.Action], Target: cmd.Target, Item: cmd.Item}
 	if cmd.Weapon != nil {
 		lc.Weapon = intPtr(*cmd.Weapon)
+	}
+	if cmd.Blast != nil {
+		lc.Blast = toLogPos(*cmd.Blast)
 	}
 	r := logRecord{Type: "action", Elapsed: l.now(), Turn: intPtr(turn), Cmd: lc}
 	// 巻き戻しの戻り先になる履歴の ID。再移動は前の行動と同じ 1 手なので持たない（DES-BTL-10）。
@@ -555,6 +565,9 @@ func (r logRecord) command() (tactics.Command, error) {
 	}
 	if r.Cmd.Weapon != nil {
 		cmd.Weapon = intPtr(*r.Cmd.Weapon)
+	}
+	if r.Cmd.Blast != nil {
+		cmd.Blast = &tactics.Pos{X: r.Cmd.Blast[0], Y: r.Cmd.Blast[1]}
 	}
 	return cmd, nil
 }

@@ -498,7 +498,11 @@ func (s *SceneController) prepareDetail() []SceneText {
 	if !it.weapon {
 		d, _ := s.cfg.Catalog.Item(it.id)
 		add("選んだ品: "+d.Name, StyleTitle)
-		add(fmt.Sprintf("道具　HP を %d 回復", d.Heal), StylePlain)
+		if d.Bomb {
+			add("道具　"+itemEffect(core.ItemOf(d)), StylePlain)
+		} else {
+			add(fmt.Sprintf("道具　HP を %d 回復", d.Heal), StylePlain)
+		}
 	} else {
 		w := s.prepareWeapon(it.id)
 		add("選んだ品: "+w.Name, StyleTitle)
@@ -535,7 +539,7 @@ func (s *SceneController) prepareUnit(i int) tactics.Unit {
 	}
 	for _, ic := range m.Items {
 		it, _ := s.cfg.Catalog.Item(ic.Item)
-		u.Items = append(u.Items, tactics.ItemStack{Item: tactics.Item{ID: it.ID, Name: it.Name, Heal: it.Heal}, Count: ic.Count})
+		u.Items = append(u.Items, tactics.ItemStack{Item: core.ItemOf(it), Count: ic.Count})
 	}
 	effects := map[string]tactics.SkillEffect{"inspire": tactics.Inspire, "pavise": tactics.Pavise, "wrath": tactics.Wrath, "snipe": tactics.Snipe, "canto": tactics.Canto, "zoc": tactics.ZOC}
 	if sk, ok := s.cfg.Catalog.Skill(ch.Skill); ok {

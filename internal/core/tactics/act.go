@@ -5,6 +5,7 @@ package tactics
 // 共通の検証 0〜5 と、行動ごとの検証 6 を順に確かめ、最初に当てはまった誤りを返す。
 // 失敗したら状態を変えない（DES-ERR-01）。
 // Attack は移動してから Target を攻撃する（DES-BTL-06）。UseItem は移動してから Item 番目のアイテムを使う（DES-ITM-01）。
+// 爆弾の UseItem は Blast の爆心に爆発を起こす（DES-NG-02）。
 // Heal は移動してから、選んだ杖で Target の味方を回復する（DES-HEL-01）。
 // Attack と Heal は Weapon で武器の列の添字を選べる（nil なら今の装備）。装備を変えるのは成功した Attack だけ（DES-ITM-02）。
 // 行動のあと、戦闘が続いていて、生きている自軍が全員行動済みなら、敵軍の番と次の自軍の番の始めまでを進める（DES-BTL-02）。
@@ -61,7 +62,11 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 		u.Equipped = weapon
 		events = b.attack(events, cmd.Unit, cmd.Target, cmd.To == from)
 	case UseItem:
-		events = b.useItem(events, cmd.Unit, cmd.Item)
+		if b.units[cmd.Unit].Items[cmd.Item].Item.Bomb {
+			events = b.useBomb(events, cmd.Unit, cmd.Item, *cmd.Blast)
+		} else {
+			events = b.useItem(events, cmd.Unit, cmd.Item)
+		}
 	case Heal:
 		events = b.healWithStaff(events, cmd.Unit, cmd.Target, weapon)
 	}
@@ -91,6 +96,10 @@ func (b *Battle) validateCommand(cmd Command) error {
 	}
 	// 武器を選べるのは攻撃と回復だけ（DES-ITM-02）。
 	if cmd.Weapon != nil && cmd.Action != Attack && cmd.Action != Heal {
+		return ErrInvalidAction
+	}
+	// 爆心を渡せるのはアイテムの使用だけ（DES-NG-02）。
+	if cmd.Blast != nil && cmd.Action != UseItem {
 		return ErrInvalidAction
 	}
 	// 1. 戦闘が終わっていない。

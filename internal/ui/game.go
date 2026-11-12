@@ -336,6 +336,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	g.drawSelection(board)
 	g.drawTargetLabel(board)
+	g.drawBombLabels(board)
 	g.drawEvent(board)
 	g.drawMenu(board)
 	g.drawOver(board)
@@ -458,6 +459,13 @@ func (g *Game) drawOverlay(dst *ebiten.Image) {
 		}
 		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, clr, false)
 	}
+	// 爆弾の爆発の範囲は、投げられる範囲の上に濃い橙で重ねる（DES-NG-05）。
+	for p := range g.ctrl.BlastOverlay() {
+		if !g.drawCamera.Visible(p) {
+			continue
+		}
+		vector.DrawFilledRect(dst, float32(g.drawCamera.Screen(p).X), float32(g.drawCamera.Screen(p).Y), CellSize, CellSize, blastOverlay, false)
+	}
 }
 
 // drawZOC は、盤面 board の重騎士の ZOC の角印を陣営色の細い線で描く（DES-UI-29、DES-IT07 3.8 節）。
@@ -566,6 +574,17 @@ func (g *Game) drawSelection(dst *ebiten.Image) {
 		g.strokeCell(dst, units[unit].Pos, cursorColor)
 	case Moved, ItemMenu, Canto, WeaponMenu, StaffMenu:
 		g.strokeCell(dst, dest, cursorColor)
+	case BombTargeting:
+		g.strokeCell(dst, dest, cursorColor)
+		// 爆心は金の枠、巻き込まれる自軍（自分を含む）は赤い枠にする（DES-NG-05）。
+		if f, ok := c.BombForecast(); ok {
+			g.strokeCell(dst, f.Center, gold)
+			for _, l := range c.BombLabels() {
+				if l.Ally {
+					g.strokeCell(dst, l.Pos, badColor)
+				}
+			}
+		}
 	case Targeting, HealTargeting:
 		clr := cursorColor
 		if c.TargetView().Danger {
@@ -587,6 +606,13 @@ func (g *Game) strokeCell(dst *ebiten.Image, p tactics.Pos, clr color.Color) {
 		return
 	}
 	vector.StrokeRect(dst, float32(g.drawCamera.Screen(p).X)+1, float32(g.drawCamera.Screen(p).Y)+1, CellSize-2, CellSize-2, 2, clr, false)
+}
+
+// drawBombLabels は、爆発に巻き込まれるユニットの上に予想のダメージを、出来事の文字と同じ形（popup）で出す（DES-NG-05）。
+func (g *Game) drawBombLabels(dst *ebiten.Image) {
+	for _, l := range g.ctrl.BombLabels() {
+		g.popup(dst, l.Text, l.Pos, infoStyleColor(l.Style))
+	}
 }
 
 // drawTargetLabel は、選んだ相手のマスの上に「ダメージ×回数 命中率%」を、出来事の文字と同じ形（popup）で出す（DES-UI-07）。
@@ -626,6 +652,10 @@ func (g *Game) drawEvent(dst *ebiten.Image) {
 		g.popup(dst, StrikeText(e), e.Units[e.Target].Pos, clr)
 	case tactics.EventHeal:
 		g.popup(dst, "+"+strconv.Itoa(e.Amount), e.Units[e.Unit].Pos, healTextClr)
+	case tactics.EventBlast:
+		g.strokeCell(dst, e.To, gold)
+	case tactics.EventBlastHit:
+		g.popup(dst, strconv.Itoa(e.Amount)+" ダメージ", e.Units[e.Unit].Pos, strikeHit)
 	case tactics.EventMove, tactics.EventWait, tactics.EventReinforce, tactics.EventFall:
 		g.strokeCell(dst, e.Units[e.Unit].Pos, cursorColor)
 	}
