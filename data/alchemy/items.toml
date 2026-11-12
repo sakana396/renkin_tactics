@@ -1,0 +1,33 @@
+# アイテム（新作の試作。DES-NG-06、DES-NG-01）
+# 爆弾は blast_damage（固定ダメージ）・blast_radius（爆心からの距離）・throw_range（投げられる距離）の 3 つをそろえる。
+# 爆風は敵も味方も本人も区別しない。投げる人は移動後の位置から数えるので、
+# 半径 r の爆弾は、爆心から r + 1 以上離れれば自分は巻き込まれない（投げられる距離が r + 1 以上のものだけ、安全に使える）。
+
+[[items]]
+id = "potion"
+name = "回復薬"
+heal = 10
+
+# 小さな爆弾: 範囲小・ダメージ小。投げられる距離は長め。敵 1〜2 体向き
+[[items]]
+id = "bomb_small"
+name = "小さな爆弾"
+blast_damage = 8
+blast_radius = 1
+throw_range = 4
+
+# 大きな爆弾: 範囲大・ダメージ大。投げられる距離は短め。半径 2 なので、爆心から 3 離れて投げる
+[[items]]
+id = "bomb_large"
+name = "大きな爆弾"
+blast_damage = 12
+blast_radius = 2
+throw_range = 3
+
+# 投げ火: 爆心の 1 マスだけ。遠くへ投げられる。巻き込みの心配なく、ボスや射手を狙う
+[[items]]
+id = "bomb_far"
+name = "投げ火"
+blast_damage = 10
+blast_radius = 0
+throw_range = 5

@@ -1,0 +1,19 @@
+# スキル（新作の試作。DES-NG-06）。数値は data/base と同じ形
+
+[[skills]]
+id = "pavise"
+name = "大盾"
+effect = "pavise"
+chance = 30
+
+[[skills]]
+id = "snipe"
+name = "狙撃"
+effect = "snipe"
+hit = 20
+
+# 通せんぼ（重装兵の兵種のスキル。数値はない）
+[[skills]]
+id = "zoc"
+name = "通せんぼ"
+effect = "zoc"

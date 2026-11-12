@@ -1,0 +1,29 @@
+# 章（新作の試作 1〜3 章。DES-NG-06）
+# 書いた順が章の順。before・after は story.toml の物語の ID
+# 爆弾は章の報酬で在庫に入り、準備の画面で仲間に持たせる
+
+[[chapters]]
+id = "ch01"
+name = "水の止まった都"
+map = "ch01"
+before = "ch01_before"
+after = "ch01_after"
+reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }]
+
+[[chapters]]
+id = "ch02"
+name = "水路の向こう"
+map = "ch02"
+before = "ch02_before"
+after = "ch02_after"
+joins = ["haru"]
+reward = [{ item = "potion", count = 2 }, { item = "bomb_large", count = 2 }]
+
+# 試作の最後の章。勝つとクリア
+[[chapters]]
+id = "ch03"
+name = "浄水施設"
+map = "ch03"
+before = "ch03_before"
+after = "ch03_after"
+reward = [{ item = "bomb_far", count = 2 }, { item = "bomb_small", count = 2 }]

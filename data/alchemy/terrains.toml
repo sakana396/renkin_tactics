@@ -1,0 +1,57 @@
+# 地形（新作の試作。DES-NG-06）。cost が 0 の地形は通れない
+# 水路と崩れた壁は通れない。爆弾の爆心には置ける（DES-NG-02）ので、水路越しに投げられる
+
+[[terrains]]
+id = "plain"
+name = "石畳"
+symbol = "."
+cost = 1
+avoid = 0
+def = 0
+heal_percent = 0
+
+[[terrains]]
+id = "rubble"
+name = "瓦礫"
+symbol = "R"
+cost = 2
+avoid = 10
+def = 1
+heal_percent = 0
+
+[[terrains]]
+id = "bush"
+name = "植え込み"
+symbol = "F"
+cost = 2
+avoid = 20
+def = 1
+heal_percent = 0
+
+[[terrains]]
+id = "wall"
+name = "崩れた壁"
+symbol = "#"
+cost = 0
+avoid = 0
+def = 0
+heal_percent = 0
+
+[[terrains]]
+id = "canal"
+name = "水路"
+symbol = "~"
+cost = 0
+avoid = 0
+def = 0
+heal_percent = 0
+
+# 浄水施設（3 章）。施設の床。立つと少し回復する
+[[terrains]]
+id = "facility"
+name = "浄水施設"
+symbol = "T"
+cost = 1
+avoid = 20
+def = 2
+heal_percent = 20

@@ -1,0 +1,57 @@
+# 自軍のキャラ（新作の試作。DES-NG-06）
+# 名前・性別・性格は開発者が決めるまでの仮のもの（企画たたき台 Q-5）。物語では性別を示す言い方をしない
+# 手持ちは、回復薬を先頭に置く（自動の試遊が先頭の道具を薬として使うため。爆弾は後ろ）
+# 手持ちの枠は、武器の本数と道具の個数の合計で 5 まで
+
+# 主人公（錬金術師。薬師の家の生まれ）。後衛。初めの手持ちに爆弾を持つ
+[[characters]]
+id = "aoi"
+name = "アオイ"
+class = "alchemist"
+bonus = { hp = 0, str = 0, skl = 0, spd = 0, def = 0, mov = 0 }
+growth = { hp = 50, str = 10, skl = 45, spd = 45, def = 15, lck = 35, mag = 50, res = 35 }
+weapon = "fire"
+items = [{ item = "potion", count = 1 }, { item = "bomb_small", count = 2 }, { item = "bomb_large", count = 1 }]
+lord = true
+
+# 護衛の兵（国から付けられる）。前衛で主人公を守る
+[[characters]]
+id = "dain"
+name = "ダイン"
+class = "heavy"
+bonus = { hp = 2, str = 1, skl = 0, spd = 0, def = 1, mov = 0 }
+growth = { hp = 85, str = 40, skl = 25, spd = 15, def = 65, lck = 20, mag = 0, res = 15 }
+weapon = "iron_lance"
+items = [{ item = "potion", count = 1 }]
+skill = "pavise"
+
+# 護衛の部隊の槍兵。前衛
+[[characters]]
+id = "tori"
+name = "トーリ"
+class = "spearman"
+bonus = { hp = 2, str = 1, skl = 1, spd = 0, def = 1, mov = 0 }
+growth = { hp = 70, str = 50, skl = 45, spd = 40, def = 30, lck = 25, mag = 0, res = 15 }
+weapon = "iron_lance"
+items = [{ item = "potion", count = 1 }]
+
+# 護衛の部隊の弓兵。遠距離
+[[characters]]
+id = "nemu"
+name = "ネム"
+class = "bowman"
+bonus = { hp = 3, str = 1, skl = 2, spd = 1, def = 0, mov = 0 }
+growth = { hp = 55, str = 40, skl = 60, spd = 45, def = 20, lck = 35, mag = 5, res = 15 }
+weapon = "iron_bow"
+items = [{ item = "potion", count = 1 }]
+skill = "snipe"
+
+# 錬金術の仲間（調合の見習い）。2 章の始めに加わる（chapters.toml の joins）。後衛寄り
+[[characters]]
+id = "haru"
+name = "ハル"
+class = "assistant"
+bonus = { hp = 1, str = 0, skl = 0, spd = 0, def = 0, mov = 0 }
+growth = { hp = 50, str = 5, skl = 40, spd = 45, def = 20, lck = 40, mag = 50, res = 45 }
+weapons = ["fire", "heal_staff"]
+items = [{ item = "potion", count = 1 }, { item = "bomb_small", count = 1 }]
