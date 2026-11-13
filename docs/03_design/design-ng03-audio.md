@@ -27,7 +27,7 @@
 | `internal/ui/game.go`（最小の変更） | `Game` に `sound` 欄を足し、`Run` で作り、`Update` を「`update` の後に `syncSound`」に包む |
 | `tools/synth` | 仮の音の合成（標準の Go だけ）。`go run ./tools/synth` が `data/alchemy/media/audio/` に書く |
 | `data/alchemy/media/audio/{se,bgm}/*.wav` | 合成した WAV（合計約 4.0 MB。5 MB 以下をテストで確かめる） |
-| `data/alchemy/media/ASSETS-audio.md` | 音の台帳（8 章） |
+| `data/alchemy/media/ASSETS.md` | 音の台帳（8 章） |
 
 依存の向き: `audio` は `ui` の下で、`core`・`tactics` を知らない。`ui` が出来事を音の名前に読み替える。
 
@@ -169,18 +169,15 @@ ALSA ライブラリ自身も、デバイスがないと `ALSA lib ...` の行�
 
 ## 6. 台帳と検査
 
-`data/alchemy/media/ASSETS-audio.md` に、音ごとに 1 行を書く。列は画像の台帳 `ASSETS.md` と同じ 7 列（ファイル・作り方・使ったツールと版・生成した日・指示または出典・利用条件・確かめた日・確かめた人）。作り方は「自作（合成。tools/synth、乱数の種 N）」、利用条件は「自作。CC0 1.0 として扱う（既存の自作の画像と同じ条件。ライセンスの原本はない）」。行は `go run ./tools/synth -ledger` でも出せる。
-画像の台帳の検査（`data.CheckMediaLedger`）は、作り方が「自作」で始まることを求める。そのため「合成」で始めず、「自作（合成。…）」にした。
+`data/alchemy/media/ASSETS.md` に、音ごとに 1 行を書く。列は画像の台帳 `ASSETS.md` と同じ 7 列（「ファイル」「作り方」「使ったツールと版・生成した日」「指示（プロンプト）または出典の URL」「利用条件」「確かめた日」「確かめた人」）。作り方は「自作（合成。tools/synth、乱数の種 N）」、利用条件は「自作。CC0 1.0 として扱う（既存の自作の画像と同じ条件。ライセンスの原本はない）」。行は `go run ./tools/synth -ledger` でも出せる。
+画像の台帳の検査（`data.CheckMediaLedger`）は、作り方が「AI 生成」「自作」「既存素材」のどれかで始まることを求める。そのため「合成」で始めず、「自作（合成。…）」にした。
 
-あとで台帳を 1 つにまとめるときは、`ASSETS-audio.md` の表の行を `ASSETS.md` の表へ移し、`ASSETS-audio.md` と `internal/ui/audio/ledger_ng03_test.go` を消す。
-**まとめるまでは、`data.CheckMediaLedger`（`ASSETS.md` だけを読む）は、audio の WAV が台帳にないと報告する**ので、画像側の検査の呼び出しを有効にする前にまとめる必要がある。
-
-audio の下のすべての WAV が行を持つこと、行のファイルが実在すること、7 列が埋まっていること、WAV の合計が 5 MB 以下であることを、`audio` のテストで確かめる（TC-DES-NG-09-17・18）。
+台帳は、画像と同じ `ASSETS.md` の 1 つにまとめた（統合は親エージェントが行った）。列の形式・欄が空でないこと・日付などの検査は `data.CheckMediaLedger` に任せる。`internal/ui/audio/ledger_ng03_test.go` は、台帳の `audio/` で始まる行だけを見て、audio の下のすべての WAV が行を持つこと、`audio/` の行のファイルが実在することを確かめる。作り方が自作であること・CC0 であることは求めない（本物の音に差し替えたとき、AI 生成や既存素材の行でも落ちないように）。画像（`art/`）の行を足しても audio の検査は落ちない。WAV の合計が 5 MB 以下であることも確かめる（TC-DES-NG-09-17・18）。
 
 ## 7. 差し替えの手順（本物の音を入れる）
 
 1. 本物の WAV を、**同じ名前**で `data/alchemy/media/audio/se/<名前>.wav`・`bgm/<名前>.wav` に置く（上書きする）。形式は、16 bit PCM の WAV なら、モノでもステレオでも標本化周波数が違っても読める（読み込み時に 22050 Hz のステレオへ直す）。BGM は、ループ点を整えた長さで作る
-2. `ASSETS-audio.md`（まとめたあとは `ASSETS.md`）の、その行を書き直す。作り方・使ったツールと版・指示または出典・利用条件・確かめた日・確かめた人を、実際のものにする
+2. `ASSETS.md` の、その行を書き直す。作り方・使ったツールと版・指示または出典・利用条件・確かめた日・確かめた人を、実際のものにする
 3. `tools/synth` を実行すると、仮の音で上書きされてしまう。差し替えた音は、`tools/synth` の `seAssets`・`bgmAssets` から外す
 4. 音を足すとき（新しい名前）は、`internal/ui/audio/names.go` の定数と `AllSE`・`AllBGM`、`internal/ui/sound_ng03.go` の対応表、この文書の表、台帳を足す
 
