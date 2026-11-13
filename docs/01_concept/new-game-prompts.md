@@ -50,7 +50,8 @@ as a full-body chibi following the first image's proportions.
 ### ダイン（護衛の重装兵） — ユニットの絵（`units/dain.png`）
 
 ```
-Use the attached image as a style reference: match its art style, line weight, shading, color treatment and chibi proportions, but draw a different character as described below.
+Use the first attached image as a style reference: match its art style, line weight, shading, color treatment and chibi proportions.
+The second attached image shows the same character in a portrait: keep exactly the same face, hair, outfit, colors and accessories, and redraw the character as a full-body chibi following the first image's proportions.
 2D hand-drawn anime-style illustration, soft cel shading with subtle texture, clean thin-to-medium outlines, slightly desaturated palette with amber/copper and aqua-teal as the only vivid accents, fantasy ancient stone city setting, no text, no letters, no watermark.
 Full-body chibi character, 2.5 heads tall, front three-quarter view, standing pose, centered, entire body visible with margin on all sides, plain flat solid bright-green background (for cutting out), square 1:1.
 a broad-shouldered, sturdy man in his late 30s with a calm, dependable expression, short cropped hair and a light beard, wearing heavy iron-gray plate armor with an indigo cloth sash, copper rivets and buckles, holding a large tower shield and a spear.
@@ -68,7 +69,8 @@ a broad-shouldered, sturdy man in his late 30s with a calm, dependable expressio
 ### トーリ（槍兵） — ユニットの絵（`units/tori.png`）
 
 ```
-Use the attached image as a style reference: match its art style, line weight, shading, color treatment and chibi proportions, but draw a different character as described below.
+Use the first attached image as a style reference: match its art style, line weight, shading, color treatment and chibi proportions.
+The second attached image shows the same character in a portrait: keep exactly the same face, hair, outfit, colors and accessories, and redraw the character as a full-body chibi following the first image's proportions.
 2D hand-drawn anime-style illustration, soft cel shading with subtle texture, clean thin-to-medium outlines, slightly desaturated palette with amber/copper and aqua-teal as the only vivid accents, fantasy ancient stone city setting, no text, no letters, no watermark.
 Full-body chibi character, 2.5 heads tall, front three-quarter view, standing pose, centered, entire body visible with margin on all sides, plain flat solid bright-green background (for cutting out), square 1:1.
 a lean, tall young man around 19 with short messy hair and an energetic expression, wearing brown leather armor with a muted ochre-yellow scarf, copper buckles, holding a long spear taller than himself.
@@ -86,7 +88,8 @@ a lean, tall young man around 19 with short messy hair and an energetic expressi
 ### ネム（弓兵） — ユニットの絵（`units/nemu.png`）
 
 ```
-Use the attached image as a style reference: match its art style, line weight, shading, color treatment and chibi proportions, but draw a different character as described below.
+Use the first attached image as a style reference: match its art style, line weight, shading, color treatment and chibi proportions.
+The second attached image shows the same character in a portrait: keep exactly the same face, hair, outfit, colors and accessories, and redraw the character as a full-body chibi following the first image's proportions.
 2D hand-drawn anime-style illustration, soft cel shading with subtle texture, clean thin-to-medium outlines, slightly desaturated palette with amber/copper and aqua-teal as the only vivid accents, fantasy ancient stone city setting, no text, no letters, no watermark.
 Full-body chibi character, 2.5 heads tall, front three-quarter view, standing pose, centered, entire body visible with margin on all sides, plain flat solid bright-green background (for cutting out), square 1:1.
 a tall, athletic woman in her mid-20s with a long braid over her shoulder and a calm, focused look, wearing a wide-brimmed hat and a sand-colored cloak with an aqua-teal cord and a copper clasp, carrying a longbow nearly as tall as her and a quiver.
@@ -104,7 +107,8 @@ a tall, athletic woman in her mid-20s with a long braid over her shoulder and a 
 ### ハル（調合の見習い・杖で回復） — ユニットの絵（`units/haru.png`）
 
 ```
-Use the attached image as a style reference: match its art style, line weight, shading, color treatment and chibi proportions, but draw a different character as described below.
+Use the first attached image as a style reference: match its art style, line weight, shading, color treatment and chibi proportions.
+The second attached image shows the same character in a portrait: keep exactly the same face, hair, outfit, colors and accessories, and redraw the character as a full-body chibi following the first image's proportions.
 2D hand-drawn anime-style illustration, soft cel shading with subtle texture, clean thin-to-medium outlines, slightly desaturated palette with amber/copper and aqua-teal as the only vivid accents, fantasy ancient stone city setting, no text, no letters, no watermark.
 Full-body chibi character, 2.5 heads tall, front three-quarter view, standing pose, centered, entire body visible with margin on all sides, plain flat solid bright-green background (for cutting out), square 1:1.
 a small teenage boy around 16 with untidy messy hair and a shy, cheerful expression, wearing an oversized near-white cream robe with very long sleeves and pale aqua trim, a copper ring on his belt, holding a short healing staff topped with an aqua-teal crystal and a small glass vial.
