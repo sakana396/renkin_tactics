@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"time"
 
@@ -32,6 +33,8 @@ type Config struct {
 	Now func() time.Time
 	// Stderr は、行動の記録を作れない・書けないときの詳しい誤りの出し先（DES-LOG-02）。nil なら os.Stderr。
 	Stderr io.Writer
+	// Media は画像と音の置き場（media の下のパスで開く。DES-NG-07）。nil なら既存の素材だけで動く。
+	Media fs.FS
 }
 
 // Scene はキャンペーンの場面（DES-UI-09）。
