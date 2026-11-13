@@ -48,13 +48,20 @@ func artKeyOf(u tactics.Unit) ArtKey {
 type artIndex struct {
 	charByName  map[string]string
 	classByName map[string]string
+	// terrainByName は地形の表示名から ID を引く（DES-NG-10 フェーズ 2）。
+	terrainByName map[string]string
 }
 
 // newArtIndex は目録から表を作る。cat が nil なら空の表を返す。
 func newArtIndex(cat *defs.Catalog) artIndex {
-	idx := artIndex{charByName: map[string]string{}, classByName: map[string]string{}}
+	idx := artIndex{charByName: map[string]string{}, classByName: map[string]string{}, terrainByName: map[string]string{}}
 	if cat == nil {
 		return idx
+	}
+	for _, t := range cat.Terrains() {
+		if _, dup := idx.terrainByName[t.Name]; !dup {
+			idx.terrainByName[t.Name] = t.ID
+		}
 	}
 	for _, c := range cat.Characters() {
 		if _, dup := idx.charByName[c.Name]; !dup {
@@ -120,6 +127,8 @@ type ArtStore struct {
 	stderr  io.Writer
 	idx     artIndex
 	entries map[string]*artEntry
+	// terrains は、地形の ID ごとに覚えた絵の組（DES-NG-10 フェーズ 2）。
+	terrains map[string]*terrainSet
 }
 
 // NewArtStore は media（nil なら画像なし）と目録から作る。stderr が nil なら os.Stderr（DES-NG-08）。
@@ -127,7 +136,7 @@ func NewArtStore(media fs.FS, stderr io.Writer, cat *defs.Catalog) *ArtStore {
 	if stderr == nil {
 		stderr = os.Stderr
 	}
-	return &ArtStore{fsys: media, stderr: stderr, idx: newArtIndex(cat), entries: map[string]*artEntry{}}
+	return &ArtStore{fsys: media, stderr: stderr, idx: newArtIndex(cat), entries: map[string]*artEntry{}, terrains: map[string]*terrainSet{}}
 }
 
 // entry は道筋の画像を読んで覚える。ない・壊れているときは img が nil の項目を覚える。

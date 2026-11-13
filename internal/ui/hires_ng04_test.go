@@ -379,7 +379,7 @@ func TestHiResBoard(t *testing.T) {
 		if !bar.In(cell) || !equip.In(cell) || bar.Overlaps(equip) {
 			t.Fatal(bar, equip)
 		}
-		// フェーズ 2 から、印・棒は CellSize/32 に比例する（TC-DES-NG-10-24）。
+		// フェーズ 2 から、印・棒は CellSize/32 に比例する（TC-DES-NG-10-28）。
 		if equip != image.Rect(pt.X+33, pt.Y+33, pt.X+48, pt.Y+48) {
 			t.Fatal(equip)
 		}
