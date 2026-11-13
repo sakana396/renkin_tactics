@@ -114,7 +114,9 @@ ALSA ライブラリ自身も、デバイスがないと `ALSA lib ...` の行�
 | `Battle` | `battle`（`EventWon`・`EventLost` で止まる） |
 | `Result`・`GameOver` | なし |
 
-同じ BGM の場面どうしの移動（`Title` → `RuleSelect`、`Prepare` → `Deploy`）では途切れない。場面が変わったときだけ切り替えるので、戦闘中に勝敗で止めた BGM が、同じ場面のうちに勝手に戻ることはない。
+同じ BGM の場面どうしの移動（`Title` → `RuleSelect`、`Prepare` → `Deploy`）では途切れない。場面が変わったときに切り替える。
+
+勝敗で止めた BGM は、同じ `Battle` の場面のまま巻き戻した（勝敗が決まった状態、つまり戦闘の状態が `Over` または結果が `Ongoing` でない状態から外れた）ときに、`battle` を選び直す。巻き戻さない限り、勝敗で止めた BGM が同じ場面のうちに勝手に戻ることはない。敗北（`GameOver`）から巻き戻して `Battle` に戻る場合は、場面が変わるので場面の切り替えで鳴る。実装は `syncSound` が前のフレームの「勝敗が決まっていたか」（`soundGlue.over`）を覚えて比べる。
 
 ### 4.4 操作 → 効果音
 

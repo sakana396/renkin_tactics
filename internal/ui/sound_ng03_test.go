@@ -228,6 +228,54 @@ func TestSyncSound(t *testing.T) {
 			t.Errorf("場面 %v の BGM = %v", s.Scene(), got)
 		}
 	})
+	t.Run("TC-DES-NG-09-27 勝敗で止めた BGM は、同じ Battle の場面のまま巻き戻すと battle が再び鳴る", func(t *testing.T) {
+		s := fixtureScenes(&memoryStore{}, false, false)
+		startScenes(s)
+		rig := newSoundRig(t, s)
+		winScene(t, s)
+		c := s.BattleController()
+		snd := rig.g.sound.sound
+		// 勝ちの出来事を再生して、勝敗で BGM を止める。
+		for n := 0; c.State() == Playing && n < 10000; n++ {
+			rig.g.syncSound(soundInput{})
+			c.Tick()
+		}
+		rig.g.syncSound(soundInput{})
+		if s.Scene() != Battle || c.State() != Over {
+			t.Fatalf("場面 %v、状態 %v（Battle の Over のはず）", s.Scene(), c.State())
+		}
+		if snd.CurrentBGM() != audio.BGMNone {
+			t.Fatalf("勝敗のあとの BGM = %q（止まっているはず）", snd.CurrentBGM())
+		}
+		for i := 0; i < 5; i++ { // Over のあいだは戻らない
+			rig.g.syncSound(soundInput{})
+		}
+		if snd.CurrentBGM() != audio.BGMNone {
+			t.Fatalf("Over のあいだに BGM が戻った: %q", snd.CurrentBGM())
+		}
+		before := len(rig.rec.bgms)
+		// 実際の巻き戻しの経路（一覧を開き、確認して確定する）。
+		c.OpenRewind()
+		c.RewindEnter()
+		c.RewindEnter()
+		if s.Scene() != Battle || c.State() == Over || c.Battle().Result != tactics.Ongoing {
+			t.Fatalf("巻き戻せていない（場面 %v、状態 %v）", s.Scene(), c.State())
+		}
+		rig.g.syncSound(soundInput{})
+		if snd.CurrentBGM() != audio.BGMBattle {
+			t.Fatalf("巻き戻したあとの BGM = %q, 期待 %q", snd.CurrentBGM(), audio.BGMBattle)
+		}
+		got := rig.bgmNames()
+		if len(got) != before+1 || got[len(got)-1] != audio.BGMBattle {
+			t.Errorf("鳴った BGM = %v（巻き戻しで battle を 1 回だけ選び直すはず）", got)
+		}
+		for i := 0; i < 5; i++ { // 戻ったあとは再び選び直さない
+			rig.g.syncSound(soundInput{})
+		}
+		if len(rig.rec.bgms) != before+1 {
+			t.Errorf("BGM を余分に選び直した: %v", rig.bgmNames())
+		}
+	})
 	t.Run("TC-DES-NG-09-23 決定・取消し・選択の入力に効果音を鳴らす（取消しが先）", func(t *testing.T) {
 		tests := []struct {
 			in   soundInput
@@ -247,8 +295,8 @@ func TestSyncSound(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-09-24 ミュートのキーは M（全体図）ではなく N。押すとミュートが切り替わる", func(t *testing.T) {
-		if MuteKey == ebiten.KeyM {
-			t.Fatal("M は全体図（DES-UI-30）のキー")
+		if MuteKey != ebiten.KeyN {
+			t.Fatalf("ミュートのキー = %v, 期待 N（M は全体図 DES-UI-30 のキー）", MuteKey)
 		}
 		rig := newSoundRig(t, newScenes(t, &memoryStore{}))
 		rig.g.syncSound(soundInput{Mute: true})
