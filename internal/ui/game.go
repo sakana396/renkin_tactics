@@ -447,11 +447,27 @@ func (g *Game) drawBoardTerrain(dst *ebiten.Image, b terrainSource) {
 		for x := g.drawCamera.X; x < min(b.Width(), g.drawCamera.X+16); x++ {
 			pt := g.drawCamera.Screen(tactics.Pos{X: x, Y: y})
 			px, py := pt.X, pt.Y
-			g.drawTile(dst, assets.Grass, px, py, 1)
-			if t, ok := terrainTile(b.TerrainAt(tactics.Pos{X: x, Y: y})); ok {
-				g.drawTile(dst, t, px, py, 1)
-			}
+			g.drawTerrainCell(dst, b.TerrainAt(tactics.Pos{X: x, Y: y}), x, y, px, py)
 		}
+	}
+}
+
+// hiRes は、高解像度の表示（新作）かを返す（DES-NG-10）。
+func (g *Game) hiRes() bool { return g != nil && g.scenes != nil && g.scenes.cfg.HiRes }
+
+// drawTerrainCell は、マス (x, y)（画面の左上 (px, py)）の地形 t を描く（DES-UI-05、DES-NG-10 フェーズ 2）。
+// 高解像度の表示では、差し替えの PNG か仮の絵があればそれだけで 1 マスを埋める。
+// なければ（既存の作品・知らない地形）、草の下地に地形のタイルを重ねる今の描き方。
+func (g *Game) drawTerrainCell(dst *ebiten.Image, t tactics.Terrain, x, y, px, py int) {
+	if g.hiRes() {
+		if eb := g.artStore().TerrainImage(t.Name, x, y); eb != nil {
+			drawArtIn(dst, eb, image.Rect(px, py, px+CellSize, py+CellSize), 1)
+			return
+		}
+	}
+	g.drawTile(dst, assets.Grass, px, py, 1)
+	if tile, ok := terrainTile(t); ok {
+		g.drawTile(dst, tile, px, py, 1)
 	}
 }
 
@@ -1052,10 +1068,7 @@ func (g *Game) drawDeploy(dst *ebiten.Image, d DeployView) {
 				continue
 			}
 			pt := g.drawCamera.Screen(p)
-			g.drawTile(dst, assets.Grass, pt.X, pt.Y, 1)
-			if tile, ok := terrainTile(t); ok {
-				g.drawTile(dst, tile, pt.X, pt.Y, 1)
-			}
+			g.drawTerrainCell(dst, t, x, y, pt.X, pt.Y)
 		}
 	}
 	for _, p := range d.Slots {
