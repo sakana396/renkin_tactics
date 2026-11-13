@@ -57,6 +57,35 @@ func TestCheckMediaLedgerNG02(t *testing.T) {
 		{"TC-DES-NG-08-10 media の外を指す道筋・art と audio 以外・列が足りない行は落ちる",
 			mediaFS(ledgerHead+ledgerRowOf("../x.png")+ledgerRowOf("other/y.png")+"| `art/z.png` | 自作 |\n", "other/y.png", "art/z.png"),
 			[]string{"道筋 \"../x.png\" が正しくありません", "art か audio の下ではありません", "art/z.png）: 「使ったツールと版・生成した日」が空"}},
+		{"TC-DES-NG-08-12 HTML コメント（複数行も）の中の行は読まない。コメントの外の行は読む",
+			mediaFS(ledgerHead+"<!-- "+ledgerRowOf("art/units/ghost.png")+"-->\n<!--\n"+ledgerRowOf("art/units/ghost2.png")+"-->"+ledgerRowOf("art/units/aoi.png"), "art/units/aoi.png"), nil},
+		{"TC-DES-NG-08-12 コメントが閉じていなければ、そのあとの行は読まない（実在しない行を無視する）",
+			mediaFS(ledgerHead+ledgerRowOf("art/units/aoi.png")+"<!--\n"+ledgerRowOf("art/units/ghost.png"), "art/units/aoi.png"), nil},
+		{"TC-DES-NG-08-13 art の名前の規則に合うファイルは問題なし（units・units/enemy_・portraits・story・title）",
+			mediaFS(ledgerHead+ledgerRowOf("art/units/aoi.png")+ledgerRowOf("art/units/enemy_heavy_2.png")+ledgerRowOf("art/portraits/aoi.png")+
+				ledgerRowOf("art/story/ch01_before.png")+ledgerRowOf("art/title.png"),
+				"art/units/aoi.png", "art/units/enemy_heavy_2.png", "art/portraits/aoi.png", "art/story/ch01_before.png", "art/title.png"), nil},
+		{"TC-DES-NG-08-13 規則に合わない art のファイル（大文字・拡張子・規則外のディレクトリ・深い階層）は、台帳に載せていても誤り",
+			mediaFS(ledgerHead+ledgerRowOf("art/units/Aoi.png")+ledgerRowOf("art/units/aoi.jpg")+ledgerRowOf("art/misc/x.png")+
+				ledgerRowOf("art/units/sub/a.png")+ledgerRowOf("art/Title.png")+ledgerRowOf("art/portraits/aoi-1.png"),
+				"art/units/Aoi.png", "art/units/aoi.jpg", "art/misc/x.png", "art/units/sub/a.png", "art/Title.png", "art/portraits/aoi-1.png"),
+			[]string{"art/units/Aoi.png は art の名前の規則", "art/units/aoi.jpg は art の名前の規則", "art/misc/x.png は art の名前の規則",
+				"art/units/sub/a.png は art の名前の規則", "art/Title.png は art の名前の規則", "art/portraits/aoi-1.png は art の名前の規則"}},
+		{"TC-DES-NG-08-13 audio の名前は規則を問わない",
+			mediaFS(ledgerHead+ledgerRowOf("audio/se/Any Name.WAV"), "audio/se/Any Name.WAV"), nil},
+		{"TC-DES-NG-08-14 実在しない日付（2026-02-30・2026-13-01）は落ちる。実在する日付は通る",
+			mediaFS(ledgerHead+
+				"| `art/a.png` | 自作 | ツール | 指示 | 条件 | 2026-02-30 | 人 |\n"+
+				"| `art/b.png` | 自作 | ツール | 指示 | 条件 | 2026-13-01 | 人 |\n"+
+				"| `art/c.png` | 自作 | ツール | 指示 | 条件 | 2028-02-29 | 人 |\n", "art/a.png", "art/b.png", "art/c.png"),
+			[]string{"art/a.png）: 「確かめた日」が実在しない日付", "art/b.png）: 「確かめた日」が実在しない日付"}},
+		{"TC-DES-NG-08-14 うるう日 2028-02-29 は実在するので通る",
+			mediaFS(ledgerHead+"| `art/units/c.png` | 自作 | ツール | 指示 | 条件 | 2028-02-29 | 人 |\n", "art/units/c.png"), nil},
+		{"TC-DES-NG-08-15 作り方が AI 生成・自作・既存素材のどれかで始まらない行は落ちる（始まれば通る）",
+			mediaFS(ledgerHead+ledgerRowOf("art/units/a.png")+
+				"| `art/units/b.png` | 既存素材（Kenney） | ツール | URL | CC0 | 2026-11-13 | 人 |\n"+
+				"| `art/units/c.png` | 手描き | ツール | 指示 | 条件 | 2026-11-13 | 人 |\n", "art/units/a.png", "art/units/b.png", "art/units/c.png"),
+			[]string{"art/units/c.png）: 「作り方」は"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
