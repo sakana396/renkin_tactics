@@ -2,4 +2,4 @@
 # party は初めの名簿。lord = true のキャラ（主人公）がちょうど 1 人いること
 # 名前・性別・性格は開発者が決めるまでの仮のもの（企画たたき台 Q-5）
 party = ["aoi", "dain", "tori", "nemu"]
-stock = [{ item = "potion", count = 1 }]
+stock = [{ item = "potion", count = 1 }, { item = "bomb_small", count = 1 }]
