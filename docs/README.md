@@ -29,7 +29,7 @@
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
 | 試験 | テスト仕様書（新作の試作 NG01: 錬金の爆弾） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.2（未承認）。自動は実装済み、画面の見た目は手動・未実施 |
 | 試験 | テスト仕様書（新作の試作データ NG-06。TST-NG01 の 7 章） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.2（未承認）。データ・自動の試遊・`-game` は自動で実装済み。人の試遊（TC-DES-NG-06-10）は未実施 |
-| 試験 | テスト仕様書（新作の試作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.1（未承認）。自動は実装済み、実画面の確認（TC-DES-NG-08-94）は手動・未実施 |
+| 試験 | テスト仕様書（新作の試作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.3（未承認）。自動は実装済み（95〜99 は名簿の行・加入の場面の絵）、実画面の確認（TC-DES-NG-08-94）は手動・未実施 |
 | 試験 | テスト仕様書（新作の試作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.1（未承認）。自動は実装済み、耳での確認（TC-DES-NG-09-26）は手動・未実施 |
 | 試験 | テスト仕様書（新作の試作 NG04: 高解像度の表示） | [04_test/test-spec-ng04.md](04_test/test-spec-ng04.md) | v0.3（未承認）。自動は実装済み（フェーズ 2: TC-DES-NG-10-18〜28、REV-109 対応: TC-DES-NG-10-29〜34 を追加）。窓での実操作は未確認 |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
@@ -55,7 +55,7 @@
 | 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
 | 設計 | 設計メモ（新作の試作 NG01: 錬金の爆弾） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。企画たたき台 2.7 節の最小の試作。既存の設計は変えない |
 | 設計 | 設計メモ（新作の試作データ NG-06。DES-NG01 の 6 章） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。`data/alchemy`（1〜3 章）と `-game`。名前・文面は仮で、既存作品との重なりは未確認 |
-| 設計 | 設計メモ（新作の試作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.2（未承認）。DES-NG-08。置き場と名前の規則・画像の大きさの上限・台帳と検査・試し用の絵の道具。`game.go` へ結び付け済み |
+| 設計 | 設計メモ（新作の試作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.3（未承認）。DES-NG-08。置き場と名前の規則・画像の大きさの上限・台帳と検査・試し用の絵の道具・準備の名簿の行と加入の場面の絵。`game.go` へ結び付け済み |
 | 設計 | 設計メモ（新作の試作 NG03: 音） | [03_design/design-ng03-audio.md](03_design/design-ng03-audio.md) | v0.2（未承認）。DES-NG-09。効果音・BGM の再生、仮の音の合成（`tools/synth`）、台帳。ミュートのキーは M が全体図と重なるため N（設計への提案）。耳での確認は未実施 |
 | 設計 | 設計メモ（新作の試作 NG04: 高解像度の表示） | [03_design/design-ng04-display.md](03_design/design-ng04-display.md) | v0.3（未承認）。DES-NG-10。`Config.HiRes` で 1 マス 48 px に切り替え（フェーズ 1）、コードで描いた仮の地形・AI 生成の地形の差し替え口・印と棒の比例（フェーズ 2）、REV-109 への対応（9 章: 敗北の中央寄せ・窓の大きさ） |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
