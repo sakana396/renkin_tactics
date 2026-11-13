@@ -45,6 +45,8 @@ type Game struct {
 	shotCursor *image.Point
 	// drag は中ボタンで盤面をつかむ操作の途中の値（DES-UI-30）。
 	drag boardDrag
+	// sound は効果音と BGM の再生（DES-NG-09）。zero 値なら無音。
+	sound soundGlue
 }
 
 // Run はタイトルからキャンペーンを始める（DES-UI-09、DES-CMD-02）。
@@ -54,7 +56,7 @@ func Run(cfg Config) error {
 	if err != nil {
 		return err
 	}
-	g := &Game{scenes: scenes, sheets: map[assets.Sheet]*ebiten.Image{}}
+	g := &Game{scenes: scenes, sheets: map[assets.Sheet]*ebiten.Image{}, sound: newSoundGlue(cfg)}
 	for s, img := range imgs {
 		g.sheets[s] = ebiten.NewImageFromImage(img)
 	}
@@ -67,8 +69,17 @@ func Run(cfg Config) error {
 	return nil
 }
 
-// Update は場面ごとの入力を読み替える。戦闘中のキー操作と早送りは Controller へ渡す（DES-UI-09、17）。
+// Update は 1 フレームの処理のあとに、音を同期する（DES-NG-09）。
 func (g *Game) Update() error {
+	err := g.update()
+	if g.sound.sound != nil {
+		g.syncSound(readSoundInput(g.scenes.Scene()))
+	}
+	return err
+}
+
+// update は場面ごとの入力を読み替える。戦闘中のキー操作と早送りは Controller へ渡す（DES-UI-09、17）。
+func (g *Game) update() error {
 	s := g.scenes
 	left := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 	cancel := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) || inpututil.IsKeyJustPressed(ebiten.KeyEscape)
