@@ -115,7 +115,9 @@ func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.
 		media = data.AlchemyMedia()
 	}
 	if err := start(ui.Config{Media: media, Catalog: cat, Store: savefile.Store{Dir: dir}, NextSeed: nextSeed, StartChapter: *chapter,
-		PlayLog: logs.Create, Now: now, Stderr: stderr}); err != nil {
+		PlayLog: logs.Create, Now: now, Stderr: stderr,
+		// 新作だけ、1 マス 48 px の高解像度の表示にする（DES-NG-10）。
+		HiRes: *game == gameAlchemy}); err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}

@@ -35,6 +35,8 @@ type Config struct {
 	Stderr io.Writer
 	// Media は画像と音の置き場（media の下のパスで開く。DES-NG-07）。nil なら既存の素材だけで動く。
 	Media fs.FS
+	// HiRes は、1 マス 48 px の高解像度の表示にする（DES-NG-10）。新作（-game alchemy）だけが真にする。
+	HiRes bool
 }
 
 // Scene はキャンペーンの場面（DES-UI-09）。

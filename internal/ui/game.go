@@ -45,12 +45,15 @@ type Game struct {
 	shotCursor *image.Point
 	// drag は中ボタンで盤面をつかむ操作の途中の値（DES-UI-30）。
 	drag boardDrag
+	// canvas は盤面を持たない場面を、窓の中央へ置くために一度描く層（DES-NG-10）。既定の表示では使わない。
+	canvas *ebiten.Image
 	// sound は効果音と BGM の再生（DES-NG-09）。zero 値なら無音。
 	sound soundGlue
 }
 
 // Run はタイトルからキャンペーンを始める（DES-UI-09、DES-CMD-02）。
 func Run(cfg Config) error {
+	useConfigMetrics(cfg)
 	scenes := NewSceneController(cfg)
 	imgs, err := assets.Load()
 	if err != nil {
@@ -83,7 +86,7 @@ func (g *Game) update() error {
 	s := g.scenes
 	left := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 	cancel := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) || inpututil.IsKeyJustPressed(ebiten.KeyEscape)
-	x, y := ebiten.CursorPosition()
+	x, y := g.cursor()
 	if g.priorityInput(priorityKeys{
 		Rewind: inpututil.IsKeyJustPressed(ebiten.KeyT), Tab: inpututil.IsKeyJustPressed(ebiten.KeyTab),
 		Close: cancel, Detail: inpututil.IsKeyJustPressed(ebiten.KeyI), Click: left,
@@ -96,7 +99,7 @@ func (g *Game) update() error {
 		c := s.BattleController()
 		if c.rewind.open {
 			_, wheel := ebiten.Wheel()
-			x, y := ebiten.CursorPosition()
+			x, y := g.cursor()
 			c.Wheel(x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift))
 			if cancel {
 				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
@@ -106,7 +109,7 @@ func (g *Game) update() error {
 				}
 			} else if left && wheel == 0 {
 				// 入力の判定はミニマップ → 右欄 → 盤面の順（DES-UI-28）。
-				if x, y := ebiten.CursorPosition(); !c.MinimapClick(x, y) {
+				if x, y := g.cursor(); !c.MinimapClick(x, y) {
 					c.RewindClick(x, y)
 				}
 			} else if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
@@ -123,26 +126,26 @@ func (g *Game) update() error {
 			s.syncRewind()
 			return nil
 		}
-		if left && c.RewindClick(ebiten.CursorPosition()) {
+		if left && c.RewindClick(g.cursor()) {
 			return nil
 		}
 	}
 	// 全体図・次の味方・中ボタンのドラッグ（DES-UI-30）。全体図を出している間はほかの入力を渡さない。
-	if x, y := ebiten.CursorPosition(); g.navInput(readNavKeys(left, cancel), x, y) {
+	if x, y := g.cursor(); g.navInput(readNavKeys(left, cancel), x, y) {
 		return nil
 	}
 	if s.Scene() != Battle {
 		deploy := s.Scene() == Deploy
 		if deploy {
 			dx, dy := cameraKeys()
-			x, y := ebiten.CursorPosition()
+			x, y := g.cursor()
 			_, wheel := ebiten.Wheel()
 			s.DeployInput(dx, dy, x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift), left && !cancel)
 			if inpututil.IsKeyJustPressed(ebiten.KeyQ) && !left {
 				s.ToggleDeployDanger()
 			}
 		}
-		x, y := ebiten.CursorPosition()
+		x, y := g.cursor()
 		g.sceneInput(sceneKeys{
 			Tab: inpututil.IsKeyJustPressed(ebiten.KeyTab), Left: left, Cancel: cancel, Deploy: deploy,
 			Advance: inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeySpace),
@@ -152,17 +155,17 @@ func (g *Game) update() error {
 		g.ctrl = c
 		dx, dy := cameraKeys()
 		c.Scroll(dx, dy)
-		x, y := ebiten.CursorPosition()
+		x, y := g.cursor()
 		_, wheel := ebiten.Wheel()
 		scrolled := c.Wheel(x, y, wheel, ebiten.IsKeyPressed(ebiten.KeyShift)) || dx != 0 || dy != 0
 		c.SetCursor(x, y)
 		if c.State() == Over {
 			if left {
-				s.Click(ebiten.CursorPosition())
+				s.Click(g.cursor())
 			}
 		} else {
 			if left && !scrolled {
-				g.leftClick(ebiten.CursorPosition())
+				g.leftClick(g.cursor())
 			}
 			if cancel {
 				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
@@ -375,9 +378,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 // drawUnitDetail は盤面と右欄 (0,0)〜(832,512) に詳しい画面を、下 (0,512)〜(832,576) に操作の案内を描く（DES-UI-31）。
 func (g *Game) drawUnitDetail(dst *ebiten.Image, u tactics.Unit, section DetailSection) {
 	fillImageRect(dst, image.Rect(0, 0, ScreenWidth, MapSize), panelColor)
-	g.drawInfoView(dst, DetailView(u, section))
+	// 高解像度の表示では、既定の窓の幅の配置を窓の中央へ寄せる（DES-NG-10）。
+	g.drawInfoView(dst, DetailView(u, section).translate(sceneOffset().X, 0))
 	fillImageRect(dst, image.Rect(0, MapSize, ScreenWidth, ScreenHeight), bgColor)
-	g.label(dst, detailGuide, 16, 536, muted)
+	g.label(dst, detailGuide, 16+sceneOffset().X, ScreenHeight-40, muted)
 }
 
 // drawHint は増援の予兆領域の外周を黄土色の破線で、中央付近に「…」を描く（DES-UI-24）。
@@ -938,13 +942,43 @@ func (g *Game) centerLabel(dst *ebiten.Image, s string, y int, clr color.Color) 
 
 // drawScene は表示用の値を描く（DES-UI-09〜12、15）。
 func (g *Game) drawScene(dst *ebiten.Image) {
-	g.drawSceneView(dst, g.scenes.View())
+	v := g.scenes.View()
+	off := sceneOffset()
+	if off == (image.Point{}) || !onCanvas(g.scenes.Scene()) {
+		g.drawSceneView(dst, v)
+		return
+	}
+	// 高解像度の表示では、盤面を持たない場面を既定の窓の大きさの層に描き、窓の中央へ置く。背景だけは窓の全体を覆う（DES-NG-10）。
+	g.drawSceneBackdrop(dst, v)
+	if g.canvas == nil {
+		g.canvas = ebiten.NewImage(sceneCanvasWidth, sceneCanvasHeight)
+	}
+	g.canvas.Clear()
+	g.drawSceneBody(g.canvas, v)
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64(off.X), float64(off.Y))
+	dst.DrawImage(g.canvas, op)
+}
+
+// cursor は、場面の配置の座標でのカーソルの位置を返す。盤面を持たない場面は窓の中央に置くので、その分を引く（DES-NG-10）。
+func (g *Game) cursor() (x, y int) {
+	x, y = ebiten.CursorPosition()
+	if g.scenes != nil && onCanvas(g.scenes.Scene()) {
+		off := sceneOffset()
+		x, y = x-off.X, y-off.Y
+	}
+	return x, y
 }
 
 // drawSceneView は配置・文・ボタンを描く（DES-UI-20、DES-UI-19、DES-UI-09）。
 func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
 	// 背景は最初に描く（DES-NG-08）。
 	g.drawSceneBackdrop(dst, v)
+	g.drawSceneBody(dst, v)
+}
+
+// drawSceneBody は drawSceneView のうち、背景より上に描くもの（DES-NG-10）。
+func (g *Game) drawSceneBody(dst *ebiten.Image, v SceneView) {
 	if v.Deploy != nil {
 		g.drawDeploy(dst, *v.Deploy)
 	}
@@ -988,7 +1022,7 @@ func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
 	}
 	g.drawScenePortrait(dst, v)
 	for _, ic := range v.Icons {
-		g.drawTile(dst, ic.Tile, ic.X, ic.Y, 1)
+		g.drawTileSize(dst, ic.Tile, ic.X, ic.Y, 2*assets.TileSize)
 	}
 	for _, b := range v.Buttons {
 		r := b.Rect

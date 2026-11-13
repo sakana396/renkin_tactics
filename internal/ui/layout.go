@@ -85,6 +85,15 @@ func recomputeMetrics() {
 
 func init() { recomputeMetrics() }
 
+// useConfigMetrics は、設定に従って 1 マスの大きさを切り替える。窓を作る前に呼ぶ（DES-NG-10）。
+func useConfigMetrics(cfg Config) {
+	if cfg.HiRes {
+		useMetrics(HiResCellSize)
+		return
+	}
+	useMetrics(BaseCellSize)
+}
+
 // sceneOffset は、盤面を持たない場面の配置（sceneCanvasWidth × sceneCanvasHeight）を窓の中央に置く位置を返す（DES-NG-10）。
 // 既定の表示では窓と同じ大きさなので (0, 0)。
 func sceneOffset() image.Point {
