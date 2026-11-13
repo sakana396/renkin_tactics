@@ -1,7 +1,7 @@
 # 新しいゲームの見た目と音の方針（エージェント裁量案）
 
 - 文書 ID: CON-DRAFT-NG02
-- 版: 0.1（**未承認**。開発者の指示（2026-11-13）で、エージェントが仮決めした案）
+- 版: 0.2（仮決めの採用と、アオイの設定・ツールの決定を反映。**文書としては未承認**）。0.1 は開発者の指示（2026-11-13）でエージェントが仮決めした案
 - 作成日: 2026-11-13
 - 入力: [企画たたき台 CON-DRAFT-NG01](new-game-draft.md)、新作の定義データ（`data/alchemy`）、開発者の試遊の感想（「ストーリーだけ違う同じようなゲームになっていた。見た目と音で別物にしたい」）
 - 位置付け: 反復外。**既存の企画書・要求・設計は変えない**。AI で画像を作るときの指示書として使う
@@ -12,6 +12,7 @@
 - 画像は、開発者が画像生成 AI で作る。この文書は、生成の前に決めておくこと（絵柄・配色・キャラの外見・指示文の型・必要な画像の一覧・出典の記録）をまとめる
 - 画像を置く仕組みは、別の設計メモ（DES-NG-08）にある。音は DES-NG-09 にある
 - 差し替えやすいように、仮決めは 7 章に一覧にした。**開発者が違うと言えば、差し替える**
+- **2026-11-13: 開発者が V-1〜V-6 を採用した**。アオイは女性・成人（20 歳くらい）・華奢・身長は標準と決めた。ほかのキャラはエージェントの仮決め。画像生成のツールは Gemini と ChatGPT の両方で試す（5.7 節）
 
 ## 1. 今の見た目が「同じゲーム」に見える理由
 
@@ -54,17 +55,20 @@
 
 ## 3. キャラの外見（仮決め V-3）
 
-**性別は決めない**（物語でも性別を示す語を使っていない。企画 Q-5 は開発者が決める）。下は、服装・シルエット・色だけで書いた。**生成の前に、開発者が性別・年齢・体格の好みを足す。** 名前は仮。
+**決定（開発者、2026-11-13）**: 仮決め V-1〜V-6 を採用する。主人公アオイは、**女性・成人（若い。20 歳くらい）・華奢・身長は同じ年の標準くらい**。
+**仮決め（エージェント）**: アオイ以外の性別・年齢・体格は、エージェントが一度決めた（開発者が違うと言えば差し替える）。名前は仮。物語の文面は、今も性別を示す語を使っていない（アオイを女性にしても矛盾しない。物語の側を直す必要が出たら、別に提案する）。
 
 ### 3.1 自軍
 
-| ID | 名前（仮） | 役 | シルエットの特徴 | 色 | 持ち物 |
-|---|---|---|---|---|---|
-| aoi | アオイ | 主人公。錬金術師。後衛 | 大きな荷物（革の背負い鞄）で肩が丸く見える。裾の長い上着 | 生成りの上着、琥珀の差し色、銅の留め具 | 調合帳、爆弾の瓶、ガラスの管 |
-| dain | ダイン | 護衛の重装兵。前衛 | 横に広い。大盾を構える | 鉄灰色の鎧、国から支給された藍色の布 | 大盾、槍 |
-| tori | トーリ | 槍兵。前衛 | 細身で縦に長い。長い槍 | 茶の革鎧、緑の布 | 槍 |
-| nemu | ネム | 弓兵。遠距離 | 帽子（つばの広い）と、身の丈の弓 | 砂色の外套、青緑の紐 | 弓、矢筒 |
-| haru | ハル | 調合の見習い。杖で回復 | 小柄。大きすぎる袖 | 白に近い生成り、水色の差し色（回復の色） | 回復の杖、小さな瓶 |
+| ID | 名前（仮） | 性別・年齢・体格 | 役 | シルエットの特徴 | 色 | 持ち物 |
+|---|---|---|---|---|---|---|
+| aoi | アオイ | **女性、20 歳くらい、華奢、身長は標準（決定）** | 主人公。錬金術師。後衛 | 大きな荷物（革の背負い鞄）で肩が丸く見える。華奢な体に対して鞄が大きい。裾の長い上着 | 生成りの上着、琥珀の差し色、銅の留め具 | 調合帳、爆弾の瓶、ガラスの管 |
+| dain | ダイン | 男性、30 代後半、大柄でがっしり（仮） | 護衛の重装兵。前衛 | 横に広い。大盾を構える。落ち着いた表情 | 鉄灰色の鎧、国から支給された藍色の布 | 大盾、槍 |
+| tori | トーリ | 男性、19 歳くらい、細身で背が高い（仮） | 槍兵。前衛 | 縦に長い。長い槍。短い髪 | 茶の革鎧、緑の布 | 槍 |
+| nemu | ネム | 女性、20 代半ば、引き締まった長身（仮） | 弓兵。遠距離 | つばの広い帽子と、身の丈の弓。長い三つ編み | 砂色の外套、青緑の紐 | 弓、矢筒 |
+| haru | ハル | 男性、16 歳くらい、小柄（仮） | 調合の見習い。杖で回復 | 小柄。大きすぎる袖。ぼさぼさの髪 | 白に近い生成り、水色の差し色（回復の色） | 回復の杖、小さな瓶 |
+
+- アオイと見習いハルは、どちらも錬金術の側で、背格好が違う（華奢で標準の身長 / 小柄で少年）。**肩・鞄・帽子・髪型のシルエットで見分ける**
 
 - 自軍は、**全員のどこかに琥珀か銅の色を 1 つ入れる**（暖色が自分たちの印）
 - 画面で見分けるため、**頭のシルエット**（帽子・兜・髪型）を、キャラごとに必ず変える
@@ -74,8 +78,8 @@
 | 区分 | 兵種 ID | シルエット | 色 |
 |---|---|---|---|
 | 先遣隊の兵 | swordsman、spearman、bowman、heavy | 古代の石板を継ぎ足した装備。**武器に冷たく光る線**が走る | 鉄灰色と青白い光 |
-| 先遣隊長ドルク | captain | 兵より大きな肩当て。隊長の印の布 | 鉄灰色、水色の光が強い |
-| 将軍ベルナド | captain（ボス） | 大柄。槍の文様が全身に広がる | 黒に近い灰色、青白い光が強い |
+| 先遣隊長ドルク | captain | 男性、40 代、中肉中背（仮）。兵より大きな肩当て。隊長の印の布 | 鉄灰色、水色の光が強い |
+| 将軍ベルナド | captain（ボス） | 男性、50 代、大柄（仮）。槍の文様が全身に広がる | 黒に近い灰色、青白い光が強い |
 | 野盗 | bandit | 寄せ集めの装備。**光る線がない**（遺物の武器ではない、という見分け） | 汚れた茶色と灰色 |
 
 - 敵には**暖色を使わない**。冷たい光る線があるかないかで、公国の兵と野盗を見分けられる
@@ -129,13 +133,15 @@ transparent or plain background, 1:1,
 [キャラの説明]
 ```
 
-### 5.4 キャラの説明の書き方（例: アオイ。**性別・年齢は開発者が足す**）
+### 5.4 キャラの説明の書き方（アオイ。性別・年齢・体格は決定済み）
 
 ```
-a young herbalist-alchemist wearing a long cream-colored coat with copper
+a slender young woman around 20 years old, average height for her age,
+herbalist-alchemist wearing a long cream-colored coat with copper
 buckles, carrying a large leather backpack full of glass vials and copper
-tubes, an old handwritten recipe book tucked under the arm, geometric
-symbol embroidery on the sleeve, amber accent
+tubes (the backpack looks big against her slim frame), an old handwritten
+recipe book tucked under the arm, geometric symbol embroidery on the sleeve,
+short practical hair, amber accent
 ```
 
 ### 5.5 敵（公国の兵）の説明の書き方（例）
@@ -152,6 +158,58 @@ iron-gray and black palette, no warm colors
 - 気に入った 1 枚（アオイ）を**参照画像**として、ほかのキャラの生成にも渡せるツールなら、渡す
 - 乱数の種を固定できるなら、種も台帳に残す
 - 特定の作品名・作家名・キャラ名を指示に入れない（2.3 の避けること、8.2）
+
+### 5.7 Gemini と ChatGPT の両方で試す（開発者の決定、2026-11-13）
+
+まず、**アオイ 1 人だけ**で、2 つのツールを比べる。そのまま貼れる指示文は次のとおり（5.1 のスタイルブロックと 5.4 の説明を合わせたもの）。
+
+**アオイの肖像**
+
+```
+2D hand-drawn illustration, flat colors with at most two shading tones,
+clean medium-weight outlines, slightly desaturated palette with amber/copper
+and aqua-teal as the only vivid accents, fantasy ancient stone city setting,
+no text, no letters, no watermark.
+Bust-up portrait, 3/4 view, calm and gentle expression, soft warm rim light,
+plain flat light-gray background, square 1:1.
+A slender young woman around 20 years old, average height for her age,
+herbalist-alchemist wearing a long cream-colored coat with copper buckles,
+carrying a large leather backpack full of glass vials and copper tubes,
+an old handwritten recipe book tucked under the arm, geometric symbol
+embroidery on the sleeve, short practical hair, amber accent.
+```
+
+**アオイのユニットの絵**
+
+```
+2D hand-drawn illustration, flat colors with at most two shading tones,
+clean medium-weight outlines, slightly desaturated palette with amber/copper
+and aqua-teal as the only vivid accents, fantasy ancient stone city setting,
+no text, no letters, no watermark.
+Full-body chibi character, 2.5 heads tall, front three-quarter view,
+standing pose, centered, entire body visible with margin on all sides,
+plain flat solid bright-green background (for cutting out), square 1:1.
+A slender young woman around 20 years old, herbalist-alchemist wearing a long
+cream-colored coat with copper buckles, a large leather backpack full of glass
+vials and copper tubes (looks big against her slim frame), short practical
+hair, amber accent.
+```
+
+**比べる観点**（同じ指示を両方に渡し、各 3〜4 枚ずつ出して見る）
+
+| 観点 | 見ること |
+|---|---|
+| 絵柄の一致 | 2.3 の絵柄（平塗り、低彩度、水色と琥珀だけ鮮やか）になっているか |
+| 設定の一致 | 女性・20 歳くらい・華奢・標準の身長、鞄が大きく見えるか |
+| シルエット | 小さく縮めても、ほかのキャラと見分けられるか |
+| 破綻 | 手・指・持ち物・左右非対称・文字の混入 |
+| 透過・切り抜き | 背景の単色が一様か。切り抜きやすいか（ツールによって、透過の PNG が直接出せるものと出せないものがある。**最新の機能は、ツールの画面で確かめる**） |
+| 再現性 | 同じ指示で、似た人物が出るか。参照画像を渡して同じ人物を保てるか（ほかの 4 人に必要） |
+| 利用条件 | 6 章のチェックを、**先に**済ませる |
+
+- 結果は、台帳ではなく、まず**比較のメモ**（ツール名・版・日・各観点の○△×・採用するか）にして、`data/alchemy/media/` の外（リポジトリの外でもよい）に置く。採用する画像だけを media に置き、台帳に書く
+- 採用するツールは 1 つでも、2 つの併用（肖像は A、ユニットは B など）でもよい。**絵柄がそろうことを優先**する。併用するなら、参照画像を渡して、そろえられるかを見る
+- アオイの結果を見て、絵柄の方針（2.3）と指示文の型（5 章）を直してから、残りの 4 人と敵に進む（V-4）
 
 ## 6. 出典と利用条件の記録（必須）
 
@@ -193,8 +251,8 @@ iron-gray and black palette, no warm colors
 
 ## 10. 未決事項（開発者の判断が要る）
 
-- Q-V1: 仮決め V-1〜V-6 の採否
-- Q-V2: 自軍の性別・年齢・体格（生成の前に決める）
-- Q-V3: 使う画像生成ツール（規約の確認のため）
+- ~~Q-V1: 仮決め V-1〜V-6 の採否~~ → 採用（2026-11-13）
+- ~~Q-V2: 自軍の性別・年齢・体格~~ → アオイは決定。ほかはエージェントの仮決め（3 章）。違えば差し替える
+- ~~Q-V3: 使う画像生成ツール~~ → Gemini と ChatGPT の両方で試す（5.7 節）。**採用するツールと規約の確認は、アオイの比較のあとに決める**
 - Q-V4: 敵のボスと隊長に、個別の絵を作るか
 - Q-V5: 地形のタイルをいつ・どう差し替えるか
