@@ -106,13 +106,33 @@ func sceneOffset() image.Point {
 }
 
 // onCanvas は、場面 sc が盤面を持たない配置（sceneOffset で中央に置く）かを返す（DES-NG-10）。
-// 戦闘・敗北・配置は盤面と右の情報欄で窓を使う。
+// 戦闘・配置は盤面と右の情報欄で窓を使う。敗北は盤面を描かないので、タイトルなどと同じく中央に置く。
+// ただし敗北でも、巻き戻しの一覧・確認を開いている間は盤面と右欄で窓を使う（canvasInUse）。
 func onCanvas(sc Scene) bool {
 	switch sc {
-	case Battle, GameOver, Deploy:
+	case Battle, Deploy:
 		return false
 	}
 	return true
+}
+
+// canvasInUse は、場面 sc を今、中央寄せの層に描くか（入力の座標も補正するか）を返す（DES-NG-10）。
+// 敗北で巻き戻しの一覧を開いている間（rewindOpen）は、左に盤面・右に一覧を窓いっぱいに描くので、層を使わない。
+func canvasInUse(sc Scene, rewindOpen bool) bool {
+	if sc == GameOver && rewindOpen {
+		return false
+	}
+	return onCanvas(sc)
+}
+
+// sceneCursor は、窓の座標 (x, y) を場面の配置の座標へ直す。中央寄せの層に描く場面では、sceneOffset の分を引く（DES-NG-10）。
+// 盤面を持つ場面と、高解像度でない表示（sceneOffset が (0, 0)）では、そのまま返す。
+func sceneCursor(x, y int, sc Scene, rewindOpen bool) (int, int) {
+	if !canvasInUse(sc, rewindOpen) {
+		return x, y
+	}
+	off := sceneOffset()
+	return x - off.X, y - off.Y
 }
 
 // 行動の一覧とアイテムの一覧のボタンの大きさ（px）。
