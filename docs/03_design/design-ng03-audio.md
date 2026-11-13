@@ -191,7 +191,8 @@ BGM の長さの検査（20〜40 秒）は、`internal/ui/audio` のテストが
 
 - `go.mod` に `github.com/ebitengine/oto/v3`（Ebitengine の audio が使う音の出力）を足した。Linux では cgo で ALSA を使うため、**手元でビルドするときは `libasound2-dev` が要る**（Debian・Ubuntu の場合）。CI の apt-get にも足した。実行時に ALSA のデバイスがなければ、無音で続ける（3.3 節）。実行ファイルは `libasound.so` を読み込むので、実行する環境にも ALSA のライブラリ（`libasound2`）は要る
 - Windows 向けのビルドは cgo を使わず、影響はない
-- `go.mod` の oto は `// indirect` のまま、`internal/ui/audio` が直接 import している。ビルドと検査には影響しない。`go mod tidy` を実行すると、`// indirect` が外れる
+- `go mod tidy` を実行した。oto は `internal/ui/audio` が直接 import しているので、`// indirect` が外れて直接の依存になった
+- `golang.org/x/image`（`tools/mkplaceholder` が試し用の絵に文字を描くために使う `font`・`math/fixed`。DES-NG-08）も、`go mod tidy` で `// indirect` が外れて直接の依存になった。以前から目録（`go.sum`）にあった版（v0.27.0）で、新しい依存を足したわけではない。ゲーム本体（`cmd/renkin`）は import しない
 
 ## 9. 未確認・持ち越し
 
