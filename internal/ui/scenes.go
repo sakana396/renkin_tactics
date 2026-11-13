@@ -55,7 +55,9 @@ const (
 
 // SceneController は描画や OS 入力から独立した場面の進行（DES-UI-09）。
 type SceneController struct {
-	cfg              Config
+	cfg Config
+	// art は新作の画像の読み込み（DES-NG-08）。Media が nil なら画像はすべて「なし」。
+	art              *ArtStore
 	scene            Scene
 	campaign         *core.Campaign
 	loaded           *core.Campaign
@@ -102,7 +104,7 @@ type SceneController struct {
 
 // NewSceneController はタイトルでセーブを調べる（DES-UI-10）。
 func NewSceneController(cfg Config) *SceneController {
-	s := &SceneController{cfg: cfg}
+	s := &SceneController{cfg: cfg, art: NewArtStore(cfg.Media, cfg.Stderr, cfg.Catalog)}
 	s.enterTitle("")
 	return s
 }

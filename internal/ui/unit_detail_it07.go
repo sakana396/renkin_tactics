@@ -144,7 +144,7 @@ func DetailView(u tactics.Unit, section DetailSection) InfoView {
 
 	// 左の列: 能力 9 種と武器の短い行。
 	head(detailLeftX, 40, "能力", SectionStats)
-	v.Icons = append(v.Icons, InfoIcon{X: detailLeftX + 160, Y: 60, Size: PortraitSize, Tile: unitTile(u)})
+	v.Icons = append(v.Icons, InfoIcon{X: detailLeftX + 160, Y: 60, Size: PortraitSize, Tile: unitTile(u), Art: artKeyOf(u)})
 	s := u.Stats
 	y := 60
 	for _, row := range [][2]string{

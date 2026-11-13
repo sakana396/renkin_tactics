@@ -45,6 +45,10 @@ type SceneView struct {
 	Deploy *DeployView
 	// Minimap は配置のミニマップ（DES-UI-28）。ほかの場面では nil。
 	Minimap *MinimapView
+	// Backdrop は背景の画像の道筋（media の下。DES-NG-08）。画像がなければ空で、今までの見た目のまま。
+	Backdrop string
+	// Portrait は物語の場面の肖像（DES-NG-08）。話者がいない・絵がなければ nil。
+	Portrait *ScenePortrait
 }
 
 // wrapSceneText は 48 px の左右余白を残し、文字の単位で折り返す（DES-UI-12）。
@@ -90,6 +94,7 @@ func (s *SceneController) View() SceneView {
 	}
 	switch s.scene {
 	case Title:
+		v.Backdrop, _ = s.art.BackdropPath(artTitlePath, true)
 		add(windowTitle, ScreenWidth/2-textWidth(windowTitle), 48, true, StyleTitle)
 		if s.confirmOverwrite {
 			lines("セーブを上書きして、はじめから始めますか", 136, StylePlain)
@@ -110,7 +115,22 @@ func (s *SceneController) View() SceneView {
 		lines("右クリック・Esc: タイトルへ", 400, StyleLabel)
 	case Story:
 		heading(s.storyChapter)
-		lines(s.paragraphs[s.paragraph], 160, StylePlain)
+		// 物語の背景と、話者の肖像（DES-NG-08）。画像がなければ今までの配置のまま。
+		ch := s.cfg.Catalog.Chapters()[s.storyChapter]
+		storyID := ch.Before
+		if s.storyAfter {
+			storyID = ch.After
+		}
+		v.Backdrop, _ = s.art.BackdropPath(storyBackdropPath(storyID))
+		textX, wrapWidth := 48, ScreenWidth-96
+		if p, ok := s.art.StoryPortraitPath(s.paragraphs[s.paragraph]); ok {
+			var box image.Rectangle
+			box, textX, wrapWidth = storyArtLayout(true)
+			v.Portrait = &ScenePortrait{Path: p, Rect: box}
+		}
+		for i, line := range wrapSceneTextWidth(s.paragraphs[s.paragraph], wrapWidth) {
+			add(line, textX, 160+i*20, false, StylePlain)
+		}
 		count := fmt.Sprintf("%d/%d", s.paragraph+1, len(s.paragraphs))
 		add(count, ScreenWidth-48-textWidth(count), 488, false, StyleLabel)
 		lines("左クリック・Enter・Space: 次へ　右クリック・Esc: 残りを飛ばす", 528, StyleLabel)

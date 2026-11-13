@@ -1,6 +1,8 @@
 // Package defs は定義データの型と、ID で引ける目録を持つ（DES-PKG-02、DES-DAT-01）。
 package defs
 
+import "sort"
+
 // 武器の種類（DES-DAT-01、E-17 D-2）。
 const (
 	WeaponSword = "sword"
@@ -382,6 +384,26 @@ func (c *Catalog) Skill(id string) (SkillDef, bool) {
 func (c *Catalog) Character(id string) (CharacterDef, bool) {
 	v, ok := c.characters[id]
 	return v, ok
+}
+
+// Characters は自軍のキャラをすべて、ID の昇順で返す（DES-NG-08。画像の名前の対応と、試し用の絵の書き出しに使う）。
+func (c *Catalog) Characters() []CharacterDef {
+	out := make([]CharacterDef, 0, len(c.characters))
+	for _, v := range c.characters {
+		out = append(out, v)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
+}
+
+// Classes はクラスをすべて、ID の昇順で返す（DES-NG-08）。
+func (c *Catalog) Classes() []ClassDef {
+	out := make([]ClassDef, 0, len(c.classes))
+	for _, v := range c.classes {
+		out = append(out, v)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
 }
 
 // Map は ID でマップを引く（DES-DAT-01）。
