@@ -44,7 +44,7 @@ func TestShrinkImageNG02(t *testing.T) {
 			t.Error("大きさ 0・空の範囲は nil のはず")
 		}
 	})
-	t.Run("TC-DES-NG-08-96 同じ入力は同じ結果。範囲の切り出しと、顔の切り出し", func(t *testing.T) {
+	t.Run("TC-DES-NG-08-95 同じ入力は同じ結果。範囲の切り出しと、顔の切り出し", func(t *testing.T) {
 		a, b := shrinkImage(src, src.Bounds(), 3, 5), shrinkImage(src, src.Bounds(), 3, 5)
 		if !bytes.Equal(a.Pix, b.Pix) {
 			t.Error("結果が毎回違う")
@@ -76,7 +76,7 @@ func TestShrinkImageNG02(t *testing.T) {
 
 // ArtStore の縮小キャッシュ（DES-NG-08）。
 func TestArtStoreShrunkNG02(t *testing.T) {
-	t.Run("TC-DES-NG-08-97 同じ引数では 1 回だけ作り、壊れた画像・ない画像・大きさ 0 は「なし」", func(t *testing.T) {
+	t.Run("TC-DES-NG-08-96 同じ引数では 1 回だけ作り、壊れた画像・ない画像・大きさ 0 は「なし」", func(t *testing.T) {
 		var stderr bytes.Buffer
 		media := fstest.MapFS{
 			"art/units/aoi.png": {Data: pngBytes(t, 128, 128, 255)},
@@ -112,7 +112,7 @@ func TestArtStoreShrunkNG02(t *testing.T) {
 			t.Error("nil の ArtStore は nil のはず")
 		}
 	})
-	t.Run("TC-DES-NG-08-98 上限を超える画像は縮小も「なし」", func(t *testing.T) {
+	t.Run("TC-DES-NG-08-96 上限を超える画像は縮小も「なし」", func(t *testing.T) {
 		var stderr bytes.Buffer
 		a := NewArtStore(fstest.MapFS{"art/units/big.png": {Data: pngBytes(t, artMaxSide+1, 1, 255)}}, &stderr, nil)
 		if a.Shrunk("art/units/big.png", false, 8, 8) != nil || !strings.Contains(stderr.String(), "大きすぎます") {
@@ -145,7 +145,7 @@ func TestSceneIconArtNG02(t *testing.T) {
 			t.Fatalf("場面 %v", s.Scene())
 		}
 	}
-	t.Run("TC-DES-NG-08-99 名簿の行の絵に、そのキャラの絵の値が入る。media がなければ空（今のタイル）", func(t *testing.T) {
+	t.Run("TC-DES-NG-08-97 名簿の行の絵に、そのキャラの絵の値が入る。media がなければ空（今のタイル）", func(t *testing.T) {
 		s := newScenes(fstest.MapFS{}, false, "ch02")
 		toPrepare(t, s)
 		v := s.View()
@@ -193,7 +193,7 @@ func TestSceneIconArtNG02(t *testing.T) {
 			}
 		}
 	})
-	t.Run("TC-DES-NG-08-100 加入の場面の絵に、加入するキャラの絵の値が入る。media がなければ空", func(t *testing.T) {
+	t.Run("TC-DES-NG-08-98 加入の場面の絵に、加入するキャラの絵の値が入る。media がなければ空", func(t *testing.T) {
 		toJoined := func(s *SceneController) SceneView {
 			t.Helper()
 			s.Choose(0)
@@ -223,7 +223,7 @@ func TestSceneIconArtNG02(t *testing.T) {
 			t.Errorf("media なしの加入の絵 %+v", n.Icons)
 		}
 	})
-	t.Run("TC-DES-NG-08-101 HiRes の準備の絵は、832×576 の層の中に収まり、窓の中央に置く", func(t *testing.T) {
+	t.Run("TC-DES-NG-08-99 HiRes の準備の絵は、832×576 の層の中に収まり、窓の中央に置く", func(t *testing.T) {
 		useTestMetrics(t, HiResCellSize)
 		s := newScenes(fstest.MapFS{}, true, "ch02")
 		toPrepare(t, s)
@@ -243,7 +243,7 @@ func TestSceneIconArtNG02(t *testing.T) {
 
 // 描画: 絵があれば縮めた画像を作って覚え、描いて、タイルは描かない（DES-NG-08）。
 func TestDrawSceneIconNG02(t *testing.T) {
-	t.Run("TC-DES-NG-08-102 絵があれば縮めた画像を 1 つだけ作って描く（顔は 24 px、全身は縦横比を保つ）", func(t *testing.T) {
+	t.Run("TC-DES-NG-08-99 絵があれば縮めた画像を 1 つだけ作って描く（顔は 24 px、全身は縦横比を保つ）", func(t *testing.T) {
 		cat := alchemyCatalog(t)
 		media := fstest.MapFS{"art/units/aoi.png": {Data: pngBytes(t, 128, 128, 255)}}
 		store := NewArtStore(media, &bytes.Buffer{}, cat)
