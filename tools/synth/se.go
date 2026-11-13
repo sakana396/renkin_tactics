@@ -1,7 +1,7 @@
 package main
 
 // 効果音の合成（DES-NG-09）。どれも本物の音ではなく、コードで作った仮の音である。
-// seed は台帳（ASSETS-audio.md）に書く乱数の種。ノイズを使わない音も、列を決めておくために持つ。
+// seed は台帳（ASSETS.md）に書く乱数の種。ノイズを使わない音も、列を決めておくために持つ。
 
 type asset struct {
 	Path string // media の下の道筋（例: audio/se/hit.wav）

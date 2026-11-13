@@ -13,7 +13,7 @@ func mediaFS(t *testing.T) fs.FS {
 	return data.AlchemyMedia()
 }
 
-// TestAudioLedger は音の台帳 ASSETS-audio.md の検査（DES-NG-09）。
+// TestAudioLedger は音の台帳 ASSETS.md の検査（DES-NG-09）。
 // あとで台帳が ASSETS.md に 1 つにまとまったら、data の台帳の検査に任せ、このテストは外す。
 func TestAudioLedger(t *testing.T) {
 	media := mediaFS(t)
@@ -28,9 +28,9 @@ func TestAudioLedger(t *testing.T) {
 		}
 		return nil
 	})
-	raw, err := fs.ReadFile(media, "ASSETS-audio.md")
+	raw, err := fs.ReadFile(media, "ASSETS.md")
 	if err != nil {
-		t.Fatalf("ASSETS-audio.md を読めない: %v", err)
+		t.Fatalf("ASSETS.md を読めない: %v", err)
 	}
 	rows := map[string][]string{}
 	inTable := false
@@ -59,7 +59,7 @@ func TestAudioLedger(t *testing.T) {
 		}
 		for f := range files {
 			if _, ok := rows[f]; !ok {
-				t.Errorf("%s が ASSETS-audio.md にない", f)
+				t.Errorf("%s が ASSETS.md にない", f)
 			}
 		}
 	})

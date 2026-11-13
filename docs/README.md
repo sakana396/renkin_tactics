@@ -8,6 +8,7 @@
 | 企画 | 要求抽出記録（ヒアリング） | [01_concept/elicitation-notes.md](01_concept/elicitation-notes.md) | 追記中 |
 | 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.6 承認（E-94、#119）。錬金術師・魔道士、仲間 9 人、出撃枠 +1 |
 | 企画 | 新しいゲームの企画たたき台（反復外） | [01_concept/new-game-draft.md](01_concept/new-game-draft.md) | v0.1 未承認。#191 の未決事項をエージェントが仮決めした案。既存の企画・要求は変えない |
+| 企画 | 新しいゲームの見た目と音の方針（反復外） | [01_concept/new-game-visual-draft.md](01_concept/new-game-visual-draft.md) | v0.1 未承認。AI 生成画像の指示書（絵柄・配色・キャラの外見・指示文の型・画像の一覧・出典の記録）。既存の企画・要求は変えない |
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
 | 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
 | 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
@@ -28,8 +29,8 @@
 | 試験 | テスト仕様書（新作の試作 NG01: 錬金の爆弾） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.2（未承認）。自動は実装済み、画面の見た目は手動・未実施 |
 | 試験 | テスト仕様書（新作の試作データ NG-06。TST-NG01 の 7 章） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.2（未承認）。データ・自動の試遊・`-game` は自動で実装済み。人の試遊（TC-DES-NG-06-10）は未実施 |
 | 試験 | テスト仕様書（新作の試作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.1（未承認）。自動は実装済み、実画面の確認（TC-DES-NG-08-94）は手動・未実施 |
-| 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
 | 試験 | テスト仕様書（新作の試作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.1（未承認）。自動は実装済み、耳での確認（TC-DES-NG-09-26）は手動・未実施 |
+| 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
 | 計画 | 反復 1 の振り返り | [iterations/it01/retrospective.md](iterations/it01/retrospective.md) | v0.2 承認（E-37） |
 | 計画 | 反復 2 の振り返り | [iterations/it02/retrospective.md](iterations/it02/retrospective.md) | v0.2 承認（E-37） |
@@ -53,8 +54,8 @@
 | 設計 | 設計メモ（新作の試作 NG01: 錬金の爆弾） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。企画たたき台 2.7 節の最小の試作。既存の設計は変えない |
 | 設計 | 設計メモ（新作の試作データ NG-06。DES-NG01 の 6 章） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。`data/alchemy`（1〜3 章）と `-game`。名前・文面は仮で、既存作品との重なりは未確認 |
 | 設計 | 設計メモ（新作の試作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.1（未承認）。DES-NG-08。置き場と名前の規則・台帳と検査・試し用の絵の道具。`game.go` への呼び出しは未反映 |
-| 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 設計 | 設計メモ（新作の試作 NG03: 音） | [03_design/design-ng03-audio.md](03_design/design-ng03-audio.md) | v0.1（未承認）。DES-NG-09。効果音・BGM の再生、仮の音の合成（`tools/synth`）、台帳。ミュートのキーは M が全体図と重なるため N（設計への提案）。耳での確認は未実施 |
+| 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch02 の制作記録（反復 6） | [iterations/it06/map-ch02.md](iterations/it06/map-ch02.md) | v0.3（#130、REV-079、E-96・E-97。自動の下限は確認、開発者の短い試遊は 1 回目（版 0.2）を実施し、版 0.3 は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
