@@ -37,7 +37,7 @@ slots = [
 # 広場の野盗（寄ってくる）
 [[maps.enemies]]
 class = "bandit"
-weapon = "iron_axe"
+weapon = "iron_sword"
 level = 1
 ai = "charge"
 x = 4
@@ -55,7 +55,7 @@ y = 6
 # 通路の野盗（待ち構える。爆弾で一度に巻き込める並び）
 [[maps.enemies]]
 class = "bandit"
-weapon = "iron_axe"
+weapon = "iron_sword"
 level = 1
 ai = "hold"
 x = 6
@@ -63,7 +63,7 @@ y = 5
 
 [[maps.enemies]]
 class = "bandit"
-weapon = "iron_axe"
+weapon = "iron_sword"
 level = 1
 ai = "hold"
 x = 7
@@ -71,7 +71,7 @@ y = 5
 
 [[maps.enemies]]
 class = "bandit"
-weapon = "iron_axe"
+weapon = "iron_sword"
 level = 1
 ai = "hold"
 x = 6
@@ -79,7 +79,7 @@ y = 4
 
 [[maps.enemies]]
 class = "bandit"
-weapon = "iron_axe"
+weapon = "iron_sword"
 level = 1
 ai = "hold"
 x = 7
@@ -98,7 +98,7 @@ y = 3
 [[maps.enemies]]
 name = "野盗の頭目"
 class = "bandit"
-weapon = "iron_axe"
+weapon = "iron_sword"
 level = 3
 bonus = { hp = 8, str = 2, skl = 3, spd = 1, def = 2, mov = 0 }
 ai = "hold"
@@ -108,7 +108,7 @@ y = 1
 
 [[maps.enemies]]
 class = "bandit"
-weapon = "iron_axe"
+weapon = "iron_sword"
 level = 2
 ai = "hold"
 x = 5
