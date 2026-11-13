@@ -23,6 +23,8 @@ type soundGlue struct {
 	// scene・sceneSet は、BGM を選んだ場面。
 	scene    Scene
 	sceneSet bool
+	// over は、前のフレームで戦闘の勝敗が決まっていたか。勝敗で止めた BGM を、巻き戻しで戻ったときに選び直すために覚える。
+	over bool
 }
 
 // newSoundGlue は設定の media から音を作る。media が nil なら無音（既存の作品。DES-NG-09）。
@@ -122,7 +124,20 @@ func (g *Game) syncSound(in soundInput) {
 		sg.scene, sg.sceneSet = scene, true
 		sg.sound.PlayBGM(bgmForScene(scene))
 	}
-	sg.observeEvent(g.scenes.BattleController())
+	// 勝敗が決まった状態から外れた（巻き戻した）とき、止めた Battle の BGM を選び直す。
+	// 場面は変わらないので、場面の切り替えでは戻らない。
+	c := g.scenes.BattleController()
+	over := scene == Battle && battleOver(c)
+	if sg.over && !over && scene == Battle {
+		sg.sound.PlayBGM(bgmForScene(scene))
+	}
+	sg.over = over
+	sg.observeEvent(c)
+}
+
+// battleOver は戦闘の勝敗が決まっていること（状態が Over、または結果が Ongoing でない。再生中の最後の出来事も含む）。
+func battleOver(c *Controller) bool {
+	return c != nil && (c.State() == Over || (c.Battle() != nil && c.Battle().Result != tactics.Ongoing))
 }
 
 // observeEvent は、戦闘の出来事の再生が次の出来事へ進んだとき、その出来事の効果音を鳴らす（DES-NG-09）。
