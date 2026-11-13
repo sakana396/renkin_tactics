@@ -1,10 +1,12 @@
 package ui
 
 import (
+	"fmt"
 	"image"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/data"
+	"github.com/sakana396/renkin_tactics/internal/core"
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 	"github.com/sakana396/renkin_tactics/internal/defload"
 )
@@ -409,10 +411,35 @@ func TestHiResScenes(t *testing.T) {
 		if off := sceneOffset(); off != image.Pt(128, 128) {
 			t.Fatal(off)
 		}
-		for _, sc := range []Scene{Title, RuleSelect, Story, Prepare} {
-			s := hiresScenes(t, sc)
+		// タイトル・ルール選択・物語・準備に加え、加入・勝利の結果・クリアも調べる（REV-109 F-08）。
+		type sceneCase struct {
+			name  string
+			scene Scene
+			s     *SceneController
+		}
+		cases := []sceneCase{}
+		for _, c := range []struct {
+			name  string
+			scene Scene
+		}{{"Title", Title}, {"RuleSelect", RuleSelect}, {"Story", Story}, {"Prepare", Prepare}} {
+			cases = append(cases, sceneCase{c.name, c.scene, hiresScenes(t, c.scene)})
+		}
+		// 加入: 2 章の仲間（haru）が加わった直後の場面を、名簿に足して作る。
+		joined := hiresScenes(t, Prepare)
+		joined.campaign.Roster = append(joined.campaign.Roster, core.Member{Character: "haru", Level: 3, Weapons: []string{"fire"}, Stats: tactics.Stats{HP: 18, Str: 3, Skl: 4, Spd: 5, Def: 2, Mov: 5}, Alive: true})
+		joined.scene, joined.storyChapter, joined.joined = Joined, 1, 0
+		cases = append(cases, sceneCase{"Joined", Joined, joined})
+		result := hiresScenes(t, Prepare)
+		result.scene, result.storyChapter = Result, 0
+		result.result = core.ChapterResult{Members: []core.MemberResult{{Member: 0, LevelBefore: 1, LevelAfter: 2, ExpBefore: 90, ExpAfter: 10}}}
+		cases = append(cases, sceneCase{"Result", Result, result})
+		clear := hiresScenes(t, Prepare)
+		clear.scene = Clear
+		cases = append(cases, sceneCase{"Clear", Clear, clear})
+		for _, tc := range cases {
+			s, sc := tc.s, tc.scene
 			if s.Scene() != sc || !onCanvas(sc) {
-				t.Fatal(sc, s.Scene())
+				t.Fatal(tc.name, s.Scene())
 			}
 			off := sceneOffset()
 			canvas := image.Rect(off.X, off.Y, off.X+sceneCanvasWidth, off.Y+sceneCanvasHeight)
@@ -422,14 +449,14 @@ func TestHiResScenes(t *testing.T) {
 			// 配置は既定の窓の大きさの中に収まる。窓の中央へ寄せたあとの位置も窓に収まる。
 			v := s.View()
 			if bad := sceneViewBounds(v, image.Rect(0, 0, sceneCanvasWidth, sceneCanvasHeight)); len(bad) > 0 {
-				t.Errorf("場面 %v: 配置の枠からはみ出す: %v", sc, bad)
+				t.Errorf("場面 %v: 配置の枠からはみ出す: %v", tc.name, bad)
 			}
 			if bad := sceneViewBounds(v.translated(off), windowRect()); len(bad) > 0 {
-				t.Errorf("場面 %v: 窓からはみ出す: %v", sc, bad)
+				t.Errorf("場面 %v: 窓からはみ出す: %v", tc.name, bad)
 			}
 			if v.Info != nil {
 				if bad := infoViewBounds(*v.Info, image.Rect(0, 0, sceneCanvasWidth, sceneCanvasHeight)); len(bad) > 0 {
-					t.Errorf("場面 %v: 情報欄が配置の枠からはみ出す: %v", sc, bad)
+					t.Errorf("場面 %v: 情報欄が配置の枠からはみ出す: %v", tc.name, bad)
 				}
 			}
 		}
@@ -484,6 +511,40 @@ func TestHiResScenes(t *testing.T) {
 			t.Fatal("ボタンが重なる", v.Buttons)
 		}
 	})
+	// 注意文がある状態（出撃のマス以外をクリックした）でも、窓の外にも盤面の中にもはみ出さない（REV-109 F-01）。
+	for _, cell := range []int{BaseCellSize, HiResCellSize} {
+		t.Run(fmt.Sprintf("TC-DES-NG-10-14 配置の注意文は案内欄に収まる（%d）", cell), func(t *testing.T) {
+			useTestMetrics(t, cell)
+			s := hiresScenes(t, Deploy)
+			// 出撃のマス以外（盤面の左上の隅）をクリックする。
+			s.Click(1, 1)
+			if s.message == "" {
+				t.Fatal("注意文が出ない")
+			}
+			v := s.View()
+			guide := image.Rect(0, MapSize, ScreenWidth, ScreenHeight)
+			var found bool
+			for _, tx := range v.Texts {
+				if tx.Text != s.message {
+					continue
+				}
+				found = true
+				r := image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+lineHeight)
+				if !r.In(guide) || !r.In(windowRect()) || r.Overlaps(image.Rect(0, 0, MapSize, MapSize)) {
+					t.Errorf("注意文「%s」%v が案内欄 %v の外", tx.Text, r, guide)
+				}
+				if cell == BaseCellSize && (tx.X != 280 || tx.Y != 552) {
+					t.Errorf("既定の位置が変わった: (%d,%d)", tx.X, tx.Y)
+				}
+			}
+			if !found {
+				t.Fatal("注意文が表示に含まれない", v.Texts)
+			}
+			if bad := sceneViewBounds(v, windowRect()); len(bad) > 0 {
+				t.Fatal(bad)
+			}
+		})
+	}
 	t.Run("TC-DES-NG-10-15 戦闘の右欄・巻き戻しの一覧・案内は窓に収まり、盤面と重ならない", func(t *testing.T) {
 		useTestMetrics(t, HiResCellSize)
 		c := newIdleWith(t, wideSetup)

@@ -142,6 +142,12 @@ func NewArtStore(media fs.FS, stderr io.Writer, cat *defs.Catalog) *ArtStore {
 // entry は道筋の画像を読んで覚える。ない・壊れているときは img が nil の項目を覚える。
 // square が真で正方形でなければ、1 回だけ知らせる（縦横比は保って描くので、使えなくはしない）。
 func (a *ArtStore) entry(path string, square bool) *artEntry {
+	return a.entryNote(path, square, "縦横比を保って描きます")
+}
+
+// entryNote は entry と同じで、正方形でないときの知らせの文の最後を note にする。
+// 地形は drawArtIn でマスいっぱいに引き伸ばして描くので、縦横比を保つとは書かない。
+func (a *ArtStore) entryNote(path string, square bool, note string) *artEntry {
 	if e, ok := a.entries[path]; ok {
 		return e
 	}
@@ -183,10 +189,18 @@ func (a *ArtStore) entry(path string, square bool) *artEntry {
 		return e
 	}
 	if square && cfg.Width != cfg.Height {
-		fmt.Fprintf(a.stderr, "画像が正方形ではありません（%s: %d×%d）。縦横比を保って描きます\n", path, cfg.Width, cfg.Height)
+		fmt.Fprintf(a.stderr, "画像が正方形ではありません（%s: %d×%d）。%s\n", path, cfg.Width, cfg.Height, note)
 	}
 	e.eb = ebiten.NewImageFromImage(img)
 	return e
+}
+
+// ebitenStretch は Ebiten と同じで、正方形でない画像の知らせを「縦横比を保たず、マスいっぱいに引き伸ばして描きます」にする。地形の絵に使う。
+func (a *ArtStore) ebitenStretch(path string) *ebiten.Image {
+	if a == nil {
+		return nil
+	}
+	return a.entryNote(path, true, "縦横比を保たず、マスいっぱいに引き伸ばして描きます").eb
 }
 
 // Has は道筋の画像が使えること。

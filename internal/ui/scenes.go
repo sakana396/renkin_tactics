@@ -329,6 +329,7 @@ func (s *SceneController) Advance() {
 			s.scene = Result
 		case tactics.Lost:
 			s.scene = GameOver
+			s.battle.gameOver = true
 		}
 	case Result:
 		s.saveWarning = ""

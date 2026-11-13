@@ -230,7 +230,9 @@ func (s *SceneController) View() SceneView {
 	if s.message != "" && s.scene != Prepare {
 		y := 424
 		if s.scene == Deploy {
-			add(s.message, 280, 552, false, StyleBad)
+			// 注意文は盤面の下の案内欄の 3 行目に置く。x は既定の 280 とし、文が窓の右端を越えるときは左へ寄せる（DES-NG-10）。
+			x := max(16, min(280, ScreenWidth-16-textWidth(s.message)))
+			add(s.message, x, MapSize+40, false, StyleBad)
 		} else {
 			lines(s.message, y, StyleBad)
 		}

@@ -63,7 +63,7 @@ func Run(cfg Config) error {
 	for s, img := range imgs {
 		g.sheets[s] = ebiten.NewImageFromImage(img)
 	}
-	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
+	setWindow(cfg)
 	ebiten.SetWindowTitle(windowTitle)
 	ebiten.SetTPS(60)
 	if err := ebiten.RunGame(g); err != nil && !errors.Is(err, ebiten.Termination) {
@@ -314,10 +314,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				if g.scenes.detailUnit >= 0 && g.scenes.detailUnit < len(v.Deploy.Units) {
 					g.drawUnitDetail(screen, v.Deploy.Units[g.scenes.detailUnit], g.scenes.detailSection)
 				}
-			}
-			if g.scenes.Scene() == GameOver {
-				g.ctrl = g.scenes.BattleController()
-				g.drawRewind(screen)
 			}
 			return
 		}
@@ -581,13 +577,19 @@ func (g *Game) drawCommandMark(dst *ebiten.Image, m CommandMark, r image.Rectang
 		vector.DrawFilledCircle(dst, cx, cy, radius+1, commandMarkEdge, true)
 		vector.DrawFilledCircle(dst, cx, cy, radius, clr, true)
 		if shape == shapeCrackedDot {
-			// 割れ目: 右上から中央を通って左下へ折れる線。太さもマスの大きさに比例させる。
-			lw := 1.5 * float32(CellSize) / BaseCellSize
+			// 割れ目: 右上から中央を通って左下へ折れる線。太さは描く箱の大きさに比例させる（右欄の印は 48 px でも変えない）。
+			lw := crackLineWidth(r)
 			vector.StrokeLine(dst, cx+radius, cy-radius, cx, cy, lw, commandMarkEdge, true)
 			vector.StrokeLine(dst, cx, cy, cx-radius/2, cy+radius/4, lw, commandMarkEdge, true)
 			vector.StrokeLine(dst, cx-radius/2, cy+radius/4, cx-radius, cy+radius, lw, commandMarkEdge, true)
 		}
 	}
+}
+
+// crackLineWidth は、箱 r に描く崩れの印の割れ目の線の太さ（px）を返す（DES-UI-35、DES-NG-10）。
+// 12 px の箱で 1.5 px とし、箱の大きさに比例させる。盤面の印の箱は scaled で大きくなり、右欄の印の箱は 12 px のまま。
+func crackLineWidth(r image.Rectangle) float32 {
+	return 1.5 * float32(r.Dx()) / commandMarkSize
 }
 
 // drawEquipMarks は、ユニットの右下に装備の印を、暗い下地の上へ種類の絵で描く（DES-UI-33）。
@@ -961,8 +963,18 @@ func (g *Game) centerLabel(dst *ebiten.Image, s string, y int, clr color.Color) 
 func (g *Game) drawScene(dst *ebiten.Image) {
 	v := g.scenes.View()
 	off := sceneOffset()
+	// 敗北では、巻き戻しの入口も配置の層の中に描く（一覧を開いているときは Draw が先に別の画面を描く）。
+	var entry *SceneView
+	if g.scenes.Scene() == GameOver && g.scenes.BattleController() != nil {
+		g.ctrl = g.scenes.BattleController()
+		ev := g.ctrl.RewindView()
+		entry = &ev
+	}
 	if off == (image.Point{}) || !onCanvas(g.scenes.Scene()) {
 		g.drawSceneView(dst, v)
+		if entry != nil {
+			g.drawSceneView(dst, *entry)
+		}
 		return
 	}
 	// 高解像度の表示では、盤面を持たない場面を既定の窓の大きさの層に描き、窓の中央へ置く。背景だけは窓の全体を覆う（DES-NG-10）。
@@ -972,6 +984,9 @@ func (g *Game) drawScene(dst *ebiten.Image) {
 	}
 	g.canvas.Clear()
 	g.drawSceneBody(g.canvas, v)
+	if entry != nil {
+		g.drawSceneBody(g.canvas, *entry)
+	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(off.X), float64(off.Y))
 	dst.DrawImage(g.canvas, op)
@@ -980,11 +995,11 @@ func (g *Game) drawScene(dst *ebiten.Image) {
 // cursor は、場面の配置の座標でのカーソルの位置を返す。盤面を持たない場面は窓の中央に置くので、その分を引く（DES-NG-10）。
 func (g *Game) cursor() (x, y int) {
 	x, y = ebiten.CursorPosition()
-	if g.scenes != nil && onCanvas(g.scenes.Scene()) {
-		off := sceneOffset()
-		x, y = x-off.X, y-off.Y
+	if g.scenes == nil {
+		return x, y
 	}
-	return x, y
+	c := g.scenes.BattleController()
+	return sceneCursor(x, y, g.scenes.Scene(), c != nil && c.rewind.open)
 }
 
 // drawSceneView は配置・文・ボタンを描く（DES-UI-20、DES-UI-19、DES-UI-09）。

@@ -43,7 +43,7 @@ func (a *ArtStore) terrainSetOf(id string) *terrainSet {
 	s := &terrainSet{}
 	a.terrains[id] = s
 	for _, p := range terrainArtPaths(id) {
-		if eb := a.Ebiten(p, true); eb != nil {
+		if eb := a.ebitenStretch(p); eb != nil {
 			s.imgs = append(s.imgs, eb)
 		}
 	}

@@ -250,8 +250,13 @@ func (c *Controller) RewindView() SceneView {
 		if c.state == Playing {
 			return v
 		}
-		button(fmt.Sprintf("巻き戻し 残り %d/10", c.battle.RewindsLeft()), image.Rect(304, MapSize, 504, MapSize+18), true)
-		add("T: 巻き戻し", 216, MapSize+2, StylePlain)
+		// 入口は、戦闘では盤面の下の案内欄。敗北では中央寄せの層（832×576）の中の同じ位置（盤面 512 の下）に置く（DES-NG-10）。
+		top := MapSize
+		if c.gameOver {
+			top = sceneCanvasHeight - GuideHeight
+		}
+		button(fmt.Sprintf("巻き戻し 残り %d/10", c.battle.RewindsLeft()), image.Rect(304, top, 504, top+18), true)
+		add("T: 巻き戻し", 216, top+2, StylePlain)
 
 		return v
 	}
@@ -396,6 +401,7 @@ func (c *Controller) RewindClick(x, y int) bool {
 func (s *SceneController) syncRewind() {
 	if s.scene == GameOver && s.battle.Battle().Result == tactics.Ongoing {
 		s.scene = Battle
+		s.battle.gameOver = false
 		s.message = ""
 	}
 }
