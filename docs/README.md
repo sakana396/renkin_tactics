@@ -8,6 +8,7 @@
 | 企画 | 要求抽出記録（ヒアリング） | [01_concept/elicitation-notes.md](01_concept/elicitation-notes.md) | 追記中 |
 | 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.6 承認（E-94、#119）。錬金術師・魔道士、仲間 9 人、出撃枠 +1 |
 | 企画 | 新しいゲームの企画たたき台（反復外） | [01_concept/new-game-draft.md](01_concept/new-game-draft.md) | v0.1 未承認。#191 の未決事項をエージェントが仮決めした案。既存の企画・要求は変えない |
+| 企画 | 新しいゲームの見た目と音の方針（反復外） | [01_concept/new-game-visual-draft.md](01_concept/new-game-visual-draft.md) | v0.1 未承認。AI 生成画像の指示書（絵柄・配色・キャラの外見・指示文の型・画像の一覧・出典の記録）。既存の企画・要求は変えない |
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
 | 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
 | 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
