@@ -87,7 +87,7 @@ func example3Setup() tactics.Setup {
 }
 
 // 予測の列の左端（画面の座標）と、武器の絵の行の y（DES-UI-07）。
-const (
+var (
 	attackColX = MapSize + infoMargin + forecastAttackX
 	defendColX = MapSize + infoMargin + forecastDefendX
 	iconRowY   = infoMargin + lineHeight

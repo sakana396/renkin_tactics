@@ -18,13 +18,11 @@ type ForecastWindow struct {
 	Fallback bool
 }
 
-// 予測窓の大きさと置き場所の候補（DES-IT07 3.4 節）。盤面 512×512 の中の 416×240 の 4 か所と、右欄の 320×360。
+// 予測窓の大きさと置き場所の候補（DES-IT07 3.4 節）。盤面の四隅（既定は 512×512 の中）の 416×240 の 4 か所と、右欄の 320×360。
+// 盤面の大きさに従うので、useMetrics の中の recomputeMetrics が作る（DES-NG-10）。
 var (
-	forecastCandidates = [...]image.Rectangle{
-		image.Rect(0, 8, 416, 248), image.Rect(96, 8, 512, 248),
-		image.Rect(0, 264, 416, 504), image.Rect(96, 264, 512, 504),
-	}
-	forecastFallbackRect = image.Rect(MapSize, 0, ScreenWidth, InfoHeight)
+	forecastCandidates   [4]image.Rectangle
+	forecastFallbackRect image.Rectangle
 )
 
 // forecastLayout は窓の中の相対の配置（DES-IT07 3.4 節）。盤面の窓と右欄の窓で同じ文字の大きさのまま位置だけを変える。
@@ -290,17 +288,18 @@ const (
 	infoLowerTop   = 176
 	infoControlTop = 304
 	// summaryX は段の文の左端。summaryPortraitX は段の右上に置くユニットの絵の左端。
-	summaryX         = MapSize + infoMargin
-	summaryPortraitX = ScreenWidth - infoMargin - PortraitSize
-	// summaryWide・summaryNarrow は段の文の幅の上限。絵の横の 4 行は絵に重ねない。
-	summaryWide   = InfoWidth - 3*infoMargin
-	summaryNarrow = summaryPortraitX - infoMargin - summaryX
+	// summaryWide は段の文の幅の上限。絵の横の 4 行（summaryNarrow）は絵に重ねない。
+	summaryWide = InfoWidth - 3*infoMargin
 	// summaryTerrainY は下段の最下行（地形）の y。
 	summaryTerrainY = infoControlTop - 3*lineHeight/2
 )
 
-// detailButtonRect は操作行の「詳細 I」（DES-UI-31）。描画とクリックで同じ範囲を使う。
-var detailButtonRect = image.Rect(672, infoControlTop, 744, infoControlTop+32)
+// summaryX・summaryPortraitX・summaryNarrow は、盤面の大きさに従う右欄の段の配置（DES-NG-10）。
+// summaryX は段の文の左端、summaryPortraitX は段の右上に置くユニットの絵の左端、summaryNarrow は絵の横の文の幅の上限。
+var summaryX, summaryPortraitX, summaryNarrow int
+
+// detailButtonRect は操作行の「詳細 I」（DES-UI-31）。描画とクリックで同じ範囲を使う。右欄の中の位置は盤面の大きさに従う（DES-NG-10）。
+var detailButtonRect image.Rectangle
 
 // BattleInfoView は戦闘の右欄の上下 2 段を返す（DES-UI-31）。中身は y < 296 に収め、操作行（y = 304〜）の範囲の状態・詳細・
 // 消すは別に描く。

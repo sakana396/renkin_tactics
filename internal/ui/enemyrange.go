@@ -138,9 +138,10 @@ func (c *Controller) ClearWatched() {
 
 // 右欄の操作行の範囲の状態と「消す」ボタンの位置（DES-IT07 3.2・3.4 節）。
 // 範囲の状態は (520,304)〜(664,336) に「全敵 Q」と「固定 n」の 2 行、「消す」は操作行の右端 (752,304)〜(824,336)。
+// 位置は盤面の大きさに従う（DES-NG-10。recomputeMetrics が作る）。
 var (
-	rangeStatusRect = image.Rect(520, 304, 664, 336)
-	rangeClearRect  = image.Rect(752, 304, 824, 336)
+	rangeStatusRect image.Rectangle
+	rangeClearRect  image.Rectangle
 )
 
 // RangeStatusView は右欄の操作行に出す敵の範囲の状態（DES-UI-29）。

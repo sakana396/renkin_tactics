@@ -15,11 +15,12 @@ const (
 	MinimapTop = InfoHeight
 	// minimapBox は地図の本体を置く正方形の一辺（px）。
 	minimapBox = 128
-	// minimapBoxX は地図の本体の左端。欄の中央に置き、左右の余白は 96 px ずつ。
-	minimapBoxX = MapSize + (InfoWidth-minimapBox)/2
 	// minimapBoxY は地図の本体の上端。上に見出しの 16 px を取る（下の余白は 8 px）。
 	minimapBoxY = MinimapTop + lineHeight
 )
+
+// minimapBoxX は地図の本体の左端。欄の中央に置き、左右の余白は 96 px ずつ（DES-NG-10。盤面の大きさに従う）。
+var minimapBoxX int
 
 // MinimapRect はミニマップの欄の範囲（DES-UI-28）。この中のクリックは盤面・情報欄に渡さない。
 func MinimapRect() image.Rectangle {
