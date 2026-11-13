@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 )
 
 // 台帳（ASSETS.md）の列の数と名前（DES-NG-08）。
@@ -22,6 +23,12 @@ var ledgerEmpty = map[string]bool{"-": true, "ー": true, "－": true, "なし":
 
 var ledgerDate = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
+// artNameRule は art の下のファイルの名前の規則（DES-NG-08 3 章）。
+// 規則に合わないファイルは画面に出ないので、台帳に載せていても誤りとして報告する。
+// units/enemy_<クラスの ID>.png も、小文字の英数字とアンダースコアの名前として units/ の規則に含まれる。
+// ID が実在するか（キャラ・クラス・物語）は検査しない（data パッケージは定義を知らない）。
+var artNameRule = regexp.MustCompile(`^art/(title\.png|(units|portraits|story)/[a-z0-9_]+\.png)$`)
+
 // ledgerDirs は台帳で管理するディレクトリ（media の下）。
 var ledgerDirs = []string{"art", "audio"}
 
@@ -32,7 +39,8 @@ var ledgerExempt = map[string]bool{"README.md": true, "ASSETS.md": true}
 //
 // 検査すること: art と audio の下のすべてのファイル（README.md・ASSETS.md を除く）が台帳の「ファイル」欄にあること、
 // 台帳の行のファイルが実在すること、同じファイルを 2 行に書かないこと、必須の欄が空でないこと、
-// 「作り方」が AI 生成・自作・既存素材のどれかで始まること、「確かめた日」が YYYY-MM-DD であること。
+// 「作り方」が AI 生成・自作・既存素材のどれかで始まること、「確かめた日」が実在する YYYY-MM-DD であること、
+// art の下のファイル名が名前の規則（artNameRule）に合うこと。HTML コメント（<!-- -->）の中の行は読まない。
 func CheckMediaLedger(media fs.FS) []string {
 	var problems []string
 	add := func(format string, args ...any) { problems = append(problems, fmt.Sprintf(format, args...)) }
@@ -84,9 +92,28 @@ func CheckMediaLedger(media fs.FS) []string {
 		if m := r.cells[1]; m != "" && !hasAnyPrefix(m, ledgerMakes) {
 			add("台帳 %d 行目（%s）: 「作り方」は %s のどれかで始めてください: %q", r.line, file, strings.Join(ledgerMakes, "・"), m)
 		}
-		if d := r.cells[5]; d != "" && !ledgerEmpty[d] && !ledgerDate.MatchString(d) {
-			add("台帳 %d 行目（%s）: 「確かめた日」は YYYY-MM-DD の形にしてください: %q", r.line, file, d)
+		if d := r.cells[5]; d != "" && !ledgerEmpty[d] {
+			if !ledgerDate.MatchString(d) {
+				add("台帳 %d 行目（%s）: 「確かめた日」は YYYY-MM-DD の形にしてください: %q", r.line, file, d)
+			} else if _, err := time.Parse("2006-01-02", d); err != nil {
+				add("台帳 %d 行目（%s）: 「確かめた日」が実在しない日付です: %q", r.line, file, d)
+			}
 		}
+	}
+	// art の下のファイル名の規則。ディスクのファイルと、台帳に書かれた道筋の両方を見る（重ねて報告しない）。
+	named := map[string]bool{}
+	checkName := func(f string) {
+		if named[f] || !strings.HasPrefix(f, "art/") || !fs.ValidPath(f) || artNameRule.MatchString(f) {
+			return
+		}
+		named[f] = true
+		add("%s は art の名前の規則に合いません（units/<小文字の英数字と _>.png、units/enemy_….png、portraits/….png、story/….png、title.png。画面に出ません）", f)
+	}
+	for f := range listed {
+		checkName(f)
+	}
+	for f := range files {
+		checkName(f)
 	}
 	var missing []string
 	for f := range files {
@@ -124,7 +151,30 @@ type ledgerRow struct {
 	cells []string // len(ledgerColumns) 個。足りなければ空で埋める。
 }
 
-// readLedger は ASSETS.md の「ファイル」で始まる見出しの表の行を読む。囲み（```）の中は読まない。
+// stripHTMLComments は 1 行から HTML コメント（<!-- -->）を取り除く。コメントが次の行へ続くときは inComment を真にして返す。
+func stripHTMLComments(line string, inComment bool) (string, bool) {
+	var b strings.Builder
+	for line != "" {
+		if inComment {
+			i := strings.Index(line, "-->")
+			if i < 0 {
+				return b.String(), true
+			}
+			line, inComment = line[i+3:], false
+			continue
+		}
+		i := strings.Index(line, "<!--")
+		if i < 0 {
+			b.WriteString(line)
+			break
+		}
+		b.WriteString(line[:i])
+		line, inComment = line[i+4:], true
+	}
+	return b.String(), inComment
+}
+
+// readLedger は ASSETS.md の「ファイル」で始まる見出しの表の行を読む。囲み（```）と HTML コメントの中は読まない。
 func readLedger(media fs.FS) ([]ledgerRow, error) {
 	f, err := media.Open("ASSETS.md")
 	if err != nil {
@@ -132,11 +182,15 @@ func readLedger(media fs.FS) ([]ledgerRow, error) {
 	}
 	defer f.Close()
 	var rows []ledgerRow
-	inFence, inTable := false, false
+	inFence, inTable, inComment := false, false, false
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	for n := 1; sc.Scan(); n++ {
-		line := strings.TrimSpace(sc.Text())
+		raw := sc.Text()
+		if !inFence {
+			raw, inComment = stripHTMLComments(raw, inComment)
+		}
+		line := strings.TrimSpace(raw)
 		if strings.HasPrefix(line, "```") {
 			inFence = !inFence
 			continue

@@ -26,8 +26,8 @@ jobs:
           # 名前の変更は元の名前も出す（.go を .md に変えたときに検査を省かないため）
           files=$(git diff --name-only --no-renames "origin/$BASE_REF...HEAD")
           echo "$files"
-          # testdata の .md はテストの入力なので、コードとして扱う
-          if echo "$files" | grep -qvE '^docs/|\.md$' || echo "$files" | grep -q '/testdata/'; then
+          # testdata の .md はテストの入力、data/ の下の .md（台帳 ASSETS.md など）は埋め込まれて台帳の検査の入力になるので、コードとして扱う
+          if echo "$files" | grep -qvE '^docs/|\.md$' || echo "$files" | grep -q '/testdata/' || echo "$files" | grep -qE '^data/.*\.md$'; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
