@@ -59,11 +59,11 @@ func coverRect(screen image.Rectangle, w, h int) image.Rectangle {
 // 肖像がなければ、今までの配置（左端 48、幅は画面から左右 48 を引いた値）を返し、箱は空。
 func storyArtLayout(hasPortrait bool) (portrait image.Rectangle, textX, textWidth int) {
 	if !hasPortrait {
-		return image.Rectangle{}, 48, ScreenWidth - 96
+		return image.Rectangle{}, 48, sceneCanvasWidth - 96
 	}
 	portrait = image.Rect(storyPortraitX, storyPortraitY, storyPortraitX+storyPortraitSize, storyPortraitY+storyPortraitSize)
 	textX = portrait.Max.X + storyTextGap
-	return portrait, textX, ScreenWidth - storyMargin - textX
+	return portrait, textX, sceneCanvasWidth - storyMargin - textX
 }
 
 // unitArtRect はユニットの絵を、マスの範囲 cell（左上 (x, y)、一辺 size）に収める範囲を返す（DES-NG-08）。

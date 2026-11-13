@@ -53,7 +53,7 @@ type SceneView struct {
 
 // wrapSceneText は 48 px の左右余白を残し、文字の単位で折り返す（DES-UI-12）。
 func wrapSceneText(s string) []string {
-	return wrapSceneTextWidth(s, ScreenWidth-96)
+	return wrapSceneTextWidth(s, sceneCanvasWidth-96)
 }
 
 // wrapSceneTextWidth は場面の表示領域の幅で文字を折り返す（DES-UI-12、DES-UI-13）。
@@ -95,7 +95,7 @@ func (s *SceneController) View() SceneView {
 	switch s.scene {
 	case Title:
 		v.Backdrop, _ = s.art.BackdropPath(artTitlePath, true)
-		add(windowTitle, ScreenWidth/2-textWidth(windowTitle), 48, true, StyleTitle)
+		add(windowTitle, sceneCanvasWidth/2-textWidth(windowTitle), 48, true, StyleTitle)
 		if s.confirmOverwrite {
 			lines("セーブを上書きして、はじめから始めますか", 136, StylePlain)
 			button("はい", 208, true)
@@ -122,7 +122,7 @@ func (s *SceneController) View() SceneView {
 			storyID = ch.After
 		}
 		v.Backdrop, _ = s.art.BackdropPath(storyBackdropPath(storyID))
-		textX, wrapWidth := 48, ScreenWidth-96
+		textX, wrapWidth := 48, sceneCanvasWidth-96
 		if p, ok := s.art.StoryPortraitPath(s.paragraphs[s.paragraph]); ok {
 			var box image.Rectangle
 			box, textX, wrapWidth = storyArtLayout(true)
@@ -132,7 +132,7 @@ func (s *SceneController) View() SceneView {
 			add(line, textX, 160+i*20, false, StylePlain)
 		}
 		count := fmt.Sprintf("%d/%d", s.paragraph+1, len(s.paragraphs))
-		add(count, ScreenWidth-48-textWidth(count), 488, false, StyleLabel)
+		add(count, sceneCanvasWidth-48-textWidth(count), 488, false, StyleLabel)
 		lines("左クリック・Enter・Space: 次へ　右クリック・Esc: 残りを飛ばす", 528, StyleLabel)
 	case Joined:
 		heading(s.storyChapter)

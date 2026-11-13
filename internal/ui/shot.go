@@ -26,6 +26,7 @@ func RunShot(cfg Config, opt ShotOptions) error {
 	if opt.Path == "" {
 		return errors.New("出力先を指定してください")
 	}
+	useConfigMetrics(cfg)
 	scenes := NewSceneController(cfg)
 	imgs, err := assets.Load()
 	if err != nil {
