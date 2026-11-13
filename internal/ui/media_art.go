@@ -1,9 +1,9 @@
 package ui
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"image"
 	"image/png"
 	"io"
 	"io/fs"
@@ -103,9 +103,13 @@ func storyBackdropPath(storyID string) (string, bool) {
 	return artStoryDir + "/" + storyID + ".png", true
 }
 
+// artMaxSide は画像の一辺の上限（px）。これを超える画像は使えない画像として扱う（DES-NG-08）。
+// Ebitengine の画像の置き場（atlas）に載せられない大きさで、載せようとすると panic になるため。
+const artMaxSide = 4096
+
+// artEntry は読んだ画像。使える画像だけ eb を持つ（元の image.Image は持ち続けない）。
 type artEntry struct {
-	img image.Image
-	eb  *ebiten.Image
+	eb *ebiten.Image
 }
 
 // ArtStore は media の下の PNG を読み、覚えておく（DES-NG-08）。
@@ -145,47 +149,46 @@ func (a *ArtStore) entry(path string, square bool) *artEntry {
 		return e
 	}
 	defer f.Close()
-	img, err := png.Decode(f)
+	raw, err := io.ReadAll(f)
 	if err != nil {
 		fmt.Fprintf(a.stderr, "画像を読めません（%s）: %v\n", path, err)
 		return e
 	}
-	b := img.Bounds()
-	if b.Dx() <= 0 || b.Dy() <= 0 {
+	// 大きさだけを先に調べ、大きすぎる画像は展開しない。
+	cfg, err := png.DecodeConfig(bytes.NewReader(raw))
+	if err != nil {
+		fmt.Fprintf(a.stderr, "画像を読めません（%s）: %v\n", path, err)
+		return e
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 {
 		fmt.Fprintf(a.stderr, "画像の大きさが 0 です（%s）\n", path)
 		return e
 	}
-	if square && b.Dx() != b.Dy() {
-		fmt.Fprintf(a.stderr, "画像が正方形ではありません（%s: %d×%d）。縦横比を保って描きます\n", path, b.Dx(), b.Dy())
+	if cfg.Width > artMaxSide || cfg.Height > artMaxSide {
+		fmt.Fprintf(a.stderr, "画像が大きすぎます（%s: %d×%d）。一辺 %d px までです。使いません\n", path, cfg.Width, cfg.Height, artMaxSide)
+		return e
 	}
-	e.img = img
+	img, err := png.Decode(bytes.NewReader(raw))
+	if err != nil {
+		fmt.Fprintf(a.stderr, "画像を読めません（%s）: %v\n", path, err)
+		return e
+	}
+	if square && cfg.Width != cfg.Height {
+		fmt.Fprintf(a.stderr, "画像が正方形ではありません（%s: %d×%d）。縦横比を保って描きます\n", path, cfg.Width, cfg.Height)
+	}
+	e.eb = ebiten.NewImageFromImage(img)
 	return e
 }
 
-// Image は道筋の画像を返す。ない・壊れているときは nil。square は正方形を期待する画像（ユニット・肖像）かどうか。
-func (a *ArtStore) Image(path string, square bool) image.Image {
-	if a == nil {
-		return nil
-	}
-	return a.entry(path, square).img
-}
-
 // Has は道筋の画像が使えること。
-func (a *ArtStore) Has(path string, square bool) bool { return a.Image(path, square) != nil }
+func (a *ArtStore) Has(path string, square bool) bool { return a.Ebiten(path, square) != nil }
 
 // Ebiten は道筋の画像を描画用に返す。使えなければ nil。
 func (a *ArtStore) Ebiten(path string, square bool) *ebiten.Image {
 	if a == nil {
 		return nil
 	}
-	e := a.entry(path, square)
-	if e.img == nil {
-		return nil
-	}
-	if e.eb == nil {
-		e.eb = ebiten.NewImageFromImage(e.img)
-	}
-	return e.eb
+	return a.entry(path, square).eb
 }
 
 // UnitArtPath はユニットの絵があれば、その道筋を返す（DES-NG-08）。なければ ok が偽（今のタイルで描く）。
