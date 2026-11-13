@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -104,15 +105,39 @@ func TestMkplaceholderNG02(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Chdir(wd)
+		// 本物の画像が media に置かれていても成り立つように、実行の前後でファイルの一覧（道筋・大きさ・更新時刻）を比べる。
+		before := mediaSnapshot(t, filepath.Join("data", "alchemy", "media"))
 		errb.Reset()
 		if code := run([]string{"-out", "data/alchemy/media/art"}, &out, &errb); code != 2 || !strings.Contains(errb.String(), "media") {
 			t.Errorf("media の下を拒否するはず: %d %q", code, errb.String())
 		}
-		if _, err := os.Stat(filepath.Join("data", "alchemy", "media", "art", "units")); err == nil {
-			t.Error("media の下に書いてしまった")
+		after := mediaSnapshot(t, filepath.Join("data", "alchemy", "media"))
+		if before != after {
+			t.Errorf("media の下に書いてしまった\n前: %s\n後: %s", before, after)
 		}
 		if !inMedia("data/alchemy/media") || inMedia("placeholder-out") || inMedia("data/alchemy/media-other") {
 			t.Error("inMedia の判定")
 		}
 	})
+}
+
+// mediaSnapshot は dir の下のすべてのファイルの道筋・大きさ・更新時刻を、並べた文字列にして返す（DES-NG-08）。
+func mediaSnapshot(t *testing.T, dir string) string {
+	t.Helper()
+	var b strings.Builder
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(&b, "%s %d %d\n", path, info.Size(), info.ModTime().UnixNano())
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b.String()
 }
