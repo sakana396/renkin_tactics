@@ -209,6 +209,19 @@ func (t *track) echo(delaySec, feedback, mix float64) {
 	}
 }
 
+// fadeOut は、最後の sec 秒を、直線で 0 に下げる（長さは変えない）。余韻を途中で切った音の、末尾のぷつっという音を避ける（DES-NG-09）。
+// 最後の標本はちょうど 0 になる。
+func (t *track) fadeOut(sec float64) {
+	n := min(int(math.Round(sec*sampleRate)), len(t.s))
+	if n < 2 {
+		return
+	}
+	first := len(t.s) - n
+	for k := 0; k < n; k++ {
+		t.s[first+k] *= 1 - float64(k)/float64(n-1)
+	}
+}
+
 // normalize は、いちばん大きい振幅を peak（0〜1）に合わせる。
 func (t *track) normalize(peak float64) {
 	m := 0.0

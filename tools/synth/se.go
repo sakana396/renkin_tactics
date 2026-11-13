@@ -96,7 +96,7 @@ func seAssets() []asset {
 			t.normalize(0.7)
 			return t
 		}},
-		{"audio/se/win.wav", 1110, "勝利の短いジングル（上がる分散和音のあと、C メジャーの和音を伸ばす。約 2 秒）", func(r *rng) *track {
+		{"audio/se/win.wav", 1110, "勝利の短いジングル（上がる分散和音のあと、C メジャーの和音を伸ばす。2.4 秒）", func(r *rng) *track {
 			t := newTrack(2.4, false)
 			for i, m := range []float64{67, 72, 76, 79} {
 				at := float64(i) * 0.15
@@ -111,7 +111,7 @@ func seAssets() []asset {
 			t.normalize(0.75)
 			return t
 		}},
-		{"audio/se/lose.wav", 1111, "敗北の短いジングル（下がる 4 音のあと、低い短三和音を伸ばす。約 2.4 秒）", func(r *rng) *track {
+		{"audio/se/lose.wav", 1111, "敗北の短いジングル（下がる 4 音のあと、低い短三和音を伸ばす。2.8 秒。余韻を切る末尾の 0.18 秒は直線で 0 に下げる）", func(r *rng) *track {
 			t := newTrack(2.8, false)
 			for i, m := range []float64{64, 62, 60, 57} {
 				at := float64(i) * 0.3
@@ -121,6 +121,7 @@ func seAssets() []asset {
 				t.note(1.2, 1.2, mtof(m), voice{wave: waveTri, amp: 0.4, decay: 1.0, release: 0.6, detune: 10})
 			}
 			t.echo(0.2, 0.35, 0.3)
+			t.fadeOut(0.18) // 余韻を 2.8 秒で切るので、末尾を直線で 0 に下げる。
 			t.normalize(0.7)
 			return t
 		}},

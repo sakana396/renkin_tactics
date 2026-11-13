@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -121,6 +123,104 @@ func TestSynthTotalSize(t *testing.T) {
 		}
 		if total > 5*1024*1024 {
 			t.Errorf("合計 %d バイトが 5 MB を超える", total)
+		}
+	})
+}
+
+// TestSynthSETail は、効果音の末尾が急に切れないこと（DES-NG-09）。
+func TestSynthSETail(t *testing.T) {
+	t.Run("TC-DES-NG-09-28 すべての効果音で、最後の 10 ms の RMS が最大振幅の 2% 以下", func(t *testing.T) {
+		n := sampleRate / 100
+		for p, b := range Render() {
+			if !strings.HasPrefix(p, "audio/se/") {
+				continue
+			}
+			s := samplesOf(t, b)
+			peak, sum := 0.0, 0.0
+			for _, v := range s {
+				peak = math.Max(peak, math.Abs(float64(v)))
+			}
+			for _, v := range s[len(s)-n:] {
+				sum += float64(v) * float64(v)
+			}
+			if rms := math.Sqrt(sum / float64(n)); rms > 0.02*peak {
+				t.Errorf("%s: 末尾 10 ms の RMS %.1f が最大 %.0f の 2%% を超える", p, rms, peak)
+			}
+		}
+	})
+	t.Run("TC-DES-NG-09-28 fadeOut は長さを変えず、最後の標本が 0 で、最後の区間だけ直線に下がる", func(t *testing.T) {
+		tr := newTrack(1, false)
+		for i := range tr.s {
+			tr.s[i] = 1
+		}
+		tr.fadeOut(0.2)
+		n := int(math.Round(0.2 * sampleRate))
+		if len(tr.s) != sampleRate {
+			t.Fatalf("長さ %d, 期待 %d", len(tr.s), sampleRate)
+		}
+		if tr.s[len(tr.s)-1] != 0 || tr.s[len(tr.s)-n-1] != 1 || tr.s[len(tr.s)-n] != 1 {
+			t.Errorf("端の値 = %v, %v, %v", tr.s[len(tr.s)-n-1], tr.s[len(tr.s)-n], tr.s[len(tr.s)-1])
+		}
+		step := tr.s[len(tr.s)-n] - tr.s[len(tr.s)-n+1]
+		for i := len(tr.s) - n; i+1 < len(tr.s); i++ {
+			if d := tr.s[i] - tr.s[i+1]; math.Abs(d-step) > 1e-9 {
+				t.Fatalf("標本 %d で傾きが一定でない: %g, %g", i, d, step)
+			}
+		}
+	})
+}
+
+// TestSynthCommittedWAV は、コミットされた WAV が合成の出力とバイト単位で一致すること（DES-NG-09）。
+// 本物の音に差し替えた行（作り方が「自作（合成」で始まらない行）は比べない。
+func TestSynthCommittedWAV(t *testing.T) {
+	t.Run("TC-DES-NG-09-29 台帳で自作（合成）の WAV は、tools/synth の出力と 1 バイトも違わない", func(t *testing.T) {
+		media := filepath.Join("..", "..", "data", "alchemy", "media")
+		raw, err := os.ReadFile(filepath.Join(media, "ASSETS.md"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		synthesized := map[string]bool{}
+		listed := map[string]bool{}
+		for _, line := range strings.Split(string(raw), "\n") {
+			line = strings.TrimSpace(line)
+			if !strings.HasPrefix(line, "|") {
+				continue
+			}
+			cells := strings.Split(strings.Trim(line, "|"), "|")
+			if len(cells) < 2 {
+				continue
+			}
+			file := strings.Trim(strings.TrimSpace(cells[0]), "` ")
+			listed[file] = true
+			if strings.HasPrefix(strings.TrimSpace(cells[1]), "自作（合成") {
+				synthesized[file] = true
+			}
+		}
+		rendered := Render()
+		for p, want := range rendered {
+			if !listed[p] {
+				t.Errorf("%s が台帳にない", p)
+				continue
+			}
+			if !synthesized[p] {
+				continue // 本物の音に差し替えた
+			}
+			got, err := os.ReadFile(filepath.Join(media, filepath.FromSlash(p)))
+			if err != nil {
+				t.Errorf("%s を読めない: %v", p, err)
+				continue
+			}
+			if !bytes.Equal(got, want) {
+				t.Errorf("%s: コミットされた WAV（%d バイト）が合成の出力（%d バイト）と違う。go run ./tools/synth で作り直す", p, len(got), len(want))
+			}
+		}
+		for p := range synthesized {
+			if _, ok := rendered[p]; !ok {
+				t.Errorf("台帳の %s は自作（合成）だが、tools/synth にない", p)
+			}
+		}
+		if len(synthesized) == 0 {
+			t.Error("台帳に自作（合成）の行がない（読み取りの誤り）")
 		}
 	})
 }
