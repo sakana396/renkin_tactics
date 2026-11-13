@@ -379,13 +379,14 @@ func TestHiResBoard(t *testing.T) {
 		if !bar.In(cell) || !equip.In(cell) || bar.Overlaps(equip) {
 			t.Fatal(bar, equip)
 		}
-		if equip != image.Rect(pt.X+38, pt.Y+38, pt.X+48, pt.Y+48) {
+		// フェーズ 2 から、印・棒は CellSize/32 に比例する（TC-DES-NG-10-24）。
+		if equip != image.Rect(pt.X+33, pt.Y+33, pt.X+48, pt.Y+48) {
 			t.Fatal(equip)
 		}
-		if bar.Max.X != pt.X+37 || bar.Dy() != 4 {
+		if bar.Max.X != pt.X+32 || bar.Dy() != 6 {
 			t.Fatal(bar)
 		}
-		if zocEnemyCornerY != 40 {
+		if zocEnemyCornerY != 36 {
 			t.Fatal(zocEnemyCornerY)
 		}
 		head, stem := pinShape(pt, true)

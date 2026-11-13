@@ -491,7 +491,7 @@ func (g *Game) drawZOC(dst *ebiten.Image, board tactics.BoardView) {
 		if l.Side == tactics.Enemy {
 			clr = enemyBase
 		}
-		vector.StrokeLine(dst, float32(l.From.X), float32(l.From.Y), float32(l.To.X), float32(l.To.Y), 2, clr, false)
+		vector.StrokeLine(dst, float32(l.From.X), float32(l.From.Y), float32(l.To.X), float32(l.To.Y), float32(scaled(2)), clr, false)
 	}
 }
 
@@ -519,7 +519,7 @@ func (g *Game) drawUnitList(dst *ebiten.Image, units []tactics.Unit) {
 		}
 		vector.DrawFilledRect(dst, px+1, py+1, float32(CellSize-2), float32(CellSize-2), base, false)
 		if u.Boss {
-			vector.StrokeRect(dst, px+1, py+1, float32(CellSize-2), float32(CellSize-2), 2, gold, false)
+			vector.StrokeRect(dst, px+1, py+1, float32(CellSize-2), float32(CellSize-2), float32(scaled(2)), gold, false)
 		}
 		// 画像があれば、下地の上に重ねる。なければ今のタイル（DES-NG-08）。
 		if !g.drawUnitArt(dst, artKeyOf(u), int(px), int(py), scale) {
@@ -565,10 +565,11 @@ func (g *Game) drawCommandMark(dst *ebiten.Image, m CommandMark, r image.Rectang
 		vector.DrawFilledCircle(dst, cx, cy, radius+1, commandMarkEdge, true)
 		vector.DrawFilledCircle(dst, cx, cy, radius, clr, true)
 		if shape == shapeCrackedDot {
-			// 割れ目: 右上から中央を通って左下へ折れる線。
-			vector.StrokeLine(dst, cx+radius, cy-radius, cx, cy, 1.5, commandMarkEdge, true)
-			vector.StrokeLine(dst, cx, cy, cx-radius/2, cy+radius/4, 1.5, commandMarkEdge, true)
-			vector.StrokeLine(dst, cx-radius/2, cy+radius/4, cx-radius, cy+radius, 1.5, commandMarkEdge, true)
+			// 割れ目: 右上から中央を通って左下へ折れる線。太さもマスの大きさに比例させる。
+			lw := 1.5 * float32(CellSize) / BaseCellSize
+			vector.StrokeLine(dst, cx+radius, cy-radius, cx, cy, lw, commandMarkEdge, true)
+			vector.StrokeLine(dst, cx, cy, cx-radius/2, cy+radius/4, lw, commandMarkEdge, true)
+			vector.StrokeLine(dst, cx-radius/2, cy+radius/4, cx-radius, cy+radius, lw, commandMarkEdge, true)
 		}
 	}
 }

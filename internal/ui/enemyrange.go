@@ -319,11 +319,12 @@ func minimapPins(l MinimapLayout, pins []tactics.Pos) []image.Rectangle {
 // 印の置き場所の分け方（指揮官は左上、固定は右上、装備は右下）に従い、右上に置く。
 // ボスは右上に ★ があるので、★ を隠さないよう、その左に置く。
 func pinShape(pt image.Point, boss bool) (head, stem image.Rectangle) {
-	x := pt.X + CellSize - 9
+	x := pt.X + CellSize - scaled(9)
 	if boss {
+		// ★ の文字はマスの大きさに関わらず 12 px 幅なので、その分だけ左へ寄せる。
 		x -= 12
 	}
-	head = image.Rect(x, pt.Y+1, x+6, pt.Y+7)
-	stem = image.Rect(x+2, pt.Y+7, x+4, pt.Y+11)
+	head = image.Rect(x, pt.Y+scaled(1), x+scaled(6), pt.Y+scaled(7))
+	stem = image.Rect(x+scaled(2), pt.Y+scaled(7), x+scaled(4), pt.Y+scaled(11))
 	return head, stem
 }

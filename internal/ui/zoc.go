@@ -41,16 +41,16 @@ func zocMarkLines(board tactics.BoardView, cam Camera) []zocMarkLine {
 			sides := board.ZOCSides(p)
 			pt := cam.Screen(p)
 			if sides[tactics.Player] {
-				c := image.Pt(pt.X+zocMarkInset, pt.Y+zocMarkInset)
+				c := image.Pt(pt.X+scaled(zocMarkInset), pt.Y+scaled(zocMarkInset))
 				lines = append(lines,
-					zocMarkLine{From: c, To: image.Pt(c.X+zocMarkArm, c.Y), Side: tactics.Player},
-					zocMarkLine{From: c, To: image.Pt(c.X, c.Y+zocMarkArm), Side: tactics.Player})
+					zocMarkLine{From: c, To: image.Pt(c.X+scaled(zocMarkArm), c.Y), Side: tactics.Player},
+					zocMarkLine{From: c, To: image.Pt(c.X, c.Y+scaled(zocMarkArm)), Side: tactics.Player})
 			}
 			if sides[tactics.Enemy] {
-				c := image.Pt(pt.X+zocMarkInset, pt.Y+zocEnemyCornerY)
+				c := image.Pt(pt.X+scaled(zocMarkInset), pt.Y+zocEnemyCornerY)
 				lines = append(lines,
-					zocMarkLine{From: c, To: image.Pt(c.X+zocMarkArm, c.Y), Side: tactics.Enemy},
-					zocMarkLine{From: image.Pt(c.X, c.Y-zocMarkArm), To: c, Side: tactics.Enemy})
+					zocMarkLine{From: c, To: image.Pt(c.X+scaled(zocMarkArm), c.Y), Side: tactics.Enemy},
+					zocMarkLine{From: image.Pt(c.X, c.Y-scaled(zocMarkArm)), To: c, Side: tactics.Enemy})
 			}
 		}
 	}

@@ -10,12 +10,14 @@ import (
 // 盤面の装備の印（DES-UI-33、DES-IT07 3.6 節）。ユニットの 32×32 の絵の右下に、装備している武器の種類の絵を小さく置く。
 // 印の置き場所は、指揮官（小隊長）を左上、固定の範囲のピンを右上（pinShape）、装備を右下に分ける。
 const (
-	// EquipMarkSize は装備の印の大きさ（10×10）。
+	// EquipMarkSize は 32 px のマスでの装備の印の大きさ（10×10）。大きなマスでは scaled で比例させる（equipMarkSize）。
 	EquipMarkSize = 10
 )
 
 // マスの大きさに従う装備の印と HP の棒の位置（DES-NG-10）。recomputeMetrics が作る。
 var (
+	// equipMarkSize は装備の印の一辺（px。EquipMarkSize をマスの大きさに比例させた値）。
+	equipMarkSize int
 	// equipMarkOffset は、マスの左上から印の左上までの位置（既定は相対 x=22〜31, y=22〜31）。
 	equipMarkOffset int
 	// unitHPBarRight は、HP の棒の右端（マスの左端から）。装備の印の左に 1 px 空けて止める（#167 の PR の設計への提案）。
@@ -37,7 +39,7 @@ func equipMarkRect(pt image.Point) image.Rectangle {
 // unitHPBarRect は、画面の左上が pt のマスに描く HP の棒の枠（下地）の範囲を返す（DES-UI-03）。
 // 下端の 4 px に置き、右端は装備の印の手前で止める（DES-UI-33）。
 func unitHPBarRect(pt image.Point) image.Rectangle {
-	return image.Rect(pt.X+2, pt.Y+CellSize-5, pt.X+unitHPBarRight, pt.Y+CellSize-1)
+	return image.Rect(pt.X+scaled(2), pt.Y+CellSize-scaled(5), pt.X+unitHPBarRight, pt.Y+CellSize-scaled(1))
 }
 
 // equipMarks は、ユニットの列 units のうち、カメラ cam に見えている生きているユニットの装備の印を、列の順に返す（DES-UI-33）。

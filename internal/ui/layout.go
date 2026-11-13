@@ -48,6 +48,10 @@ func useMetrics(cell int) {
 	recomputeMetrics()
 }
 
+// scaled は、32 px のマスを前提に決めた長さ n（px）を、今のマスの大きさに比例させた長さにする（DES-NG-10 フェーズ 2）。
+// 既定（32）では n のまま。1 マス 48 px では 1.5 倍（端数は切り捨て）。HP の棒・印など、マスの中の小さな部品に使う。
+func scaled(n int) int { return n * CellSize / BaseCellSize }
+
 // boardShift は、既定の盤面（512 px）に対する盤面の大きさの差（px）。既定では 0、1 マス 48 px では 256。
 // 右欄の x と、盤面の下の案内欄の y は、この分だけ後ろへずれる（DES-NG-10）。
 func boardShift() int { return MapSize - boardCells*BaseCellSize }
@@ -74,9 +78,10 @@ func recomputeMetrics() {
 	cameraGuideY = ScreenHeight - lineHeight
 	hintRewindY = ScreenHeight - lineHeight
 	minimapBoxX = MapSize + (InfoWidth-minimapBox)/2
-	equipMarkOffset = CellSize - EquipMarkSize
-	unitHPBarRight = equipMarkOffset - 1
-	zocEnemyCornerY = CellSize - 8
+	equipMarkSize = scaled(EquipMarkSize)
+	equipMarkOffset = CellSize - equipMarkSize
+	unitHPBarRight = equipMarkOffset - scaled(1)
+	zocEnemyCornerY = CellSize - scaled(8)
 	overviewButtonRect = image.Rect(744+sh, 472, 824+sh, 504)
 	nextAllyButtonRect = image.Rect(704+sh, 520+sh, 824+sh, 544+sh)
 	rangeStatusRect = image.Rect(520+sh, 304, 664+sh, 336)
