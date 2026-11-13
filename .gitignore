@@ -1,2 +1,5 @@
 # 試し用の絵の出力先（tools/mkplaceholder。コミットしない）
 /placeholder-out/
+
+# 取り込み・衝突の残り
+*.orig
