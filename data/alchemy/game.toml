@@ -2,4 +2,5 @@
 # party は初めの名簿。lord = true のキャラ（主人公）がちょうど 1 人いること
 # 名前・性別・性格は開発者が決めるまでの仮のもの（企画たたき台 Q-5）
 party = ["aoi", "dain", "tori", "nemu"]
-stock = [{ item = "potion", count = 1 }, { item = "bomb_small", count = 1 }]
+# 回復薬は 3 個（試遊で、序盤に尽きてボスを受けられなかったため、1 個から増やした。開発者の報告、2026-11-13）。
+stock = [{ item = "potion", count = 3 }, { item = "bomb_small", count = 1 }]

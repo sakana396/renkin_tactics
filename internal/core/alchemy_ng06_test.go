@@ -85,14 +85,13 @@ func TestAlchemyData(t *testing.T) {
 		if len(aoi.Weapons) != 2 || aoi.Weapons[0] != "fire" || aoi.Weapons[1] != "heal_staff" {
 			t.Fatal(aoi.Weapons)
 		}
-		stockSmall := 0
+		stock := map[string]int{}
 		for _, ic := range cat.Game.Stock {
-			if ic.Item == "bomb_small" {
-				stockSmall = ic.Count
-			}
+			stock[ic.Item] = ic.Count
 		}
-		if stockSmall != 1 {
-			t.Fatal("在庫の小さな爆弾", cat.Game.Stock)
+		// 在庫は、小さな爆弾 1 個と回復薬 3 個（回復薬は、試遊で序盤に尽きたため 1 個から増やした）。
+		if stock["bomb_small"] != 1 || stock["potion"] != 3 {
+			t.Fatal("在庫", cat.Game.Stock)
 		}
 		reward := map[string]map[string]int{}
 		for _, ch := range cat.Chapters() {
