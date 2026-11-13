@@ -271,6 +271,8 @@ type InfoBar struct {
 type InfoIcon struct {
 	X, Y, Size int
 	Tile       assets.Tile
+	// Art はユニットの絵の手がかり（DES-NG-08）。空でなければ、描くときに画像（肖像・ユニットの絵）があればそれを描く。
+	Art ArtKey
 }
 
 // InfoView は、情報欄に描くもの（DES-UI-06、DES-UI-07）。予測の表、ユニット、地形の順に上から並べる。
@@ -407,7 +409,7 @@ func (v *InfoView) text(x, y int, s string, st InfoStyle) {
 // 使った一番下の y を返す。レベル（自軍は経験も）は名前・クラスの下に置く（FR-UNT-09、DES-UI-06、DES-UI-16、DES-UI-28）。
 func (v *InfoView) addStats(u tactics.Unit, x, y int) int {
 	// 名前の横に、盤面と同じタイルを 4 倍で描く。レベルがある自軍は絵の横に3行で並べる。
-	v.Icons = append(v.Icons, InfoIcon{X: x, Y: y, Size: PortraitSize, Tile: unitTile(u)})
+	v.Icons = append(v.Icons, InfoIcon{X: x, Y: y, Size: PortraitSize, Tile: unitTile(u), Art: artKeyOf(u)})
 	lines := 2
 	lv := levelText(u)
 	if lv != "" {
