@@ -1,7 +1,7 @@
 # 新しいゲームの見た目と音の方針（エージェント裁量案）
 
 - 文書 ID: CON-DRAFT-NG02
-- 版: 0.2（仮決めの採用と、アオイの設定・ツールの決定を反映。**文書としては未承認**）。0.1 は開発者の指示（2026-11-13）でエージェントが仮決めした案
+- 版: 0.3（絵柄の決定を反映。ChatGPT のアオイの肖像を基準にする）。0.2（仮決めの採用と、アオイの設定・ツールの決定を反映。**文書としては未承認**）。0.1 は開発者の指示（2026-11-13）でエージェントが仮決めした案
 - 作成日: 2026-11-13
 - 入力: [企画たたき台 CON-DRAFT-NG01](new-game-draft.md)、新作の定義データ（`data/alchemy`）、開発者の試遊の感想（「ストーリーだけ違う同じようなゲームになっていた。見た目と音で別物にしたい」）
 - 位置付け: 反復外。**既存の企画書・要求・設計は変えない**。AI で画像を作るときの指示書として使う
@@ -41,7 +41,7 @@
 
 ### 2.3 絵柄（仮決め V-2）
 
-- 2D の手描き風イラスト。**太すぎない輪郭線と、平塗りに近い彩色**（塗りの影は 2 段まで）。生成しやすく、画像を並べたときにそろえやすい
+- 2D の手描き風アニメ調のイラスト。**細めから中くらいの輪郭線と、やや描き込んだ彩色**（柔らかいセル塗りに、わずかな質感。小物は細かく描く）。**基準は、ChatGPT で作ったアオイの肖像**（開発者が選んだ、2026-11-13）。ほかのキャラも、同じ絵柄にそろえる
 - 全体の彩度はやや低め。**水色と琥珀だけを鮮やかにする**（絵のどこに目が行くかが決まり、戦闘の画面でも見やすい）
 - 頭身: ユニットの絵は **2〜3 頭身のデフォルメ**（小さく表示してもシルエットで見分けられる）。人物の絵（肖像）は **半身のリアルめの頭身**（会話で表情を読ませる）
 - 避けること: パステルの丸い柔らかい絵柄、写真のような質感、金属の光沢が強い立体的な絵、特定の作品・作家に似た絵
@@ -111,8 +111,8 @@
 ### 5.1 共通のスタイルブロック
 
 ```
-2D hand-drawn illustration, flat colors with at most two shading tones,
-clean medium-weight outlines, slightly desaturated palette with amber/copper
+2D hand-drawn anime-style illustration, soft cel shading with subtle texture,
+clean thin-to-medium outlines, slightly desaturated palette with amber/copper
 and aqua-teal as the only vivid accents, fantasy ancient stone city setting,
 no text, no letters, no watermark
 ```
@@ -168,8 +168,8 @@ iron-gray and black palette, no warm colors
 **アオイの肖像**
 
 ```
-2D hand-drawn illustration, flat colors with at most two shading tones,
-clean medium-weight outlines, slightly desaturated palette with amber/copper
+2D hand-drawn anime-style illustration, soft cel shading with subtle texture,
+clean thin-to-medium outlines, slightly desaturated palette with amber/copper
 and aqua-teal as the only vivid accents, fantasy ancient stone city setting,
 no text, no letters, no watermark.
 Bust-up portrait, 3/4 view, calm and gentle expression, soft warm rim light,
@@ -184,8 +184,8 @@ embroidery on the sleeve, short practical hair, amber accent.
 **アオイのユニットの絵**
 
 ```
-2D hand-drawn illustration, flat colors with at most two shading tones,
-clean medium-weight outlines, slightly desaturated palette with amber/copper
+2D hand-drawn anime-style illustration, soft cel shading with subtle texture,
+clean thin-to-medium outlines, slightly desaturated palette with amber/copper
 and aqua-teal as the only vivid accents, fantasy ancient stone city setting,
 no text, no letters, no watermark.
 Full-body chibi character, 2.5 heads tall, front three-quarter view,
@@ -201,7 +201,7 @@ hair, amber accent.
 
 | 観点 | 見ること |
 |---|---|
-| 絵柄の一致 | 2.3 の絵柄（平塗り、低彩度、水色と琥珀だけ鮮やか）になっているか |
+| 絵柄の一致 | 2.3 の絵柄（柔らかいセル塗り、低彩度、水色と琥珀だけ鮮やか）になっているか |
 | 設定の一致 | 女性・20 歳くらい・華奢・標準の身長、鞄が大きく見えるか |
 | シルエット | 小さく縮めても、ほかのキャラと見分けられるか |
 | 破綻 | 手・指・持ち物・左右非対称・文字の混入 |
@@ -210,7 +210,8 @@ hair, amber accent.
 | 利用条件 | 6 章のチェックを、**先に**済ませる |
 
 - 結果は、台帳ではなく、まず**比較のメモ**（ツール名・版・日・各観点の○△×・採用するか）にして、`data/alchemy/media/` の外（リポジトリの外でもよい）に置く。採用する画像だけを media に置き、台帳に書く
-- 採用するツールは 1 つでも、2 つの併用（肖像は A、ユニットは B など）でもよい。**絵柄がそろうことを優先**する。併用するなら、参照画像を渡して、そろえられるかを見る
+- **結果（2026-11-13）: アオイの肖像を比べ、開発者が ChatGPT の絵柄を選んだ**。ChatGPT を主にする。Gemini の絵は、絵柄はやや平坦で、背負い鞄・小道具が抜け、背景の指定も守られなかった。**ほかのキャラは、ChatGPT のアオイの絵を参照画像として渡し、絵柄をそろえる**。ユニットの絵は、小さく表示するので、肖像より小物を絞り、シルエットを強くする指示を足す
+- 併用する場合は、参照画像で絵柄をそろえられるかを先に見る（今は併用しない）
 - アオイの結果を見て、絵柄の方針（2.3）と指示文の型（5 章）を直してから、残りの 4 人と敵に進む（V-4）
 
 ## 6. 出典と利用条件の記録（必須）
@@ -227,7 +228,8 @@ hair, amber accent.
 | # | 仮決め | 差し替えるときの影響 |
 |---|---|---|
 | V-1 | 見た目の核は「水と石の都市に琥珀の灯り」。暖色が自軍、冷たい水色が遺物 | 配色、敵の見た目、UI の色 |
-| V-2 | 絵柄は手描き風、平塗りに近い、彩度は低めで水色と琥珀だけ鮮やか。ユニットは 2〜3 頭身、肖像は半身 | 生成の指示の型（5 章） |
+| V-2 | 絵柄は手描き風アニメ調で、やや描き込んだ柔らかいセル塗り。彩度は低めで水色と琥珀だけ鮮やか。基準は ChatGPT のアオイの肖像（2026-11-13 に開発者が選んだ）。ユニットは 2〜3 頭身、肖像は半身 | 生成の指示の型（5 章） |
+| V-7 | 画像生成は ChatGPT を主にする（Gemini は今は使わない）。ユニットの絵は、小さく表示するので、肖像より小物を絞って作る | 5.7 節、作る順（4 章） |
 | V-3 | アオイは決定（女性・成人・華奢・標準の身長）。ほかのキャラは仮決め（服装・シルエット・色で決める） | キャラの説明（3 章、5.4） |
 | V-4 | 先に 1 人だけ作って画面で確かめる | 作る順（4 章） |
 | V-5 | 地形のタイルの差し替えは後回し（8 章） | 見た目の完成度 |
@@ -256,6 +258,6 @@ hair, amber accent.
 
 - ~~Q-V1: 仮決め V-1〜V-6 の採否~~ → 採用（2026-11-13）
 - ~~Q-V2: 自軍の性別・年齢・体格~~ → アオイは決定。ほかはエージェントの仮決め（3 章）。違えば差し替える
-- ~~Q-V3: 使う画像生成ツール~~ → Gemini と ChatGPT の両方で試す（5.7 節）。**採用するツールと規約の確認は、アオイの比較のあとに決める**
+- ~~Q-V3: 使う画像生成ツール~~ → ChatGPT を主にする（2026-11-13。絵柄が好みとのこと）。規約の確認と、台帳に書くモデル名・日・指示文の全文は、本物の画像を置く前に済ませる
 - Q-V4: 敵のボスと隊長に、個別の絵を作るか
 - Q-V5: 地形のタイルをいつ・どう差し替えるか
