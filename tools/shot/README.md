@@ -8,9 +8,25 @@ tools/shot/shot.sh -chapter ch09 -scene battle -steps 'rewind' -out /tmp/ch09-re
 tools/shot/shot.sh -chapter ch09 -scene battle -steps 'cursor:160:160' -out /tmp/ch09-info.png
 ```
 
-PNG は常に 832×576 px。セーブファイルは読み書きせず、乱数の種は 1 に固定する。`-logdir ディレクトリ` を付けると、遊ぶ版と同じ行動の記録（DES-IT06 13.1 節）を、そのディレクトリの下の `logs` に書く（付けなければ書かない）。記録は `go run ./tools/replaylog <ファイル>` で流し直せる。`-chapter` は ch01〜ch09、`-scene` は `title`、`rule`、`story`、`prepare`、`deploy`、`battle` を指定する。場面への移動では新規開始、物語の送り、出撃確定を自動で行う。
+PNG の大きさは、遊ぶ画面の論理の大きさと同じ。既定（`-hires` なし）は 832×576 px、`-hires`（1 マス 48 px）は 1088×832 px。セーブファイルは読み書きせず、乱数の種は 1 に固定する。`-logdir ディレクトリ` を付けると、遊ぶ版と同じ行動の記録（DES-IT06 13.1 節）を、そのディレクトリの下の `logs` に書く（付けなければ書かない）。記録は `go run ./tools/replaylog <ファイル>` で流し直せる。`-chapter` は開始章 ID（既定 ch01。`-game base` は ch01〜ch09、`-game alchemy` は ch01〜ch03）、`-scene` は `title`、`rule`、`story`、`prepare`、`deploy`、`battle`、`gameover` を指定する。`gameover` は、戦闘を始めて何も操作せずに番を送り、主人公が倒れるまで進める（その章で負けないと誤りになる。`-game base` の ch01 では負けない）。場面への移動では新規開始、物語の送り、出撃確定を自動で行う。
 
-`-steps` には次の操作をカンマ区切りで左から順に書く。盤面の座標は左上を (0,0) とした章全体のマス座標。画面の座標は 832×576 のピクセル座標。
+## 作品と高解像度の指定
+
+| 引数 | 内容 |
+|---|---|
+| `-game base`（既定）、`-game alchemy` | 撮る作品。`alchemy` は新作の定義データと media（画像・音）を使う。引数なしの呼び方は今までと同じ（base） |
+| `-hires` | 高解像度の表示（1 マス 48 px、窓 1088×832）にする。新作の遊ぶ画面と同じ見た目を撮るときは `-game alchemy -hires` を付ける（`cmd/renkin` の `-game alchemy` は HiRes を真にする） |
+
+```sh
+tools/shot/shot.sh -game alchemy -hires -chapter ch02 -scene battle -out /tmp/alchemy-battle.png
+tools/shot/shot.sh -game alchemy -hires -scene gameover -out /tmp/alchemy-gameover.png
+```
+
+Linux で直接撮るとき（Windows 版を使わないとき）は、環境変数 `SHOT_NATIVE=1` を付け、`xvfb-run -a` の下で `go run ./tools/shot …` を実行する。
+
+高解像度の画面では、盤面を持たない場面（タイトル・物語・準備・敗北など）の配置は 832×576 のまま窓の中央に置かれる。`clickpx` の画面座標は、この場面では**配置の座標**（窓の座標から (128,128) を引いたもの）で指定する。盤面を持つ場面（戦闘・配置）では窓の座標。
+
+`-steps` には次の操作をカンマ区切りで左から順に書く。盤面の座標は左上を (0,0) とした章全体のマス座標。画面の座標は、既定では 832×576、`-hires` では 1088×832 のピクセル座標。
 
 | 操作 | 内容 |
 |---|---|

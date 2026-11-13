@@ -101,7 +101,7 @@ func (g *shotGame) prepareScene() error {
 	switch g.options.Scene {
 	case "", "title":
 		return nil
-	case "rule", "story", "prepare", "deploy", "battle":
+	case "rule", "story", "prepare", "deploy", "battle", "gameover":
 	default:
 		return fmt.Errorf("場面 %q は指定できません", g.options.Scene)
 	}
@@ -142,7 +142,31 @@ func (g *shotGame) prepareScene() error {
 		}
 		s.BattleController().Tick()
 	}
-	return nil
+	if g.options.Scene != "gameover" {
+		return nil
+	}
+	// 敗北: 何も操作せずに番を送り続け、主人公が倒れるまで進める（上限つき）。勝ってしまう章では誤りにする。
+	for i := 0; i < 20000; i++ {
+		c := s.BattleController()
+		switch c.State() {
+		case Playing:
+			c.Tick()
+		case Over:
+			if c.Battle().Result == tactics.Won {
+				return errors.New("敗北にならずに勝ちました")
+			}
+			s.Advance()
+			if s.Scene() != GameOver {
+				return fmt.Errorf("敗北の場面へ進めません: %v", s.Scene())
+			}
+			return nil
+		default:
+			// 未行動の自軍がいると確認が 1 回入るので、2 回続けて呼ぶ。
+			c.EndPhase()
+			c.EndPhase()
+		}
+	}
+	return errors.New("敗北になりません")
 }
 
 func (g *shotGame) step(raw string) error {
