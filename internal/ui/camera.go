@@ -55,7 +55,8 @@ func (c Camera) MenuRects(p tactics.Pos, n int) []image.Rectangle {
 }
 
 const cameraGuide = "矢印／ホイールで盤面移動"
-const cameraGuideY = ScreenHeight - lineHeight
+// cameraGuideY は案内の行の y（DES-NG-10。窓の高さに従う）。
+var cameraGuideY int
 
 // Camera は履歴閲覧中なら専用カメラを返す（DES-UI-25）。
 func (c *Controller) Camera() Camera {

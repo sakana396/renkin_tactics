@@ -12,10 +12,14 @@ import (
 const (
 	// EquipMarkSize は装備の印の大きさ（10×10）。
 	EquipMarkSize = 10
-	// equipMarkOffset は、マスの左上から印の左上までの位置（相対 x=22〜31, y=22〜31）。
-	equipMarkOffset = CellSize - EquipMarkSize
+)
+
+// マスの大きさに従う装備の印と HP の棒の位置（DES-NG-10）。recomputeMetrics が作る。
+var (
+	// equipMarkOffset は、マスの左上から印の左上までの位置（既定は相対 x=22〜31, y=22〜31）。
+	equipMarkOffset int
 	// unitHPBarRight は、HP の棒の右端（マスの左端から）。装備の印の左に 1 px 空けて止める（#167 の PR の設計への提案）。
-	unitHPBarRight = equipMarkOffset - 1
+	unitHPBarRight int
 )
 
 // EquipMark は盤面に描く装備の印 1 つ（DES-UI-33）。Rect は画面の座標。

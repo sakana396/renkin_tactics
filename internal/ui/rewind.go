@@ -178,10 +178,11 @@ func fitRewind(s string, width int) string {
 // 一覧・詳細・理由は右上の情報欄（y < 360）に収め、右下のミニマップ（y = 360〜511）と重ねない。座標だけを詰め、
 // 8 行の一覧と最大 5 行の詳細（DES-UI-21、DES-IT04 7.1 節）は保つ（REV-071 F-03 案 B）。
 // 「戻る」「決定」などのボタンと気配の案内は下の行（y = 520〜576）に置く（DES-UI-28）。
+// rewindLeft・rewindRight は右欄の一覧の左端・右端（DES-NG-10。盤面の大きさに従う）。
+var rewindLeft, rewindRight int
+
 const (
-	rewindLeft    = MapSize + 8
 	rewindWidth   = InfoWidth - 16
-	rewindRight   = rewindLeft + rewindWidth
 	rewindTitleY  = 4
 	rewindSubY    = 22
 	rewindRowTop  = 40
@@ -249,8 +250,8 @@ func (c *Controller) RewindView() SceneView {
 		if c.state == Playing {
 			return v
 		}
-		button(fmt.Sprintf("巻き戻し 残り %d/10", c.battle.RewindsLeft()), image.Rect(304, 512, 504, 530), true)
-		add("T: 巻き戻し", 216, 514, StylePlain)
+		button(fmt.Sprintf("巻き戻し 残り %d/10", c.battle.RewindsLeft()), image.Rect(304, MapSize, 504, MapSize+18), true)
+		add("T: 巻き戻し", 216, MapSize+2, StylePlain)
 
 		return v
 	}
@@ -258,8 +259,8 @@ func (c *Controller) RewindView() SceneView {
 	n := c.battle.RewindsLeft()
 	ok := c.previewOK()
 	add(fmt.Sprintf("巻き戻し 残り %d/10", n), rewindLeft, rewindTitleY, StyleTitle)
-	left := image.Rect(rewindLeft, 520, rewindLeft+144, 560)
-	right := image.Rect(rewindRight-144, 520, rewindRight, 560)
+	left := image.Rect(rewindLeft, MapSize+8, rewindLeft+144, MapSize+48)
+	right := image.Rect(rewindRight-144, MapSize+8, rewindRight, MapSize+48)
 	detail := c.rewindDetail()
 	// 選択中の写しに予兆があれば、右欄の理由の下の空きに同じ案内を出す（DES-UI-24）。
 	if hv := c.RewindBoard().Hint; hv.Visible {

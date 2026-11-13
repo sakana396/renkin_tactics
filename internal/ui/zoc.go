@@ -14,9 +14,10 @@ const zocNote = "相手の重騎士の隣: +1"
 const (
 	zocMarkInset = 5
 	zocMarkArm   = 5
-	// zocEnemyCornerY は敵軍の角印の頂点の y（マスの上端から）。HP の棒（下端の 5 px）より上に置く。
-	zocEnemyCornerY = CellSize - 8
 )
+
+// zocEnemyCornerY は敵軍の角印の頂点の y（マスの上端から）。HP の棒（下端の 5 px）より上に置く（DES-NG-10。マスの大きさに従う）。
+var zocEnemyCornerY int
 
 // zocMarkLine は重騎士の ZOC の角印の線分 1 本（DES-UI-29、DES-IT07 3.8 節）。Side は重騎士の陣営で、線の色を決める。
 type zocMarkLine struct {

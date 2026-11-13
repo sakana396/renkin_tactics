@@ -26,7 +26,7 @@ func (g *Game) drawEnemyRanges(dst *ebiten.Image, layers []EnemyRangeLayer) {
 // drawRangeCell は層 l の 1 マスを、画面の左上 pt に描く（DES-UI-29）。
 func (g *Game) drawRangeCell(dst *ebiten.Image, l EnemyRangeLayer, pt image.Point) {
 	if l.Stroke == StrokeFill {
-		vector.DrawFilledRect(dst, float32(pt.X), float32(pt.Y), CellSize, CellSize, dangerFill, false)
+		vector.DrawFilledRect(dst, float32(pt.X), float32(pt.Y), float32(CellSize), float32(CellSize), dangerFill, false)
 		return
 	}
 	clr, inset := color.Color(watchedLine), watchedInset
