@@ -67,7 +67,7 @@ func (g *Game) drawWatchedPins(dst *ebiten.Image, pins []tactics.Pos, units []ta
 			}
 		}
 		head, stem := pinShape(g.drawCamera.Screen(p), boss)
-		fillImageRect(dst, head.Inset(-1), rangeLineEdge)
+		fillImageRect(dst, head.Inset(-scaled(1)), rangeLineEdge)
 		fillImageRect(dst, stem, gold)
 		fillImageRect(dst, head, gold)
 	}
