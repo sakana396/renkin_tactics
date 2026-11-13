@@ -127,13 +127,27 @@ a small teenage boy around 16 with untidy messy hair and a shy, cheerful express
 
 敵の肖像は、今は使わない（物語で話すのはドルクとベルナドだけ。必要になったら別に作る）。
 
+### 野盗（`units/enemy_bandit.png`）— **作り直し（2026-11-13、武器を斧から剣に変えたため）**
+
+データ上の野盗の武器は、斧から**剣**に変えた（試遊で、斧が槍の前衛に有利で、序盤が難しかったため）。今の絵は斧を持っているので、**剣を持つ姿で作り直す**。人物（顔・装備）は、今の絵と同じにしたいので、**①ダインのユニットの絵（絵柄の見本）、②今の野盗の絵（人物の見本。`art/units/enemy_bandit.png` の元の絵）を添付**し、次の指示文を貼る:
+
+```
+Use the first attached image as a style reference: match its art style, line weight, shading, color treatment and chibi proportions.
+The second attached image shows the same bandit holding an axe: keep exactly the same face, hair, outfit, colors and accessories, and redraw him as a full-body chibi following the first image's proportions, but replace the axe with a crude notched short sword held in the same hand.
+2D hand-drawn anime-style illustration, soft cel shading with subtle texture, clean thin-to-medium outlines, slightly desaturated cold palette with iron-gray, black and pale-cyan glow as the only accents, no warm colors, fantasy ancient stone city setting, no text, no letters, no watermark.
+Full-body chibi character, 2.5 heads tall, front three-quarter view, standing pose, centered, entire body visible with margin on all sides, plain flat solid bright-green background (for cutting out), square 1:1.
+a rough bandit in mismatched patched gear, ragged cloth and dirty brown and gray leather, wielding a crude notched short sword, unshaven scowling face, absolutely no glowing lines anywhere (his weapon is ordinary, not an ancient relic).
+```
+
+（下は、最初の指示文。斧を持つ版。）
+
 ### 野盗（`units/enemy_bandit.png`）
 
 ```
 Use the attached image as a style reference: match its art style, line weight, shading, color treatment and chibi proportions, but draw a different character as described below.
 2D hand-drawn anime-style illustration, soft cel shading with subtle texture, clean thin-to-medium outlines, slightly desaturated cold palette with iron-gray, black and pale-cyan glow as the only accents, no warm colors, fantasy ancient stone city setting, no text, no letters, no watermark.
 Full-body chibi character, 2.5 heads tall, front three-quarter view, standing pose, centered, entire body visible with margin on all sides, plain flat solid bright-green background (for cutting out), square 1:1.
-a rough bandit in mismatched patched gear, ragged cloth and dirty brown and gray leather, wielding a crude axe, unshaven scowling face, absolutely no glowing lines anywhere (his weapon is ordinary, not an ancient relic).
+a rough bandit in mismatched patched gear, ragged cloth and dirty brown and gray leather, wielding a crude notched sword, unshaven scowling face, absolutely no glowing lines anywhere (his weapon is ordinary, not an ancient relic).
 ```
 
 ### 公国の剣士（`units/enemy_swordsman.png`）

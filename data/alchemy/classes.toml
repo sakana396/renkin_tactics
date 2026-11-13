@@ -46,9 +46,10 @@ base = { hp = 12, str = 4, skl = 6, spd = 5, def = 1, mov = 5, lck = 3, mag = 0,
 
 # 1 章の敵（遺跡に居座る野盗）
 [[classes]]
+# 野盗は剣を持つ（試遊で、斧が槍の前衛に有利で、序盤が難しかったため、斧から変えた。開発者の報告、2026-11-13）。槍は剣に強い。
 id = "bandit"
 name = "野盗"
-weapon_type = "axe"
+weapon_type = "sword"
 base = { hp = 12, str = 5, skl = 2, spd = 3, def = 1, mov = 5, lck = 1, mag = 0, res = 0 }
 
 # 隣の国の将（ボス）。3 章の将はこの兵種に能力を足す
