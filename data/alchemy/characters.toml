@@ -10,8 +10,10 @@ name = "アオイ"
 class = "alchemist"
 bonus = { hp = 0, str = 0, skl = 0, spd = 0, def = 0, mov = 0 }
 growth = { hp = 50, str = 10, skl = 45, spd = 45, def = 15, lck = 35, mag = 50, res = 35 }
-weapon = "fire"
-items = [{ item = "potion", count = 1 }, { item = "bomb_small", count = 2 }, { item = "bomb_large", count = 1 }]
+# 主人公は、攻撃の魔法に加えて、癒やしの杖も持つ（開発者の依頼、2026-11-13）。手持ちは武器 2 本 ＋ 道具 3 個で、上限の 5 枠。
+# 小さな爆弾の 1 個は、枠の都合で名簿から外し、全体の在庫（game.toml の stock）に入れた（準備の画面で持たせられる）。
+weapons = ["fire", "heal_staff"]
+items = [{ item = "potion", count = 1 }, { item = "bomb_small", count = 1 }, { item = "bomb_large", count = 1 }]
 lord = true
 
 # 護衛の兵（国から付けられる）。前衛で主人公を守る
