@@ -26,9 +26,16 @@ type SceneText struct {
 }
 
 // SceneIcon は加入した仲間の絵（DES-UI-12）。
+//
+// Art があり、その絵（DES-NG-08）が使えるときは、タイルの代わりに画像を Size 四方の箱へ描く。
+// Face が真なら絵の頭と肩だけを切り出す（名簿の行の小さな絵。全身を縮めると顔が読めないため）。
+// Art が空（media がない）なら、今までどおりタイルを 2 × タイルの大きさで描く。
 type SceneIcon struct {
 	Tile assets.Tile
 	X, Y int
+	Art  ArtKey
+	Size int
+	Face bool
 }
 
 // SceneView は場面の表示を描画から独立して検証するための値（DES-UI-09）。
@@ -162,7 +169,7 @@ func (s *SceneController) View() SceneView {
 				weaponType = tactics.Magic
 			}
 			// 騎兵の絵を選べるよう、クラス名も渡す（DES-UI-22）。
-			v.Icons = append(v.Icons, SceneIcon{unitTile(tactics.Unit{ClassName: class.Name, Side: tactics.Player, Weapons: []tactics.Weapon{{Type: weaponType}}}), 48, 208})
+			v.Icons = append(v.Icons, SceneIcon{Tile: unitTile(tactics.Unit{ClassName: class.Name, Side: tactics.Player, Weapons: []tactics.Weapon{{Type: weaponType}}}), X: 48, Y: 208, Art: s.sceneArtKey(ArtKey{Name: ch.Name, ClassName: class.Name, Player: true}), Size: joinedArtSize})
 			lines(fmt.Sprintf("%s　Lv %d", class.Name, m.Level), 256, StylePlain)
 			lines(fmt.Sprintf("HP %d　力 %d　技 %d　速さ %d　守備 %d　移動 %d", m.Stats.HP, m.Stats.Str, m.Stats.Skl, m.Stats.Spd, m.Stats.Def, m.Stats.Mov), 296, StylePlain)
 		}
@@ -321,4 +328,15 @@ func (s *SceneController) ToggleInfoPage() {
 	if s.scene == Prepare {
 		s.infoPage = s.infoPage.next()
 	}
+}
+
+// joinedArtSize は加入の場面の絵の一辺。絵の下の文（y = 256）に触れない大きさ（DES-NG-08）。
+const joinedArtSize = 48
+
+// sceneArtKey は media があるときだけ k を返す。ないときは空の値（今までのタイルで描く。DES-NG-08）。
+func (s *SceneController) sceneArtKey(k ArtKey) ArtKey {
+	if s.cfg.Media == nil {
+		return ArtKey{}
+	}
+	return k
 }

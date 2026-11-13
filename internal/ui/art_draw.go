@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/sakana396/renkin_tactics/internal/ui/assets"
 	"image"
 	"image/color"
 
@@ -93,4 +94,31 @@ func (g *Game) drawScenePortrait(dst *ebiten.Image, v SceneView) {
 	}
 	b := eb.Bounds()
 	drawArtIn(dst, eb, fitRect(v.Portrait.Rect, b.Dx(), b.Dy()), 1)
+}
+
+// drawSceneIcon は場面の絵（準備の名簿の行・加入の場面）を描く（DES-NG-08）。
+// 絵が使えるときは、CPU で面積平均に縮めた画像を Size 四方の箱の中央へ 1 対 1 で描く（補間で縮めるとざらつく）。
+// 使えないときは今までのタイル。
+func (g *Game) drawSceneIcon(dst *ebiten.Image, ic SceneIcon) {
+	if !ic.Art.Empty() && ic.Size > 0 {
+		a := g.artStore()
+		if p, ok := a.UnitArtPath(ic.Art); ok {
+			w, h := ic.Size, ic.Size
+			if !ic.Face {
+				// 全身は縦横比を保って箱に収める。
+				if src := a.Ebiten(p, true); src != nil {
+					b := src.Bounds()
+					r := fitRect(image.Rect(0, 0, ic.Size, ic.Size), b.Dx(), b.Dy())
+					w, h = r.Dx(), r.Dy()
+				}
+			}
+			if eb := a.Shrunk(p, ic.Face, w, h); eb != nil {
+				op := &ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(ic.X+(ic.Size-w)/2), float64(ic.Y+(ic.Size-h)/2))
+				dst.DrawImage(eb, op)
+				return
+			}
+		}
+	}
+	g.drawTileSize(dst, ic.Tile, ic.X, ic.Y, 2*assets.TileSize)
 }

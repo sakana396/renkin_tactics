@@ -105,6 +105,8 @@ const (
 	prepareRosterRows = 8
 	// prepareRosterY は名簿の最初の行の y。行は 24 px ごと（DES-IT06 12.1 節）。
 	prepareRosterY = 64
+	// prepareRosterArtSize は名簿の行の絵の一辺。行の高さ（24 px）に収め、隣の行と重ねない（DES-NG-08）。
+	prepareRosterArtSize = 24
 	// prepareSlotY・prepareSlotStep・prepareSlotHeight は持ち物の 5 枠の行の位置（DES-UI-32）。
 	prepareSlotY      = 88
 	prepareSlotStep   = 32
@@ -438,7 +440,7 @@ func (s *SceneController) rosterView(v *SceneView) {
 		v.Rows = append(v.Rows, PrepareRow{Member: i, Rect: image.Rect(56, y, prepareLeftArea.Max.X, y+24), Mark: image.Rect(16, y, 52, y+24), Selected: i == s.prepareMember})
 		row := fitText(fmt.Sprintf("%s　%s　Lv %d　HP %d　手持ち %d/5", u.Name, u.ClassName, m.Level, m.Stats.HP, len(m.Weapons)+itemCount(m.Items)), prepareLeftArea.Max.X-96-4)
 		v.Texts = append(v.Texts, SceneText{Text: mark, X: 20, Y: y + 4}, SceneText{Text: row, X: 96, Y: y + 4})
-		v.Icons = append(v.Icons, SceneIcon{unitTile(u), 60, y})
+		v.Icons = append(v.Icons, SceneIcon{Tile: unitTile(u), X: 60, Y: y, Art: s.sceneArtKey(artKeyOf(u)), Size: prepareRosterArtSize, Face: true})
 		y += 24
 	}
 	info := s.prepareInfo()

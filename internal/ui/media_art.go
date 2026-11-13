@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"image"
 	"image/png"
 	"io"
 	"io/fs"
@@ -129,6 +130,8 @@ type ArtStore struct {
 	entries map[string]*artEntry
 	// terrains は、地形の ID ごとに覚えた絵の組（DES-NG-10 フェーズ 2）。
 	terrains map[string]*terrainSet
+	// shrunk は縮めた画像（DES-NG-08）。
+	shrunk map[shrunkKey]*ebiten.Image
 }
 
 // NewArtStore は media（nil なら画像なし）と目録から作る。stderr が nil なら os.Stderr（DES-NG-08）。
@@ -136,7 +139,7 @@ func NewArtStore(media fs.FS, stderr io.Writer, cat *defs.Catalog) *ArtStore {
 	if stderr == nil {
 		stderr = os.Stderr
 	}
-	return &ArtStore{fsys: media, stderr: stderr, idx: newArtIndex(cat), entries: map[string]*artEntry{}, terrains: map[string]*terrainSet{}}
+	return &ArtStore{fsys: media, stderr: stderr, idx: newArtIndex(cat), entries: map[string]*artEntry{}, terrains: map[string]*terrainSet{}, shrunk: map[shrunkKey]*ebiten.Image{}}
 }
 
 // entry は道筋の画像を読んで覚える。ない・壊れているときは img が nil の項目を覚える。
@@ -153,46 +156,92 @@ func (a *ArtStore) entryNote(path string, square bool, note string) *artEntry {
 	}
 	e := &artEntry{}
 	a.entries[path] = e
+	if img := a.decode(path, square, note); img != nil {
+		e.eb = ebiten.NewImageFromImage(img)
+	}
+	return e
+}
+
+// decode は道筋の PNG を読んで返す。ない・壊れている・大きすぎるときは nil（誤りは stderr に書く）。
+// 呼び出し側が同じ道筋で 1 回だけ呼ぶ（誤りの知らせを重ねないため）。
+func (a *ArtStore) decode(path string, square bool, note string) image.Image {
 	if a.fsys == nil || !fs.ValidPath(path) {
-		return e
+		return nil
 	}
 	f, err := a.fsys.Open(path)
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			fmt.Fprintf(a.stderr, "画像を開けません（%s）: %v\n", path, err)
 		}
-		return e
+		return nil
 	}
 	defer f.Close()
 	raw, err := io.ReadAll(f)
 	if err != nil {
 		fmt.Fprintf(a.stderr, "画像を読めません（%s）: %v\n", path, err)
-		return e
+		return nil
 	}
 	// 大きさだけを先に調べ、大きすぎる画像は展開しない。
 	cfg, err := png.DecodeConfig(bytes.NewReader(raw))
 	if err != nil {
 		fmt.Fprintf(a.stderr, "画像を読めません（%s）: %v\n", path, err)
-		return e
+		return nil
 	}
 	if cfg.Width <= 0 || cfg.Height <= 0 {
 		fmt.Fprintf(a.stderr, "画像の大きさが 0 です（%s）\n", path)
-		return e
+		return nil
 	}
 	if cfg.Width > artMaxSide || cfg.Height > artMaxSide {
 		fmt.Fprintf(a.stderr, "画像が大きすぎます（%s: %d×%d）。一辺 %d px までです。使いません\n", path, cfg.Width, cfg.Height, artMaxSide)
-		return e
+		return nil
 	}
 	img, err := png.Decode(bytes.NewReader(raw))
 	if err != nil {
 		fmt.Fprintf(a.stderr, "画像を読めません（%s）: %v\n", path, err)
-		return e
+		return nil
 	}
 	if square && cfg.Width != cfg.Height {
 		fmt.Fprintf(a.stderr, "画像が正方形ではありません（%s: %d×%d）。%s\n", path, cfg.Width, cfg.Height, note)
 	}
-	e.eb = ebiten.NewImageFromImage(img)
-	return e
+	return img
+}
+
+// shrunkKey は縮めた画像を覚えるときの鍵（道筋・切り出し・大きさ）。
+type shrunkKey struct {
+	path string
+	face bool
+	w, h int
+}
+
+// Shrunk は道筋の画像を CPU で w × h に面積平均で縮めた画像を返す（DES-NG-08）。
+// face が真なら、頭と肩の正方形（faceCrop）だけを縮める。同じ引数では 1 回だけ作って覚える。
+// ない・壊れている・大きさが 0 以下のときは nil。拡大縮小の補間（FilterLinear）では小さな絵がざらつくための口。
+func (a *ArtStore) Shrunk(path string, face bool, w, h int) *ebiten.Image {
+	if a == nil {
+		return nil
+	}
+	k := shrunkKey{path, face, w, h}
+	if eb, ok := a.shrunk[k]; ok {
+		return eb
+	}
+	var eb *ebiten.Image
+	a.shrunk[k] = nil
+	if w > 0 && h > 0 {
+		// 読み込みの誤りを重ねて出さないよう、まず通常の読み込みで使える画像か確かめる。
+		if a.entry(path, true).eb != nil {
+			if img := a.decode(path, false, ""); img != nil {
+				crop := img.Bounds()
+				if face {
+					crop = faceCrop(img)
+				}
+				if out := shrinkImage(img, crop, w, h); out != nil {
+					eb = ebiten.NewImageFromImage(out)
+				}
+			}
+		}
+	}
+	a.shrunk[k] = eb
+	return eb
 }
 
 // ebitenStretch は Ebiten と同じで、正方形でない画像の知らせを「縦横比を保たず、マスいっぱいに引き伸ばして描きます」にする。地形の絵に使う。

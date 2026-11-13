@@ -1054,7 +1054,7 @@ func (g *Game) drawSceneBody(dst *ebiten.Image, v SceneView) {
 	}
 	g.drawScenePortrait(dst, v)
 	for _, ic := range v.Icons {
-		g.drawTileSize(dst, ic.Tile, ic.X, ic.Y, 2*assets.TileSize)
+		g.drawSceneIcon(dst, ic)
 	}
 	for _, b := range v.Buttons {
 		r := b.Rect
