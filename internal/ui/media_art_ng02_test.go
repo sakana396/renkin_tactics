@@ -61,10 +61,10 @@ func TestArtStoreLoadNG02(t *testing.T) {
 			var stderr bytes.Buffer
 			a := NewArtStore(tt.media, &stderr, nil)
 			// 2 回引いても誤りは 1 回だけ。
-			img := a.Image(tt.path, tt.square)
-			_ = a.Image(tt.path, tt.square)
+			img := a.Ebiten(tt.path, tt.square)
+			_ = a.Ebiten(tt.path, tt.square)
 			if (img != nil) != tt.wantOK {
-				t.Fatalf("Image が使える = %v、%v のはず", img != nil, tt.wantOK)
+				t.Fatalf("Ebiten が使える = %v、%v のはず", img != nil, tt.wantOK)
 			}
 			if img != nil {
 				if img.Bounds().Dx() != tt.wantW {
@@ -83,11 +83,11 @@ func TestArtStoreLoadNG02(t *testing.T) {
 			}
 		})
 	}
-	t.Run("TC-DES-NG-08-25 透過の画素の透明度が保たれる", func(t *testing.T) {
+	t.Run("TC-DES-NG-08-25 透過の PNG（画素が透明）を読める", func(t *testing.T) {
+		// 元の image.Image は持たず、ebiten.Image の画素はゲームの開始前に読めないため、読めて大きさが保たれることを確かめる。
 		a := NewArtStore(fstest.MapFS{"p.png": {Data: pngBytes(t, 4, 4, 0)}}, &bytes.Buffer{}, nil)
-		_, _, _, al := a.Image("p.png", true).At(0, 0).RGBA()
-		if al != 0 {
-			t.Errorf("透明の画素の alpha = %d", al)
+		if eb := a.Ebiten("p.png", true); eb == nil || eb.Bounds().Dx() != 4 {
+			t.Errorf("透過の PNG を読めない: %v", eb)
 		}
 	})
 	t.Run("TC-DES-NG-08-26 media が nil・nil の store・不正な道筋は何も返さない", func(t *testing.T) {
@@ -103,6 +103,30 @@ func TestArtStoreLoadNG02(t *testing.T) {
 		a := NewArtStore(fstest.MapFS{"../x.png": {Data: pngBytes(t, 2, 2, 255)}}, &bytes.Buffer{}, nil)
 		if a.Has("../x.png", false) {
 			t.Error("media の外を指す道筋を読んだ")
+		}
+	})
+	t.Run("TC-DES-NG-08-28 一辺が 4096 を超える画像は使えない画像として、1 回だけ知らせ、落ちない。4096 は使える", func(t *testing.T) {
+		var stderr bytes.Buffer
+		a := NewArtStore(fstest.MapFS{
+			"wide.png":  {Data: pngBytes(t, 20000, 8, 255)},
+			"w4097.png": {Data: pngBytes(t, 4097, 8, 255)},
+			"h4097.png": {Data: pngBytes(t, 8, 4097, 255)},
+			"w4096.png": {Data: pngBytes(t, 4096, 8, 255)},
+		}, &stderr, nil)
+		for _, p := range []string{"wide.png", "w4097.png", "h4097.png"} {
+			if a.Has(p, false) || a.Ebiten(p, false) != nil {
+				t.Errorf("%s: 上限を超える画像が使える", p)
+			}
+			_ = a.Has(p, false) // 2 回目は知らせない
+		}
+		if n := strings.Count(stderr.String(), "画像が大きすぎます"); n != 3 {
+			t.Errorf("大きすぎる知らせが %d 回（3 枚で 1 回ずつ）: %q", n, stderr.String())
+		}
+		if !a.Has("w4096.png", false) {
+			t.Error("一辺 4096 の画像が使えない")
+		}
+		if eb := a.Ebiten("w4096.png", false); eb == nil || eb.Bounds().Dx() != 4096 {
+			t.Errorf("4096 の画像 = %v", eb)
 		}
 	})
 	t.Run("TC-DES-NG-08-27 描画用の画像は元の大きさで、同じ画像を返す", func(t *testing.T) {
