@@ -41,7 +41,7 @@ jobs:
         if: steps.changes.outputs.code == 'true'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev libxxf86vm-dev xvfb
+          sudo apt-get install -y libgl1-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev libxxf86vm-dev libasound2-dev xvfb
       - name: gofmt
         if: steps.changes.outputs.code == 'true'
         run: test -z "$(gofmt -l .)"
