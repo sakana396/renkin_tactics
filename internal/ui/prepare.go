@@ -308,6 +308,13 @@ func (s *SceneController) prepareButtons() []prepareButton {
 
 // choosePrepare は描画順のボタンを操作する（DES-UI-13、DES-UI-32）。出し入れは既存の操作を呼び、失敗では状態を変えず理由を出す。
 func (s *SceneController) choosePrepare(i int) {
+	if s.cfg.HiRes {
+		// 高解像度の準備のボタンは「配置へ」だけ（DES-NG-11）。
+		if i == 0 {
+			s.enterDeploy()
+		}
+		return
+	}
 	bs := s.prepareButtons()
 	if i < 0 || i >= len(bs) || !bs[i].Enabled {
 		return
@@ -330,6 +337,10 @@ func (s *SceneController) choosePrepare(i int) {
 
 // cancelPrepare は右クリック・Esc を、品の選択 → タブの選択 → 準備画面の既存の戻り先（なし）の順に戻す（DES-UI-32）。
 func (s *SceneController) cancelPrepare() {
+	if s.cfg.HiRes {
+		s.cancelPrepareHiRes()
+		return
+	}
 	switch {
 	case s.prepareTab == TabItems && s.prepareItem.ok:
 		s.prepareItem = prepareItem{}
@@ -341,6 +352,10 @@ func (s *SceneController) cancelPrepare() {
 
 // clickPrepare は準備のクリックを、情報欄のページの印 → タブ → 名簿の行・印 → ボタンの順に受ける（DES-UI-13、DES-UI-32）。
 func (s *SceneController) clickPrepare(x, y int) {
+	if s.cfg.HiRes {
+		s.clickPrepareHiRes(x, y)
+		return
+	}
 	if s.infoTabClick(x, y) {
 		return
 	}

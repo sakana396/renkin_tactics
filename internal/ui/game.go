@@ -149,6 +149,9 @@ func (g *Game) update() error {
 		g.sceneInput(sceneKeys{
 			Tab: inpututil.IsKeyJustPressed(ebiten.KeyTab), Left: left, Cancel: cancel, Deploy: deploy,
 			Advance: inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeySpace),
+			Right:   inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight),
+			Up:      inpututil.IsKeyJustPressed(ebiten.KeyArrowUp), Down: inpututil.IsKeyJustPressed(ebiten.KeyArrowDown),
+			Enter: inpututil.IsKeyJustPressed(ebiten.KeyEnter),
 		}, x, y)
 	} else {
 		c := s.BattleController()
@@ -247,6 +250,8 @@ func (g *Game) priorityInput(k priorityKeys) bool {
 // sceneKeys は戦闘以外の場面へ渡す、そのフレームの入力（DES-UI-09）。Deploy は配置の入力を先に渡したこと。
 type sceneKeys struct {
 	Tab, Left, Cancel, Deploy, Advance bool
+	// Right は右クリック、Up・Down・Enter は準備（高解像度）のキー（DES-NG-11）。
+	Right, Up, Down, Enter bool
 }
 
 // sceneInput は戦闘以外の場面の Tab・取消し・左クリック・送りを場面へ渡す（DES-UI-09、DES-UI-32）。
@@ -255,6 +260,23 @@ func (g *Game) sceneInput(k sceneKeys, x, y int) {
 	s := g.scenes
 	if k.Tab {
 		s.ToggleInfoPage()
+	}
+	if s.Scene() == Prepare && s.cfg.HiRes {
+		switch {
+		case k.Cancel:
+			if !(k.Right && s.rightClickPrepare(x, y)) {
+				s.Cancel()
+			}
+		case k.Left:
+			s.Click(x, y)
+		case k.Up:
+			s.movePrepareMember(-1)
+		case k.Down:
+			s.movePrepareMember(1)
+		case k.Enter:
+			s.Advance()
+		}
+		return
 	}
 	if k.Cancel {
 		s.Cancel()
@@ -961,6 +983,10 @@ func (g *Game) centerLabel(dst *ebiten.Image, s string, y int, clr color.Color) 
 
 // drawScene は表示用の値を描く（DES-UI-09〜12、15）。
 func (g *Game) drawScene(dst *ebiten.Image) {
+	if g.scenes.fullWindowPrepare() {
+		g.drawPrepareHiRes(dst, g.scenes.prepareHiResView())
+		return
+	}
 	v := g.scenes.View()
 	off := sceneOffset()
 	// 敗北では、巻き戻しの入口も配置の層の中に描く（一覧を開いているときは Draw が先に別の画面を描く）。
@@ -999,6 +1025,9 @@ func (g *Game) cursor() (x, y int) {
 		return x, y
 	}
 	c := g.scenes.BattleController()
+	if g.scenes.fullWindowPrepare() {
+		return x, y
+	}
 	return sceneCursor(x, y, g.scenes.Scene(), c != nil && c.rewind.open)
 }
 

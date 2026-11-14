@@ -175,7 +175,11 @@ func (s *SceneController) View() SceneView {
 		}
 		lines("左クリック: 章の準備へ", 528, StyleLabel)
 	case Prepare:
-		v = s.prepareView()
+		if s.cfg.HiRes {
+			v = s.hrSceneView()
+		} else {
+			v = s.prepareView()
+		}
 	case Deploy:
 		v = s.deployView()
 	case Result:
@@ -306,7 +310,7 @@ func (s *SceneController) Click(x, y int) {
 
 // infoTabClick は準備と配置の情報欄のページの印のクリックを受ける（DES-UI-28）。印を出しているときだけ受け、表示だけを変える。
 func (s *SceneController) infoTabClick(x, y int) bool {
-	if s.scene != Prepare {
+	if s.scene != Prepare || s.cfg.HiRes {
 		return false
 	}
 	v := s.View()
@@ -325,7 +329,7 @@ func (s *SceneController) infoTabClick(x, y int) bool {
 
 // ToggleInfoPage は準備と配置での Tab キーの処理（DES-UI-28）。表示だけを変える。
 func (s *SceneController) ToggleInfoPage() {
-	if s.scene == Prepare {
+	if s.scene == Prepare && !s.cfg.HiRes {
 		s.infoPage = s.infoPage.next()
 	}
 }
