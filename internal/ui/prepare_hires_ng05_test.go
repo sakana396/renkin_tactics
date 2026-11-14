@@ -3,6 +3,7 @@ package ui
 import (
 	"image"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/data"
@@ -139,6 +140,34 @@ func TestPrepareHiResNG05(t *testing.T) {
 						t.Errorf("%s: 肖像 %v", ch, p.Rect)
 					}
 				}
+				// タイル・丸・チェック・三角と矢印も、窓と、どれかの領域に収まる。
+				regions := []image.Rectangle{hrHeader, hrRosterPanel, hrCenterPanel, hrHandPanel, hrStockPanel, hrChapterPanel, hrFooter}
+				inRegion := func(r image.Rectangle) bool {
+					for _, reg := range regions {
+						if r.In(reg) {
+							return true
+						}
+					}
+					return false
+				}
+				var shapes []image.Rectangle
+				for _, tl := range v.Tiles {
+					shapes = append(shapes, tl.Rect)
+				}
+				for _, d := range v.Dots {
+					shapes = append(shapes, image.Rect(d.X-d.R, d.Y-d.R, d.X+d.R, d.Y+d.R))
+				}
+				for _, m := range v.Marks {
+					shapes = append(shapes, m.Rect)
+				}
+				for _, gl := range v.Glyphs {
+					shapes = append(shapes, gl.Rect)
+				}
+				for _, r := range shapes {
+					if !r.In(win) || !inRegion(r) {
+						t.Errorf("%s: 図形 %v が窓・領域の外", ch, r)
+					}
+				}
 			}
 		}
 	})
@@ -224,8 +253,27 @@ func TestPrepareHiResNG05(t *testing.T) {
 		if hv := s.prepareHiResView(); hv.Hand[2].Name == "" {
 			t.Fatal("手持ちの 3 枠目に出ていない")
 		}
-		// 同じ行をもう一度クリックすると選択が外れる。Esc でも外れる。
-		s.prepareItem = row.Item
+		// 同じ行をもう一度クリックすると選択が外れる（実際のクリックの経路で、2 回）。Esc でも外れる。
+		again := func() hrStockRow {
+			for _, r := range s.prepareHiResView().Stock {
+				if r.Item == row.Item {
+					return r
+				}
+			}
+			t.Fatal("在庫の行が見つからない")
+			return hrStockRow{}
+		}
+		if s.prepareItem != row.Item {
+			t.Fatal("渡したあとも在庫が残るので、選択は残る")
+		}
+		s.Click(again().Rect.Min.X+5, again().Rect.Min.Y+5)
+		if s.prepareItem.ok {
+			t.Fatal("選んだ行をもう一度クリックしても選択が外れない")
+		}
+		s.Click(again().Rect.Min.X+5, again().Rect.Min.Y+5)
+		if s.prepareItem != row.Item {
+			t.Fatal("外したあと、もう一度選べない")
+		}
 		s.Cancel()
 		if s.prepareItem.ok {
 			t.Fatal("Esc で選択が外れない")
@@ -341,10 +389,11 @@ func TestPrepareHiResNG05(t *testing.T) {
 		if s.Scene() != Deploy {
 			t.Fatal(s.Scene())
 		}
-		// 窓の外の座標は何もしない。
+		// 窓（0〜1087 × 0〜831）の外の座標は何もしない。
 		s = ng05Scenes(t, "ch01", true)
-		s.Click(1087, 0)
-		s.Click(-5, 900)
+		for _, pt := range []image.Point{{-1, -1}, {-5, 900}, {1088, 100}, {1088, 832}, {hrDeployRect.Min.X, 832}, {1200, hrDeployRect.Min.Y}} {
+			s.Click(pt.X, pt.Y)
+		}
 		if s.Scene() != Prepare {
 			t.Fatal(s.Scene())
 		}
@@ -456,29 +505,46 @@ func TestPrepareHiResNG05(t *testing.T) {
 			}
 		}
 	})
-	t.Run("TC-DES-NG-11-17 HiRes でない準備は今と同じ SceneView を返し、窓の中央の層を使う", func(t *testing.T) {
+	t.Run("TC-DES-NG-11-17 HiRes でない準備は改修前と同じ SceneView を返し、窓の中央の層を使う", func(t *testing.T) {
 		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", false)
 		if s.fullWindowPrepare() {
 			t.Fatal("HiRes でないのに全面")
 		}
-		if got, want := s.View(), s.prepareView(); !reflect.DeepEqual(got, want) {
-			t.Fatal("View と prepareView が違う")
+		// 改修前（コミット f864969）の出力から取った期待値と、代表的な状態ごとに一致する。
+		got := strings.Split(prepareViewStates(t), "== ")
+		want := strings.Split(prepareViewGolden, "== ")
+		if len(got) != len(want) {
+			t.Fatalf("状態の数 %d と期待 %d", len(got), len(want))
 		}
-		v := s.View()
-		if len(v.Tabs) != 2 || v.Info == nil || len(v.Rows) == 0 {
-			t.Fatal("今の準備（タブ・情報欄・名簿の行）のまま:", len(v.Tabs))
+		for i := range want {
+			if got[i] == want[i] {
+				continue
+			}
+			gl, wl := strings.Split(got[i], "\n"), strings.Split(want[i], "\n")
+			for j := 0; j < max(len(gl), len(wl)); j++ {
+				var g, w string
+				if j < len(gl) {
+					g = gl[j]
+				}
+				if j < len(wl) {
+					w = wl[j]
+				}
+				if g != w {
+					t.Fatalf("状態 %q の %d 行目が改修前と違う\n got %q\nwant %q", strings.SplitN(want[i], "\n", 2)[0], j, g, w)
+				}
+			}
 		}
-		if v.Buttons[len(v.Buttons)-1].Rect != prepareDeployRect {
+		if v := s.View(); v.Buttons[len(v.Buttons)-1].Rect != prepareDeployRect {
 			t.Fatal(v.Buttons)
 		}
 		// HiRes の準備は窓の全体なので、座標を補正しない。
-		h := ng05Scenes(t, "ch01", true)
-		if !h.fullWindowPrepare() {
+		if h := ng05Scenes(t, "ch01", true); !h.fullWindowPrepare() {
 			t.Fatal("HiRes なのに全面でない")
 		}
 		// 今の準備のクリック: 持ち物のタブに切り替わる。
-		tab := v.Tabs[1].Rect
+		s = ng05Scenes(t, "ch01", false)
+		tab := s.View().Tabs[1].Rect
 		s.Click(tab.Min.X+3, tab.Min.Y+3)
 		if s.prepareTab != TabItems {
 			t.Fatal("今の準備のタブが動かない")
