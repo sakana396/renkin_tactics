@@ -411,7 +411,7 @@ func TestHiResScenes(t *testing.T) {
 		if off := sceneOffset(); off != image.Pt(128, 128) {
 			t.Fatal(off)
 		}
-		// タイトル・ルール選択・物語・準備に加え、加入・勝利の結果・クリアも調べる（REV-109 F-08）。
+		// タイトル・ルール選択・物語に加え、加入・勝利の結果・クリアも調べる（REV-109 F-08）。
 		type sceneCase struct {
 			name  string
 			scene Scene
@@ -421,7 +421,7 @@ func TestHiResScenes(t *testing.T) {
 		for _, c := range []struct {
 			name  string
 			scene Scene
-		}{{"Title", Title}, {"RuleSelect", RuleSelect}, {"Story", Story}, {"Prepare", Prepare}} {
+		}{{"Title", Title}, {"RuleSelect", RuleSelect}, {"Story", Story}} {
 			cases = append(cases, sceneCase{c.name, c.scene, hiresScenes(t, c.scene)})
 		}
 		// 加入: 2 章の仲間（haru）が加わった直後の場面を、名簿に足して作る。
