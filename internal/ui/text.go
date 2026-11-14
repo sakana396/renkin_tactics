@@ -227,7 +227,11 @@ func (c *Controller) Guide() []string {
 		lines = append(lines, "左クリック: 使うアイテムを選ぶ　右クリック・Esc: 戻る", guideDanger)
 	case BombTargeting:
 		lines = append(lines, c.bombGuide()...)
-		lines = append(lines, guideDanger)
+		// 案内欄は 4 行しか描かない。爆心を仮選択したあとは要約で 1 行増えるので、
+		// 知らせ（範囲外の理由など）があるときは Q の案内を出さず、知らせを 4 行の中に出す（DES-NG-05）。
+		if c.message == "" || !c.blastPicked {
+			lines = append(lines, guideDanger)
+		}
 	case WeaponMenu, StaffMenu:
 		what := "攻撃に使う武器"
 		if c.state == StaffMenu {
