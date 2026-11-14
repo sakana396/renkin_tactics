@@ -26,6 +26,10 @@ type autoPlan struct {
 	Order []string
 	// Observe は、この試し遊びだけの出来事の観測（nil なら観測しない）。並べて走らせるときに autoObserve の代わりに使う。
 	Observe func([]tactics.Event)
+	// OnTurnStart は、賢い打ち手が自軍の番の最初の行動の前に呼ぶ（nil なら呼ばない。#188 の最終経路の計測用）。
+	OnTurnStart func(turn int)
+	// OnRewind は、賢い打ち手の巻き戻しが成功した直後に、戻したターンを渡して呼ぶ（nil なら呼ばない）。
+	OnRewind func(turn int)
 }
 
 // autoResult は自動の試し遊びの結果。

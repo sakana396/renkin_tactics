@@ -39,7 +39,10 @@ func remeasureIT07(t *testing.T) {
 		Conditions: "既存名簿・出撃・進路・行動順、seed 1〜20、最大50ターン。今の打ち手と賢い打ち手（巻き戻し主人公用reserve3）。打ち手は再移動を使わず終了する。",
 		Observations: []string{
 			"Observe は打ち手が通知した Event と、その時点の Event.Units を記録する。smartPlay が後で巻き戻した出来事も含み、巻き戻し後の現状態とは異なることがある。",
-			"Battle に経路全体の公開取得APIはない。移動イベント、攻撃時の位置、再移動先を記録する。ZOC は実際の経路でなく各移動イベントの最終着地点だけで判定し、中間経路の進入回数と最小経路の全費用は分からない。ZOCEndpointEntries を経路上の全進入回数と解釈しない。",
+			"Battle に経路全体の公開取得APIはない。移動イベント、攻撃時の位置、再移動先を記録する。ZOCEndpointEntries は各移動イベントの着地点だけを数えたもので、経路上の進入回数ではない。",
+			"#188: Path* は、各 EventMove の直前の盤面でゲームと同じ移動費・占有の規則の最小費用の経路を求めて数える。ExtraCost は最小費用の差（ZOC あり − なし）で正確。EntriesMin/Max は最小費用の経路のうち ZOC に入る回数が最少/最多のもの（到着点を含み出発点を含まない）で、実際の経路は分からないので幅で示す。最小費用でない遠回りは数えない。",
+			"#188: 再移動は、同じ番に同じユニットが攻撃（行動した側の EventStrike）をしたあとの移動。待機のあとはゲームで再移動できないので印を付けても影響しない。杖のあとは区別できない。打ち手の自軍は再移動を使わないので、実際に現れるのは敵の再移動。PathAllTrials は巻き戻した試行を含む全試行、PathFinal は巻き戻しで捨てた記録を除いた最終経路。Unreachable・Violations は到達不能と不変条件（下限≦上限≦追加費用）の違反の回数で、0 でなければ計測器の誤り",
+			"#188: ReinforcementsFinal は最終経路で出た増援、ReinforcementsAllTrials は全試行で出た増援（初出順）、ReinforcementsRewoundOnly は巻き戻す前だけ出た増援（全試行の出現のうち最終経路にない分。同じ ID が最終経路にもあれば差し引く）。UnspawnedFinalPathIDs は最終経路で出なかった予定の増援。旧新版の UnspawnedReinforcementIDs は全試行基準のまま。",
 			"増援未出現の理由は予定ターン未到達、出来事未発火、発火後の次の敵フェイズ未到達、または試行後の未出現に分ける。試行後の未出現が上限か配置位置かは判定できない。",
 			"崩れは小隊長の EventFall 時点の全 Unit 写しから記録する。巻き戻して同じ撃破を再試行した場合は、その試行ごとに重複して記録する。ZOC は ClassSkills のスキル名『通せんぼ』で認識する。",
 			"崩れ欄は小隊長撃破イベント時点で崩れ状態が有効な配下の一覧で、遷移回数ではない。",
@@ -113,6 +116,7 @@ func remeasureIT07(t *testing.T) {
 						game.MaxLiveEnemies = game.InitialLiveEnemies
 						game.InitialCommanderAlive = it07Commanders(units, true)
 						turns := map[int]*it07MeasureTurn{}
+						tracker := newIT07PathTracker(func(p tactics.Pos) int { return b.TerrainAt(p).Cost }, b.Width(), b.Height())
 						currentTurn, currentSide := 1, tactics.Player
 						observe := func(events []tactics.Event) {
 							batchTurn, batchSide := b.Turn, b.Phase
@@ -139,6 +143,7 @@ func remeasureIT07(t *testing.T) {
 								if e.Kind == tactics.EventPhaseStart {
 									currentSide = e.Side
 									currentTurn = e.Turn
+									tracker.PhaseStart()
 								}
 								turn := turns[currentTurn]
 								if turn == nil {
@@ -146,6 +151,7 @@ func remeasureIT07(t *testing.T) {
 									turns[currentTurn] = turn
 								}
 								eventsUnits := e.Units
+								tracker.Event(e, eventsUnits, currentSide)
 								game.MaxLiveEnemies = max(game.MaxLiveEnemies, it07LiveEnemies(eventsUnits))
 								turn.MaxLiveEnemies = max(turn.MaxLiveEnemies, it07LiveEnemies(eventsUnits))
 								if e.Kind == tactics.EventPhaseStart && e.Side == tactics.Enemy {
@@ -204,7 +210,7 @@ func remeasureIT07(t *testing.T) {
 								}
 							}
 						}
-						plan := autoPlan{Order: order, Routes: [][]tactics.Pos{pathPoints}, Observe: observe}
+						plan := autoPlan{Order: order, Routes: [][]tactics.Pos{pathPoints}, Observe: observe, OnTurnStart: tracker.TurnStart, OnRewind: tracker.Rewind}
 						result := player.play(b, ids, plan)
 						game.Result, game.Turns = it07ResultName(result.Result), result.Turns
 						game.HitTurnLimit = result.Result == tactics.Ongoing && result.Turns > 50
@@ -213,6 +219,11 @@ func remeasureIT07(t *testing.T) {
 						game.FinalUnits = it07UnitSnapshots(b.Units())
 						game.FinalCommanderAlive = it07Commanders(b.Units(), true)
 						game.FinalCommanderDefeated = it07Commanders(b.Units(), false)
+						game.PathAllTrials = tracker.AllTrials()
+						game.PathFinal, game.ReinforcementsFinal = tracker.Final()
+						game.ReinforcementsAllTrials = tracker.allSpawned
+						game.ReinforcementsRewoundOnly = it07Difference(game.ReinforcementsAllTrials, game.ReinforcementsFinal)
+						game.UnspawnedFinalPathIDs = it07NotIn(game.ScheduledReinforcements, game.ReinforcementsFinal)
 						game.UnspawnedReinforcementIDs = it07Unspawned(game.ScheduledReinforcements, turns)
 						game.UnspawnedReinforcementDetails = it07UnspawnedDetails(game.ScheduledReinforcements, game.SpawnedReinforcementTurn, game.TriggerTurn, game.TriggerSide, game.EnemyPhaseTurns, result.Turns)
 						for _, turn := range turns {
@@ -260,8 +271,12 @@ type it07MeasureGame struct {
 	EnemyPhaseTurns                                                    []int
 	UnspawnedReinforcementIDs                                          []string
 	UnspawnedReinforcementDetails                                      []it07UnspawnedDetail
-	InitialUnits, FinalUnits                                           []it07UnitSnapshot
-	TurnDetails                                                        []it07MeasureTurn
+	// #188: 移動経路の ZOC（全試行と最終経路）と、巻き戻しを含む増援の最終経路・全試行の区別。
+	PathAllTrials, PathFinal                         it07PathStats
+	ReinforcementsAllTrials, ReinforcementsFinal     []string
+	ReinforcementsRewoundOnly, UnspawnedFinalPathIDs []string
+	InitialUnits, FinalUnits                         []it07UnitSnapshot
+	TurnDetails                                      []it07MeasureTurn
 }
 type it07UnitSnapshot struct {
 	ID, Name                    string
@@ -471,6 +486,39 @@ func it07UnspawnedDetails(scheduled []it07Scheduled, spawned, triggered map[stri
 	}
 	return out
 }
+
+// it07Difference は all のうち final にない ID を返す（巻き戻す前だけ出た増援）。
+func it07Difference(all, final []string) []string {
+	in := map[string]int{}
+	for _, id := range final {
+		in[id]++
+	}
+	var out []string
+	for _, id := range all {
+		if in[id] > 0 {
+			in[id]--
+			continue
+		}
+		out = append(out, id)
+	}
+	return out
+}
+
+// it07NotIn は予定のうち spawned に出てこない ID を返す。
+func it07NotIn(scheduled []it07Scheduled, spawned []string) []string {
+	in := map[string]bool{}
+	for _, id := range spawned {
+		in[id] = true
+	}
+	var out []string
+	for _, item := range scheduled {
+		if !in[item.ID] {
+			out = append(out, item.ID)
+		}
+	}
+	return out
+}
+
 func appendUniqueInt(values []int, value int) []int {
 	for _, current := range values {
 		if current == value {
