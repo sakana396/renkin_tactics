@@ -10,6 +10,18 @@
 | 企画 | 新しいゲームの企画たたき台（反復外） | [01_concept/new-game-draft.md](01_concept/new-game-draft.md) | v0.1 未承認。#191 の未決事項をエージェントが仮決めした案。既存の企画・要求は変えない |
 | 企画 | 新しいゲームの見た目と音の方針（反復外） | [01_concept/new-game-visual-draft.md](01_concept/new-game-visual-draft.md) | v0.4 未承認。AI 生成画像の指示書（絵柄・配色・キャラの外見・指示文の型・画像の一覧・出典の記録）。既存の企画・要求は変えない |
 | 企画 | 新作のキャラの画像の指示文（組み立て済み） | [01_concept/new-game-prompts.md](01_concept/new-game-prompts.md) | v0.1 未承認。自軍 4 人（ユニット・肖像）と敵 6 種の ChatGPT 用の指示文 |
+| 試験 | テスト仕様書（新作の試作 NG01: 錬金の爆弾） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.2（未承認）。自動は実装済み、画面の見た目は手動・未実施 |
+| 試験 | テスト仕様書（新作の試作データ NG-06。TST-NG01 の 7 章） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.2（未承認）。データ・自動の試遊・`-game` は自動で実装済み。人の試遊（TC-DES-NG-06-10）は未実施 |
+| 試験 | テスト仕様書（新作の試作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.3（未承認）。自動は実装済み（95〜99 は名簿の行・加入の場面の絵）、実画面の確認（TC-DES-NG-08-94）は手動・未実施 |
+| 試験 | テスト仕様書（新作の試作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.1（未承認）。自動は実装済み、耳での確認（TC-DES-NG-09-26）は手動・未実施 |
+| 試験 | テスト仕様書（新作の試作 NG05: 準備画面の作り直し） | [04_test/test-spec-ng05.md](04_test/test-spec-ng05.md) | v0.1（未承認）。TC-DES-NG-11-01〜19。自動は実装済み。窓での実操作は未確認 |
+| 試験 | テスト仕様書（新作の試作 NG04: 高解像度の表示） | [04_test/test-spec-ng04.md](04_test/test-spec-ng04.md) | v0.3（未承認）。自動は実装済み（フェーズ 2: TC-DES-NG-10-18〜28、REV-109 対応: TC-DES-NG-10-29〜34 を追加）。窓での実操作は未確認 |
+| 設計 | 準備画面の作り直し（高解像度、DES-NG05） | [03_design/design-ng05-prepare.md](03_design/design-ng05-prepare.md) | v0.3 未承認（v0.2 は開発者の Q-P1〜P5 への回答）。モック [03_design/mock/prepare-ng05.png](03_design/mock/prepare-ng05.png)。カード型、持ち物の統合、章の情報。実装済み（5 章に構成、定義の形式の変更） |
+| 設計 | 設計メモ（新作の試作 NG01: 錬金の爆弾） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。企画たたき台 2.7 節の最小の試作。既存の設計は変えない |
+| 設計 | 設計メモ（新作の試作データ NG-06。DES-NG01 の 6 章） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。`data/alchemy`（1〜3 章）と `-game`。名前・文面は仮で、既存作品との重なりは未確認 |
+| 設計 | 設計メモ（新作の試作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.3（未承認）。DES-NG-08。置き場と名前の規則・画像の大きさの上限・台帳と検査・試し用の絵の道具・準備の名簿の行と加入の場面の絵。`game.go` へ結び付け済み |
+| 設計 | 設計メモ（新作の試作 NG03: 音） | [03_design/design-ng03-audio.md](03_design/design-ng03-audio.md) | v0.2（未承認）。DES-NG-09。効果音・BGM の再生、仮の音の合成（`tools/synth`）、台帳。ミュートのキーは M が全体図と重なるため N（設計への提案）。耳での確認は未実施 |
+| 設計 | 設計メモ（新作の試作 NG04: 高解像度の表示） | [03_design/design-ng04-display.md](03_design/design-ng04-display.md) | v0.3（未承認）。DES-NG-10。`Config.HiRes` で 1 マス 48 px に切り替え（フェーズ 1）、コードで描いた仮の地形・AI 生成の地形の差し替え口・印と棒の比例（フェーズ 2）、REV-109 への対応（9 章: 敗北の中央寄せ・窓の大きさ） |
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
 | 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
 | 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
@@ -27,14 +39,7 @@
 | 試験 | テスト仕様書（反復 6） | [04_test/test-spec-it06.md](04_test/test-spec-it06.md) | v2.13（#120・#123・#124・#126・#127・#130・#149・#131・#132・#133・#154・#158）。能力・計算・予測・セーブ、回復と敵のレベル、出来事、再移動、一団の敵の思考の自動ケースを順次実装。旧自動試遊の一部は IT06 で一時停止（#130〜#133 で置き換え）。#154 で初期突撃・待つ守りの一団・一団の近さ・連続増援と 3 種の名簿の 20 seed の自動試遊を足した。#172・#173 の固定 seed を反映。後続の自動ケース・手動・基準の PC での測定は未実施 |
 | 試験 | テスト仕様書（反復 7） | [04_test/test-spec-it07.md](04_test/test-spec-it07.md) | v1.4（#175。人の試遊は行わずに締めた、E-128）。v1.3（#188）。ZOCの経路計測と増援の最終経路・全試行の区別を追加し、新版920試遊を測り直し。v1.2（#189）は射程とフレーム内範囲共有の回帰を追加し、同じ基準PCの合成条件で最低79.808fps |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
-| 試験 | テスト仕様書（新作の試作 NG01: 錬金の爆弾） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.2（未承認）。自動は実装済み、画面の見た目は手動・未実施 |
-| 試験 | テスト仕様書（新作の試作データ NG-06。TST-NG01 の 7 章） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.2（未承認）。データ・自動の試遊・`-game` は自動で実装済み。人の試遊（TC-DES-NG-06-10）は未実施 |
-| 試験 | テスト仕様書（新作の試作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.3（未承認）。自動は実装済み（95〜99 は名簿の行・加入の場面の絵）、実画面の確認（TC-DES-NG-08-94）は手動・未実施 |
-| 試験 | テスト仕様書（新作の試作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.1（未承認）。自動は実装済み、耳での確認（TC-DES-NG-09-26）は手動・未実施 |
-| 試験 | テスト仕様書（新作の試作 NG05: 準備画面の作り直し） | [04_test/test-spec-ng05.md](04_test/test-spec-ng05.md) | v0.1（未承認）。TC-DES-NG-11-01〜19。自動は実装済み。窓での実操作は未確認 |
-| 試験 | テスト仕様書（新作の試作 NG04: 高解像度の表示） | [04_test/test-spec-ng04.md](04_test/test-spec-ng04.md) | v0.3（未承認）。自動は実装済み（フェーズ 2: TC-DES-NG-10-18〜28、REV-109 対応: TC-DES-NG-10-29〜34 を追加）。窓での実操作は未確認 |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
-| 試験 | テスト仕様書（新作の試作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.1（未承認）。自動は実装済み、耳での確認（TC-DES-NG-09-26）は手動・未実施 |
 | 横断 | レビュー記録 | [reviews/](reviews/) | 記録中 |
 | 計画 | 反復 1 の振り返り | [iterations/it01/retrospective.md](iterations/it01/retrospective.md) | v0.2 承認（E-37） |
 | 計画 | 反復 2 の振り返り | [iterations/it02/retrospective.md](iterations/it02/retrospective.md) | v0.2 承認（E-37） |
@@ -56,17 +61,8 @@
 | 計画 | 反復 7 の振り返り（IT07-RETRO） | [iterations/it07/retrospective.md](iterations/it07/retrospective.md) | v0.2（承認（E-129））。人の試遊なしで締めた（E-128）。H-28・H-29 は未検証、H-30 は成り立った（E-129） |
 | 試験 | 反復7 試遊の手引きと確かめ表 | [iterations/it07/playtest.md](iterations/it07/playtest.md) | v0.2（#175。試遊は行わずに締めた、E-128）。v0.1。試遊の版 dfdcecd、1・2・4・5・6・7・9 章（平均・代役の作り置きセーブ）、H-28〜30 の確かめ表 |
 | 計画 | 反復 7 計画書 | [iterations/it07/plan.md](iterations/it07/plan.md) | v0.3（承認（E-119））。画面の作り直し・指揮官・重騎士の ZOC（E-117・E-118）。REV-090 の指摘を反映 |
-| 設計 | 準備画面の作り直し（高解像度、DES-NG05） | [03_design/design-ng05-prepare.md](03_design/design-ng05-prepare.md) | v0.3 未承認（v0.2 は開発者の Q-P1〜P5 への回答）。モック [03_design/mock/prepare-ng05.png](03_design/mock/prepare-ng05.png)。カード型、持ち物の統合、章の情報。実装済み（5 章に構成、定義の形式の変更） |
 | 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
-| 設計 | 設計メモ（新作の試作 NG01: 錬金の爆弾） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。企画たたき台 2.7 節の最小の試作。既存の設計は変えない |
-| 設計 | 設計メモ（新作の試作データ NG-06。DES-NG01 の 6 章） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。`data/alchemy`（1〜3 章）と `-game`。名前・文面は仮で、既存作品との重なりは未確認 |
-| 設計 | 設計メモ（新作の試作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.1（未承認）。DES-NG-08。置き場と名前の規則・台帳と検査・試し用の絵の道具。`game.go` への呼び出しは未反映 |
-| 設計 | 設計メモ（新作の試作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.2（未承認）。DES-NG-08。置き場と名前の規則・画像の大きさの上限・台帳と検査・試し用の絵の道具。`game.go` へ結び付け済み |
-| 設計 | 設計メモ（新作の試作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.3（未承認）。DES-NG-08。置き場と名前の規則・画像の大きさの上限・台帳と検査・試し用の絵の道具・準備の名簿の行と加入の場面の絵。`game.go` へ結び付け済み |
-| 設計 | 設計メモ（新作の試作 NG03: 音） | [03_design/design-ng03-audio.md](03_design/design-ng03-audio.md) | v0.2（未承認）。DES-NG-09。効果音・BGM の再生、仮の音の合成（`tools/synth`）、台帳。ミュートのキーは M が全体図と重なるため N（設計への提案）。耳での確認は未実施 |
-| 設計 | 設計メモ（新作の試作 NG04: 高解像度の表示） | [03_design/design-ng04-display.md](03_design/design-ng04-display.md) | v0.3（未承認）。DES-NG-10。`Config.HiRes` で 1 マス 48 px に切り替え（フェーズ 1）、コードで描いた仮の地形・AI 生成の地形の差し替え口・印と棒の比例（フェーズ 2）、REV-109 への対応（9 章: 敗北の中央寄せ・窓の大きさ） |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
-| 設計 | 設計メモ（新作の試作 NG03: 音） | [03_design/design-ng03-audio.md](03_design/design-ng03-audio.md) | v0.1（未承認）。DES-NG-09。効果音・BGM の再生、仮の音の合成（`tools/synth`）、台帳。ミュートのキーは M が全体図と重なるため N（設計への提案）。耳での確認は未実施 |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch02 の制作記録（反復 6） | [iterations/it06/map-ch02.md](iterations/it06/map-ch02.md) | v0.3（#130、REV-079、E-96・E-97。自動の下限は確認、開発者の短い試遊は 1 回目（版 0.2）を実施し、版 0.3 は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
