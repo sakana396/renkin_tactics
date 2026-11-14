@@ -3,6 +3,7 @@ package ui
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"io"
 	"io/fs"
 	"os"
@@ -81,8 +82,10 @@ type SceneController struct {
 	prepareStockTop  int
 	prepareRosterTop int
 	// prepareTab・prepareItem は準備の表示タブと持ち物で選んだ品（DES-UI-32）。表示だけに使う。
-	prepareTab     PrepareTabKind
-	prepareItem    prepareItem
+	prepareTab  PrepareTabKind
+	prepareItem prepareItem
+	// prepareCursor は高解像度の準備でのマウスの位置（窓の座標）。選んだ品の性能の欄に、指している品を出すために使う（DES-NG-11）。表示だけに使う。
+	prepareCursor  image.Point
 	deployMembers  []int
 	deploySlots    []int
 	deploySelected int

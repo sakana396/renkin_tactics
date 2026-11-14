@@ -515,11 +515,7 @@ func (s *SceneController) prepareDetail() []SceneText {
 	if !it.weapon {
 		d, _ := s.cfg.Catalog.Item(it.id)
 		add("選んだ品: "+d.Name, StyleTitle)
-		if d.Bomb {
-			add("道具　"+itemEffect(core.ItemOf(d)), StylePlain)
-		} else {
-			add(fmt.Sprintf("道具　HP を %d 回復", d.Heal), StylePlain)
-		}
+		add(itemDetailText(d), StylePlain)
 	} else {
 		w := s.prepareWeapon(it.id)
 		add("選んだ品: "+w.Name, StyleTitle)
@@ -533,6 +529,14 @@ func (s *SceneController) prepareDetail() []SceneText {
 	}
 	// 右列の下部（y < 472）に収まる行だけを出す。
 	return out[:min(len(out), (prepareRightArea.Max.Y-prepareDetailY)/16)]
+}
+
+// itemDetailText は道具の性能の 1 文（DES-UI-32）。爆弾は爆発の数値、それ以外は回復量。
+func itemDetailText(d defs.ItemDef) string {
+	if d.Bomb {
+		return "道具　" + itemEffect(core.ItemOf(d))
+	}
+	return fmt.Sprintf("道具　HP を %d 回復", d.Heal)
 }
 
 // prepareUnit は名簿と定義から情報表示用の値を作る。戦闘は作らず乱数も引かない（DES-UI-13）。

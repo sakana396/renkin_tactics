@@ -83,6 +83,8 @@ const (
 	hrBoxButton
 	hrBoxButtonOff
 	hrBoxFrame
+	// hrBoxPip は名簿のカードの、手持ちの使用数の箱の使っている枠（琥珀で塗る）。空きは hrBoxSlot（暗いまま）。
+	hrBoxPip
 )
 
 type hrBox struct {
@@ -112,6 +114,22 @@ type hrMark struct {
 type hrDot struct {
 	X, Y, R int
 	Color   color.NRGBA
+}
+
+// hrGlyphKind は、フォントの字形に頼らず vector で描く小さな図形の種類（F-05）。
+type hrGlyphKind int
+
+const (
+	hrGlyphUp hrGlyphKind = iota
+	hrGlyphDown
+	hrGlyphArrow
+)
+
+// hrGlyph は vector で描く三角（▲▼）と矢印（→）。Rect の中に収めて描く。
+type hrGlyph struct {
+	Kind  hrGlyphKind
+	Rect  image.Rectangle
+	Color color.NRGBA
 }
 
 type hrTile struct {
@@ -158,6 +176,7 @@ type PrepareHiResView struct {
 	Bars      []hrBar
 	Marks     []hrMark
 	Dots      []hrDot
+	Glyphs    []hrGlyph
 	Tiles     []hrTile
 	Portraits []hrPortrait
 
@@ -295,8 +314,9 @@ func (s *SceneController) prepareHiResView() PrepareHiResView {
 
 	s.hrRoster(&v, box, txt)
 	s.hrCenter(&v, box, txt)
-	s.hrHand(&v, box, txt)
+	// 手持ちの欄の性能の表示が、在庫の行の位置を使うので、在庫を先に作る。
 	s.hrStock(&v, box, txt)
+	s.hrHand(&v, box, txt)
 	s.hrChapter(&v, info, box, txt)
 
 	// フッター: 操作の案内、理由、「配置へ」。
@@ -340,8 +360,8 @@ func (s *SceneController) hrRoster(v *PrepareHiResView, box hrBoxFn, txt hrTxtFn
 	if len(living) > hrCardRows {
 		v.RosterUp = SceneButton{"▲", image.Rect(268, 104, 304, 130), top > 0}
 		v.RosterDown = SceneButton{"▼", image.Rect(308, 104, 344, 130), top < len(living)-hrCardRows}
-		hrArrow(v, box, txt, v.RosterUp)
-		hrArrow(v, box, txt, v.RosterDown)
+		hrArrow(v, box, v.RosterUp)
+		hrArrow(v, box, v.RosterDown)
 	}
 	txt("↑↓ / クリック: キャラを選ぶ", 36, 722, 1, hrDim)
 	end := min(len(living), top+hrCardRows)
@@ -378,7 +398,7 @@ func (s *SceneController) hrRoster(v *PrepareHiResView, box hrBoxFn, txt hrTxtFn
 		for n := range prepareHandSlots {
 			kind := hrBoxSlot
 			if n < used {
-				kind = hrBoxSlotSel
+				kind = hrBoxPip
 			}
 			box(image.Rect(tx+n*15, y+82, tx+n*15+12, y+94), kind)
 		}
@@ -386,14 +406,20 @@ func (s *SceneController) hrRoster(v *PrepareHiResView, box hrBoxFn, txt hrTxtFn
 	}
 }
 
-// hrArrow は送りの小さなボタンを描く（箱と文字）。
-func hrArrow(v *PrepareHiResView, box hrBoxFn, txt hrTxtFn, b SceneButton) {
+// hrArrow は送りの小さなボタンを描く（箱と、vector の三角）。ボタンの文（▲▼）は入力の判定の名前で、描かない。
+func hrArrow(v *PrepareHiResView, box hrBoxFn, b SceneButton) {
 	kind, c := hrBoxButton, hrDark
 	if !b.Enabled {
 		kind, c = hrBoxButtonOff, hrDim
 	}
 	box(b.Rect, kind)
-	txt(b.Label, b.Rect.Min.X+(b.Rect.Dx()-textWidth(b.Label))/2, b.Rect.Min.Y+(b.Rect.Dy()-lineHeight)/2, 1, c)
+	gk := hrGlyphUp
+	if b.Label == "▼" {
+		gk = hrGlyphDown
+	}
+	const w, h = 14, 10
+	cx, cy := b.Rect.Min.X+b.Rect.Dx()/2, b.Rect.Min.Y+b.Rect.Dy()/2
+	v.Glyphs = append(v.Glyphs, hrGlyph{Kind: gk, Rect: image.Rect(cx-w/2, cy-h/2, cx+w/2, cy+h/2), Color: c})
 }
 
 // hrCenter は中央の大きなカード（肖像・名前・能力・スキル・装備）。
@@ -505,13 +531,80 @@ func (s *SceneController) hrHand(v *PrepareHiResView, box hrBoxFn, txt hrTxtFn) 
 	if emptyFrom >= 0 {
 		txt(fmt.Sprintf("（空き）×%d", prepareHandSlots-emptyFrom), 752+emptyFrom*62, 210, 1, hrDim)
 	}
-	first, second := "在庫の行を選び、空き枠をクリックで渡す", "枠をクリックで、在庫に戻す"
-	if s.prepareItem.ok {
-		first = fitText("「"+s.hrItemName(s.prepareItem)+"」を選択中。空き枠をクリックで渡す", 304)
+	// 操作の説明の場所に、選んだ品（なければ指している品）の性能を出す（F-01）。何もなければ操作の説明。
+	if it, selected, ok := s.hrDetailItem(v); ok {
+		s.hrItemDetail(it, selected, txt)
+		return
 	}
-	txt(first, 756, 236, 1, hrAqua)
-	txt(second, 756, 254, 1, hrText)
+	txt("在庫の行を選び、空き枠をクリックで渡す", 756, 236, 1, hrAqua)
+	txt("枠をクリックで、在庫に戻す", 756, 254, 1, hrText)
 	txt("E: 装備（右クリックで武器を装備にする）", 756, 270, 1, hrDim)
+}
+
+// hrDetailItem は手持ちの欄の性能の表示に使う品を返す。在庫の行を選んでいればその品（selected が真）、
+// そうでなければマウスが指している手持ちの枠・在庫の行の品。何も指していなければ ok が偽。
+func (s *SceneController) hrDetailItem(v *PrepareHiResView) (it prepareItem, selected, ok bool) {
+	if s.prepareItem.ok {
+		return s.prepareItem, true, true
+	}
+	pt := s.prepareCursor
+	m := s.campaign.Roster[s.prepareMember]
+	for _, h := range v.Hand {
+		if h.Name == "" || !pt.In(h.Rect) {
+			continue
+		}
+		if h.Weapon >= 0 {
+			return prepareItem{ok: true, weapon: true, id: m.Weapons[h.Weapon]}, false, true
+		}
+		return prepareItem{ok: true, id: h.Item}, false, true
+	}
+	for _, r := range v.Stock {
+		if pt.In(r.Rect) {
+			return r.Item, false, true
+		}
+	}
+	return prepareItem{}, false, false
+}
+
+// 性能の表示の行の位置。手持ちの欄（y < 290）に最大 4 行を、14 px 間隔で収める。
+const (
+	hrDetailX     = 756
+	hrDetailY     = 229
+	hrDetailStep  = 14
+	hrDetailWidth = 304
+)
+
+// hrItemDetail は品の名前（全文）と性能を、手持ちの欄の下部に出す（DES-UI-32 の prepareDetail と同じ文面。F-01）。
+// 名前の行、性能（折り返して 2 行まで）、選んだ在庫の武器を装備できないときはその理由（赤）の順。
+func (s *SceneController) hrItemDetail(it prepareItem, selected bool, txt hrTxtFn) {
+	var name, stats string
+	if it.weapon {
+		w := s.prepareWeapon(it.id)
+		name = w.Name
+		// 名前は 1 行目に全文を出すので、性能の文からは省く。
+		stats = strings.TrimPrefix(weaponDetail(w), w.Name+"　")
+	} else {
+		d, _ := s.cfg.Catalog.Item(it.id)
+		name, stats = d.Name, itemDetailText(d)
+	}
+	head, c := name, hrText
+	if selected {
+		head, c = "選んだ品: "+name, hrAqua
+	}
+	y := hrDetailY
+	txt(fitText(head, hrDetailWidth), hrDetailX, y, 1, c)
+	for i, line := range wrapSceneTextWidth(stats, hrDetailWidth) {
+		if i >= 2 {
+			break
+		}
+		y += hrDetailStep
+		txt(line, hrDetailX, y, 1, hrText)
+	}
+	if selected && it.weapon {
+		if reason := s.cannotEquipReason(it.id); reason != "" {
+			txt(fitText(reason, hrDetailWidth), hrDetailX, y+hrDetailStep, 1, hrBad)
+		}
+	}
 }
 
 func (s *SceneController) hrItemName(it prepareItem) string {
@@ -522,12 +615,16 @@ func (s *SceneController) hrItemName(it prepareItem) string {
 	return d.Name
 }
 
-// hrItemDot は道具の絵の代わりの丸（回復薬は赤、爆弾は灰。DES-NG05 Q-P4: 素材は作らない）。
+// hrItemDot は道具の絵の代わりの丸（DES-NG05 Q-P4: 素材は作らない）。r は丸の最大の半径。
+// 回復薬は赤。爆弾は定義の爆発の範囲（BlastRadius）で、色と大きさを変える: 範囲 0（1 マス）は橙で小さく、
+// 範囲 1 は灰、範囲 2 以上は暗い赤褐色で大きい。爆弾の ID は使わず、定義の値だけから決める。
 func (s *SceneController) hrItemDot(id string, x, y, r int) hrDot {
 	d, _ := s.cfg.Catalog.Item(id)
 	c := color.NRGBA{200, 70, 60, 255}
 	if d.Bomb {
-		c = color.NRGBA{140, 140, 150, 255}
+		radius := min(max(d.BlastRadius, 0), 2)
+		c = [...]color.NRGBA{{230, 140, 50, 255}, {150, 150, 160, 255}, {140, 64, 40, 255}}[radius]
+		r = r * (5 + radius) / 7
 	}
 	return hrDot{X: x, Y: y, R: r, Color: c}
 }
@@ -546,8 +643,8 @@ func (s *SceneController) hrStock(v *PrepareHiResView, box hrBoxFn, txt hrTxtFn)
 	if len(lines) > hrStockRows {
 		v.StockUp = SceneButton{"▲", image.Rect(1000, 304, 1030, 330), top > 0}
 		v.StockDown = SceneButton{"▼", image.Rect(1034, 304, 1064, 330), top < len(lines)-hrStockRows}
-		hrArrow(v, box, txt, v.StockUp)
-		hrArrow(v, box, txt, v.StockDown)
+		hrArrow(v, box, v.StockUp)
+		hrArrow(v, box, v.StockDown)
 	}
 	if len(lines) == 0 {
 		txt("（なし）", 756, hrStockTop+4, 1, hrDim)
@@ -615,7 +712,7 @@ func (s *SceneController) hrChapter(v *PrepareHiResView, info ChapterInfo, box h
 			txt(cnt, hrRight(cnt, 1, 1052), y+3, 1, hrText)
 		}
 	}
-	txt("武器の相性（有利 →）", 756, 668, 1, hrDim)
+	txt("武器の相性（矢印の向きが有利）", 756, 668, 1, hrDim)
 	cycle := weaponCycle()
 	for i, t := range cycle {
 		r := image.Rect(756+i*72, 692, 756+i*72+44, 718)
@@ -623,7 +720,7 @@ func (s *SceneController) hrChapter(v *PrepareHiResView, info ChapterInfo, box h
 		n := weaponTypeName(t)
 		txt(n, r.Min.X+(r.Dx()-textWidth(n))/2, r.Min.Y+5, 1, hrAmber)
 		if i < len(cycle)-1 {
-			txt("→", r.Max.X+8, r.Min.Y+5, 1, hrAqua)
+			v.Glyphs = append(v.Glyphs, hrGlyph{Kind: hrGlyphArrow, Rect: image.Rect(r.Max.X+6, r.Min.Y+4, r.Max.X+22, r.Min.Y+22), Color: hrAqua})
 		}
 	}
 }

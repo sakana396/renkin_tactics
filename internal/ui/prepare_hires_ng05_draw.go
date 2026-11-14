@@ -29,6 +29,9 @@ func (g *Game) drawPrepareHiRes(dst *ebiten.Image, v PrepareHiResView) {
 		vector.DrawFilledCircle(dst, float32(d.X), float32(d.Y), float32(d.R), d.Color, true)
 		vector.StrokeCircle(dst, float32(d.X), float32(d.Y), float32(d.R), 1, hrBorder, true)
 	}
+	for _, gl := range v.Glyphs {
+		hrDrawGlyph(dst, gl)
+	}
 	for _, b := range v.Bars {
 		r := b.Frame
 		hrFill(dst, r, color.NRGBA{16, 26, 31, 255})
@@ -54,6 +57,50 @@ func (g *Game) drawPrepareHiRes(dst *ebiten.Image, v PrepareHiResView) {
 	}
 }
 
+// hrDrawGlyph は ▲▼ の三角と → の矢印を、フォントの字形を使わず vector で描く（F-05）。
+func hrDrawGlyph(dst *ebiten.Image, g hrGlyph) {
+	r := g.Rect
+	x0, y0, x1, y1 := float32(r.Min.X), float32(r.Min.Y), float32(r.Max.X), float32(r.Max.Y)
+	switch g.Kind {
+	case hrGlyphUp:
+		hrFillTriangle(dst, x0, y1, x1, y1, (x0+x1)/2, y0, g.Color)
+	case hrGlyphDown:
+		hrFillTriangle(dst, x0, y0, x1, y0, (x0+x1)/2, y1, g.Color)
+	case hrGlyphArrow:
+		cy := (y0 + y1) / 2
+		head := (y1 - y0) / 2
+		vector.StrokeLine(dst, x0, cy, x1-head, cy, 2, g.Color, true)
+		hrFillTriangle(dst, x1-head-2, y0, x1-head-2, y1, x1, cy, g.Color)
+	}
+}
+
+var hrWhite = func() *ebiten.Image {
+	img := ebiten.NewImage(3, 3)
+	img.Fill(color.White)
+	return img.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
+}()
+
+// hrFillTriangle は 3 点の三角を塗る（vector.Path を三角形の描画へ渡す）。
+func hrFillTriangle(dst *ebiten.Image, ax, ay, bx, by, cx, cy float32, c color.NRGBA) {
+	var p vector.Path
+	p.MoveTo(ax, ay)
+	p.LineTo(bx, by)
+	p.LineTo(cx, cy)
+	p.Close()
+	vs, is := p.AppendVerticesAndIndicesForFilling(nil, nil)
+	for i := range vs {
+		vs[i].SrcX, vs[i].SrcY = 1, 1
+		vs[i].ColorR, vs[i].ColorG, vs[i].ColorB, vs[i].ColorA = float32(c.R)/255, float32(c.G)/255, float32(c.B)/255, float32(c.A)/255
+	}
+	dst.DrawTriangles(vs, is, hrWhite, &ebiten.DrawTrianglesOptions{AntiAlias: true})
+}
+
+// hrSlotFill は空きの枠・箱の塗り（暗い）、hrPipFill は名簿のカードの使っている枠の塗り（琥珀）。
+var (
+	hrSlotFill = color.NRGBA{22, 34, 40, 255}
+	hrPipFill  = hrAmber
+)
+
 func hrFill(dst *ebiten.Image, r image.Rectangle, c color.Color) {
 	vector.DrawFilledRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), c, false)
 }
@@ -77,7 +124,7 @@ func hrDrawBox(dst *ebiten.Image, b hrBox) {
 		hrFill(dst, r, hrCardDim)
 		stroke(color.NRGBA{90, 70, 40, 255}, 1)
 	case hrBoxSlot:
-		hrFill(dst, r, color.NRGBA{22, 34, 40, 255})
+		hrFill(dst, r, hrSlotFill)
 		stroke(color.NRGBA{80, 90, 88, 255}, 1)
 	case hrBoxSlotSel:
 		hrFill(dst, r, color.NRGBA{22, 34, 40, 255})
@@ -106,6 +153,9 @@ func hrDrawBox(dst *ebiten.Image, b hrBox) {
 		stroke(hrDim, 1)
 	case hrBoxFrame:
 		stroke(hrAmber, 2)
+	case hrBoxPip:
+		hrFill(dst, r, hrPipFill)
+		stroke(hrBorder, 1)
 	}
 }
 
