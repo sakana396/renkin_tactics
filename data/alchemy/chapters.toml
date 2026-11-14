@@ -5,6 +5,7 @@
 [[chapters]]
 id = "ch01"
 name = "水の止まった都"
+goal = "入口の広場の野盗の頭目を倒す"
 map = "ch01"
 before = "ch01_before"
 after = "ch01_after"
@@ -13,6 +14,7 @@ reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }, { 
 [[chapters]]
 id = "ch02"
 name = "水路の向こう"
+goal = "先遣隊長ドルクを倒す"
 map = "ch02"
 before = "ch02_before"
 after = "ch02_after"
@@ -23,6 +25,7 @@ reward = [{ item = "potion", count = 2 }, { item = "bomb_large", count = 2 }]
 [[chapters]]
 id = "ch03"
 name = "浄水施設"
+goal = "将軍ベルナドを倒す"
 map = "ch03"
 before = "ch03_before"
 after = "ch03_after"

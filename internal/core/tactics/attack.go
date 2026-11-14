@@ -23,6 +23,9 @@ func triangle(a, d WeaponType) int {
 	return 0
 }
 
+// WeaponBeats は、武器の種類 a が b に有利かを返す（DES-BTL-05、DES-NG-11）。triangle と同じ規則を画面から読むための口。
+func WeaponBeats(a, b WeaponType) bool { return triangle(a, b) == 1 }
+
 // inRange は、距離 d が武器 w の射程（最小〜最大）に入っているかを返す。
 func inRange(w Weapon, d int) bool {
 	return d >= w.MinRange && d <= w.MaxRange
