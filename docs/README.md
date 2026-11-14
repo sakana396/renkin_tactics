@@ -52,6 +52,7 @@
 | 試験 | 反復7 全9章の測り直し | [iterations/it07/remeasure.md](iterations/it07/remeasure.md) | #174。旧新版各920回、9章の時機2案、通しの回帰と基準PCの性能。未達・未承認あり |
 | 試験 | 反復7 描画性能の改善 | [iterations/it07/render-performance.md](iterations/it07/render-performance.md) | #189。同じ合成条件で12.228→79.808fps。実章初期も別途測定 |
 | 計画 | 反復 7 計画書 | [iterations/it07/plan.md](iterations/it07/plan.md) | v0.3（承認（E-119））。画面の作り直し・指揮官・重騎士の ZOC（E-117・E-118）。REV-090 の指摘を反映 |
+| 設計 | 準備画面の作り直し（高解像度、DES-NG05） | [03_design/design-ng05-prepare.md](03_design/design-ng05-prepare.md) | v0.1 未承認。モック [03_design/mock/prepare-ng05.png](03_design/mock/prepare-ng05.png)。カード型、持ち物の統合、章の情報。実装前 |
 | 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
 | 設計 | 設計メモ（新作の試作 NG01: 錬金の爆弾） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。企画たたき台 2.7 節の最小の試作。既存の設計は変えない |
 | 設計 | 設計メモ（新作の試作データ NG-06。DES-NG01 の 6 章） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。`data/alchemy`（1〜3 章）と `-game`。名前・文面は仮で、既存作品との重なりは未確認 |
