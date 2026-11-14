@@ -74,9 +74,11 @@ func Run(cfg Config) error {
 
 // Update は 1 フレームの処理のあとに、音を同期する（DES-NG-09）。
 func (g *Game) Update() error {
+	// 準備（高解像度）の Enter は場面を変えるので、入力を読む前の場面で調べる。
+	hiresPrepare := g.scenes != nil && g.scenes.fullWindowPrepare()
 	err := g.update()
 	if g.sound.sound != nil {
-		g.syncSound(readSoundInput(g.scenes.Scene()))
+		g.syncSound(readSoundInput(g.scenes.Scene(), hiresPrepare))
 	}
 	return err
 }
@@ -262,6 +264,8 @@ func (g *Game) sceneInput(k sceneKeys, x, y int) {
 		s.ToggleInfoPage()
 	}
 	if s.Scene() == Prepare && s.cfg.HiRes {
+		// マウスの位置は、指している品の性能の表示に使う（DES-NG-11）。
+		s.prepareCursor = image.Pt(x, y)
 		switch {
 		case k.Cancel:
 			if !(k.Right && s.rightClickPrepare(x, y)) {
