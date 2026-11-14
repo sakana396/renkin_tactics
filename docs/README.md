@@ -44,6 +44,7 @@
 | 試験 | 反復7 全9章の測り直し | [iterations/it07/remeasure.md](iterations/it07/remeasure.md) | #174。旧新版各920回、9章の時機2案、通しの回帰と基準PCの性能。未達・未承認あり |
 | 試験 | 反復7 描画性能の改善 | [iterations/it07/render-performance.md](iterations/it07/render-performance.md) | #189。同じ合成条件で12.228→79.808fps。実章初期も別途測定 |
 | 計画 | 反復 7 の振り返り（IT07-RETRO） | [iterations/it07/retrospective.md](iterations/it07/retrospective.md) | v0.2（承認（E-129））。人の試遊なしで締めた（E-128）。H-28・H-29 は未検証、H-30 は成り立った（E-129） |
+| 計画 | 反復 8 計画書（IT08-PLAN） | [iterations/it08/plan.md](iterations/it08/plan.md) | v0.1（案、開発者の承認待ち）。新作「古代都市の復旧」の試作ブランチの仕組みを取り込み、1〜3 章を作り直し、画像生成の環境と錬金の拡張（E-130・E-131） |
 | 試験 | 反復7 試遊の手引きと確かめ表 | [iterations/it07/playtest.md](iterations/it07/playtest.md) | v0.2（#175。試遊は行わずに締めた、E-128）。v0.1。試遊の版 dfdcecd、1・2・4・5・6・7・9 章（平均・代役の作り置きセーブ）、H-28〜30 の確かめ表 |
 | 計画 | 反復 7 計画書 | [iterations/it07/plan.md](iterations/it07/plan.md) | v0.3（承認（E-119））。画面の作り直し・指揮官・重騎士の ZOC（E-117・E-118）。REV-090 の指摘を反映 |
 | 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
