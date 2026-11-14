@@ -27,7 +27,7 @@ func allAssets() []asset {
 
 func main() {
 	dir := flag.String("out", "data/alchemy/media", "書き出す media のディレクトリ")
-	ledger := flag.Bool("ledger", false, "WAV は書かず、台帳（ASSETS-audio.md）の表の行を標準出力へ出す")
+	ledger := flag.Bool("ledger", false, "WAV は書かず、台帳（ASSETS.md）の表の行を標準出力へ出す")
 	flag.Parse()
 	if *ledger {
 		for _, a := range allAssets() {
