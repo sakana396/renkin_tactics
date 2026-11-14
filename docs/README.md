@@ -46,6 +46,7 @@
 | 計画 | 反復 7 の振り返り（IT07-RETRO） | [iterations/it07/retrospective.md](iterations/it07/retrospective.md) | v0.2（承認（E-129））。人の試遊なしで締めた（E-128）。H-28・H-29 は未検証、H-30 は成り立った（E-129） |
 | 試験 | 反復7 試遊の手引きと確かめ表 | [iterations/it07/playtest.md](iterations/it07/playtest.md) | v0.2（#175。試遊は行わずに締めた、E-128）。v0.1。試遊の版 dfdcecd、1・2・4・5・6・7・9 章（平均・代役の作り置きセーブ）、H-28〜30 の確かめ表 |
 | 計画 | 反復 7 計画書 | [iterations/it07/plan.md](iterations/it07/plan.md) | v0.3（承認（E-119））。画面の作り直し・指揮官・重騎士の ZOC（E-117・E-118）。REV-090 の指摘を反映 |
+| 計画 | 反復 8 計画書（IT08-PLAN） | [iterations/it08/plan.md](iterations/it08/plan.md) | v0.3（承認（E-134）。REV-112 の指摘と E-135・E-136 を反映）。新作「古代都市の復旧」の試作ブランチの仕組みを取り込み、1〜3 章を作り直し、画像生成の環境、錬金アイテムの種類と調合、#190 の案 B（E-130〜E-136） |
 | 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
