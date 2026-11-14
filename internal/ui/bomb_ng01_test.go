@@ -269,6 +269,25 @@ func TestNG01BombUI(t *testing.T) {
 		}
 	})
 
+	t.Run("TC-DES-NG-05-15 仮選択のあとに範囲外をクリックした理由が、案内欄の 4 行の中に出る", func(t *testing.T) {
+		g, c := bombGame(t, tactics.Pos{X: 2, Y: 2})
+		// 仮選択の前: 番・操作・Q の案内・理由の 4 行。
+		g.leftClick(cellCenter(tactics.Pos{X: 7, Y: 7}))
+		if lines := c.Guide(); c.Message() == "" || len(lines) > GuideHeight/lineHeight || lines[len(lines)-1] != c.Message() {
+			t.Errorf("仮選択の前の案内 = %q（理由 %q）", lines, c.Message())
+		}
+		// 仮選択のあと: 要約と「もう一度クリックで投げる」で 1 行増えるので、理由があるときは Q の案内を出さない。
+		g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
+		if lines := c.Guide(); c.Message() != "" || len(lines) != 4 || lines[3] != guideDanger {
+			t.Errorf("仮選択のあとの案内 = %q, 期待 4 行で最後が Q の案内", lines)
+		}
+		g.leftClick(cellCenter(tactics.Pos{X: 7, Y: 7}))
+		lines := c.Guide()
+		if c.Message() == "" || len(lines) > GuideHeight/lineHeight || lines[len(lines)-1] != c.Message() {
+			t.Errorf("範囲外のクリックのあとの案内 = %q（理由 %q）, 期待 4 行以内で最後が理由（案内欄は %d 行しか描かない）", lines, c.Message(), GuideHeight/lineHeight)
+		}
+	})
+
 	t.Run("TC-DES-NG-05-13 使えない回復薬は一覧に出さない（HP が最大なら爆弾だけ。HP が減っていれば両方）", func(t *testing.T) {
 		both := func() tactics.Setup {
 			s := bombSetup()
