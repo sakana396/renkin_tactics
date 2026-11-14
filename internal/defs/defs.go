@@ -255,8 +255,10 @@ type MapDef struct {
 // Before・After は物語の ID で、空なら物語を出さない。Joins はその章の始めに名簿に加わるキャラの ID の並び。
 // Reward はその章に勝ったときに共有の在庫に入るアイテム。
 type ChapterDef struct {
-	ID     string
-	Name   string
+	ID   string
+	Name string
+	// Goal は準備の画面に出す目的の文（DES-NG05 の定義の形式の変更）。空なら出さない。
+	Goal   string
 	Map    string
 	Before string
 	After  string
