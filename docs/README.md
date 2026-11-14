@@ -57,7 +57,6 @@
 | 設計 | 設計メモ（新作の試作データ NG-06。DES-NG01 の 6 章） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.2（未承認）。`data/alchemy`（1〜3 章）と `-game`。名前・文面は仮で、既存作品との重なりは未確認 |
 | 設計 | 設計メモ（新作の試作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.1（未承認）。DES-NG-08。置き場と名前の規則・台帳と検査・試し用の絵の道具。`game.go` への呼び出しは未反映 |
 | 設計 | 設計メモ（新作の試作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.2（未承認）。DES-NG-08。置き場と名前の規則・画像の大きさの上限・台帳と検査・試し用の絵の道具。`game.go` へ結び付け済み |
-| 設計 | 設計メモ（新作の試作 NG03: 音） | [03_design/design-ng03-audio.md](03_design/design-ng03-audio.md) | v0.2（未承認）。DES-NG-09。効果音・BGM の再生、仮の音の合成（`tools/synth`）、台帳。ミュートのキーは M が全体図と重なるため N（設計への提案）。耳での確認は未実施 |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
