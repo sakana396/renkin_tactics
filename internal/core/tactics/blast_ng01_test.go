@@ -162,6 +162,7 @@ func TestBlastEffects(t *testing.T) {
 
 	t.Run("TC-DES-NG-02-07 爆弾の撃破の経験", func(t *testing.T) {
 		b := mustNewStill(t, blastSetup(bomb(99, 1, 3)))
+		noRolls(t, b)
 		events := mustAct(t, b, throwCmd(0, pos(3, 6), pos(3, 3)))
 		if u := b.Units()[0]; u.Level != 1 || u.Exp != 50 {
 			t.Errorf("使った人のレベル %d・経験 %d, 期待 1・50", u.Level, u.Exp)
@@ -169,6 +170,13 @@ func TestBlastEffects(t *testing.T) {
 		if events[len(events)-1].Kind != tactics.EventExp || events[len(events)-1].Amount != 50 {
 			t.Errorf("最後の出来事 = %+v, 期待 経験 50", events[len(events)-1])
 		}
+		count := 0
+		for _, event := range events {
+			if event.Kind == tactics.EventExp {
+				count++
+			}
+		}
+		assertEqual(t, "経験の出来事の数", count, 1)
 		assertEqual(t, "倒れた敵", []bool{b.Units()[3].Alive, b.Units()[4].Alive}, []bool{false, false})
 	})
 

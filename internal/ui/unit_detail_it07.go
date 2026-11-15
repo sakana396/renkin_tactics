@@ -236,7 +236,7 @@ func handSlotLabels(u tactics.Unit) []string {
 	}
 	for _, st := range u.Items {
 		for range st.Count {
-			out = append(out, "　"+st.Item.Name+fmt.Sprintf("（回復 %d）", st.Item.Heal))
+			out = append(out, "　"+st.Item.Name+"（"+itemEffect(st.Item)+"）")
 		}
 	}
 	for len(out) < detailHandSlots {

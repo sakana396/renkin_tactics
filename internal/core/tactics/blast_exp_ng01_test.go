@@ -20,6 +20,8 @@ func TestBlastExperience(t *testing.T) {
 		b.SetRoll(func() int { rolls++; return 50 })
 		events := mustAct(t, b, throwCmd(0, pos(3, 6), pos(3, 3)))
 		assertEqual(t, "出来事", kinds(events), []tactics.EventKind{tactics.EventBlast, tactics.EventBlastHit, tactics.EventFall, tactics.EventBlastHit, tactics.EventFall, tactics.EventExp, tactics.EventLevelUp})
+		assertEqual(t, "レベルアップのレベル", events[6].Level, 4)
+		assertEqual(t, "レベルアップの成長", events[6].Gains, tactics.Stats{HP: 1})
 		u := b.Units()[0]
 		if u.Level != 4 || u.Exp != 20 || u.Stats.HP != s.Units[0].Stats.HP+1 || rolls != 8 || events[5].Amount != 50 {
 			t.Fatalf("成長結果 %+v、乱数 %d、経験 %d", u, rolls, events[5].Amount)

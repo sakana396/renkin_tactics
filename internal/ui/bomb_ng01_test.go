@@ -1,11 +1,17 @@
 package ui
 
 import (
+	"io/fs"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/sakana396/renkin_tactics/data"
+	"github.com/sakana396/renkin_tactics/internal/core"
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
+	"github.com/sakana396/renkin_tactics/internal/defload"
+	"github.com/sakana396/renkin_tactics/internal/defs"
 )
 
 // 爆弾の操作と表示（DES-NG-05）のテスト。実際の入力の経路（Game.leftClick → Controller）で確かめる。
@@ -413,6 +419,46 @@ func TestNG01BombUI(t *testing.T) {
 		want, err := c.Battle().BlastForecast(tactics.Command{Unit: 0, To: tactics.Pos{X: 2, Y: 2}, Action: tactics.UseItem, Item: 0, Blast: &center})
 		if err != nil || !reflect.DeepEqual(f, want) {
 			t.Errorf("予想 %+v\n期待 %+v（%v）", f, want, err)
+		}
+	})
+}
+
+func TestNG01ItemDetails(t *testing.T) {
+	t.Run("TC-DES-NG-05-16 詳しい欄・準備の画面の爆弾の効果の文", func(t *testing.T) {
+		for _, tc := range []struct {
+			name              string
+			fsys              fs.FS
+			id, label, effect string
+		}{
+			{"新作の爆弾", data.Alchemy(), "bomb_small", "小さな爆弾", "爆弾 ダメージ 8　範囲 1　投げる 4"},
+			{"旧作の回復薬", data.Base(), "potion", "回復薬", "回復 10"},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				cat, err := defload.Load(tc.fsys)
+				if err != nil {
+					t.Fatal(err)
+				}
+				campaign, err := core.NewCampaign(cat, core.Withdraw)
+				if err != nil {
+					t.Fatal(err)
+				}
+				campaign.Roster[0].Items = []defs.ItemCount{{Item: tc.id, Count: 1}}
+				s := NewSceneController(Config{Catalog: cat, Store: &memoryStore{}})
+				s.campaign = campaign
+				s.prepareItem = prepareItem{ok: true, id: tc.id}
+				labels := handSlotLabels(s.prepareUnit(0))
+				want := "　" + tc.label + "（" + tc.effect + "）"
+				if !slices.Contains(labels, want) {
+					t.Errorf("詳しい欄 = %v、期待 %q", labels, want)
+				}
+				var lines []string
+				for _, line := range s.prepareDetail() {
+					lines = append(lines, line.Text)
+				}
+				if got := strings.Join(lines, ""); !strings.Contains(got, "道具　"+tc.effect) {
+					t.Errorf("準備の効果 = %q", got)
+				}
+			})
 		}
 	})
 }
