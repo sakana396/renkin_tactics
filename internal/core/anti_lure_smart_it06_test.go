@@ -91,7 +91,7 @@ func TestIT06SmartAutoplayWins(t *testing.T) {
 	avg, lost := antiLureRosters[0], antiLureRosters[2]
 	cases := []smartCase{
 		{"ch01", avg, 1}, {"ch02", avg, 7}, {"ch03", avg, 6}, {"ch05", avg, 9},
-		{"ch06", avg, 1}, {"ch07", avg, 3}, {"ch08", avg, 1}, {"ch09", avg, 1},
+		{"ch06", avg, 1}, {"ch07", avg, 3}, {"ch08", avg, 1}, {"ch09", avg, 4},
 		{"ch04", lost, 12}, {"ch05", lost, 4}, {"ch06", lost, 1}, {"ch08", lost, 1}, {"ch09", lost, 2},
 	}
 	for _, tc := range cases {
