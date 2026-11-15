@@ -1,7 +1,7 @@
 # 設計書（反復 1: プロトタイプ）
 
 - 文書 ID: DES-IT01
-- 版: 0.5 承認（E-122・E-123。DES-IT07 7 章の文面と補足。3.3・3.11・5.6 節に反復 7 の改訂の追記、#164）。0.4 までは開発者が承認、E-24、E-40
+- 版: 0.6 改訂案（開発者の承認待ち。#203 で 1.1 節に `internal/ui/audio` を追記）。0.5 承認（E-122・E-123。DES-IT07 7 章の文面と補足。3.3・3.11・5.6 節に反復 7 の改訂の追記、#164）。0.4 までは開発者が承認、E-24、E-40
 - 作成日: 2026-10-20
 - 対象: [反復 1 計画書](../iterations/it01/plan.md) の範囲
 - 入力: [SRS-001](../02_requirements/srs.md) v0.1、[ユースケース](../02_requirements/use-cases.md)、[ADR-0001](../adr/0001-tech-stack.md)、[ADR-0002](../adr/0002-return-to-fushigi.md)、[ADR-0003](../adr/0003-definition-data-format.md)、E-13〜E-18、E-20〜E-23
@@ -19,8 +19,9 @@
 | DES-PKG-03 | `internal/defload` | TOML の読み込みと、意味の検証（ADR-0003） | `defs`、`github.com/BurntSushi/toml` |
 | DES-PKG-04 | `internal/core` | ゲームの状態。反復 1 では、定義データから戦闘の入力（`tactics.Setup`）を組み立てるだけ | `defs`、`core/tactics` |
 | DES-PKG-05 | `internal/core/tactics` | 戦闘の規則と状態。World と `defs` を知らない（ADR-0002） | Go の標準ライブラリだけ |
-| DES-PKG-06 | `internal/ui` | Ebitengine による描画と入力。使い捨てにせず育てる（E-13 P-07） | `core`、`core/tactics`、`defs`、Ebitengine、`github.com/hajimehoshi/bitmapfont/v3` |
+| DES-PKG-06 | `internal/ui` | Ebitengine による描画と入力。使い捨てにせず育てる（E-13 P-07） | `core`、`core/tactics`、`defs`、`ui/audio`（反復 8 で追記）、Ebitengine、`github.com/hajimehoshi/bitmapfont/v3` |
 | DES-PKG-07 | `data` | 本体の定義データ（`data/base/*.toml`）。`go:embed` で埋め込む | なし |
+| （反復 8 で追記）DES-NG-09 | `internal/ui/audio` | 新作の効果音・BGM の再生（音の名前、再生の管理、音を出す口と oto による実装）。`core`・`tactics`・`defs` を知らない。設計は [DES-NG03](design-ng03-audio.md) | Go の標準ライブラリ、Ebitengine（WAV の読み込みの `ebiten/v2/audio/wav`）、`github.com/ebitengine/oto/v3` |
 
 ```mermaid
 flowchart TB
@@ -41,6 +42,7 @@ flowchart TB
 - `core` と `core/tactics` は Ebitengine と実時間（`time`）を使わない（NFR-04、NFR-05）。テストで `go list` の結果を調べて自動で確かめる（DES-NFR-01）
 - `tactics` は定義データの型を知らない。テストでは Go のコードで `tactics.Setup` を組み立てられる
 - AGENTS.md のパッケージ構成の表にも、この構成を書いた（E-18）
+- （反復 8 で追記。#203、IT08-PLAN 3.1 節、REV-112 F-10）新作の音のために `internal/ui/audio` を足した（DES-NG03）。`ui` だけが `ui/audio` を使う。`github.com/ebitengine/oto/v3` は `ui/audio` が直接使う。`golang.org/x/image` は、試し用の絵の道具 `tools/mkplaceholder`（DES-NG-08）だけが使い、`ui` を含むゲーム本体は使わない（試作ブランチの import で確かめた）。`tools/` の下の道具は、この表の外に置く。この行は、試作の取り込み（#205）のあとに有効になる
 
 ### 1.2 乱数（DES-RNG-01）
 
@@ -871,3 +873,4 @@ y 0  ^^^^^^..FFF..^^^
 | 0.3 | 2026-10-21 | 開発者が遊んだ結果（E-21）から、5.6 節「見せ方の改善」（DES-UI-06〜08）を足した（E-22、E-23）。5.2 節の操作に、カーソルを合わせる表示と Q キーを足した。REV-016 の指摘を反映した。開発者が承認した（E-24） |
 | 0.4 | 2026-10-23 | 既存動作の説明を追記した（Q-IT03-08、#66、REV-041）: 3.12 節に回数 0 の側の必殺・怒りと画面の表示、3.13 節に出来事の定数名（`Event` を頭に付ける）と `Strike.Amount` の意味。規則は変えない。開発者が承認した（E-40） |
 | 0.5 | 2026-11-03 | #164。DES-IT07 7 章（E-122）による。DES-IT07 1.2 節の既存 ID の改訂に合わせ、3.3 節（DES-BTL-03: 相手軍の重騎士の隣への進入費 +1）、3.11 節（DES-AI-01: 近さに ZOC を数える、小隊長の撃破による方式の切り替え）、5.6 節（DES-UI-07: 予測を盤面上の共通窓へ、DES-UI-08: 範囲の区別と Q を受ける場面）に追記した。今の文面は変えていない。承認（E-122・E-123。DES-IT07 7 章の文面と補足） |
+| 0.6 | 2026-11-15 | 改訂案（開発者の承認待ち）。#203（IT08-PLAN 3.1 節、REV-112 F-10）。1.1 節の表に `internal/ui/audio`（DES-NG-09）を足し、`ui` の依存先に `ui/audio` を足した。`oto` は `ui/audio`、`golang.org/x/image` は `tools/mkplaceholder` だけが使うことを注記した。ほかの設計は変えていない |
