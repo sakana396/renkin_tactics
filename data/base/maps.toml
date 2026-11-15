@@ -1424,10 +1424,10 @@ ai = "charge"
 x = 31
 y = 23
 
-# 7 ターン: 前庭の両端
+# 7・13 ターン: 前庭の両端（#213 で一方を 13 ターンへ）
 [[maps.reinforcements]]
 id = "anti_lure_turn_09_5"
-turn = 7
+turn = 13
 class = "soldier"
 weapon = "iron_lance"
 level = 9
@@ -1447,7 +1447,7 @@ ai = "charge"
 x = 29
 y = 8
 
-# 9 ターン: 本営の中
+# 9・14 ターン: 本営の中（#213 で一方を 14 ターンへ）
 [[maps.reinforcements]]
 id = "anti_lure_turn_09_7"
 turn = 9
@@ -1461,7 +1461,7 @@ y = 2
 
 [[maps.reinforcements]]
 id = "anti_lure_turn_09_8"
-turn = 9
+turn = 14
 class = "myrmidon"
 weapon = "iron_sword"
 level = 12

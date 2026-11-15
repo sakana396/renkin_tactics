@@ -100,8 +100,8 @@ func TestCh09Map(t *testing.T) {
 		if charge != 11 {
 			t.Errorf("突っ込む初期の敵 = %d", charge)
 		}
-		// 増援の時機と位置。反復 5 の 8 体（3・5・7・9 ターンに 2 体ずつ。南西の背後、東の端、前庭の両端、本営の中）を
-		// 定義の先頭に残し、#154 で 4・6・8・10〜12 ターン目の 6 体を足した（ターンごとの数は TC-FR-MAP-04-23）。
+		// 増援の時機と位置。反復 5 の 8 体（南西の背後、東の端、前庭の両端、本営の中）を
+		// 定義の先頭に残し、#213 で 2 体を 13・14 ターンに移した。#154 で 4・6・8・10〜12 ターン目の 6 体を足した（ターンごとの数は TC-FR-MAP-04-23）。
 		type rf struct{ turn, x, y int }
 		var got []rf
 		for _, r := range m.Reinforcements {
@@ -110,7 +110,7 @@ func TestCh09Map(t *testing.T) {
 				t.Errorf("増援 %+v", r)
 			}
 		}
-		want := []rf{{3, 0, 29}, {3, 0, 30}, {5, 31, 22}, {5, 31, 23}, {7, 2, 8}, {7, 29, 8}, {9, 11, 2}, {9, 20, 2}}
+		want := []rf{{3, 0, 29}, {3, 0, 30}, {5, 31, 22}, {5, 31, 23}, {13, 2, 8}, {7, 29, 8}, {9, 11, 2}, {14, 20, 2}}
 		if len(got) != 14 || !reflect.DeepEqual(got[:8], want) {
 			t.Errorf("増援 = %v", got)
 		}
@@ -443,4 +443,33 @@ func TestNineChapterRun(t *testing.T) {
 			}
 		})
 	}
+}
+
+// 案 B の増援の時機と連続する波を確かめる（IT08-PLAN 9 章 I）。
+func TestCh09CandidateB(t *testing.T) {
+	m, ok := baseCatalog(t).Map("ch09")
+	if !ok {
+		t.Fatal("ch09 がない")
+	}
+	t.Run("TC-FR-MAP-04-35 案Bの増援", func(t *testing.T) {
+		want := map[string]int{"anti_lure_turn_09_5": 13, "anti_lure_turn_09_8": 14}
+		counts := map[int]int{}
+		for _, r := range m.Reinforcements {
+			counts[r.Turn]++
+			if turn, ok := want[r.ID]; ok {
+				if r.Turn != turn {
+					t.Errorf("%s: %d ターン、期待 %d", r.ID, r.Turn, turn)
+				}
+				delete(want, r.ID)
+			}
+		}
+		if len(want) != 0 {
+			t.Errorf("増援がない: %v", want)
+		}
+		for turn := 3; turn <= 14; turn++ {
+			if counts[turn] < 1 || counts[turn] > 2 {
+				t.Errorf("%d ターン: %d 体", turn, counts[turn])
+			}
+		}
+	})
 }
