@@ -4,14 +4,17 @@
 
 | 工程 | 成果物 | 置き場所 | 状態 |
 |---|---|---|---|
-| 計画 | プロジェクト計画書 | [00_plan/project-plan.md](00_plan/project-plan.md) | v0.1 承認済み |
+| 計画 | プロジェクト計画書 | [00_plan/project-plan.md](00_plan/project-plan.md) | v0.2 改訂案（承認待ち、#202）。新作の完成を目的に足す。v0.1 承認済み |
 | 企画 | 要求抽出記録（ヒアリング） | [01_concept/elicitation-notes.md](01_concept/elicitation-notes.md) | 追記中 |
-| 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.6 承認（E-94、#119）。錬金術師・魔道士、仲間 9 人、出撃枠 +1 |
+| 企画 | 企画書 | [01_concept/concept.md](01_concept/concept.md) | v0.7 改訂案（承認待ち、#202）。新作「古代都市の復旧」の企画にする。v0.6 承認（E-94、#119）。錬金術師・魔道士、仲間 9 人、出撃枠 +1 |
+| 企画 | 新作の企画のたたき台（CON-DRAFT-NG01） | [01_concept/new-game-draft.md](01_concept/new-game-draft.md) | v0.1。CON-001 v0.7 に統合済み。経緯として残す（#202） |
+| 企画 | 新作の見た目と音の方針（CON-DRAFT-NG02） | [01_concept/new-game-visual-draft.md](01_concept/new-game-visual-draft.md) | 承認待ち。承認して新作の見た目の文書として使う（#202） |
+| 企画 | 新作のキャラの画像の指示文（CON-DRAFT-NG03） | [01_concept/new-game-prompts.md](01_concept/new-game-prompts.md) | 承認待ち。承認して新作の見た目の文書として使う（#202） |
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
 | 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
 | 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
-| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.8 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。ZOC・小隊長・画面の操作を追記 |
-| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.13（UC-02 の直接クリックの取消し、E-124）。v0.12 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。予測中の武器・予測窓・詳細画面・範囲・持ち物・ZOC・小隊長を追記 |
+| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.9 改訂案（承認待ち、#202）。爆弾 FR-ITM-04〜07、FR-SYS-05〜09、FR-MAP-07、FR-CMP-12。v0.8 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。ZOC・小隊長・画面の操作を追記 |
+| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.14 改訂案（承認待ち、#202）。UC-02 の爆弾、UC-11 の新作の準備の画面。v0.13（UC-02 の直接クリックの取消し、E-124）。v0.12 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。予測中の武器・予測窓・詳細画面・範囲・持ち物・ZOC・小隊長を追記 |
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.2 承認済み |
 | 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.5 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。DES-BTL-03・AI-01・UI-07・08 の追記。v0.4 承認済み（E-40） |
 | 計画 | 反復 2 計画書 | [iterations/it02/plan.md](iterations/it02/plan.md) | v0.3 承認済み（E-32、E-33） |
