@@ -1427,7 +1427,7 @@ y = 23
 # 7 ターン: 前庭の両端
 [[maps.reinforcements]]
 id = "anti_lure_turn_09_5"
-turn = 7
+turn = 13
 class = "soldier"
 weapon = "iron_lance"
 level = 9
@@ -1461,7 +1461,7 @@ y = 2
 
 [[maps.reinforcements]]
 id = "anti_lure_turn_09_8"
-turn = 9
+turn = 14
 class = "myrmidon"
 weapon = "iron_sword"
 level = 12
