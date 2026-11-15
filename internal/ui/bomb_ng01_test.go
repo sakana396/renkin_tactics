@@ -65,7 +65,7 @@ func clickMenuLabel(t *testing.T, g *Game, label string) {
 	for i, l := range labels {
 		if l == label {
 			_, dest, _ := c.Selection()
-			r := c.Camera().MenuRects(dest, len(labels))[i]
+			r := c.Camera().MenuRectsFor(dest, labels)[i]
 			g.leftClick(r.Min.X+2, r.Min.Y+2)
 			return
 		}
@@ -459,6 +459,37 @@ func TestNG01ItemDetails(t *testing.T) {
 					t.Errorf("準備の効果 = %q", got)
 				}
 			})
+		}
+	})
+}
+
+func TestNG01MenuFitsLabels(t *testing.T) {
+	t.Run("TC-DES-NG-05-17 爆弾の行が一覧の枠と盤面の中に収まる", func(t *testing.T) {
+		labels := []string{"傷薬 ×1（回復 10）", "大きな爆弾 ×1（爆弾 ダメージ 12　範囲 2　投げる 3）"}
+		cam := Camera{Width: 16, Height: 16}
+		for _, dest := range []tactics.Pos{{X: 0, Y: 0}, {X: 7, Y: 8}, {X: 15, Y: 15}} {
+			rs := cam.MenuRectsFor(dest, labels)
+			if len(rs) != len(labels) {
+				t.Fatalf("移動先 %v: ボタン %d 個", dest, len(rs))
+			}
+			for i, r := range rs {
+				// 文は左から 8 px のところに描くので、文の幅＋左右 8 px が枠に入ること。
+				if r.Dx() < textWidth(labels[i])+16 || r.Dx() < menuWidth {
+					t.Errorf("移動先 %v の %d 行目: 幅 %d が文の幅 %d に足りない", dest, i, r.Dx(), textWidth(labels[i]))
+				}
+				if r.Min.X < 0 || r.Max.X > MapSize || r.Min.Y < 0 || r.Max.Y > MapSize {
+					t.Errorf("移動先 %v の %d 行目: %v が盤面の外に出る", dest, i, r)
+				}
+				// 文の右端の近くをクリックしても、その行に当たる。
+				if got := HitMenu(rs, r.Min.X+8+textWidth(labels[i])-1, r.Min.Y+4); got != i {
+					t.Errorf("移動先 %v の %d 行目の右端のクリックが %d に当たった", dest, i, got)
+				}
+			}
+		}
+		// 短い文だけの一覧は、これまでどおりの幅と位置のまま。
+		short := []string{"攻撃", "待機"}
+		if got, want := cam.MenuRectsFor(tactics.Pos{X: 3, Y: 3}, short), MenuRects(tactics.Pos{X: 3, Y: 3}, 2); !reflect.DeepEqual(got, want) {
+			t.Errorf("短い一覧 = %v, 期待 %v", got, want)
 		}
 	})
 }

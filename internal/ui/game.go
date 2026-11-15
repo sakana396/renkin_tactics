@@ -261,7 +261,7 @@ func (g *Game) leftClick(x, y int) {
 	}
 	if labels := c.MenuLabels(); len(labels) > 0 {
 		_, dest, _ := c.Selection()
-		if i := HitMenu(c.Camera().MenuRects(dest, len(labels)), x, y); i >= 0 {
+		if i := HitMenu(c.Camera().MenuRectsFor(dest, labels), x, y); i >= 0 {
 			c.ClickMenu(i)
 			return
 		}
@@ -677,7 +677,7 @@ func (g *Game) drawMenu(dst *ebiten.Image) {
 		return
 	}
 	_, dest, _ := g.ctrl.Selection()
-	for i, r := range g.ctrl.Camera().MenuRects(dest, len(labels)) {
+	for i, r := range g.ctrl.Camera().MenuRectsFor(dest, labels) {
 		vector.DrawFilledRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), menuColor, false)
 		vector.StrokeRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), 1, menuBorder, false)
 		g.label(dst, labels[i], r.Min.X+8, r.Min.Y+4, white)

@@ -37,10 +37,16 @@ func CellAt(x, y int) (p tactics.Pos, ok bool) {
 // MenuRects は、移動先 dest の横に n 個のボタンを縦に並べたときの、各ボタンの範囲を返す（DES-UI-02）。
 // 盤面の右に出られなければ左に出し、下に出られなければ上にずらす。描画とクリックの判定の両方で使う。
 func MenuRects(dest tactics.Pos, n int) []image.Rectangle {
+	return menuRectsWidth(dest, n, menuWidth)
+}
+
+// menuRectsWidth は MenuRects のボタンの幅を w にしたもの。長い行（爆弾の効果の文）を一覧の枠と盤面に収めるのに使う（DES-NG-05）。
+func menuRectsWidth(dest tactics.Pos, n, menuWidth int) []image.Rectangle {
 	x := (dest.X + 1) * CellSize
 	if x+menuWidth > MapSize {
 		x = dest.X*CellSize - menuWidth
 	}
+	x = max(0, min(x, MapSize-menuWidth))
 	y := dest.Y * CellSize
 	if y+n*menuHeight > MapSize {
 		y = MapSize - n*menuHeight

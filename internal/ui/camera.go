@@ -49,6 +49,16 @@ func (c Camera) Visible(p tactics.Pos) bool {
 	return p.X >= c.X && p.Y >= c.Y && p.X < min(c.Width, c.X+16) && p.Y < min(c.Height, c.Y+16)
 }
 
+// MenuRectsFor は、一覧の行 labels のいちばん長い文が収まる幅で MenuRects を返す。
+// 幅は既定の幅より狭くせず、盤面の幅を超えない。描画とクリックの判定の両方で使う（DES-UI-02、DES-NG-05）。
+func (c Camera) MenuRectsFor(p tactics.Pos, labels []string) []image.Rectangle {
+	w := menuWidth
+	for _, l := range labels {
+		w = max(w, textWidth(l)+16)
+	}
+	return menuRectsWidth(tactics.Pos{X: p.X - c.X, Y: p.Y - c.Y}, len(labels), min(w, MapSize))
+}
+
 // MenuRects は描画と入力で共通のメニュー矩形を返す（DES-UI-25）。
 func (c Camera) MenuRects(p tactics.Pos, n int) []image.Rectangle {
 	return MenuRects(tactics.Pos{X: p.X - c.X, Y: p.Y - c.Y}, n)

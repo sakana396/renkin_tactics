@@ -727,7 +727,7 @@ func (c *Controller) hoveredWeapon() int {
 	if len(ws) == 0 {
 		return -1
 	}
-	if i := HitMenu(c.Camera().MenuRects(c.dest, len(ws)), c.cursorX, c.cursorY); i >= 0 {
+	if i := HitMenu(c.Camera().MenuRectsFor(c.dest, c.MenuLabels()), c.cursorX, c.cursorY); i >= 0 {
 		return ws[i]
 	}
 	return -1
@@ -860,7 +860,7 @@ func (c *Controller) hoveredEnemy() int {
 	if !ok {
 		return -1
 	}
-	if n := len(c.MenuLabels()); n > 0 && HitMenu(c.Camera().MenuRects(c.dest, n), c.cursorX, c.cursorY) >= 0 {
+	if labels := c.MenuLabels(); len(labels) > 0 && HitMenu(c.Camera().MenuRectsFor(c.dest, labels), c.cursorX, c.cursorY) >= 0 {
 		return -1
 	}
 	i, ok := c.unitAt(p)
