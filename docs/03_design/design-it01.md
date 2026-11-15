@@ -36,13 +36,15 @@ flowchart TB
   CORE --> TACTICS
   DEFLOAD --> DEFS
   UI --> EBI[(Ebitengine)]
+  UI --> AUDIO[internal/ui/audio]
+  AUDIO --> OTO[(ebitengine/oto)]
   DEFLOAD --> TOML[(BurntSushi/toml)]
 ```
 
 - `core` と `core/tactics` は Ebitengine と実時間（`time`）を使わない（NFR-04、NFR-05）。テストで `go list` の結果を調べて自動で確かめる（DES-NFR-01）
 - `tactics` は定義データの型を知らない。テストでは Go のコードで `tactics.Setup` を組み立てられる
 - AGENTS.md のパッケージ構成の表にも、この構成を書いた（E-18）
-- （反復 8 で追記。#203、IT08-PLAN 3.1 節、REV-112 F-10）新作の音のために `internal/ui/audio` を足した（DES-NG03）。`ui` だけが `ui/audio` を使う。`github.com/ebitengine/oto/v3` は `ui/audio` が直接使う。`golang.org/x/image` は、試し用の絵の道具 `tools/mkplaceholder`（DES-NG-08）だけが使い、`ui` を含むゲーム本体は使わない（試作ブランチの import で確かめた）。`tools/` の下の道具は、この表の外に置く。この行は、試作の取り込み（#205）のあとに有効になる
+- （反復 8 で追記。#203、IT08-PLAN 3.1 節、REV-112 F-10）新作の音のために `internal/ui/audio` を足した（DES-NG03）。`ui` だけが `ui/audio` を使う。`github.com/ebitengine/oto/v3` は `ui/audio` が直接使う。`golang.org/x/image` は、試し用の絵の道具 `tools/mkplaceholder`（DES-NG-08）だけが直接 import し、`ui` を含むゲーム本体は直接 import しない（Ebitengine を通して間接に使う。試作ブランチの import で確かめた）。`tools/` の下の道具は、この表の外に置く。この行は、試作の取り込み（#205）のあとに有効になる
 
 ### 1.2 乱数（DES-RNG-01）
 
@@ -492,6 +494,7 @@ sequenceDiagram
 
 - 攻撃が終わるたびに確かめる。ボスが倒れていれば勝ち（`Won`）。主人公が倒れていれば負け（`Lost`）（FR-MAP-05、FR-CMP-09、E-13 P-04）
 - 1 回の攻撃で倒れるのは 1 体だけなので、勝ちと負けが同時に起きることはない
+- （反復 8 で追記。#203、DES-NG01 5 章、E-135・E-142）爆弾（DES-NG-02）は 1 回の行動で複数のユニットが倒れる。**ボスと主人公が同じ爆発で倒れたら勝ち（ボス優先）**とする。判定は、全ユニットからボスの撃破を先に探し、いなければ主人公の撃破を探す。上の「同時に起きることはない」は、攻撃・反撃について今までどおり成り立つ。爆弾での勝ち負けは DES-NG01 3.2 節・4 章 D-3 にある
 - 勝ち負けが決まったら、それ以降の敵の行動と番の進行を止め、`Act` と `EndPhase` は `ErrBattleOver` を返す
 
 ### 3.11 敵の動き方（DES-AI-01）
@@ -873,4 +876,4 @@ y 0  ^^^^^^..FFF..^^^
 | 0.3 | 2026-10-21 | 開発者が遊んだ結果（E-21）から、5.6 節「見せ方の改善」（DES-UI-06〜08）を足した（E-22、E-23）。5.2 節の操作に、カーソルを合わせる表示と Q キーを足した。REV-016 の指摘を反映した。開発者が承認した（E-24） |
 | 0.4 | 2026-10-23 | 既存動作の説明を追記した（Q-IT03-08、#66、REV-041）: 3.12 節に回数 0 の側の必殺・怒りと画面の表示、3.13 節に出来事の定数名（`Event` を頭に付ける）と `Strike.Amount` の意味。規則は変えない。開発者が承認した（E-40） |
 | 0.5 | 2026-11-03 | #164。DES-IT07 7 章（E-122）による。DES-IT07 1.2 節の既存 ID の改訂に合わせ、3.3 節（DES-BTL-03: 相手軍の重騎士の隣への進入費 +1）、3.11 節（DES-AI-01: 近さに ZOC を数える、小隊長の撃破による方式の切り替え）、5.6 節（DES-UI-07: 予測を盤面上の共通窓へ、DES-UI-08: 範囲の区別と Q を受ける場面）に追記した。今の文面は変えていない。承認（E-122・E-123。DES-IT07 7 章の文面と補足） |
-| 0.6 | 2026-11-15 | 改訂案（開発者の承認待ち）。#203（IT08-PLAN 3.1 節、REV-112 F-10）。1.1 節の表に `internal/ui/audio`（DES-NG-09）を足し、`ui` の依存先に `ui/audio` を足した。`oto` は `ui/audio`、`golang.org/x/image` は `tools/mkplaceholder` だけが使うことを注記した。ほかの設計は変えていない |
+| 0.6 | 2026-11-15 | 改訂案（開発者の承認待ち）。#203（IT08-PLAN 3.1 節、REV-112 F-10）。1.1 節の表に `internal/ui/audio`（DES-NG-09）を足し、`ui` の依存先に `ui/audio` を足した。`oto` は `ui/audio`、`golang.org/x/image` は `tools/mkplaceholder` だけが直接 import することを注記した（REV-114 R-02: 本体は Ebitengine を通して間接に使う）。3.10 節（DES-MAP-04）に、爆弾で複数が倒れるときのボス優先の勝ちを追記した（DES-NG01 5 章、E-135）。1.1 節の図に `UI --> AUDIO`・`AUDIO --> OTO` を足した（R-03）。REV-114 の指摘と E-142 を反映。ほかの設計は変えていない |

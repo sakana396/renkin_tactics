@@ -83,10 +83,10 @@ Codex・Claude Code など、利用するサービスによらず、**方針・�
 | `internal/core/tactics` | 戦闘の規則と状態。World と `defs` を知らない（ADR-0002） | Go の標準ライブラリのみ |
 | `internal/savefile` | セーブファイルの置き換え（一時ファイルに書いてから名前を変える）と置き場所 | Go の標準ライブラリのみ |
 | `internal/ui` | 描画と入力 | `core`、`core/tactics`、`defs`、`ui/audio`、Ebitengine、`github.com/hajimehoshi/bitmapfont/v3` |
-| `internal/ui/audio` | 新作の効果音・BGM の再生（音の名前、再生の管理、音を出す口と oto による実装）。`core`・`tactics`・`defs` を知らない（DES-NG-09） | Go の標準ライブラリ、Ebitengine（WAV の読み込み）、`github.com/ebitengine/oto/v3` |
+| `internal/ui/audio` | 新作の効果音・BGM の再生（音の名前、再生の管理、音を出す口と oto による実装）。`core`・`tactics`・`defs` を知らない（DES-NG-09） | Go の標準ライブラリ、Ebitengine（WAV の読み込み）、`github.com/ebitengine/oto/v3`（`ui/audio` の行は、#205 の取り込みのあとに有効） |
 | `data` | 本体の定義データ（`go:embed`） | なし |
 
-- `tools/` の下の道具は、この表の外に置く。`tools/mkplaceholder`（試し用の絵の道具。DES-NG-08）は `golang.org/x/image` を使う。ゲーム本体（`cmd/renkin` と `internal/`）は `golang.org/x/image` を使わない
+- `tools/` の下の道具は、この表の外に置く。`tools/mkplaceholder`（試し用の絵の道具。DES-NG-08）は `golang.org/x/image` を使う。ゲーム本体（`cmd/renkin` と `internal/`）は `golang.org/x/image` を直接 import しない（Ebitengine を通して間接に使う）
 
 ### core の約束
 
