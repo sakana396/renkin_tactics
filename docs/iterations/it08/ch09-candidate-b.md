@@ -13,6 +13,8 @@ IT08-PLAN v0.3 9 章 I、E-132。`anti_lure_turn_09_5` を 7→13T、`anti_lure_
 
 旧測定は [反復 7 の案 B](../it07/remeasure.md) 3 章。全項目が一致し、最大生存敵は全試遊で 39 以下。試行後未出現は全試行で一度も出なかった個体のうち、出現を試行した後も出なかった数で、上限か位置詰まりかは判別しない。賢い打ち手の巻き戻し前も含む参考分類。予定ターン未到達は戦闘が波より先に終わった場合も含み、未出現が解消したとは判断しない。勝ち数は人の難しさの判定の代わりにならない。
 
+勝った seed: 今の打ち手は平均 3（40T）、代役 1（47T）・9（41T）。賢い打ち手は平均 4（48T）、代役 2（50T）・7（42T）。低めはどちらも 0 勝。
+
 平均・賢の勝利 seed は 4（48T）。従来の固定 seed 1 は勝てないため、TC-FR-MAP-04-25 を seed 4 に変更した。代役・賢の固定 seed 2 は維持する。
 
-再実行: `RENKIN_IT07_CH=ch09 RENKIN_IT07_REPORT=/tmp/ch09-213.json RENKIN_IT07_COMMIT=issue-213 go test ./internal/core -run '^TestIT07Remeasure$' -count=1 -parallel 6 -timeout 30m`。WSL/Linux、指定の GOCACHE を使用。
+再実行: `RENKIN_IT07_CH=ch09 RENKIN_IT07_REPORT=/tmp/ch09-213.json RENKIN_IT07_COMMIT=issue-213 go test ./internal/core -run '^TestIT07Remeasure$' -count=1 -parallel 6 -timeout 30m`。WSL/Linux、指定の GOCACHE を使用。独立レビュー（REV-115）で再計測し、反復 7 の `candidate-b.json.gz` と 120 試遊の全欄が一致した。
