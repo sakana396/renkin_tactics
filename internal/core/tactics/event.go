@@ -35,6 +35,11 @@ const (
 	EventTrigger
 	// EventGroupCharge は一団が突撃に変わったこと。MapEvent、Group を持つ（DES-MAP-07）。
 	EventGroupCharge
+	// EventBlast は爆弾を使ったこと。Unit（使った人）、To（爆心）、Item（爆弾の名前）を持つ（DES-NG-02）。
+	EventBlast
+	// EventBlastHit は爆発が 1 体に当たったこと。Unit（巻き込まれたユニット）、Target（使った人）、Amount（与えた固定ダメージ。
+	// HP の残りで切らない）を持つ。HP が 0 になれば、直後に EventFall が続く（DES-NG-02）。
+	EventBlastHit
 )
 
 // Event は起きたこと 1 つ（DES-EVT-01）。Kind ごとに決まった項目だけが意味を持つ。

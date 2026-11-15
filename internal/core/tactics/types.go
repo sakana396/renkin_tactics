@@ -159,10 +159,19 @@ type Terrain struct {
 
 // Item は消耗品（DES-BTL-01、DES-ITM-01）。
 // ID は tactics の外（core）がアイテムを見分けるための値で、tactics は使わない（DES-GRW-03）。
+//
+// Bomb が真のときは爆弾で、Heal は 0、BlastDamage・ThrowRange は 1 以上、BlastRadius は 0 以上（DES-NG-02）。
+// 爆弾でないときは Heal が 1 以上で、爆弾の 3 つの値は 0。
 type Item struct {
 	ID   string
 	Name string
 	Heal int
+	// 爆弾の値（DES-NG-02）。BlastRadius は爆心からのマンハッタン距離（0 なら爆心の 1 マスだけ）、
+	// ThrowRange は使う人（移動後）から爆心までのマンハッタン距離の上限。
+	Bomb        bool
+	BlastDamage int
+	BlastRadius int
+	ThrowRange  int
 }
 
 // ItemStack は手持ちのアイテムと、その数（DES-BTL-01）。
@@ -289,6 +298,8 @@ type Unit struct {
 // Target は Attack のとき攻撃する相手、Heal のとき回復する味方の添字（DES-HEL-01）。Item は UseItem のときだけ使う。
 //
 // Weapon は Attack・Heal で使う武器の列の添字（DES-ITM-02）。nil なら今の装備を使う。Wait・UseItem では nil にする。
+//
+// Blast は爆弾を使う UseItem の爆心のマス（DES-NG-02）。爆弾のときは必ず指定し、回復薬や UseItem 以外では nil にする。
 type Command struct {
 	Unit   int
 	To     Pos
@@ -296,6 +307,7 @@ type Command struct {
 	Target int
 	Item   int
 	Weapon *int
+	Blast  *Pos
 }
 
 // EquippedWeapon は装備している武器を返す（DES-ITM-02）。添字が列の外ならゼロ値を返す。

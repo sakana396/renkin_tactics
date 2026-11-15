@@ -37,10 +37,16 @@ func CellAt(x, y int) (p tactics.Pos, ok bool) {
 // MenuRects は、移動先 dest の横に n 個のボタンを縦に並べたときの、各ボタンの範囲を返す（DES-UI-02）。
 // 盤面の右に出られなければ左に出し、下に出られなければ上にずらす。描画とクリックの判定の両方で使う。
 func MenuRects(dest tactics.Pos, n int) []image.Rectangle {
+	return menuRectsWidth(dest, n, menuWidth)
+}
+
+// menuRectsWidth は MenuRects のボタンの幅を w にしたもの。長い行（爆弾の効果の文）を一覧の枠と盤面に収めるのに使う（DES-NG-05）。
+func menuRectsWidth(dest tactics.Pos, n, menuWidth int) []image.Rectangle {
 	x := (dest.X + 1) * CellSize
 	if x+menuWidth > MapSize {
 		x = dest.X*CellSize - menuWidth
 	}
+	x = max(0, min(x, MapSize-menuWidth))
 	y := dest.Y * CellSize
 	if y+n*menuHeight > MapSize {
 		y = MapSize - n*menuHeight
@@ -72,7 +78,9 @@ func (c *Controller) ClickMenu(i int) {
 			c.ChooseAction(actions[i])
 		}
 	case ItemMenu:
-		c.ChooseItem(i)
+		if ks := usableItems(c.battle.Units()[c.unit]); i >= 0 && i < len(ks) {
+			c.ChooseItem(ks[i])
+		}
 	case WeaponMenu, StaffMenu:
 		c.ChooseWeapon(i)
 	case Canto:
@@ -92,8 +100,9 @@ func (c *Controller) MenuLabels() []string {
 			out = append(out, actionName(a))
 		}
 	case ItemMenu:
-		for _, s := range c.battle.Units()[c.unit].Items {
-			out = append(out, itemLabel(s))
+		u := c.battle.Units()[c.unit]
+		for _, k := range usableItems(u) {
+			out = append(out, itemLabel(u.Items[k]))
 		}
 	case WeaponMenu, StaffMenu:
 		// 武器の一覧は最大 5 行。選べない武器には印を付け、理由は案内欄に出す（DES-IT06 12.1 節）。

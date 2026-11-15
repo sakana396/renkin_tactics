@@ -10,6 +10,8 @@ tools/shot/shot.sh -chapter ch09 -scene battle -steps 'cursor:160:160' -out /tmp
 
 PNG は常に 832×576 px。セーブファイルは読み書きせず、乱数の種は 1 に固定する。`-logdir ディレクトリ` を付けると、遊ぶ版と同じ行動の記録（DES-IT06 13.1 節）を、そのディレクトリの下の `logs` に書く（付けなければ書かない）。記録は `go run ./tools/replaylog <ファイル>` で流し直せる。`-chapter` は ch01〜ch09、`-scene` は `title`、`rule`、`story`、`prepare`、`deploy`、`battle` を指定する。場面への移動では新規開始、物語の送り、出撃確定を自動で行う。
 
+新作「古代都市の復旧」の画面は `-game alchemy` を付けて撮る（既定は `base`、#204）。新作の章は今は `ch01` だけ。
+
 `-steps` には次の操作をカンマ区切りで左から順に書く。盤面の座標は左上を (0,0) とした章全体のマス座標。画面の座標は 832×576 のピクセル座標。
 
 | 操作 | 内容 |

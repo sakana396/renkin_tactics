@@ -499,7 +499,9 @@ func (c *Campaign) FinishChapter(s *Sortie) (ChapterResult, error) {
 		u := units[i]
 		before := s.before[i]
 		member := &next.Roster[index]
-		dead := !u.Alive && c.Rule == Permadeath
+		// 主人公は、勝った章では戦死にしない（離脱扱い）。ボスと主人公が同じ爆発で倒れると、勝ちになる（DES-NG-01 4 章）が、
+		// 主人公が戦死になると、次の章で出撃できなくなり、進行不能になるため（デバッグの報告 B-2。DES-NG-06）。
+		dead := !u.Alive && c.Rule == Permadeath && !u.Lord
 		result.Members = append(result.Members, MemberResult{Member: index, LevelBefore: before.Level, LevelAfter: u.Level, ExpBefore: before.Exp, ExpAfter: u.Exp, Gains: statsDifference(u.Stats, before.Stats), Fallen: !u.Alive, Dead: dead})
 		member.Level = u.Level
 		member.Exp = u.Exp

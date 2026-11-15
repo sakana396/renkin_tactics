@@ -49,6 +49,16 @@ func (c Camera) Visible(p tactics.Pos) bool {
 	return p.X >= c.X && p.Y >= c.Y && p.X < min(c.Width, c.X+16) && p.Y < min(c.Height, c.Y+16)
 }
 
+// MenuRectsFor は、一覧の行 labels のいちばん長い文が収まる幅で MenuRects を返す。
+// 幅は既定の幅より狭くせず、盤面の幅を超えない。描画とクリックの判定の両方で使う（DES-UI-02、DES-NG-05）。
+func (c Camera) MenuRectsFor(p tactics.Pos, labels []string) []image.Rectangle {
+	w := menuWidth
+	for _, l := range labels {
+		w = max(w, textWidth(l)+16)
+	}
+	return menuRectsWidth(tactics.Pos{X: p.X - c.X, Y: p.Y - c.Y}, len(labels), min(w, MapSize))
+}
+
 // MenuRects は描画と入力で共通のメニュー矩形を返す（DES-UI-25）。
 func (c Camera) MenuRects(p tactics.Pos, n int) []image.Rectangle {
 	return MenuRects(tactics.Pos{X: p.X - c.X, Y: p.Y - c.Y}, n)
@@ -77,7 +87,7 @@ func (c *Controller) Scroll(dx, dy int) {
 		return
 	}
 	switch c.state {
-	case Idle, Selected, Targeting, HealTargeting, Canto:
+	case Idle, Selected, Targeting, HealTargeting, Canto, BombTargeting:
 		c.camera.Move(dx, dy)
 	}
 }
@@ -179,7 +189,10 @@ func (c *Controller) focusEvent(e tactics.Event) {
 		if e.Target >= 0 && e.Target < len(e.Units) {
 			c.camera.Focus(e.Units[e.Target].Pos)
 		}
-	case tactics.EventHeal, tactics.EventFall, tactics.EventWait, tactics.EventExp, tactics.EventLevelUp:
+	case tactics.EventBlast:
+		// 爆心に寄る（DES-NG-05）。
+		c.camera.Focus(e.To)
+	case tactics.EventHeal, tactics.EventFall, tactics.EventWait, tactics.EventExp, tactics.EventLevelUp, tactics.EventBlastHit:
 		if e.Unit >= 0 && e.Unit < len(e.Units) {
 			c.camera.Focus(e.Units[e.Unit].Pos)
 		}
