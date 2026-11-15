@@ -7,3 +7,4 @@
 画像素材は Kenney の CC0 素材を使う（[internal/ui/assets/README.md](internal/ui/assets/README.md)）。
 
 Linux でビルドするには、Ebitengine に必要な X11・OpenGL の開発用パッケージに加え、ALSA の開発用ヘッダ（Debian / Ubuntu では `libasound2-dev`）をインストールする。
+Linux で実行するには ALSA のランタイムライブラリ（Debian / Ubuntu では `libasound2`）も必要。

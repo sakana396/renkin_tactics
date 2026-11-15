@@ -49,20 +49,13 @@ func artKeyOf(u tactics.Unit) ArtKey {
 type artIndex struct {
 	charByName  map[string]string
 	classByName map[string]string
-	// terrainByName は地形の表示名から ID を引く（DES-NG-10 フェーズ 2）。
-	terrainByName map[string]string
 }
 
 // newArtIndex は目録から表を作る。cat が nil なら空の表を返す。
 func newArtIndex(cat *defs.Catalog) artIndex {
-	idx := artIndex{charByName: map[string]string{}, classByName: map[string]string{}, terrainByName: map[string]string{}}
+	idx := artIndex{charByName: map[string]string{}, classByName: map[string]string{}}
 	if cat == nil {
 		return idx
-	}
-	for _, t := range cat.Terrains() {
-		if _, dup := idx.terrainByName[t.Name]; !dup {
-			idx.terrainByName[t.Name] = t.ID
-		}
 	}
 	for _, c := range cat.Characters() {
 		if _, dup := idx.charByName[c.Name]; !dup {
@@ -147,7 +140,6 @@ func (a *ArtStore) entry(path string, square bool) *artEntry {
 }
 
 // entryNote は entry と同じで、正方形でないときの知らせの文の最後を note にする。
-// 地形は drawArtIn でマスいっぱいに引き伸ばして描くので、縦横比を保つとは書かない。
 func (a *ArtStore) entryNote(path string, square bool, note string) *artEntry {
 	if e, ok := a.entries[path]; ok {
 		return e
@@ -240,14 +232,6 @@ func (a *ArtStore) Shrunk(path string, face bool, w, h int) *ebiten.Image {
 	}
 	a.shrunk[k] = eb
 	return eb
-}
-
-// ebitenStretch は Ebiten と同じで、正方形でない画像の知らせを「縦横比を保たず、マスいっぱいに引き伸ばして描きます」にする。地形の絵に使う。
-func (a *ArtStore) ebitenStretch(path string) *ebiten.Image {
-	if a == nil {
-		return nil
-	}
-	return a.entryNote(path, true, "縦横比を保たず、マスいっぱいに引き伸ばして描きます").eb
 }
 
 // Has は道筋の画像が使えること。

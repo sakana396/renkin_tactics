@@ -73,7 +73,7 @@ func (g *Game) Update() error {
 	scene := g.scenes.Scene()
 	err := g.update()
 	if g.sound.sound != nil {
-		g.syncSound(readSoundInput(scene, false))
+		g.syncSound(readSoundInput(scene))
 	}
 	return err
 }
