@@ -67,6 +67,9 @@ func main() {
 		actions = strings.Split(*steps, ",")
 	}
 	cfg := ui.Config{Catalog: cat, Store: memoryStore{}, NextSeed: func() uint64 { return 1 }, StartChapter: *chapter}
+	if *game == "alchemy" {
+		cfg.Media = data.AlchemyMedia()
+	}
 	if *logdir != "" {
 		// 遊ぶ版と同じ書き出し先を使う（DES-LOG-02）。
 		cfg.PlayLog, cfg.Now, cfg.Stderr = savefile.PlayLogs{Dir: *logdir, Now: time.Now}.Create, time.Now, os.Stderr

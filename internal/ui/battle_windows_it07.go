@@ -387,7 +387,7 @@ func twoTierInfo(units []tactics.Unit, upper, selected int, terrain *tactics.Ter
 // 1 行ずつ並べ、段の右上にユニットの絵を置く（DES-UI-31、DES-UI-33）。6 行は 96 px で、下段（128 px）の最下行の地形と重ならない。
 func (v *InfoView) addUnitSummary(u tactics.Unit, top int) {
 	y := top + infoMargin
-	v.Icons = append(v.Icons, InfoIcon{X: summaryPortraitX, Y: y, Size: PortraitSize, Tile: unitTile(u)})
+	v.Icons = append(v.Icons, InfoIcon{X: summaryPortraitX, Y: y, Size: PortraitSize, Tile: unitTile(u), Art: artKeyOf(u)})
 	// 上下段とも名前の横に指揮の印と短い語を置く（DES-UI-35）。
 	v.addCommandMark(u, summaryX, y, unitName(u))
 	equip := "装備 なし"

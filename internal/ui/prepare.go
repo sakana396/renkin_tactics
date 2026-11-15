@@ -438,7 +438,7 @@ func (s *SceneController) rosterView(v *SceneView) {
 		v.Rows = append(v.Rows, PrepareRow{Member: i, Rect: image.Rect(56, y, prepareLeftArea.Max.X, y+24), Mark: image.Rect(16, y, 52, y+24), Selected: i == s.prepareMember})
 		row := fitText(fmt.Sprintf("%s　%s　Lv %d　HP %d　手持ち %d/5", u.Name, u.ClassName, m.Level, m.Stats.HP, len(m.Weapons)+itemCount(m.Items)), prepareLeftArea.Max.X-96-4)
 		v.Texts = append(v.Texts, SceneText{Text: mark, X: 20, Y: y + 4}, SceneText{Text: row, X: 96, Y: y + 4})
-		v.Icons = append(v.Icons, SceneIcon{unitTile(u), 60, y})
+		v.Icons = append(v.Icons, SceneIcon{Tile: unitTile(u), X: 60, Y: y, Art: s.sceneArtKey(artKeyOf(u)), Size: 24, Face: true})
 		y += 24
 	}
 	info := s.prepareInfo()
