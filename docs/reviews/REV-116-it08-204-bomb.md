@@ -6,7 +6,7 @@
 - 実装: Codex（3 回。3 回目は指摘の手直し）。`internal/ui/text.go` の `EventText` と `camera.go` の `focusEvent` の `EventBlast`・`EventBlastHit`、`tools/shot` の `-game` は管理役が足した
 - 独立レビュー: Claude spec-reviewer（Opus、読み取り専用。ミュータントは scratchpad の写しで試した）
 - 根拠: IT08-PLAN v0.3（3.2 節 B-1、9 章）、DES-NG01 v0.3（承認 E-143）、TST-NG01、SRS v0.9 の FR-ITM-04〜07・FR-UNT-04・FR-CMP-06・09・FR-SYS-05・06・FR-MAP-07、UC-02・07・08・09・12（v0.14）、E-135、E-140、E-142
-- 結論: 修正すれば承認（初回）。指摘への対応は下の表
+- 結論: 承認（2 回目の再確認、`06045ab`）。初回は修正すれば承認。指摘への対応は下の表
 
 ## 独立レビューで確かめたこと（`77ea26c`）
 
@@ -62,3 +62,6 @@
 | N-03 | 情報 | `tools/shot/README.md` の章の説明が新作に合っていない | 「新作の章は今は `ch01` だけ」と書き足した |
 
 - 結論（再確認）: 修正すれば承認。N-01・N-02 を直したあと、最新のコミットの CI が通っていればマージしてよい
+- 2 回目の再確認（2026-11-15、`06045ab`）: N-01〜N-03 の対応を `git diff fdec0ac 06045ab` で確かめた。描画・クリック・カーソルの判定（`drawMenu`・`leftClick`・`hoveredWeapon`・`hoveredEnemy`）は、すべて `MenuRectsFor` を使う。武器・杖の一覧の `MenuLabels` は `menuWeapons()` を同じ順に 1 本 1 行で並べるので、`hoveredWeapon` の行の数と添字の対応は変わらない。文が短い一覧では幅 168 px と置き場所が変わらない（TC-DES-NG-05-17）。撮り直し（`item-fixed.png`）で、爆弾の 2 行が最後まで読めることを確かめた
+- 検証（`06045ab`、レビュー担当が実行）: `gofmt -l .` 出力なし、`GOOS=windows go vet ./...` 成功、`go run ./tools/tccheck` OK（警告 210 件）、`GOOS=windows go test -c ./internal/ui` でビルドできた（テストの実行は管理役が Windows で行い PASS）。core・data・cmd は `fdec0ac` から変わっておらず、前回の `go test` の結果がそのまま当てはまる
+- 結論（2 回目の再確認）: **承認**。最新のコミットの CI が通っていればマージしてよい
