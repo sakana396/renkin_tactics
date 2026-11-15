@@ -13,8 +13,8 @@
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
 | 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
 | 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
-| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.9 改訂案（承認待ち、#202）。爆弾 FR-ITM-04〜07、FR-SYS-05〜09、FR-MAP-07、FR-CMP-12。v0.8 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。ZOC・小隊長・画面の操作を追記 |
-| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.14 改訂案（承認待ち、#202）。UC-02 の爆弾、UC-11 の新作の準備の画面。v0.13（UC-02 の直接クリックの取消し、E-124）。v0.12 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。予測中の武器・予測窓・詳細画面・範囲・持ち物・ZOC・小隊長を追記 |
+| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.9 改訂案（承認待ち、#202）。爆弾 FR-ITM-04〜07、FR-SYS-05〜09、FR-MAP-07、FR-CMP-12、FR-CMP-06・09 の主人公の例外（E-139・E-140）。v0.8 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。ZOC・小隊長・画面の操作を追記 |
+| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.14 改訂案（承認待ち、#202）。UC-02 の爆弾、UC-11 の新作の準備の画面、UC-07・12 の同時に倒れたときと主人公、UC-08・09 の作品の選択とセーブ。v0.13（UC-02 の直接クリックの取消し、E-124）。v0.12 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。予測中の武器・予測窓・詳細画面・範囲・持ち物・ZOC・小隊長を追記 |
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.2 承認済み |
 | 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.5 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。DES-BTL-03・AI-01・UI-07・08 の追記。v0.4 承認済み（E-40） |
 | 計画 | 反復 2 計画書 | [iterations/it02/plan.md](iterations/it02/plan.md) | v0.3 承認済み（E-32、E-33） |
