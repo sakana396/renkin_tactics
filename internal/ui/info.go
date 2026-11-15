@@ -167,7 +167,7 @@ func (c *Controller) infoCell(x, y int) (tactics.Pos, bool) {
 // selectedCell は、選んでいるユニットのマス（移動先を選んだあとは移動先）を返す（DES-UI-27）。選んでいなければ ok が偽。
 func (c *Controller) selectedCell() (tactics.Pos, bool) {
 	switch c.state {
-	case Selected, Moved, Targeting, HealTargeting, ItemMenu, WeaponMenu, StaffMenu, Canto:
+	case Selected, Moved, Targeting, HealTargeting, ItemMenu, WeaponMenu, StaffMenu, Canto, BombTargeting:
 		if units := c.Units(); c.unit >= 0 && c.unit < len(units) && units[c.unit].Alive {
 			return units[c.unit].Pos, true
 		}

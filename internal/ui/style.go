@@ -4,6 +4,7 @@ import "image/color"
 
 // 色（DES-UI-03）。半透明の色があるので、アルファを掛けていない NRGBA で書く。
 var (
+	blastOverlay = color.NRGBA{255, 140, 0, 190}
 	bgColor      = color.NRGBA{22, 28, 37, 255}
 	panelColor   = color.NRGBA{37, 46, 58, 255}
 	white        = color.NRGBA{232, 237, 238, 255}

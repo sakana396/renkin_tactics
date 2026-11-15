@@ -19,6 +19,13 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/ui"
 )
 
+// 作品の選択と保存先（DES-NG-06）。
+const (
+	gameBase         = "base"
+	gameAlchemy      = "alchemy"
+	alchemyDirSuffix = "_alchemy"
+)
+
 func main() {
 	os.Exit(run(os.Args[1:], os.Stderr, data.Base(), time.Now, ui.Run))
 }
@@ -34,8 +41,17 @@ func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.
 	flags.SetOutput(stderr)
 	savedir := flags.String("savedir", "", "セーブのディレクトリ（指定しなければ OS の標準の場所）")
 	chapter := flags.String("chapter", "", "開発用の開始章 ID（-savedir も必須。成長は初期値）")
+	game := flags.String("game", gameBase, "遊ぶ作品: base または alchemy")
 	seed := flags.Uint64("seed", 0, "乱数の種。指定すると、やり直しても同じ種を使う（指定しなければ時刻から決める）")
 	if err := flags.Parse(args); err != nil {
+		return 2
+	}
+	switch *game {
+	case gameBase:
+	case gameAlchemy:
+		fsys = data.Alchemy()
+	default:
+		fmt.Fprintf(stderr, "-game %q は使えません。指定できる作品: %s, %s\n", *game, gameBase, gameAlchemy)
 		return 2
 	}
 	seedSet := false
@@ -82,6 +98,9 @@ func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
+	}
+	if *game == gameAlchemy && *savedir == "" {
+		dir += alchemyDirSuffix
 	}
 	// 行動の記録は、セーブのディレクトリの下の logs に、出撃ごとに 1 つ作る（DES-LOG-02）。
 	// 同じ時計で、記録の経過の秒も測る（DES-LOG-01、E-106）。詳しい誤りは stderr へ出す。

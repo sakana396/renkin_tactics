@@ -160,7 +160,11 @@ type (
 	rawItem struct {
 		ID   string `toml:"id"`
 		Name string `toml:"name"`
-		Heal int    `toml:"heal"`
+		// Heal と爆弾の 3 つの値は、キーを書いたかどうかで爆弾かどうかを決めるので、ポインタにする（DES-NG-01）。
+		Heal        *int `toml:"heal"`
+		BlastDamage *int `toml:"blast_damage"`
+		BlastRadius *int `toml:"blast_radius"`
+		ThrowRange  *int `toml:"throw_range"`
 	}
 	rawSkill struct {
 		ID         string `toml:"id"`
@@ -759,8 +763,7 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 	for i, r := range rd.items {
 		p := fmt.Sprintf("items[%d]", i)
 		iid.check(p, r.ID)
-		v.atLeast(FileItems, p+".heal", r.Heal, 1)
-		items[i] = defs.ItemDef{ID: r.ID, Name: r.Name, Heal: r.Heal}
+		items[i] = v.item(p, r)
 		ref.itemIDs[r.ID] = true
 	}
 
@@ -900,6 +903,48 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 	}
 
 	return defs.NewCatalog(game, terrains, classes, weapons, items, skills, characters, maps, chapters, stories)
+}
+
+// item は、アイテム 1 つを確かめて定義にする（DES-DAT-03 規則 6、DES-NG-01）。
+// blast_damage・blast_radius・throw_range の 3 つがそろったときだけ爆弾で、heal と同時には書けない。
+// 3 つの一部だけを書くのも誤り。爆弾でなければ、今までどおり heal は 1 以上。
+func (v *validator) item(p string, r rawItem) defs.ItemDef {
+	const f = FileItems
+	def := defs.ItemDef{ID: r.ID, Name: r.Name}
+	blast := []struct {
+		key string
+		val *int
+		dst *int
+		min int
+	}{{"blast_damage", r.BlastDamage, &def.BlastDamage, 1}, {"blast_radius", r.BlastRadius, &def.BlastRadius, 0}, {"throw_range", r.ThrowRange, &def.ThrowRange, 1}}
+	written := 0
+	for _, k := range blast {
+		if k.val != nil {
+			written++
+		}
+	}
+	if written == 0 {
+		heal := 0
+		if r.Heal != nil {
+			heal = *r.Heal
+		}
+		v.atLeast(f, p+".heal", heal, 1)
+		def.Heal = heal
+		return def
+	}
+	def.Bomb = true
+	if r.Heal != nil {
+		v.add(f, p+".heal", "爆弾（blast_damage・blast_radius・throw_range）は heal を持てません")
+	}
+	for _, k := range blast {
+		if k.val == nil {
+			v.add(f, p+"."+k.key, "爆弾は blast_damage・blast_radius・throw_range を 3 つともそろえてください（%s が書かれていません）", k.key)
+			continue
+		}
+		*k.dst = *k.val
+		v.atLeast(f, p+"."+k.key, *k.val, k.min)
+	}
+	return def
 }
 
 // staff は、杖の回復量と使用回数を確かめ、w に入れる（DES-DAT-03 規則 6、21）。

@@ -7,8 +7,9 @@ import (
 
 // terrainTile は地形に重ねるタイルを返す（DES-UI-05）。平地なら ok が偽（下地だけを描く）。
 //
-// tactics の地形は記号を持たないので、名前で選ぶ。名前の分からない地形は、
-// 通れなければ壁、回復があれば砦、それ以外は平地として描く。
+// tactics の地形は記号を持たないので、名前で選ぶ。新作の地形（data/alchemy）は、
+// 瓦礫を山、植え込みを森、崩れた壁を壁、水路を溝（Canal）、浄水施設を水の台（Purifier）の絵で描き分ける。
+// 名前の分からない地形は、通れなければ壁、回復があれば砦、それ以外は平地として描く。
 func terrainTile(t tactics.Terrain) (assets.Tile, bool) {
 	switch t.Name {
 	case "平地":
@@ -21,6 +22,17 @@ func terrainTile(t tactics.Terrain) (assets.Tile, bool) {
 		return assets.Fort, true
 	case "壁":
 		return assets.Wall, true
+	// 新作の地形（data/alchemy）。既存の作品の地形の絵は変えない。
+	case "瓦礫":
+		return assets.Mountain, true
+	case "植え込み":
+		return assets.Forest, true
+	case "崩れた壁":
+		return assets.Wall, true
+	case "水路":
+		return assets.Canal, true
+	case "浄水施設":
+		return assets.Purifier, true
 	}
 	switch {
 	case t.Cost == 0:
@@ -66,6 +78,9 @@ func unitTile(u tactics.Unit) assets.Tile {
 			return assets.PlayerStaff
 		case tactics.Bow:
 			return assets.PlayerBow
+		case tactics.Magic:
+			// 魔法が初めの装備の自軍は、クラス名によらず魔道士の絵にする（新作のハル）。
+			return assets.Mage
 		}
 		return assets.PlayerSword
 	}

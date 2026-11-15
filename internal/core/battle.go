@@ -389,6 +389,11 @@ func convertWeapon(cat *defs.Catalog, id string) (tactics.Weapon, error) {
 	}, nil
 }
 
+// ItemOf はアイテムの定義を tactics のアイテムに変える（DES-CORE-01、DES-NG-04）。爆弾の値もそのまま渡す。
+func ItemOf(it defs.ItemDef) tactics.Item {
+	return tactics.Item{ID: it.ID, Name: it.Name, Heal: it.Heal, Bomb: it.Bomb, BlastDamage: it.BlastDamage, BlastRadius: it.BlastRadius, ThrowRange: it.ThrowRange}
+}
+
 // convertItems は手持ちのアイテムの列を tactics の手持ちに変える（DES-CORE-01、FR-ITM-03）。
 // 列が空なら nil を返す。
 func convertItems(cat *defs.Catalog, items []defs.ItemCount) ([]tactics.ItemStack, error) {
@@ -398,7 +403,7 @@ func convertItems(cat *defs.Catalog, items []defs.ItemCount) ([]tactics.ItemStac
 		if !ok {
 			return nil, fmt.Errorf("アイテム %q がありません", ic.Item)
 		}
-		out = append(out, tactics.ItemStack{Item: tactics.Item{ID: it.ID, Name: it.Name, Heal: it.Heal}, Count: ic.Count})
+		out = append(out, tactics.ItemStack{Item: ItemOf(it), Count: ic.Count})
 	}
 	return out, nil
 }
