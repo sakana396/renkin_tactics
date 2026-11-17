@@ -107,7 +107,7 @@ func CheckMediaLedger(media fs.FS) []string {
 			return
 		}
 		named[f] = true
-		add("%s は art の名前の規則に合いません（units/<小文字の英数字と _>.png、units/enemy_….png、portraits/….png、story/….png、terrain/<地形の ID>.png、title.png。画面に出ません）", f)
+		add("%s は art の名前の規則に合いません（units/<小文字の英数字と _>.png、units/enemy_….png、portraits/….png、story/….png、title.png。画面に出ません）", f)
 	}
 	for f := range listed {
 		checkName(f)
