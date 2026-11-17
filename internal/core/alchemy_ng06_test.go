@@ -35,7 +35,7 @@ func TestAlchemyData(t *testing.T) {
 		for _, ch := range cat.Chapters() {
 			ids = append(ids, ch.ID)
 		}
-		if strings.Join(ids, ",") != "ch01,ch02" {
+		if strings.Join(ids, ",") != "ch01,ch02,ch03" {
 			t.Fatal(ids)
 		}
 		if got := strings.Join(cat.Game.Party, ","); got != "aoi,dain,tori,nemu" {
@@ -105,6 +105,7 @@ func TestAlchemyData(t *testing.T) {
 		wantReward := map[string]map[string]int{
 			"ch01": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
 			"ch02": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
+			"ch03": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
 		}
 		if fmt.Sprint(reward) != fmt.Sprint(wantReward) {
 			t.Fatal(reward, wantReward)

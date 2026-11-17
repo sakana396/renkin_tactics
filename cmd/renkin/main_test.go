@@ -47,7 +47,7 @@ func TestRun(t *testing.T) {
 		fsys["items.toml"] = &fstest.MapFile{Data: []byte("[[items]]\nid = \"potion\"\nname = \"回復薬\"\nheal = 0\n")}
 		var stderr bytes.Buffer
 		started := false
-		code := run(nil, &stderr, fsys, fixedNow, func(ui.Config) error { started = true; return nil })
+		code := run([]string{"-game", "base"}, &stderr, fsys, fixedNow, func(ui.Config) error { started = true; return nil })
 		if code != 1 || started {
 			t.Fatal(code, started)
 		}
@@ -215,7 +215,7 @@ func TestStartChapterFlag(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				var stderr bytes.Buffer
 				started := false
-				code := run(tc.args, &stderr, fsys, fixedNow, func(cfg ui.Config) error {
+				code := run(append([]string{"-game", "base"}, tc.args...), &stderr, fsys, fixedNow, func(cfg ui.Config) error {
 					started = true
 					if cfg.StartChapter != tc.chapter {
 						t.Fatal(cfg.StartChapter, tc.chapter)

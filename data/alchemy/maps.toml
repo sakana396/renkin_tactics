@@ -496,3 +496,151 @@ bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
 ai = "charge"
 x = 14
 y = 2
+
+# 3章: 浄水施設の両翼から射手が狙う（制作記録 map-ng-ch03.md）。
+[[maps]]
+id = "ch03"
+name = "浄水施設"
+rows = [
+  "##################",
+  "#.......TT.......#",
+  "#................#",
+  "#..R..........R..#",
+  "#................#",
+  "#....F......F....#",
+  "#................#",
+  "#..###......###..#",
+  "#................#",
+  "#................#",
+  "#....R......R....#",
+  "#................#",
+  "#................#",
+  "#..F..........F..#",
+  "#................#",
+  "#................#",
+  "#................#",
+  "##################",
+]
+slots = [{ x = 8, y = 16 }, { x = 7, y = 15 }, { x = 9, y = 15 }, { x = 8, y = 14 }, { x = 7, y = 16 }, { x = 9, y = 16 }]
+
+[[maps.enemies]]
+class = "bandit"
+weapon = "iron_sword"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "charge"
+x = 4
+y = 11
+
+[[maps.enemies]]
+class = "swordsman"
+weapon = "iron_sword"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "charge"
+x = 13
+y = 11
+
+[[maps.enemies]]
+class = "spearman"
+weapon = "iron_lance"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "charge"
+x = 6
+y = 9
+
+[[maps.enemies]]
+class = "bandit"
+weapon = "iron_sword"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "charge"
+x = 11
+y = 9
+
+[[maps.enemies]]
+class = "bowman"
+weapon = "iron_bow"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "hold"
+x = 3
+y = 6
+
+[[maps.enemies]]
+class = "bowman"
+weapon = "iron_bow"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "hold"
+x = 14
+y = 6
+
+[[maps.enemies]]
+class = "spearman"
+weapon = "iron_lance"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "hold"
+x = 7
+y = 5
+
+[[maps.enemies]]
+class = "swordsman"
+weapon = "iron_sword"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "hold"
+x = 10
+y = 5
+
+[[maps.enemies]]
+class = "bowman"
+weapon = "iron_bow"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "hold"
+x = 8
+y = 3
+
+[[maps.enemies]]
+name = "施設の指揮官"
+class = "captain"
+weapon = "relic_lance"
+level = 5
+bonus = { hp = 8, str = 3, skl = 2, spd = 2, def = 2, mov = 0 }
+ai = "hold"
+x = 8
+y = 1
+boss = true
+
+[[maps.reinforcements]]
+turn = 4
+class = "bandit"
+weapon = "iron_sword"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "charge"
+x = 2
+y = 2
+
+[[maps.reinforcements]]
+turn = 4
+class = "bowman"
+weapon = "iron_bow"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "charge"
+x = 15
+y = 2
+
+[[maps.reinforcements]]
+turn = 4
+class = "spearman"
+weapon = "iron_lance"
+level = 3
+bonus = { hp = 0, str = 1, skl = 1, spd = 0, def = 0, mov = 0 }
+ai = "charge"
+x = 14
+y = 2
