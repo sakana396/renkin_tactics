@@ -26,8 +26,9 @@ var ledgerDate = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 // artNameRule は art の下のファイルの名前の規則（DES-NG-08 3 章）。
 // 規則に合わないファイルは画面に出ないので、台帳に載せていても誤りとして報告する。
 // units/enemy_<クラスの ID>.png も、小文字の英数字とアンダースコアの名前として units/ の規則に含まれる。
-// ID が実在するか（キャラ・クラス・物語）は検査しない（data パッケージは定義を知らない）。
-var artNameRule = regexp.MustCompile(`^art/(title\.png|(units|portraits|story)/[a-z0-9_]+\.png)$`)
+// terrain/<地形の ID>.png（変種は _2〜_4 を付ける）も同じ規則に含まれる（DES-NG-10 フェーズ 2）。
+// ID が実在するか（キャラ・クラス・物語・地形）は検査しない（data パッケージは定義を知らない）。
+var artNameRule = regexp.MustCompile(`^art/(title\.png|(units|portraits|story|terrain)/[a-z0-9_]+\.png)$`)
 
 // ledgerDirs は台帳で管理するディレクトリ（media の下）。
 var ledgerDirs = []string{"art", "audio"}
@@ -107,7 +108,7 @@ func CheckMediaLedger(media fs.FS) []string {
 			return
 		}
 		named[f] = true
-		add("%s は art の名前の規則に合いません（units/<小文字の英数字と _>.png、units/enemy_….png、portraits/….png、story/….png、title.png。画面に出ません）", f)
+		add("%s は art の名前の規則に合いません（units/<小文字の英数字と _>.png、units/enemy_….png、portraits/….png、story/….png、terrain/<地形の ID>.png、title.png。画面に出ません）", f)
 	}
 	for f := range listed {
 		checkName(f)
