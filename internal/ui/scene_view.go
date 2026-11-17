@@ -29,6 +29,9 @@ type SceneText struct {
 type SceneIcon struct {
 	Tile assets.Tile
 	X, Y int
+	Art  ArtKey
+	Size int
+	Face bool
 }
 
 // SceneView は場面の表示を描画から独立して検証するための値（DES-UI-09）。
@@ -44,7 +47,9 @@ type SceneView struct {
 	Tabs   []PrepareTab
 	Deploy *DeployView
 	// Minimap は配置のミニマップ（DES-UI-28）。ほかの場面では nil。
-	Minimap *MinimapView
+	Minimap  *MinimapView
+	Backdrop string
+	Portrait *ScenePortrait
 }
 
 // wrapSceneText は 48 px の左右余白を残し、文字の単位で折り返す（DES-UI-12）。
@@ -90,6 +95,7 @@ func (s *SceneController) View() SceneView {
 	}
 	switch s.scene {
 	case Title:
+		v.Backdrop, _ = s.art.BackdropPath(artTitlePath, true)
 		add(windowTitle, ScreenWidth/2-textWidth(windowTitle), 48, true, StyleTitle)
 		if s.confirmOverwrite {
 			lines("セーブを上書きして、はじめから始めますか", 136, StylePlain)
@@ -110,7 +116,21 @@ func (s *SceneController) View() SceneView {
 		lines("右クリック・Esc: タイトルへ", 400, StyleLabel)
 	case Story:
 		heading(s.storyChapter)
-		lines(s.paragraphs[s.paragraph], 160, StylePlain)
+		ch := s.cfg.Catalog.Chapters()[s.storyChapter]
+		storyID := ch.Before
+		if s.storyAfter {
+			storyID = ch.After
+		}
+		v.Backdrop, _ = s.art.BackdropPath(storyBackdropPath(storyID))
+		textX, width := 48, ScreenWidth-96
+		if path, ok := s.art.StoryPortraitPath(s.paragraphs[s.paragraph]); ok {
+			box, x, w := storyArtLayout(true)
+			textX, width = x, w
+			v.Portrait = &ScenePortrait{Path: path, Rect: box}
+		}
+		for i, line := range wrapSceneTextWidth(s.paragraphs[s.paragraph], width) {
+			add(line, textX, 160+i*20, false, StylePlain)
+		}
 		count := fmt.Sprintf("%d/%d", s.paragraph+1, len(s.paragraphs))
 		add(count, ScreenWidth-48-textWidth(count), 488, false, StyleLabel)
 		lines("左クリック・Enter・Space: 次へ　右クリック・Esc: 残りを飛ばす", 528, StyleLabel)
@@ -142,7 +162,7 @@ func (s *SceneController) View() SceneView {
 				weaponType = tactics.Magic
 			}
 			// 騎兵の絵を選べるよう、クラス名も渡す（DES-UI-22）。
-			v.Icons = append(v.Icons, SceneIcon{unitTile(tactics.Unit{ClassName: class.Name, Side: tactics.Player, Weapons: []tactics.Weapon{{Type: weaponType}}}), 48, 208})
+			v.Icons = append(v.Icons, SceneIcon{Tile: unitTile(tactics.Unit{ClassName: class.Name, Side: tactics.Player, Weapons: []tactics.Weapon{{Type: weaponType}}}), X: 48, Y: 208, Art: s.sceneArtKey(ArtKey{Name: ch.Name, ClassName: class.Name, Player: true}), Size: 48})
 			lines(fmt.Sprintf("%s　Lv %d", class.Name, m.Level), 256, StylePlain)
 			lines(fmt.Sprintf("HP %d　力 %d　技 %d　速さ %d　守備 %d　移動 %d", m.Stats.HP, m.Stats.Str, m.Stats.Skl, m.Stats.Spd, m.Stats.Def, m.Stats.Mov), 296, StylePlain)
 		}
@@ -299,4 +319,12 @@ func (s *SceneController) ToggleInfoPage() {
 	if s.scene == Prepare {
 		s.infoPage = s.infoPage.next()
 	}
+}
+
+// sceneArtKey は media があるときだけ画像の手がかりを返す（DES-NG-08）。
+func (s *SceneController) sceneArtKey(k ArtKey) ArtKey {
+	if s.cfg.Media == nil {
+		return ArtKey{}
+	}
+	return k
 }

@@ -105,3 +105,30 @@ func TestGameFlag(t *testing.T) {
 		}
 	})
 }
+
+// 作品ごとの素材の選択（DES-NG-07）。
+func TestGameMedia(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		game      string
+		wantMedia bool
+	}{
+		{"base", "base", false},
+		{"alchemy", "alchemy", true},
+	} {
+		t.Run("TC-DES-NG-08-29 "+tc.name, func(t *testing.T) {
+			var stderr bytes.Buffer
+			started := false
+			code := run([]string{"-game", tc.game, "-savedir", "dev"}, &stderr, data.Base(), fixedNow, func(cfg ui.Config) error {
+				started = true
+				if (cfg.Media != nil) != tc.wantMedia {
+					t.Errorf("Media が nil でない: %t、期待: %t", cfg.Media != nil, tc.wantMedia)
+				}
+				return nil
+			})
+			if code != 0 || !started || stderr.Len() != 0 {
+				t.Fatal(code, started, stderr.String())
+			}
+		})
+	}
+}

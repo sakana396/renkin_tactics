@@ -44,7 +44,8 @@ type Game struct {
 	// shotCursor は開発用撮影で情報欄のカーソル位置を固定する。
 	shotCursor *image.Point
 	// drag は中ボタンで盤面をつかむ操作の途中の値（DES-UI-30）。
-	drag boardDrag
+	drag  boardDrag
+	sound soundGlue
 }
 
 // Run はタイトルからキャンペーンを始める（DES-UI-09、DES-CMD-02）。
@@ -54,7 +55,7 @@ func Run(cfg Config) error {
 	if err != nil {
 		return err
 	}
-	g := &Game{scenes: scenes, sheets: map[assets.Sheet]*ebiten.Image{}}
+	g := &Game{scenes: scenes, sheets: map[assets.Sheet]*ebiten.Image{}, sound: newSoundGlue(cfg)}
 	for s, img := range imgs {
 		g.sheets[s] = ebiten.NewImageFromImage(img)
 	}
@@ -69,6 +70,15 @@ func Run(cfg Config) error {
 
 // Update は場面ごとの入力を読み替える。戦闘中のキー操作と早送りは Controller へ渡す（DES-UI-09、17）。
 func (g *Game) Update() error {
+	scene := g.scenes.Scene()
+	err := g.update()
+	if g.sound.sound != nil {
+		g.syncSound(readSoundInput(scene))
+	}
+	return err
+}
+
+func (g *Game) update() error {
 	s := g.scenes
 	left := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 	cancel := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) || inpututil.IsKeyJustPressed(ebiten.KeyEscape)
@@ -504,7 +514,9 @@ func (g *Game) drawUnitList(dst *ebiten.Image, units []tactics.Unit) {
 		if u.Boss {
 			vector.StrokeRect(dst, px+1, py+1, CellSize-2, CellSize-2, 2, gold, false)
 		}
-		g.drawTile(dst, unitTile(u), int(px), int(py), scale)
+		if !g.drawUnitArt(dst, artKeyOf(u), int(px), int(py), scale) {
+			g.drawTile(dst, unitTile(u), int(px), int(py), scale)
+		}
 		// HP の棒。右下の装備の印と重ねない（DES-UI-33）。
 		bar := unitHPBarRect(pt)
 		fillImageRect(dst, bar, hpBack)
@@ -742,7 +754,7 @@ func (g *Game) drawInfoView(dst *ebiten.Image, v InfoView) {
 		vector.DrawFilledRect(dst, float32(b.Rect.Min.X), float32(b.Rect.Min.Y), float32(b.Rect.Dx()), float32(b.Rect.Dy()), infoStyleColor(b.Style), false)
 	}
 	for _, ic := range v.Icons {
-		g.drawTileSize(dst, ic.Tile, ic.X, ic.Y, ic.Size)
+		g.drawInfoIcon(dst, ic)
 	}
 	for _, m := range v.Marks {
 		g.drawCommandMark(dst, m.Mark, m.Rect)
@@ -926,6 +938,7 @@ func (g *Game) drawScene(dst *ebiten.Image) {
 
 // drawSceneView は配置・文・ボタンを描く（DES-UI-20、DES-UI-19、DES-UI-09）。
 func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
+	g.drawSceneBackdrop(dst, v)
 	if v.Deploy != nil {
 		g.drawDeploy(dst, *v.Deploy)
 	}
@@ -967,8 +980,9 @@ func (g *Game) drawSceneView(dst *ebiten.Image, v SceneView) {
 			g.label(dst, t.Text, t.X, t.Y, infoStyleColor(t.Style))
 		}
 	}
+	g.drawScenePortrait(dst, v)
 	for _, ic := range v.Icons {
-		g.drawTile(dst, ic.Tile, ic.X, ic.Y, 1)
+		g.drawSceneIcon(dst, ic)
 	}
 	for _, b := range v.Buttons {
 		r := b.Rect

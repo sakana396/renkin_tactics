@@ -32,8 +32,8 @@
 | 設計 | 設計書（新作 NG04: 高解像度の表示） | [03_design/design-ng04-display.md](03_design/design-ng04-display.md) | v0.4 承認（E-143、#203）。DES-NG-10。D-12 は持ち越し（E-142） |
 | 設計 | 設計書（新作 NG05: 準備画面の作り直し） | [03_design/design-ng05-prepare.md](03_design/design-ng05-prepare.md) | v0.5 承認（E-143、#203）。DES-NG05（準備画面）。モック [03_design/mock/prepare-ng05.png](03_design/mock/prepare-ng05.png) |
 | 試験 | テスト仕様書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.3 承認（E-143、#203）。TC-DES-NG-01〜06。自動は未取り込み（#204 で取り込む）、爆弾の経験は未実装 |
-| 試験 | テスト仕様書（新作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.4 承認（E-143、#203）。自動は未取り込み（#205 で取り込む）、実画面の確認は手動・未実施 |
-| 試験 | テスト仕様書（新作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.3 承認（E-143、#203）。自動は未取り込み（#205 で取り込む）、耳での確認は手動・未実施 |
+| 試験 | テスト仕様書（新作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.5（#205）。自動は実装済み（高解像度の配置は #206）、実画面の確認は管理役の撮影で実施（人の目では #214） |
+| 試験 | テスト仕様書（新作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.4（#205）。自動は実装済み、耳での確認は手動・未実施 |
 | 試験 | テスト仕様書（新作 NG04: 高解像度の表示） | [04_test/test-spec-ng04.md](04_test/test-spec-ng04.md) | v0.4 承認（E-143、#203）。自動は未取り込み（#206 で取り込む） |
 | 試験 | テスト仕様書（新作 NG05: 準備画面の作り直し） | [04_test/test-spec-ng05.md](04_test/test-spec-ng05.md) | v0.3 承認（E-143、#203）。自動は未取り込み（#207 で取り込む） |
 | 試験 | テスト仕様書（反復 8） | [04_test/test-spec-it08.md](04_test/test-spec-it08.md) | v0.1（#213。9 章の増援の案 B） |
