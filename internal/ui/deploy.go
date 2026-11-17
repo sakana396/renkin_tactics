@@ -231,12 +231,12 @@ func (s *SceneController) deployView() SceneView {
 	}
 	// ボタンは情報欄（y < 360）の中、ページの印の上に横に並べ、右下のミニマップと重ねない（DES-UI-28）。
 	v := SceneView{Deploy: d, Buttons: []SceneButton{
-		{"戦闘開始", image.Rect(528, deployButtonTop, 668, deployButtonTop+32), true},
-		{"準備に戻る", image.Rect(676, deployButtonTop, 816, deployButtonTop+32), true},
+		{"戦闘開始", image.Rect(MapSize+16, deployButtonTop, MapSize+156, deployButtonTop+32), true},
+		{"準備に戻る", image.Rect(MapSize+164, deployButtonTop, MapSize+304, deployButtonTop+32), true},
 		{"詳細 I", deployDetailButtonRect, s.deployInfoUnit(d.Units, d.Selected) >= 0},
 	}, Texts: []SceneText{
-		{Text: "左クリック: 味方を選ぶ・交換・空き出撃マスへ移す", X: 16, Y: 516, Style: StyleLabel},
-		{Text: "右クリック・Esc: 選択を解除／未選択なら準備に戻る", X: 16, Y: 534, Style: StyleLabel},
+		{Text: "左クリック: 味方を選ぶ・交換・空き出撃マスへ移す", X: 16, Y: MapSize + 4, Style: StyleLabel},
+		{Text: "右クリック・Esc: 選択を解除／未選択なら準備に戻る", X: 16, Y: MapSize + 22, Style: StyleLabel},
 	}}
 	mm := s.deployMinimap(d)
 	v.Minimap = &mm
@@ -249,17 +249,17 @@ func (s *SceneController) deployView() SceneView {
 			d.NameMark, _ = nameMarkRect(info, unitName(u))
 		}
 	} else {
-		v.Texts = append(v.Texts, SceneText{Text: "配置する味方を選んでください", X: 528, Y: 24, Style: StyleLabel})
+		v.Texts = append(v.Texts, SceneText{Text: "配置する味方を選んでください", X: MapSize + 16, Y: 24, Style: StyleLabel})
 	}
 	state := "OFF"
 	if s.deployDanger {
 		state = "ON"
 	}
-	v.Texts = append(v.Texts, SceneText{Text: cameraGuide, X: 528, Y: 520, Style: StyleLabel})
-	v.Texts = append(v.Texts, SceneText{Text: "Q: 敵の危険範囲 " + state, X: 16, Y: 552, Style: StyleLabel})
+	v.Texts = append(v.Texts, SceneText{Text: cameraGuide, X: MapSize + 16, Y: MapSize + 8, Style: StyleLabel})
+	v.Texts = append(v.Texts, SceneText{Text: "Q: 敵の危険範囲 " + state, X: 16, Y: MapSize + 40, Style: StyleLabel})
 	// 配置の情報欄には地形の行がないので、カーソルの下の移動費の説明は案内欄の Q の右に出す（DES-UI-29、DES-IT07 3.8 節）。
 	if err == nil && hasZOCAt(board, s.deployCursor) {
-		v.Texts = append(v.Texts, SceneText{Text: zocNote, X: deployZOCNoteX, Y: 552, Style: StyleLabel})
+		v.Texts = append(v.Texts, SceneText{Text: zocNote, X: deployZOCNoteX, Y: MapSize + 40, Style: StyleLabel})
 	}
 	return v
 }

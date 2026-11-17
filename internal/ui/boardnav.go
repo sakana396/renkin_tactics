@@ -10,9 +10,10 @@ import (
 // 盤面の移動のボタンの位置（DES-UI-30、DES-IT07 3.3 節）。
 // 全体図はミニマップ欄の (744,472)〜(824,504)（minimapTexts の y=380・396 の案内より下）、
 // 次の味方は下欄の (704,520)〜(824,544)（気配の案内 y=544〜560 と cameraGuideY の行より上）に置く。
+// 位置は盤面の大きさに従う（DES-NG-10。recomputeMetrics が作る）。
 var (
-	overviewButtonRect = image.Rect(744, 472, 824, 504)
-	nextAllyButtonRect = image.Rect(704, 520, 824, 544)
+	overviewButtonRect image.Rectangle
+	nextAllyButtonRect image.Rectangle
 )
 
 const (
