@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"time"
 
@@ -32,6 +33,8 @@ type Config struct {
 	Now func() time.Time
 	// Stderr は、行動の記録を作れない・書けないときの詳しい誤りの出し先（DES-LOG-02）。nil なら os.Stderr。
 	Stderr io.Writer
+	// Media は画像と音の置き場（DES-NG-07）。nil なら既存の素材を使う。
+	Media fs.FS
 }
 
 // Scene はキャンペーンの場面（DES-UI-09）。
@@ -53,6 +56,7 @@ const (
 // SceneController は描画や OS 入力から独立した場面の進行（DES-UI-09）。
 type SceneController struct {
 	cfg              Config
+	art              *ArtStore
 	scene            Scene
 	campaign         *core.Campaign
 	loaded           *core.Campaign
@@ -99,7 +103,7 @@ type SceneController struct {
 
 // NewSceneController はタイトルでセーブを調べる（DES-UI-10）。
 func NewSceneController(cfg Config) *SceneController {
-	s := &SceneController{cfg: cfg}
+	s := &SceneController{cfg: cfg, art: NewArtStore(cfg.Media, cfg.Stderr, cfg.Catalog)}
 	s.enterTitle("")
 	return s
 }
