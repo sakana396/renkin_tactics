@@ -35,7 +35,7 @@ func TestAlchemyData(t *testing.T) {
 		for _, ch := range cat.Chapters() {
 			ids = append(ids, ch.ID)
 		}
-		if strings.Join(ids, ",") != "ch01" {
+		if strings.Join(ids, ",") != "ch01,ch02" {
 			t.Fatal(ids)
 		}
 		if got := strings.Join(cat.Game.Party, ","); got != "aoi,dain,tori,nemu" {
@@ -104,6 +104,7 @@ func TestAlchemyData(t *testing.T) {
 		// 設計メモ 6.3 節の表: 1 章 回復薬 2・小さな爆弾 3・投げ火 1。
 		wantReward := map[string]map[string]int{
 			"ch01": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
+			"ch02": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
 		}
 		if fmt.Sprint(reward) != fmt.Sprint(wantReward) {
 			t.Fatal(reward, wantReward)
@@ -293,8 +294,8 @@ func TestAlchemyAutoplay(t *testing.T) {
 		}
 		if all {
 			cleared++
-			if !c.Cleared {
-				t.Fatal("1 章を勝ったのにクリアにならない")
+			if c.Cleared {
+				t.Fatal("1 章の後にまだ 2 章がある")
 			}
 		}
 	}

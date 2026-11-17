@@ -38,8 +38,6 @@ func TestLordWinsWithoutPermadeath(t *testing.T) {
 			t.Fatal("大きな爆弾の定義が見つからない")
 		}
 		m["items.toml"].Data = []byte(strings.Replace(src, old, "blast_damage = 99\nblast_radius = 40", 1))
-		// 仮の 1 章の後に試験用の章を足す。
-		m["chapters.toml"].Data = append(m["chapters.toml"].Data, []byte("\n[[chapters]]\nid = \"ch02\"\nname = \"試験の章\"\nmap = \"ch01\"\n")...)
 		cat, err := defload.Load(m)
 		if err != nil {
 			t.Fatal(err)

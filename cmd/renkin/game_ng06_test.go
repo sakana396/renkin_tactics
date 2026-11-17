@@ -26,7 +26,7 @@ func TestGameFlag(t *testing.T) {
 			args []string
 			want string
 		}{
-			{"alchemy", []string{"-game", "alchemy", "-savedir", "dev"}, "ch01"},
+			{"alchemy", []string{"-game", "alchemy", "-savedir", "dev"}, "ch01,ch02"},
 			{"base を明示", []string{"-game", "base", "-savedir", "dev"}, "ch01,ch02,ch03,ch04,ch05,ch06,ch07,ch08,ch09"},
 			{"指定なし", []string{"-savedir", "dev"}, "ch01,ch02,ch03,ch04,ch05,ch06,ch07,ch08,ch09"},
 		} {
@@ -90,7 +90,12 @@ func TestGameFlag(t *testing.T) {
 			t.Fatal(code, stderr.String())
 		}
 		stderr.Reset()
-		if code := run([]string{"-game", "alchemy", "-chapter", "ch02", "-savedir", "dev"}, &stderr, data.Base(), fixedNow, func(ui.Config) error { return nil }); code != 2 || !strings.Contains(stderr.String(), "ch02") || !strings.Contains(stderr.String(), "ch01") {
+		started = false
+		if code := run([]string{"-game", "alchemy", "-chapter", "ch02", "-savedir", "dev"}, &stderr, data.Base(), fixedNow, func(c ui.Config) error { started = true; return nil }); code != 0 || !started {
+			t.Fatal(code, stderr.String())
+		}
+		stderr.Reset()
+		if code := run([]string{"-game", "alchemy", "-chapter", "ch03", "-savedir", "dev"}, &stderr, data.Base(), fixedNow, func(ui.Config) error { return nil }); code != 2 || !strings.Contains(stderr.String(), "ch03") || !strings.Contains(stderr.String(), "ch02") {
 			t.Fatal(code, stderr.String())
 		}
 	})
