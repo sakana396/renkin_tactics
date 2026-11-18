@@ -37,7 +37,7 @@
 | 試験 | テスト仕様書（新作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.4（#205）。自動は実装済み、耳での確認は手動・未実施 |
 | 試験 | テスト仕様書（新作 NG04: 高解像度の表示） | [04_test/test-spec-ng04.md](04_test/test-spec-ng04.md) | v0.5（#206）。自動は実装済み。v0.4 承認（E-143、#203） |
 | 試験 | テスト仕様書（新作 NG05: 準備画面の作り直し） | [04_test/test-spec-ng05.md](04_test/test-spec-ng05.md) | v0.3 承認（E-143、#203）。自動は未取り込み（#207 で取り込む） |
-| 試験 | 新作 NG06 試験仕様 | [04_test/test-spec-ng06.md](04_test/test-spec-ng06.md) | v0.1、自動実装済み・UI はコンパイル確認、手動未実施 |
+| 試験 | 新作 NG06 試験仕様 | [04_test/test-spec-ng06.md](04_test/test-spec-ng06.md) | v0.1、自動・実装済み（Windows で実行）、手動未実施 |
 | 試験 | テスト仕様書（反復 8） | [04_test/test-spec-it08.md](04_test/test-spec-it08.md) | v0.1（#213。9 章の増援の案 B） |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |
 | 横断 | トレーサビリティマトリクス | [traceability.md](traceability.md) | 開発の道具と反復 1 の行 |
