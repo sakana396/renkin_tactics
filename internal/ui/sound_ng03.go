@@ -42,28 +42,28 @@ type soundInput struct {
 
 // soundKeys はそのフレームに押された、音に関わる入力の素の値。
 type soundKeys struct {
-	Left, Right, Esc, Enter, Space, Tab, I, Q, Mute bool
+	Left, Right, Esc, Enter, Space, Tab, I, Q, Up, Down, Mute bool
 }
 
 // readSoundInput は Ebitengine の入力から soundInput を作る。
-func readSoundInput(scene Scene) soundInput {
+func readSoundInput(scene Scene, hiresPrepare bool) soundInput {
 	pressed := inpututil.IsKeyJustPressed
-	return soundInputOf(scene, soundKeys{
+	return soundInputOf(scene, hiresPrepare, soundKeys{
 		Left: inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft), Right: inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight),
 		Esc: pressed(ebiten.KeyEscape), Enter: pressed(ebiten.KeyEnter), Space: pressed(ebiten.KeySpace),
 		Tab: pressed(ebiten.KeyTab), I: pressed(ebiten.KeyI), Q: pressed(ebiten.KeyQ),
-		Mute: pressed(MuteKey),
+		Up: pressed(ebiten.KeyArrowUp), Down: pressed(ebiten.KeyArrowDown), Mute: pressed(MuteKey),
 	})
 }
 
-// soundInputOf は押されたものを音の入力に読み替える。
-// 決定は左クリックと、物語の送り（Enter・Space）、取消しは右クリックと Esc、
-// 選択音は Tab・I・Q（表示の切り替え）。
-func soundInputOf(scene Scene, k soundKeys) soundInput {
+// soundInputOf は押されたものを音の入力に読み替える（DES-NG-09、DES-NG-11）。
+// 決定は左クリックと、物語の送り（Enter・Space）、高解像度の準備の Enter（配置へ）、取消しは右クリックと Esc、
+// 選択音は Tab・I・Q（表示の切り替え）と、高解像度の準備の ↑↓（キャラの選択）。
+func soundInputOf(scene Scene, hiresPrepare bool, k soundKeys) soundInput {
 	return soundInput{
-		Confirm: k.Left || scene == Story && (k.Enter || k.Space),
+		Confirm: k.Left || scene == Story && (k.Enter || k.Space) || hiresPrepare && k.Enter,
 		Cancel:  k.Right || k.Esc,
-		Select:  k.Tab || k.I || k.Q,
+		Select:  k.Tab || k.I || k.Q || hiresPrepare && (k.Up || k.Down),
 		Mute:    k.Mute,
 	}
 }

@@ -103,3 +103,15 @@ func TestNG06ItemUI(t *testing.T) {
 	})
 
 }
+
+func TestNG06PrepareItemDot(t *testing.T) {
+	t.Run("TC-DES-NG-16-01 準備の画面で効果の道具の丸は回復薬と違う色で描く", func(t *testing.T) {
+		s := ng05Scenes(t, "ch01", true)
+		potion := s.hrItemDot("potion", 0, 0, 10).Color
+		tonic := s.hrItemDot("tonic_power", 0, 0, 10).Color
+		snare := s.hrItemDot("snare_bottle", 0, 0, 10).Color
+		if tonic == potion || snare == potion || tonic == snare {
+			t.Fatalf("色が見分けられない: 回復薬 %v、剛力薬 %v、粘着瓶 %v", potion, tonic, snare)
+		}
+	})
+}

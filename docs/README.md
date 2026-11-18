@@ -18,7 +18,7 @@
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.2 承認済み |
 | 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.6 承認（E-143、#203）。1.1 節に `internal/ui/audio`、3.10 節に爆弾のボス優先の勝ちを追記。v0.5 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。DES-BTL-03・AI-01・UI-07・08 の追記。v0.4 承認済み（E-40） |
 | 計画 | 反復 2 計画書 | [iterations/it02/plan.md](iterations/it02/plan.md) | v0.3 承認済み（E-32、E-33） |
-| 設計 | 設計書（反復 2） | [03_design/design-it02.md](03_design/design-it02.md) | v0.5 承認（E-143、#203）。4.1・5.6 節に反復 8 の改訂（爆弾の経験、勝った章の主人公）を追記。v0.4 承認済み（E-32、E-33、E-40） |
+| 設計 | 設計書（反復 2） | [03_design/design-it02.md](03_design/design-it02.md) | v0.6（E-148 で書き足すことを承認）。v0.5 承認（E-143、#203）。4.1・5.6 節に反復 8 の改訂（爆弾の経験、勝った章の主人公）を追記。v0.4 承認済み（E-32、E-33、E-40） |
 | 試験 | テスト仕様書（反復 1） | [04_test/test-spec-it01.md](04_test/test-spec-it01.md) | 実装とともに書き足す |
 | 試験 | テスト仕様書（反復 2） | [04_test/test-spec-it02.md](04_test/test-spec-it02.md) | 骨組み。実装とともに書き足す |
 | 試験 | テスト仕様書（反復 3） | [04_test/test-spec-it03.md](04_test/test-spec-it03.md) | 骨組み。実装とともに書き足す |
@@ -33,10 +33,10 @@
 | 設計 | 設計書（新作 NG05: 準備画面の作り直し） | [03_design/design-ng05-prepare.md](03_design/design-ng05-prepare.md) | v0.5 承認（E-143、#203）。DES-NG05（準備画面）。モック [03_design/mock/prepare-ng05.png](03_design/mock/prepare-ng05.png) |
 | 設計 | 新作 NG06 錬金アイテムの種類 | [03_design/design-ng06-items.md](03_design/design-ng06-items.md) | v0.1 案（開発者の文面の承認待ち）、#211 |
 | 試験 | テスト仕様書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.8（#208、REV-119 対応）。TC-DES-NG-01〜06 は実装済み |
-| 試験 | テスト仕様書（新作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.5（#205）。自動は実装済み（高解像度の配置は #206）、実画面の確認は管理役の撮影で実施（人の目では #214） |
+| 試験 | テスト仕様書（新作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.6（#207）。自動は実装済み（高解像度の配置は #206）、実画面の確認は管理役の撮影で実施（人の目では #214） |
 | 試験 | テスト仕様書（新作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.4（#205）。自動は実装済み、耳での確認は手動・未実施 |
-| 試験 | テスト仕様書（新作 NG04: 高解像度の表示） | [04_test/test-spec-ng04.md](04_test/test-spec-ng04.md) | v0.5（#206）。自動は実装済み。v0.4 承認（E-143、#203） |
-| 試験 | テスト仕様書（新作 NG05: 準備画面の作り直し） | [04_test/test-spec-ng05.md](04_test/test-spec-ng05.md) | v0.3 承認（E-143、#203）。自動は未取り込み（#207 で取り込む） |
+| 試験 | テスト仕様書（新作 NG04: 高解像度の表示） | [04_test/test-spec-ng04.md](04_test/test-spec-ng04.md) | v0.6（#207）。準備の全面表示に合わせて TC-DES-NG-10-12 を更新。v0.5（#206）、v0.4 承認（E-143、#203） |
+| 試験 | テスト仕様書（新作 NG05: 準備画面の作り直し） | [04_test/test-spec-ng05.md](04_test/test-spec-ng05.md) | v0.4（#207、E-148）。自動は実装済み、現行章の撮影を実施、窓の実操作は #214。v0.3 承認（E-143、#203） |
 | 試験 | 新作 NG06 試験仕様 | [04_test/test-spec-ng06.md](04_test/test-spec-ng06.md) | v0.1、自動・実装済み（Windows で実行）、手動未実施 |
 | 試験 | テスト仕様書（反復 8） | [04_test/test-spec-it08.md](04_test/test-spec-it08.md) | v0.1（#213。9 章の増援の案 B） |
 | 試験 | テスト仕様書（開発の道具） | [04_test/test-spec-tools.md](04_test/test-spec-tools.md) | ふしぎ錬金から引き継ぎ |

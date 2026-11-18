@@ -39,6 +39,9 @@ const maxLevel = 20
 // 物語の 1 段落の長さの上限（rune で数える。DES-DAT-03 規則 18、設計書 10.7 節）。
 const maxParagraph = 200
 
+// maxGoal は目的の文字数の上限（DES-NG-11）。
+const maxGoal = 60
+
 // マップの行の数と行の長さの上限（DES-DAT-03 規則 8、DES-MAP-05）。
 const maxMapSize = 32
 
@@ -278,6 +281,7 @@ type (
 		Events         []rawEvent         `toml:"events"`
 	}
 	rawChapter struct {
+		Goal   string         `toml:"goal"`
 		ID     string         `toml:"id"`
 		Name   string         `toml:"name"`
 		Map    string         `toml:"map"`
@@ -902,7 +906,12 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 			joinedAt[id] = q
 		}
 		v.rewardList(ref, FileChapters, p+".reward", r.Reward)
-		chapters[i] = defs.ChapterDef{ID: r.ID, Name: r.Name, Map: r.Map, Before: r.Before, After: r.After, Joins: append([]string(nil), r.Joins...), Reward: toItems(r.Reward)}
+		if n := utf8.RuneCountInString(r.Goal); n > maxGoal {
+			v.add(FileChapters, p+".goal", "目的の長さ %d 文字は %d 文字以下にしてください", n, maxGoal)
+		} else if r.Goal != "" && strings.TrimSpace(r.Goal) == "" {
+			v.add(FileChapters, p+".goal", "目的が空白だけです")
+		}
+		chapters[i] = defs.ChapterDef{ID: r.ID, Name: r.Name, Goal: r.Goal, Map: r.Map, Before: r.Before, After: r.After, Joins: append([]string(nil), r.Joins...), Reward: toItems(r.Reward)}
 	}
 
 	return defs.NewCatalog(game, terrains, classes, weapons, items, skills, characters, maps, chapters, stories)
