@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 )
 
 // REV-109 の指摘への対応で足したテスト（DES-NG-10）。
@@ -60,6 +62,45 @@ func TestHiResGameOver(t *testing.T) {
 		b := s.battle.RewindView().Buttons
 		if len(b) != 1 || b[0].Rect != image.Rect(304, 512, 504, 530) {
 			t.Fatal(b)
+		}
+	})
+}
+
+func TestHiResGameOverRewindTransition(t *testing.T) {
+	t.Run("TC-DES-NG-10-29 敗北と巻き戻しの場面遷移で入口の位置が変わる", func(t *testing.T) {
+		useTestMetrics(t, HiResCellSize)
+		s := fixtureScenes(&memoryStore{}, false, false)
+		startScenes(s)
+		s.campaign.Roster[0].Stats.HP = 1
+		s.campaign.Roster[0].Stats.Def = 0
+		clickSceneButton(t, s, "配置へ")
+		clickSceneButton(t, s, "戦闘開始")
+		playOut(s.battle)
+		s.battle.EndPhase()
+		s.battle.EndPhase()
+		playOut(s.battle)
+		if s.battle.Battle().Result != tactics.Lost {
+			t.Fatal("戦闘が敗北で終わっていない")
+		}
+		s.Advance()
+		if s.Scene() != GameOver {
+			t.Fatal("敗北の場面に進まない", s.Scene())
+		}
+		buttons := s.battle.RewindView().Buttons
+		if len(buttons) != 1 || buttons[0].Rect != image.Rect(304, 512, 504, 530) {
+			t.Fatal("敗北時の入口の位置", buttons)
+		}
+		s.Choose(2)
+		s.battle.RewindMove(-100)
+		s.battle.RewindEnter()
+		s.battle.RewindEnter()
+		s.syncRewind()
+		if s.Scene() != Battle || s.battle.Battle().Result != tactics.Ongoing {
+			t.Fatal("巻き戻しで戦闘に戻らない")
+		}
+		buttons = s.battle.RewindView().Buttons
+		if len(buttons) != 1 || buttons[0].Rect.Min.Y != MapSize {
+			t.Fatal("戦闘復帰後の入口の位置", buttons)
 		}
 	})
 }

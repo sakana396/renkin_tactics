@@ -142,7 +142,7 @@ func DetailView(u tactics.Unit, section DetailSection) InfoView {
 		v.text(x, y, mark+label, st)
 	}
 	title := strings.TrimSpace(unitName(u) + "　" + u.ClassName + "　" + levelText(u))
-	v.text(detailLeftX, 12, fitRewind(title, ScreenWidth-2*detailLeftX), StyleTitle)
+	v.text(detailLeftX, 12, fitRewind(title, sceneCanvasWidth-2*detailLeftX), StyleTitle)
 
 	// 左の列: 能力 9 種と武器の短い行。
 	head(detailLeftX, 40, "能力", SectionStats)
