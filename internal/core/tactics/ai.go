@@ -124,7 +124,7 @@ func (b *Battle) actEnemy(events []Event, unit int) []Event {
 		// 攻撃に使った武器を装備する（DES-ITM-02）。
 		b.units[unit].Equipped = best.weapon
 		events = b.attack(events, unit, best.target, best.to == from)
-		remaining := b.units[unit].Stats.Mov - reach[best.to]
+		remaining := b.units[unit].moveBudget() - reach[best.to]
 		if !b.canCanto(unit, Attack, remaining) {
 			return events
 		}

@@ -190,7 +190,7 @@ func (c *Controller) ClickMenu(i int) {
 			c.ChooseAction(actions[i])
 		}
 	case ItemMenu:
-		if ks := usableItems(c.battle.Units()[c.unit]); i >= 0 && i < len(ks) {
+		if ks := c.availableItems(); i >= 0 && i < len(ks) {
 			c.ChooseItem(ks[i])
 		}
 	case WeaponMenu, StaffMenu:
@@ -213,7 +213,7 @@ func (c *Controller) MenuLabels() []string {
 		}
 	case ItemMenu:
 		u := c.battle.Units()[c.unit]
-		for _, k := range usableItems(u) {
+		for _, k := range c.availableItems() {
 			out = append(out, itemLabel(u.Items[k]))
 		}
 	case WeaponMenu, StaffMenu:

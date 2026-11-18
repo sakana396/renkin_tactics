@@ -158,8 +158,11 @@ type (
 		Uses *int `toml:"uses"`
 	}
 	rawItem struct {
-		ID   string `toml:"id"`
-		Name string `toml:"name"`
+		Effect *string `toml:"effect"`
+		Amount *int    `toml:"amount"`
+		Range  *int    `toml:"range"`
+		ID     string  `toml:"id"`
+		Name   string  `toml:"name"`
 		// Heal と爆弾の 3 つの値は、キーを書いたかどうかで爆弾かどうかを決めるので、ポインタにする（DES-NG-01）。
 		Heal        *int `toml:"heal"`
 		BlastDamage *int `toml:"blast_damage"`
@@ -922,6 +925,41 @@ func (v *validator) item(p string, r rawItem) defs.ItemDef {
 		if k.val != nil {
 			written++
 		}
+	}
+	if r.Effect != nil || r.Amount != nil || r.Range != nil {
+		if r.Heal != nil {
+			v.add(f, p+".heal", "効果と heal は併用できません")
+		}
+		for _, k := range blast {
+			if k.val != nil {
+				v.add(f, p+"."+k.key, "効果と爆弾は併用できません")
+			}
+		}
+		if r.Effect == nil {
+			v.add(f, p+".effect", "effect が必要です")
+		} else {
+			def.Effect = *r.Effect
+			if def.Effect != "power_tonic" && def.Effect != "snare" {
+				v.add(f, p+".effect", "未対応の効果です（%s）", def.Effect)
+			}
+		}
+		if r.Range == nil {
+			v.add(f, p+".range", "range が必要です")
+		} else {
+			def.Range = *r.Range
+			v.atLeast(f, p+".range", def.Range, 1)
+		}
+		if def.Effect == "power_tonic" {
+			if r.Amount == nil {
+				v.add(f, p+".amount", "amount が必要です")
+			} else {
+				def.Amount = *r.Amount
+				v.atLeast(f, p+".amount", def.Amount, 1)
+			}
+		} else if r.Amount != nil {
+			v.add(f, p+".amount", "この効果に amount は書けません")
+		}
+		return def
 	}
 	if written == 0 {
 		heal := 0

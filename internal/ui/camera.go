@@ -89,7 +89,7 @@ func (c *Controller) Scroll(dx, dy int) {
 		return
 	}
 	switch c.state {
-	case Idle, Selected, Targeting, HealTargeting, Canto, BombTargeting:
+	case Idle, Selected, Targeting, HealTargeting, Canto, BombTargeting, ItemTargeting:
 		c.camera.Move(dx, dy)
 	}
 }

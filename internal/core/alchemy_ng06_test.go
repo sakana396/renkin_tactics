@@ -103,8 +103,8 @@ func TestAlchemyData(t *testing.T) {
 		}
 		// 設計書 6.3 節の表: 各章 回復薬 2・小さな爆弾 3・投げ火 1。
 		wantReward := map[string]map[string]int{
-			"ch01": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
-			"ch02": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
+			"ch01": {"potion": 2, "bomb_small": 3, "bomb_far": 1, "tonic_power": 1, "snare_bottle": 1},
+			"ch02": {"potion": 2, "bomb_small": 3, "bomb_far": 1, "tonic_power": 1, "snare_bottle": 1},
 			"ch03": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
 		}
 		if fmt.Sprint(reward) != fmt.Sprint(wantReward) {

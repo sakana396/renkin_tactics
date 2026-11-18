@@ -77,7 +77,7 @@
 
 | 要求 | Issue | 設計 | テストケース | 実装 | 状態 |
 |---|---|---|---|---|---|
-| FR-ITM-08 | #211 | DES-NG-13 | TC-DES-NG-13-01〜03 | 未実装 | 案 |
-| FR-ITM-09 | #211 | DES-NG-14、DES-NG-17 | TC-DES-NG-14-01〜06、TC-DES-NG-17-01〜03 | 未実装 | 案 |
-| FR-ITM-10 | #211 | DES-NG-15 | TC-DES-NG-15-01〜03 | 未実装 | 案 |
-| FR-ITM-11 | #211 | DES-NG-16 | TC-DES-NG-16-01〜02 | 未実装 | 案 |
+| FR-ITM-08 | #211 | DES-NG-13 | TC-DES-NG-13-01〜03 | `internal/defs`、`internal/defload`、`internal/core`、`data/alchemy` | 実装済み |
+| FR-ITM-09 | #211 | DES-NG-14、DES-NG-17 | TC-DES-NG-14-01〜06、TC-DES-NG-17-01〜03 | `internal/core/tactics`、`internal/core`、`data/alchemy` | 実装済み（TC-DES-NG-17-03 は手動・未実施） |
+| FR-ITM-10 | #211 | DES-NG-15 | TC-DES-NG-15-01〜03 | `internal/core/tactics`、`internal/core` | 実装済み |
+| FR-ITM-11 | #211 | DES-NG-16 | TC-DES-NG-16-01〜02 | `internal/ui`、`internal/core/tactics` | 実装済み（UI 試験はコンパイルのみ） |

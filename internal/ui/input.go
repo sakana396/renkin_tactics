@@ -45,6 +45,9 @@ const (
 // BombTargeting は、爆弾の爆心のマスを選んでいる状態（DES-NG-05）。
 const BombTargeting State = StaffMenu + 1
 
+// ItemTargeting は一時効果を与える対象の選択（DES-NG-16）。
+const ItemTargeting State = BombTargeting + 1
+
 // FramesPerEvent は、出来事 1 つを表示するフレームの数（DES-UI-04）。
 const FramesPerEvent = 20
 
@@ -198,6 +201,8 @@ func (c *Controller) Click(p tactics.Pos) {
 		}
 	case BombTargeting:
 		c.clickBlast(p)
+	case ItemTargeting:
+		c.clickItemTarget(p)
 	case Targeting, HealTargeting:
 		if c.state == Targeting && c.quickSpots != nil {
 			if i, ok := c.unitAt(p); ok && i != c.target && c.battle.Units()[i].Side == tactics.Enemy {
@@ -306,6 +311,15 @@ func (c *Controller) ChooseItem(k int) {
 	if c.state != ItemMenu || k < 0 || k >= len(c.battle.Units()[c.unit].Items) {
 		return
 	}
+	// 一時効果の道具は対象を選ぶ（DES-NG-16）。
+	if it := c.battle.Units()[c.unit].Items[k].Item; it.Effect != "" {
+		if len(c.itemTargets(k)) == 0 {
+			c.message = "使える対象がいません"
+			return
+		}
+		c.state, c.item, c.target, c.message = ItemTargeting, k, -1, ""
+		return
+	}
 	// 爆弾は爆心のマスを選んでから使う（DES-NG-05）。
 	if c.battle.Units()[c.unit].Items[k].Item.Bomb {
 		c.state, c.item, c.blastPicked, c.message = BombTargeting, k, false, ""
@@ -359,6 +373,13 @@ func (c *Controller) Cancel() {
 		c.state, c.weapon, c.weaponMenu, c.message = Moved, -1, false, ""
 	case ItemMenu:
 		c.state = Moved
+	case ItemTargeting:
+		if c.target >= 0 {
+			c.target = -1
+		} else {
+			c.state = ItemMenu
+		}
+		c.message = ""
 	case BombTargeting:
 		// 爆心を選んでいれば選び直し、選んでいなければアイテムの一覧へ戻る（DES-NG-05）。
 		if c.blastPicked {
@@ -464,7 +485,7 @@ func (c *Controller) Units() []tactics.Unit {
 	}
 	units := c.battle.Units()
 	switch c.state {
-	case Moved, Targeting, HealTargeting, ItemMenu, WeaponMenu, StaffMenu, BombTargeting:
+	case Moved, Targeting, HealTargeting, ItemMenu, WeaponMenu, StaffMenu, BombTargeting, ItemTargeting:
 		units[c.unit].Pos = c.dest
 	}
 	return units
@@ -480,11 +501,10 @@ func (c *Controller) Actions() []tactics.Action {
 	if len(c.Targets()) > 0 {
 		out = append(out, tactics.Attack)
 	}
-	u := c.battle.Units()[c.unit]
 	if len(c.HealTargets()) > 0 {
 		out = append(out, tactics.Heal)
 	}
-	if usableItem(u) {
+	if len(c.availableItems()) > 0 {
 		out = append(out, tactics.UseItem)
 	}
 	return append(out, tactics.Wait)
@@ -751,6 +771,12 @@ func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
 			blue[p] = true
 		}
 		return blue, nil
+	case ItemTargeting:
+		red = map[tactics.Pos]bool{}
+		for _, i := range c.itemTargets(c.item) {
+			red[c.Units()[i].Pos] = true
+		}
+		return nil, red
 	case BombTargeting:
 		// 投げられる範囲を赤で示す。爆発の範囲は BlastOverlay で別の色にする（DES-NG-05）。
 		red = map[tactics.Pos]bool{}

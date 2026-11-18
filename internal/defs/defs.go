@@ -129,6 +129,9 @@ type WeaponDef struct {
 // 爆弾（DES-NG-01）は Bomb が真で、Heal は 0。BlastDamage は固定ダメージ（1 以上）、BlastRadius は爆心からのマンハッタン距離
 // （0 なら爆心の 1 マス）、ThrowRange は使う人から爆心までの距離の上限（1 以上）。Bomb が偽なら 3 つの値は 0。
 type ItemDef struct {
+	Effect      string
+	Amount      int
+	Range       int
 	ID          string
 	Name        string
 	Heal        int

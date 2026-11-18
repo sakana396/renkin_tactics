@@ -166,6 +166,10 @@ type Item struct {
 	ID   string
 	Name string
 	Heal int
+	// 効果・量・射程（DES-NG-13）。
+	Effect string
+	Amount int
+	Range  int
 	// 爆弾の値（DES-NG-02）。BlastRadius は爆心からのマンハッタン距離（0 なら爆心の 1 マスだけ）、
 	// ThrowRange は使う人（移動後）から爆心までのマンハッタン距離の上限。
 	Bomb        bool
@@ -288,7 +292,10 @@ type Unit struct {
 	AI          AI
 	Approach    Approach
 	Acted       bool
-	Alive       bool
+	// 一時効果（DES-NG-14）。
+	PowerTonic int
+	Snared     bool
+	Alive      bool
 	// ID・Group は UnitSetup から写す敵の識別子と一団の名前（DES-MAP-07）。
 	ID    string
 	Group string
@@ -308,6 +315,8 @@ type Command struct {
 	Item   int
 	Weapon *int
 	Blast  *Pos
+	// ItemTarget は新道具の対象座標（DES-NG-14）。
+	ItemTarget *Pos
 }
 
 // EquippedWeapon は装備している武器を返す（DES-ITM-02）。添字が列の外ならゼロ値を返す。

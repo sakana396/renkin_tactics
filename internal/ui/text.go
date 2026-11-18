@@ -45,6 +45,12 @@ func itemLabel(s tactics.ItemStack) string {
 
 // itemEffect は道具の効果を示す（DES-NG-05）。
 func itemEffect(it tactics.Item) string {
+	if it.Effect == "power_tonic" {
+		return fmt.Sprintf("力・魔力 +%d　距離 0〜%d", it.Amount, it.Range)
+	}
+	if it.Effect == "snare" {
+		return fmt.Sprintf("移動 0　距離 1〜%d", it.Range)
+	}
 	if it.Bomb {
 		return fmt.Sprintf("爆弾 ダメージ %d　範囲 %d　投げる %d", it.BlastDamage, it.BlastRadius, it.ThrowRange)
 	}
@@ -224,6 +230,8 @@ func (c *Controller) Guide() []string {
 			lines = append(lines, "左クリック: 回復する味方を選ぶ　右クリック・Esc: 戻る")
 		}
 		lines = append(lines, guideDanger)
+	case ItemTargeting:
+		lines = append(lines, c.itemGuide()...)
 	case BombTargeting:
 		lines = append(lines, c.bombGuide()...)
 		if c.message == "" || !c.blastPicked {

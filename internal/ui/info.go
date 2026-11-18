@@ -167,7 +167,7 @@ func (c *Controller) infoCell(x, y int) (tactics.Pos, bool) {
 // selectedCell は、選んでいるユニットのマス（移動先を選んだあとは移動先）を返す（DES-UI-27）。選んでいなければ ok が偽。
 func (c *Controller) selectedCell() (tactics.Pos, bool) {
 	switch c.state {
-	case Selected, Moved, Targeting, HealTargeting, ItemMenu, WeaponMenu, StaffMenu, Canto, BombTargeting:
+	case Selected, Moved, Targeting, HealTargeting, ItemMenu, WeaponMenu, StaffMenu, Canto, BombTargeting, ItemTargeting:
 		if units := c.Units(); c.unit >= 0 && c.unit < len(units) && units[c.unit].Alive {
 			return units[c.unit].Pos, true
 		}
@@ -426,6 +426,11 @@ func (v *InfoView) addStats(u tactics.Unit, x, y int) int {
 	// HP は枠に割合で塗り、力・魔力・技・速さ・幸運・守備・魔防の 7 つは、同じ式（StatBarLen）で値に比例した棒にして
 	// 1 列に並べる（DES-UI-06。開発者の確認（2026-11-01）で、魔力・幸運・魔防にも棒を付けた）。移動は数字だけ。
 	s := u.Stats
+	s.Str += u.PowerTonic
+	s.Mag += u.PowerTonic
+	if u.Snared {
+		s.Mov = 0
+	}
 	v.text(x, y, fmt.Sprintf("HP %d/%d", u.HP, s.HP), StylePlain)
 	v.Bars = append(v.Bars, InfoBar{X: x + barX, Y: y + (lineHeight-barHeight)/2, Fill: HPBarLen(u.HP, s.HP), Frame: BarMax})
 	y += lineHeight
@@ -438,7 +443,16 @@ func (v *InfoView) addStats(u tactics.Unit, x, y int) int {
 		y += lineHeight
 	}
 	v.text(x, y, fmt.Sprintf("移動 %d", s.Mov), StylePlain)
-	return y + lineHeight
+	y += lineHeight
+	if u.PowerTonic > 0 {
+		v.text(x, y, "剛力薬：次の自軍開始まで", StyleGood)
+		y += lineHeight
+	}
+	if u.Snared {
+		v.text(x, y, "粘着：次の自軍開始まで", StyleBad)
+		y += lineHeight
+	}
+	return y
 }
 
 // levelText は「能力」のページの名前・クラスの下に出すレベルの行を返す（FR-UNT-09、DES-IT06 7.3・12.2 節）。
