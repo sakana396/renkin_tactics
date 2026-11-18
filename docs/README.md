@@ -26,12 +26,12 @@
 | 試験 | テスト仕様書（反復 5） | [04_test/test-spec-it05.md](04_test/test-spec-it05.md) | v0.2。自動は実装済み。#98・#105 の手動結果と持ち越しは 3.10 節（E-60〜E-72） |
 | 試験 | テスト仕様書（反復 6） | [04_test/test-spec-it06.md](04_test/test-spec-it06.md) | v2.13（#120・#123・#124・#126・#127・#130・#149・#131・#132・#133・#154・#158）。能力・計算・予測・セーブ、回復と敵のレベル、出来事、再移動、一団の敵の思考の自動ケースを順次実装。旧自動試遊の一部は IT06 で一時停止（#130〜#133 で置き換え）。#154 で初期突撃・待つ守りの一団・一団の近さ・連続増援と 3 種の名簿の 20 seed の自動試遊を足した。#172・#173 の固定 seed を反映。後続の自動ケース・手動・基準の PC での測定は未実施 |
 | 試験 | テスト仕様書（反復 7） | [04_test/test-spec-it07.md](04_test/test-spec-it07.md) | v1.4（#175。人の試遊は行わずに締めた、E-128）。v1.3（#188）。ZOCの経路計測と増援の最終経路・全試行の区別を追加し、新版920試遊を測り直し。v1.2（#189）は射程とフレーム内範囲共有の回帰を追加し、同じ基準PCの合成条件で最低79.808fps |
-| 設計 | 設計書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.3 承認（E-143、#203）。DES-NG-01〜06。爆弾の経験は案 A で決定（E-142）。5 章に改める既存の ID（DES-MAP-04・DES-CMP-06・DES-GRW-01） |
+| 設計 | 設計書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.5 承認待ち（#208、REV-119 F-03）。v0.4 承認（E-145）。DES-NG-01〜06。爆弾の経験は案 A で決定（E-142）。5 章に改める既存の ID（DES-MAP-04・DES-CMP-06・DES-GRW-01） |
 | 設計 | 設計書（新作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.4 承認（E-143、#203）。DES-NG-07・08 |
 | 設計 | 設計書（新作 NG03: 音） | [03_design/design-ng03-audio.md](03_design/design-ng03-audio.md) | v0.3 承認（E-143、#203）。DES-NG-09。ミュートのキーは N（E-142） |
 | 設計 | 設計書（新作 NG04: 高解像度の表示） | [03_design/design-ng04-display.md](03_design/design-ng04-display.md) | v0.4 承認（E-143、#203）。DES-NG-10。D-12 は持ち越し（E-142） |
 | 設計 | 設計書（新作 NG05: 準備画面の作り直し） | [03_design/design-ng05-prepare.md](03_design/design-ng05-prepare.md) | v0.5 承認（E-143、#203）。DES-NG05（準備画面）。モック [03_design/mock/prepare-ng05.png](03_design/mock/prepare-ng05.png) |
-| 試験 | テスト仕様書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.3 承認（E-143、#203）。TC-DES-NG-01〜06。自動は未取り込み（#204 で取り込む）、爆弾の経験は未実装 |
+| 試験 | テスト仕様書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.6（#208、REV-119 対応）。TC-DES-NG-01〜06 は実装済み |
 | 試験 | テスト仕様書（新作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.5（#205）。自動は実装済み（高解像度の配置は #206）、実画面の確認は管理役の撮影で実施（人の目では #214） |
 | 試験 | テスト仕様書（新作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.4（#205）。自動は実装済み、耳での確認は手動・未実施 |
 | 試験 | テスト仕様書（新作 NG04: 高解像度の表示） | [04_test/test-spec-ng04.md](04_test/test-spec-ng04.md) | v0.4 承認（E-143、#203）。自動は未取り込み（#206 で取り込む） |
@@ -75,6 +75,9 @@
 | 制作 | ch07 の制作記録（反復 6） | [iterations/it06/map-ch07.md](iterations/it06/map-ch07.md) | v0.2（#132。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
 | 制作 | ch08 の制作記録（反復 6） | [iterations/it06/map-ch08.md](iterations/it06/map-ch08.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
 | 制作 | ch09 の制作記録（反復 6） | [iterations/it06/map-ch09.md](iterations/it06/map-ch09.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | 新作 ch01 の制作記録（反復 8） | [iterations/it08/map-ng-ch01.md](iterations/it08/map-ng-ch01.md) | #208。自動試遊と撮影を記録、開発者の試遊待ち |
+| 制作 | 新作 ch02 の制作記録（反復 8） | [iterations/it08/map-ng-ch02.md](iterations/it08/map-ng-ch02.md) | #208。自動試遊と撮影を記録、開発者の試遊待ち |
+| 制作 | 新作 ch03 の制作記録（反復 8） | [iterations/it08/map-ng-ch03.md](iterations/it08/map-ng-ch03.md) | #208。自動試遊と撮影を記録、開発者の試遊待ち |
 | 制作 | ch01 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch01.md](iterations/it07/map-ch01.md) | v0.2（#172。小隊長の配置・敵の数・自動の試し遊びの旧新と #173 の ZOC 後の測定。開発者の試遊は未実施） |
 | 制作 | ch02 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch02.md](iterations/it07/map-ch02.md) | v0.2（#172。小隊長の配置・敵の数・自動の試し遊びの旧新と #173 の ZOC 後の測定。開発者の試遊は未実施） |
 | 制作 | ch03 の小隊長の制作記録（反復 7） | [iterations/it07/map-ch03.md](iterations/it07/map-ch03.md) | v0.2（#172。小隊長の配置・敵の数・自動の試し遊びの旧新と #173 の ZOC 後の測定。開発者の試遊は未実施） |

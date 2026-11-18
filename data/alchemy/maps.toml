@@ -272,7 +272,7 @@ unit = "east_watch_4"
 effect = "charge_group"
 group = "east_watch"
 
-# 3 ターン目の始めに、南西の隅（出撃の枠の後ろ）から 2 体が来る。後ろの列を守る前衛を残すかを問う
+# 3 ターン目の始めに、南西の隅（出撃の枠の後ろ）から 3 体が来る。後ろの列を守る前衛を残すかを問う
 [[maps.reinforcements]]
 turn = 3
 class = "bandit"
@@ -304,7 +304,7 @@ ai = "charge"
 x = 1
 y = 15
 
-# 内門の手前（中の街区の北の 2 行）に入ると、元栓の間の両隅から 2 体が来る
+# 内門の手前（中の街区の北の 2 行）に入ると、元栓の間から 3 体が来る
 [[maps.events]]
 id = "inner_gate_alarm"
 trigger = "player_entered"
@@ -367,6 +367,7 @@ rows = [
 slots = [{ x = 8, y = 16 }, { x = 7, y = 15 }, { x = 9, y = 15 }, { x = 8, y = 14 }, { x = 7, y = 16 }, { x = 9, y = 16 }]
 
 [[maps.enemies]]
+name = "公国の兵"
 class = "bandit"
 weapon = "iron_sword"
 level = 2
@@ -403,6 +404,7 @@ x = 13
 y = 6
 
 [[maps.enemies]]
+name = "公国の兵"
 class = "bandit"
 weapon = "iron_sword"
 level = 2
@@ -421,6 +423,7 @@ x = 14
 y = 5
 
 [[maps.enemies]]
+name = "公国の兵"
 class = "bandit"
 weapon = "iron_sword"
 level = 2
@@ -469,6 +472,7 @@ name = "公国の隊長"
 
 [[maps.reinforcements]]
 turn = 4
+name = "公国の兵"
 class = "bandit"
 weapon = "iron_sword"
 level = 2
@@ -524,6 +528,7 @@ rows = [
 slots = [{ x = 8, y = 16 }, { x = 7, y = 15 }, { x = 9, y = 15 }, { x = 8, y = 14 }, { x = 7, y = 16 }, { x = 9, y = 16 }]
 
 [[maps.enemies]]
+name = "公国の兵"
 class = "bandit"
 weapon = "iron_sword"
 level = 3
@@ -551,6 +556,7 @@ x = 6
 y = 9
 
 [[maps.enemies]]
+name = "公国の兵"
 class = "bandit"
 weapon = "iron_sword"
 level = 3
@@ -617,6 +623,7 @@ boss = true
 
 [[maps.reinforcements]]
 turn = 4
+name = "公国の兵"
 class = "bandit"
 weapon = "iron_sword"
 level = 3

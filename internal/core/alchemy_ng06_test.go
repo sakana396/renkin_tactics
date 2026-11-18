@@ -30,7 +30,7 @@ func alchemyCatalog(t *testing.T) *defs.Catalog {
 func TestAlchemyData(t *testing.T) {
 	cat := alchemyCatalog(t)
 
-	t.Run("TC-DES-NG-06-01 完結したデータ一式として読め、1 章・主人公 1 人・ハルの定義が決まりどおり", func(t *testing.T) {
+	t.Run("TC-DES-NG-06-01 完結したデータ一式として読め、1〜3 章・主人公 1 人・ハルの定義が決まりどおり", func(t *testing.T) {
 		var ids []string
 		for _, ch := range cat.Chapters() {
 			ids = append(ids, ch.ID)
@@ -101,7 +101,7 @@ func TestAlchemyData(t *testing.T) {
 				reward[ch.ID][ic.Item] = ic.Count
 			}
 		}
-		// 設計メモ 6.3 節の表: 1 章 回復薬 2・小さな爆弾 3・投げ火 1。
+		// 設計書 6.3 節の表: 各章 回復薬 2・小さな爆弾 3・投げ火 1。
 		wantReward := map[string]map[string]int{
 			"ch01": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
 			"ch02": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
@@ -217,7 +217,7 @@ func TestAlchemyData(t *testing.T) {
 		}
 	})
 
-	t.Run("TC-DES-NG-06-04 1 章に前後の物語があり、性別を示す語と既存作品の用語がなく、1 章の後で仲間が話さない", func(t *testing.T) {
+	t.Run("TC-DES-NG-06-04 各章に前後の物語があり、性別を示す語と既存作品の用語がなく、例外の場面以外で仲間が話さない", func(t *testing.T) {
 		for _, ch := range cat.Chapters() {
 			for _, id := range []string{ch.Before, ch.After} {
 				s, ok := cat.Story(id)
@@ -243,13 +243,20 @@ func TestAlchemyData(t *testing.T) {
 				}
 			}
 		}
-		// 戦死しうる仲間（主人公のほか）は、1 章の前のほかでは話さず動かない（DES-STY-01）。1 章の後には名前を出さない。
-		after, _ := cat.Story("ch01_after")
-		for _, p := range after.Paragraphs {
-			for _, id := range []string{"dain", "tori", "nemu", "haru"} {
-				c, _ := cat.Character(id)
-				if strings.Contains(p, c.Name) {
-					t.Errorf("1 章の後に %s が出ます: %s", c.Name, p)
+		// 戦死しうる仲間は導入と加入の場面以外で登場しない（DES-STY-01）。
+		for _, ch := range cat.Chapters() {
+			for _, storyID := range []string{ch.Before, ch.After} {
+				if storyID == "ch01_before" || storyID == "ch02_before" {
+					continue
+				}
+				story, _ := cat.Story(storyID)
+				for _, p := range story.Paragraphs {
+					for _, id := range []string{"dain", "tori", "nemu", "haru"} {
+						c, _ := cat.Character(id)
+						if strings.Contains(p, c.Name) {
+							t.Errorf("%s に %s が出ます: %s", storyID, c.Name, p)
+						}
+					}
 				}
 			}
 		}
@@ -296,12 +303,12 @@ func TestAlchemyAutoplay(t *testing.T) {
 		if all {
 			cleared++
 			if c.Cleared {
-				t.Fatal("1 章の後にまだ 2 章がある")
+				t.Fatal("1 章で完結している")
 			}
 		}
 	}
 	t.Logf("1 章の勝利: %d/%d", wins["ch01"], reached["ch01"])
-	// 基準は 20 seed で 8 以上（#208 の実測 10 / 20）。仮の 1 章の基準 15 から下げた理由は制作記録 5 章。
+	// 基準は 20 seed で 8 以上（#208 の実測 10 / 20）。仮の 1 章の基準 15 から下げた理由は制作記録 6.2 節。
 	t.Run("TC-DES-NG-06-05 1 章が、爆弾を使わない自動の試遊で勝てる（20 seed で 8 以上）", func(t *testing.T) {
 		if cleared < 8 {
 			t.Fatalf("1 章に勝った seed は %d / %d", cleared, seeds)

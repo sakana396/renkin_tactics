@@ -30,7 +30,7 @@ func main() {
 	scene := flag.String("scene", "title", "場面: title, rule, story, prepare, deploy, battle")
 	steps := flag.String("steps", "", "操作列。カンマで区切る。詳しくは README.md")
 	out := flag.String("out", "", "PNG の出力先")
-	game := flag.String("game", "alchemy", "遊ぶ作品: base または alchemy（DES-NG01 6.2 節）")
+	game := flag.String("game", "base", "遊ぶ作品: base または alchemy（DES-NG01 6.2 節）")
 	logdir := flag.String("logdir", "", "行動の記録を書くディレクトリ（その下の logs に作る。指定しなければ記録しない）")
 	flag.Parse()
 	if *out == "" {

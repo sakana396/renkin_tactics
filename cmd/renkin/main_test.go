@@ -81,7 +81,7 @@ func TestRun(t *testing.T) {
 		var stderr bytes.Buffer
 		var cfg ui.Config
 		dir := t.TempDir()
-		code := run([]string{"-seed", "7", "-savedir", dir}, &stderr, data.Base(), fixedNow, func(c ui.Config) error { cfg = c; return nil })
+		code := run([]string{"-game", "base", "-seed", "7", "-savedir", dir}, &stderr, data.Base(), fixedNow, func(c ui.Config) error { cfg = c; return nil })
 		if code != 0 || cfg.Catalog == nil || cfg.Store == nil || cfg.NextSeed == nil || cfg.StartChapter != "" || stderr.Len() != 0 {
 			t.Fatal(code, stderr.String())
 		}
@@ -111,7 +111,7 @@ func TestRun(t *testing.T) {
 		if s.Scene() != ui.Title {
 			t.Fatal(s.Scene())
 		}
-		code = run([]string{"-savedir", dir}, &stderr, data.Base(), fixedNow, func(ui.Config) error { return errors.New("窓を開けない") })
+		code = run([]string{"-game", "base", "-savedir", dir}, &stderr, data.Base(), fixedNow, func(ui.Config) error { return errors.New("窓を開けない") })
 		if code != 1 || !strings.Contains(stderr.String(), "窓を開けない") {
 			t.Fatal(code, stderr.String())
 		}
