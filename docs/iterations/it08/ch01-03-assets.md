@@ -34,3 +34,12 @@ CON-DRAFT-NG02・NG03 の共通方針: 手描き風2Dアニメ、細〜中の輪
 この環境では `tools/shot/shot.sh -game alchemy -hires -chapter ch01 -scene title -out /tmp/209-title.png` が Windows 起動時 `UtilBindVsockAnyPort: socket failed 1` で失敗。画像は得られておらず、目視確認は未実施。
 
 Windows 相互運用が動く WSL で、各章 `ch01`〜`ch03` に対して `tools/shot/shot.sh -game alchemy -hires -chapter ch01 -scene battle -out /tmp/209/ch01-battle.png` の章と場面を変え、`title`・`story`・`prepare`・`deploy`・`battle` を撮る。物語は `-steps 'advance'` の回数を変えて冒頭・中間・末尾の代表3段落を撮る（段落数が3未満の章は全段落）。準備では `-steps 'clickpx:770:790'` で調合窓も撮る。画像ごとに重なり、はみ出し、文字の切れ、絵の抜けを目視し、操作が通ったことも確認する。後の物語は通常の試遊でも確認する。手順の詳細は `tools/shot/README.md`。
+
+## 管理役の撮影の結果（2026-11-19）
+
+`tools/shot/shot.sh -game alchemy -hires` で、2・3 章の story（1 段落目）・battle・prepare と 3 章の全体図を撮った（1 章は #204〜#207 のレビューで撮影済み）。
+
+- 重なり・はみ出し・文字の切れはない。48 px の盤面と準備の画面（カード型、調合のボタン、在庫の粘着瓶の紫の丸）は崩れていない
+- 物語の背景はない（ch01_before 以外は絵がない。#210 のあとに作る）。本文は左から出る
+- 2・3 章の公国の兵は、盤面の名前は「公国の兵」だが、絵と準備の画面の敵の集計は兵種の「野盗」のまま（Codex の報告の「陣営に応じた絵の選択」と同じ件。#214 の試遊で違和感を聞き、直すかを決める）
+- 仮の音は、開発者が #214 で聞く（E-145）
