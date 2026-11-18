@@ -13,8 +13,8 @@
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
 | 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
 | 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
-| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.10 承認（2026-11-18、#211。剛力薬・粘着瓶 FR-ITM-08〜11、E-149・E-150）。v0.9 承認（E-141、#202）。爆弾 FR-ITM-04〜07、FR-SYS-05〜09、FR-MAP-07、FR-CMP-12、FR-CMP-06・09 の主人公の例外（E-139・E-140）。v0.8 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。ZOC・小隊長・画面の操作を追記 |
-| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.15 承認（2026-11-18、#211。UC-02 の 5j〜5n、UC-04・06）。v0.14 承認（E-141、#202）。UC-02 の爆弾、UC-11 の新作の準備の画面、UC-07・12 の同時に倒れたときと主人公、UC-08・09 の作品の選択とセーブ。v0.13（UC-02 の直接クリックの取消し、E-124）。v0.12 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。予測中の武器・予測窓・詳細画面・範囲・持ち物・ZOC・小隊長を追記 |
+| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.11 案（開発者の承認待ち、#212）。v0.10 承認（2026-11-18、#211。剛力薬・粘着瓶 FR-ITM-08〜11、E-149・E-150）。v0.9 承認（E-141、#202）。爆弾 FR-ITM-04〜07、FR-SYS-05〜09、FR-MAP-07、FR-CMP-12、FR-CMP-06・09 の主人公の例外（E-139・E-140）。v0.8 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。ZOC・小隊長・画面の操作を追記 |
+| 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.16 案（開発者の承認待ち、#212）。v0.15 承認（2026-11-18、#211。UC-02 の 5j〜5n、UC-04・06）。v0.14 承認（E-141、#202）。UC-02 の爆弾、UC-11 の新作の準備の画面、UC-07・12 の同時に倒れたときと主人公、UC-08・09 の作品の選択とセーブ。v0.13（UC-02 の直接クリックの取消し、E-124）。v0.12 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。予測中の武器・予測窓・詳細画面・範囲・持ち物・ZOC・小隊長を追記 |
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.2 承認済み |
 | 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.6 承認（E-143、#203）。1.1 節に `internal/ui/audio`、3.10 節に爆弾のボス優先の勝ちを追記。v0.5 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。DES-BTL-03・AI-01・UI-07・08 の追記。v0.4 承認済み（E-40） |
 | 計画 | 反復 2 計画書 | [iterations/it02/plan.md](iterations/it02/plan.md) | v0.3 承認済み（E-32、E-33） |
@@ -32,6 +32,8 @@
 | 設計 | 設計書（新作 NG04: 高解像度の表示） | [03_design/design-ng04-display.md](03_design/design-ng04-display.md) | v0.4 承認（E-143、#203）。DES-NG-10。D-12 は持ち越し（E-142） |
 | 設計 | 設計書（新作 NG05: 準備画面の作り直し） | [03_design/design-ng05-prepare.md](03_design/design-ng05-prepare.md) | v0.5 承認（E-143、#203）。DES-NG05（準備画面）。モック [03_design/mock/prepare-ng05.png](03_design/mock/prepare-ng05.png) |
 | 設計 | 新作 NG06 錬金アイテムの種類 | [03_design/design-ng06-items.md](03_design/design-ng06-items.md) | v0.1 承認（2026-11-18、E-149・E-150、#211） |
+| 設計 | 新作 NG07 章の間の調合 | [03_design/design-ng07-crafting.md](03_design/design-ng07-crafting.md) | v0.1 案（開発者の承認待ち） |
+| 試験 | 新作 NG07 試験仕様 | [04_test/test-spec-ng07.md](04_test/test-spec-ng07.md) | v0.1 案（開発者の承認待ち）。全ケース未実装・未実施 |
 | 試験 | テスト仕様書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.8（#208、REV-119 対応）。TC-DES-NG-01〜06 は実装済み |
 | 試験 | テスト仕様書（新作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.6（#207）。自動は実装済み（高解像度の配置は #206）、実画面の確認は管理役の撮影で実施（人の目では #214） |
 | 試験 | テスト仕様書（新作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.4（#205）。自動は実装済み、耳での確認は手動・未実施 |
@@ -123,3 +125,4 @@ UML は [Mermaid](https://mermaid.js.org/) で Markdown に直接書く（GitHub
 
 | 工程 | 成果物 | 置き場所 | 状態 |
 |---|---|---|---|
+
