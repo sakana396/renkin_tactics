@@ -9,7 +9,7 @@ goal = "野盗の頭目を倒す"
 map = "ch01"
 before = "ch01_before"
 after = "ch01_after"
-reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }, { item = "bomb_far", count = 1 }]
+reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }, { item = "bomb_far", count = 1 }, { item = "tonic_power", count = 1 }, { item = "snare_bottle", count = 1 }]
 
 [[chapters]]
 id = "ch02"
@@ -19,7 +19,7 @@ map = "ch02"
 before = "ch02_before"
 after = "ch02_after"
 joins = ["haru"]
-reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }, { item = "bomb_far", count = 1 }]
+reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }, { item = "bomb_far", count = 1 }, { item = "tonic_power", count = 1 }, { item = "snare_bottle", count = 1 }]
 
 [[chapters]]
 id = "ch03"

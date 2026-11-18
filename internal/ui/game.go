@@ -361,6 +361,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			g.drawZOC(board, g.ctrl.battle.BoardView())
 		case layerEquipMarks:
 			g.drawEquipMarks(board, g.ctrl.Units())
+			g.drawItemEffectMarks(board, g.ctrl.Units())
 		case layerWatchedPins:
 			g.drawWatchedPins(board, g.ctrl.WatchedPins(), g.ctrl.Units())
 		}
@@ -629,6 +630,11 @@ func (g *Game) drawSelection(dst *ebiten.Image) {
 		g.strokeCell(dst, units[unit].Pos, cursorColor)
 	case Moved, ItemMenu, Canto, WeaponMenu, StaffMenu:
 		g.strokeCell(dst, dest, cursorColor)
+	case ItemTargeting:
+		g.strokeCell(dst, dest, cursorColor)
+		for _, i := range c.itemCandidates {
+			g.strokeCell(dst, units[i].Pos, c.targetFrameColor(i))
+		}
 	case BombTargeting:
 		g.strokeCell(dst, dest, cursorColor)
 		if f, ok := c.BombForecast(); ok {
@@ -1210,4 +1216,20 @@ func cameraKeys() (dx, dy int) {
 		dy++
 	}
 	return
+}
+
+// drawItemEffectMarks は効果中のユニットの印を描く（DES-NG-16）。
+func (g *Game) drawItemEffectMarks(dst *ebiten.Image, units []tactics.Unit) {
+	for _, u := range units {
+		if (!u.Snared && u.PowerTonic == 0) || !g.drawCamera.Visible(u.Pos) {
+			continue
+		}
+		p := g.drawCamera.Screen(u.Pos)
+		clr := gold
+		if u.Snared {
+			clr = badColor
+		}
+		vector.DrawFilledRect(dst, float32(p.X+2), float32(p.Y+2), 8, 8, clr, false)
+		g.scaledLabel(dst, "次自軍まで", p.X+2, p.Y+10, 0.5, clr)
+	}
 }

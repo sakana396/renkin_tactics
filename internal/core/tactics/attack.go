@@ -71,9 +71,9 @@ func (b *Battle) strikeValues(s, r int, still bool) (damage, rate int) {
 	if effective(su.weapon(), ru.Tags) {
 		might *= 3
 	}
-	power, defense := su.Stats.Str, ru.Stats.Def
+	power, defense := su.Stats.Str+su.PowerTonic, ru.Stats.Def
 	if su.weapon().DamageType == Magical {
-		power, defense = su.Stats.Mag, ru.Stats.Res
+		power, defense = su.Stats.Mag+su.PowerTonic, ru.Stats.Res
 	}
 	damage = max(0, power+might+t-defense-tr.Def)
 
@@ -188,6 +188,8 @@ func (b *Battle) fall(events []Event, i int) []Event {
 	}
 	b.units[i].HP = 0
 	b.units[i].Alive = false
+	b.units[i].PowerTonic = 0
+	b.units[i].Snared = false
 	return b.emit(events, Event{Kind: EventFall, Unit: i})
 }
 
@@ -201,12 +203,14 @@ func (b *Battle) judge(events []Event) []Event {
 	}
 	for _, u := range b.units {
 		if u.Boss && !u.Alive {
+			b.clearEffects()
 			b.Result = Won
 			return b.emit(events, Event{Kind: EventWon})
 		}
 	}
 	for _, u := range b.units {
 		if u.Lord && !u.Alive {
+			b.clearEffects()
 			b.Result = Lost
 			return b.emit(events, Event{Kind: EventLost})
 		}
@@ -368,7 +372,9 @@ func (b *Battle) forecastSide(i, o int, still bool, count, oppCount int) Forecas
 }
 
 // attackSpeed は武器の重さを力で支えた攻撃の速さ（DES-BTL-09）。
-func attackSpeed(u Unit) int { return max(0, u.Stats.Spd-max(0, u.weapon().Weight-u.Stats.Str)) }
+func attackSpeed(u Unit) int {
+	return max(0, u.Stats.Spd-max(0, u.weapon().Weight-u.Stats.Str-u.PowerTonic))
+}
 
 // effective は一致する分類が複数あっても 1 回だけ特効を適用する（DES-BTL-09）。
 func effective(w Weapon, tags []string) bool {

@@ -21,6 +21,9 @@ func (b *Battle) CellsWithin(center Pos, radius int) []Pos {
 // 爆心がある（ErrNoBlastCenter）、マップの中（ErrBlastOutOfMap）、移動後の位置 To から ThrowRange 以内（ErrOutOfThrowRange）。
 // 爆心の地形は問わない（通れないマスでもよい）。
 func (b *Battle) validateBomb(cmd Command, it Item) error {
+	if cmd.ItemTarget != nil {
+		return ErrInvalidAction
+	}
 	if cmd.Blast == nil {
 		return ErrNoBlastCenter
 	}

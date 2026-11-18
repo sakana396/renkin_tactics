@@ -19,7 +19,7 @@ func (b BoardView) Reachable(unit int) map[Pos]int {
 	if !b.validUnit(unit) || !b.units[unit].Alive {
 		return nil
 	}
-	return b.reachableWithin(unit, b.units[unit].Stats.Mov)
+	return b.reachableWithin(unit, b.units[unit].moveBudget())
 }
 
 // reachableWithin は、移動力の代わりに mov までの費用で行けるマスを返す（DES-BTL-03、DES-BTL-10、DES-BTL-11）。

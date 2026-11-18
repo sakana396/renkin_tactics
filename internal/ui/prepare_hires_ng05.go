@@ -618,9 +618,16 @@ func (s *SceneController) hrItemName(it prepareItem) string {
 // hrItemDot は道具の絵の代わりの丸（DES-NG05 Q-P4: 素材は作らない）。r は丸の最大の半径。
 // 回復薬は赤。爆弾は定義の爆発の範囲（BlastRadius）で、色と大きさを変える: 範囲 0（1 マス）は橙で小さく、
 // 範囲 1 は灰、範囲 2 以上は暗い赤褐色で大きい。爆弾の ID は使わず、定義の値だけから決める。
+// 効果の道具（DES-NG-13）は回復薬と見分けるため、剛力薬（power_tonic）は金、粘着瓶（snare）は紫にする（DES-NG-16、REV-121 F-10）。
 func (s *SceneController) hrItemDot(id string, x, y, r int) hrDot {
 	d, _ := s.cfg.Catalog.Item(id)
 	c := color.NRGBA{200, 70, 60, 255}
+	switch d.Effect {
+	case "power_tonic":
+		c = color.NRGBA{220, 180, 60, 255}
+	case "snare":
+		c = color.NRGBA{150, 90, 180, 255}
+	}
 	if d.Bomb {
 		radius := min(max(d.BlastRadius, 0), 2)
 		c = [...]color.NRGBA{{230, 140, 50, 255}, {150, 150, 160, 255}, {140, 64, 40, 255}}[radius]

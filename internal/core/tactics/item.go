@@ -23,8 +23,13 @@ func (b *Battle) validateUseItem(cmd Command) error {
 	if cmd.Item < 0 || cmd.Item >= len(u.Items) {
 		return ErrNoItem
 	}
-	if it := u.Items[cmd.Item].Item; it.Bomb {
+	if it := u.Items[cmd.Item].Item; it.Effect != "" {
+		return b.validateEffectItem(cmd, it)
+	} else if it.Bomb {
 		return b.validateBomb(cmd, it)
+	}
+	if cmd.ItemTarget != nil {
+		return ErrInvalidAction
 	}
 	if cmd.Blast != nil {
 		return ErrNotBomb

@@ -148,6 +148,17 @@ func DetailView(u tactics.Unit, section DetailSection) InfoView {
 	head(detailLeftX, 40, "能力", SectionStats)
 	v.Icons = append(v.Icons, InfoIcon{X: detailLeftX + 160, Y: 60, Size: PortraitSize, Tile: unitTile(u), Art: artKeyOf(u)})
 	s := u.Stats
+	s.Str += u.PowerTonic
+	s.Mag += u.PowerTonic
+	if u.Snared {
+		s.Mov = 0
+	}
+	if u.PowerTonic > 0 {
+		v.text(detailLeftX+160, 150, "剛力薬：次の自軍開始まで", StyleGood)
+	}
+	if u.Snared {
+		v.text(detailLeftX+160, 150, "粘着：次の自軍開始まで", StyleBad)
+	}
 	y := 60
 	for _, row := range [][2]string{
 		{"HP", fmt.Sprintf("%d/%d", u.HP, s.HP)}, {"力", fmt.Sprint(s.Str)}, {"魔力", fmt.Sprint(s.Mag)},

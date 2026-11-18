@@ -72,3 +72,12 @@
 | FR-SYS-09 | #203、#205 | DES-NG-07、DES-NG-09（DES-NG03） | TC-DES-NG-09-01〜16、TC-DES-NG-09-18〜25、TC-DES-NG-09-26（手動）、TC-DES-NG-09-27〜28 | `internal/ui/audio`、`internal/ui`（`sound_ng03.go`）、`tools/synth`、`data/alchemy/media/audio` | 実装済み（#205）。TC-DES-NG-09-26 は手動（状態は TST-NG03、D-13。E-135） |
 | FR-MAP-07 | #203、#206 | DES-NG-10（DES-NG04）、DES-NG-06（DES-NG01 6.7 節。32 px の地形の描き分け） | TC-DES-NG-10-01〜34、TC-DES-NG-06-11〜12 | `internal/ui`（`layout.go`、`terrain_art.go`、`terrain_store.go` ほか）、`cmd/renkin`、`tools/shot` | 実装済み（#206。TC-DES-NG-06-11〜12 は #204） |
 | FR-CMP-12 | #203、#207 | DES-NG-11（DES-NG05） | TC-DES-NG-11-01〜25 | `internal/ui`（`prepare_hires_ng05.go` ほか）、`internal/defs`・`internal/defload`（`goal`）、`internal/core/tactics`（`WeaponBeats`） | 実装済み（#207） |
+
+### #211 の追加要求（E-149・E-150、2026-11-18 承認）
+
+| 要求 | Issue | 設計 | テストケース | 実装 | 状態 |
+|---|---|---|---|---|---|
+| FR-ITM-08 | #211 | DES-NG-13 | TC-DES-NG-13-01〜03 | `internal/defs`、`internal/defload`、`internal/core`、`data/alchemy` | 実装済み |
+| FR-ITM-09 | #211 | DES-NG-14、DES-NG-17 | TC-DES-NG-14-01〜07、TC-DES-NG-17-01〜03 | `internal/core/tactics`、`internal/core`、`data/alchemy` | 実装済み（TC-DES-NG-17-03 は手動・未実施） |
+| FR-ITM-10 | #211 | DES-NG-15 | TC-DES-NG-15-01〜03 | `internal/core/tactics`、`internal/core` | 実装済み |
+| FR-ITM-11 | #211 | DES-NG-16 | TC-DES-NG-16-01〜02 | `internal/ui`、`internal/core/tactics` | 自動・実装済み（Windows で実行） |
