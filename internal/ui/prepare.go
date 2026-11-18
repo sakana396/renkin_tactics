@@ -512,11 +512,7 @@ func (s *SceneController) prepareDetail() []SceneText {
 	if !it.weapon {
 		d, _ := s.cfg.Catalog.Item(it.id)
 		add("選んだ品: "+d.Name, StyleTitle)
-		if d.Bomb {
-			add("道具　"+itemEffect(core.ItemOf(d)), StylePlain)
-		} else {
-			add(fmt.Sprintf("道具　HP を %d 回復", d.Heal), StylePlain)
-		}
+		add("道具　"+itemEffect(core.ItemOf(d)), StylePlain)
 	} else {
 		w := s.prepareWeapon(it.id)
 		add("選んだ品: "+w.Name, StyleTitle)
