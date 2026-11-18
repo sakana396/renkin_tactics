@@ -390,3 +390,6 @@ func critRate(a, d Unit) int {
 	}
 	return min(100, max(0, a.Stats.Skl/2+a.weapon().Crit+bonus-d.Stats.Lck))
 }
+
+// WeaponBeats は武器の相性を返す（DES-BTL-05、DES-NG-11）。
+func WeaponBeats(a, b WeaponType) bool { return triangle(a, b) == 1 }
