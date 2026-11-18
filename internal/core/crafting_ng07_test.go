@@ -38,6 +38,13 @@ func TestCraftingNG07(t *testing.T) {
 		}
 		return 0
 	}
+	t.Run("TC-DES-NG-19-02 材料名と不足数", func(t *testing.T) {
+		c := newCampaign()
+		c.Materials = map[string]int{"ore": 1, "catalyst": 0}
+		if err := c.Craft(recipe("bomb_small")); err == nil || err.Error() != "触媒が 1 足りません" {
+			t.Fatal(err)
+		}
+	})
 	t.Run("TC-DES-NG-19-01 基準維持の調合", func(t *testing.T) {
 		c := newCampaign()
 		c.Materials = map[string]int{"ore": 5, "catalyst": 4}
@@ -156,7 +163,7 @@ func TestCraftingNG07(t *testing.T) {
 	})
 	t.Run("報酬の上限超過は状態を変えない", func(t *testing.T) {
 		c := newCampaign()
-		c.Materials = map[string]int{"ore": math.MaxInt}
+		c.Materials = map[string]int{"ore": 2, "catalyst": math.MaxInt}
 		sortie, _, err := c.StartBattle([]int{0}, 1)
 		if err != nil {
 			t.Fatal(err)

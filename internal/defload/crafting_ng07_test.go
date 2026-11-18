@@ -39,6 +39,14 @@ func TestCraftingDefinitionsNG07(t *testing.T) {
 			t.Fatal(c.Materials(), c.Recipes())
 		}
 	})
+	t.Run("TC-DES-NG-18-02 初期在庫に材料", func(t *testing.T) {
+		m := baseFS(t)
+		appendTo("game.toml", `stock = [{ material = "ore", count = 1 }]`)(t, m)
+		_, err := defload.Load(m)
+		if err == nil || !strings.Contains(err.Error(), "材料は章の報酬にだけ書けます") {
+			t.Fatal(err)
+		}
+	})
 	const material = "[[materials]]\nid='ore'\nname='鉱粉'\n"
 	const recipe = "[[recipes]]\nid='r'\nname='レシピ'\nitem='potion'\ncount=1\ningredients=[{material='ore',count=1}]\n"
 	for _, tc := range []struct{ name, mats, recipes, reward, location string }{
@@ -48,6 +56,7 @@ func TestCraftingDefinitionsNG07(t *testing.T) {
 		{"レシピの空 ID", material, strings.Replace(recipe, "id='r'", "id=''", 1), "", "recipes[0].id"},
 		{"レシピの重複", material, recipe + recipe, "", "recipes[1].id"},
 		{"レシピの空名", material, strings.Replace(recipe, "name='レシピ'", "name=''", 1), "", "recipes[0].name"},
+		{"武器の出力", material, strings.Replace(recipe, "item='potion'", "item='iron_sword'", 1), "", "recipes[0].item"},
 		{"未知の出力", material, strings.Replace(recipe, "item='potion'", "item='unknown'", 1), "", "recipes[0].item"},
 		{"生成数", material, strings.Replace(recipe, "count=1\ningredients", "count=2\ningredients", 1), "", "recipes[0].count"},
 		{"材料なし", material, strings.Replace(recipe, "ingredients=[{material='ore',count=1}]", "ingredients=[]", 1), "", "recipes[0].ingredients"},

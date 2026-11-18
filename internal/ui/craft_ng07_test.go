@@ -48,6 +48,14 @@ func TestCraftWindowNG07(t *testing.T) {
 		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.campaign.Materials = map[string]int{"ore": 10, "catalyst": 10}
+		stock := s.prepareHiResView().Stock
+		if len(stock) == 0 {
+			t.Fatal("在庫がない")
+		}
+		s.clickPrepareHiRes(stock[0].Rect.Min.X+1, stock[0].Rect.Min.Y+1)
+		if !s.prepareItem.ok {
+			t.Fatal("在庫を選べない")
+		}
 		b := s.prepareHiResView().Craft
 		s.clickPrepareHiRes(b.Rect.Min.X+1, b.Rect.Min.Y+1)
 		w := s.craftWindow()
@@ -171,6 +179,54 @@ func TestCraftLongMaterialsNG07(t *testing.T) {
 			if !seen[line.text] {
 				t.Fatal("送りで表示できない", line)
 			}
+		}
+	})
+}
+
+func TestCraftSceneInputNG07(t *testing.T) {
+	t.Run("TC-DES-NG-20-02 キー入力", func(t *testing.T) {
+		useTestMetrics(t, HiResCellSize)
+		s := ng05Scenes(t, "ch01", true)
+		s.campaign.Materials = map[string]int{"ore": 10, "catalyst": 10}
+		g := &Game{scenes: s}
+		b := s.prepareHiResView().Craft
+		g.sceneInput(sceneKeys{Left: true}, b.Rect.Min.X+1, b.Rect.Min.Y+1)
+		page := s.infoPage
+		g.sceneInput(sceneKeys{Tab: true}, 0, 0)
+		if s.infoPage != page {
+			t.Fatal("Tab が背後に伝播")
+		}
+		g.sceneInput(sceneKeys{Down: true}, 0, 0)
+		g.sceneInput(sceneKeys{Down: true}, 0, 0)
+		if s.craftSelected != 1 {
+			t.Fatal("下で品を選べない", s.craftSelected)
+		}
+		g.sceneInput(sceneKeys{Up: true}, 0, 0)
+		if s.craftSelected != 0 {
+			t.Fatal("上で品を選べない", s.craftSelected)
+		}
+		recipe := s.cfg.Catalog.Recipes()[0]
+		before := s.campaign.Materials[recipe.Ingredients[0].Material]
+		g.sceneInput(sceneKeys{Enter: true}, 0, 0)
+		if s.Scene() != Prepare || s.campaign.Materials[recipe.Ingredients[0].Material] != before-recipe.Ingredients[0].Count {
+			t.Fatal("Enter で調合できない")
+		}
+	})
+}
+
+func TestCraftRewardNameNG07(t *testing.T) {
+	t.Run("TC-DES-NG-21-01 勝利画面の材料名", func(t *testing.T) {
+		useTestMetrics(t, HiResCellSize)
+		s := ng05Scenes(t, "ch01", true)
+		s.scene = Result
+		s.result.Reward = []defs.ItemCount{{Material: "ore", Count: 5}, {Material: "catalyst", Count: 4}}
+		var lines []string
+		for _, text := range s.View().Texts {
+			lines = append(lines, text.Text)
+		}
+		joined := strings.Join(lines, "")
+		if !strings.Contains(joined, "鉱粉 ×5") || !strings.Contains(joined, "触媒 ×4") {
+			t.Fatal(joined)
 		}
 	})
 }

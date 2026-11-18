@@ -16,7 +16,8 @@ func (c *Campaign) Craft(id string) error {
 	}
 	for _, ingredient := range recipe.Ingredients {
 		if c.Materials[ingredient.Material] < ingredient.Count {
-			return fmt.Errorf("core: 材料 %q が不足しています", ingredient.Material)
+			material, _ := c.cat.Material(ingredient.Material)
+			return fmt.Errorf("%sが %d 足りません", material.Name, ingredient.Count-c.Materials[ingredient.Material])
 		}
 	}
 	for _, item := range c.Stock {

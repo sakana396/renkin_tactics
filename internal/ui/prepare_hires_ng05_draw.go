@@ -59,6 +59,9 @@ func (g *Game) drawPrepareHiRes(dst *ebiten.Image, v PrepareHiResView) {
 		for _, b := range v.CraftWindow.Boxes {
 			hrDrawBox(dst, b)
 		}
+		for _, gl := range v.CraftWindow.Glyphs {
+			hrDrawGlyph(dst, gl)
+		}
 		for _, t := range v.CraftWindow.Texts {
 			hrDrawText(dst, t)
 		}

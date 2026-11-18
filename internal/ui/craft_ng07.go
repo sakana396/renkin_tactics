@@ -10,6 +10,7 @@ import (
 type craftView struct {
 	Boxes                 []hrBox
 	Texts                 []hrTextItem
+	Glyphs                []hrGlyph
 	Rows                  []craftRow
 	Up, Down, Make, Close SceneButton
 }
@@ -65,15 +66,20 @@ func (s *SceneController) craftWindow() craftView {
 	lines := s.craftLines()
 	recipes := s.cfg.Catalog.Recipes()
 	s.craftTop = min(max(s.craftTop, 0), max(len(lines)-craftRows, 0))
-	v.Up = SceneButton{Label: "▲ 前へ", Rect: image.Rect(760, 108, 844, 136), Enabled: s.craftTop > 0}
-	v.Down = SceneButton{Label: "▼ 次へ", Rect: image.Rect(850, 108, 940, 136), Enabled: s.craftTop+craftRows < len(lines)}
+	v.Up = SceneButton{Label: "前へ", Rect: image.Rect(760, 108, 844, 136), Enabled: s.craftTop > 0}
+	v.Down = SceneButton{Label: "次へ", Rect: image.Rect(850, 108, 940, 136), Enabled: s.craftTop+craftRows < len(lines)}
 	for _, b := range []SceneButton{v.Up, v.Down} {
 		k, c := hrBoxButton, hrDark
 		if !b.Enabled {
 			k, c = hrBoxButtonOff, hrDim
 		}
 		box(b.Rect, k)
-		txt(b.Label, b.Rect.Min.X+5, b.Rect.Min.Y+6, c)
+		txt(b.Label, b.Rect.Min.X+25, b.Rect.Min.Y+6, c)
+		kind := hrGlyphUp
+		if b.Rect == v.Down.Rect {
+			kind = hrGlyphDown
+		}
+		v.Glyphs = append(v.Glyphs, hrGlyph{Kind: kind, Rect: image.Rect(b.Rect.Min.X+7, b.Rect.Min.Y+9, b.Rect.Min.X+19, b.Rect.Min.Y+19), Color: c})
 	}
 	for i := s.craftTop; i < min(len(lines), s.craftTop+craftRows); i++ {
 		line := lines[i]
@@ -105,7 +111,11 @@ func (s *SceneController) craftWindow() craftView {
 		box(b.Rect, k)
 		txt(b.Label, b.Rect.Min.X+25, b.Rect.Min.Y+15, c)
 	}
-	txt(fitText(s.craftMessage, 460), 148, 681, hrBad)
+	messageColor := hrBad
+	if s.craftMessage == "調合しました" {
+		messageColor = hrText
+	}
+	txt(fitText(s.craftMessage, 460), 148, 681, messageColor)
 	return v
 }
 func (s *SceneController) closeCraft() { s.craftOpen = false; s.craftMessage = "" }

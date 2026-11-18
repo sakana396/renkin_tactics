@@ -324,7 +324,9 @@ func (s *SceneController) prepareHiResView() PrepareHiResView {
 	// フッター: 操作の案内、理由、「配置へ」。
 	box(image.Rect(0, hrFooter.Min.Y, hrFooter.Dx(), hrFooter.Min.Y+1), hrBoxLine)
 	guide := "↑↓ キャラを選ぶ　クリック 持ち物を渡す・戻す　右クリック 武器を装備にする"
-	if len(cat.Recipes()) > 0 {
+	if s.craftOpen {
+		guide = "↑↓ 品を選ぶ　Enter 作る　Esc・右クリック 閉じる"
+	} else if len(cat.Recipes()) > 0 {
 		guide = fitText(guide, 670)
 	}
 	txt(guide, 32, 766, 1, hrText)
@@ -340,7 +342,7 @@ func (s *SceneController) prepareHiResView() PrepareHiResView {
 			}
 			txt(line, 32, 788+i*18, 1, hrBad)
 		}
-	} else {
+	} else if !s.craftOpen {
 		txt("Esc 選んだ在庫の品を外す　Enter 配置へ", 32, 790, 1, hrDim)
 	}
 	v.Deploy = SceneButton{Label: "配置へ ▶", Rect: hrDeployRect, Enabled: true}

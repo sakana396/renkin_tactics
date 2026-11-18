@@ -1248,7 +1248,9 @@ func (v *validator) rewardList(ref refs, file, path string, list []rawItemCount)
 		case it.Item == "" && it.Weapon == "" && it.Material == "":
 			v.add(file, q, "item または weapon または material を書いてください")
 		case it.Material != "":
-			if file != FileChapters || !ref.materialIDs[it.Material] {
+			if file != FileChapters {
+				v.add(file, q+".material", "材料は章の報酬にだけ書けます")
+			} else if !ref.materialIDs[it.Material] {
 				v.add(file, q+".material", "材料 %q がありません", it.Material)
 			}
 		case it.Item != "":
