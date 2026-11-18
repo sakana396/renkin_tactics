@@ -1,0 +1,43 @@
+# 調合レシピ（DES-NG-18）
+
+[[recipes]]
+id = "bomb_small"
+name = "小さな爆弾"
+item = "bomb_small"
+count = 1
+ingredients = [{ material = "ore", count = 1 }, { material = "catalyst", count = 1 }]
+
+[[recipes]]
+id = "bomb_far"
+name = "投げ火"
+item = "bomb_far"
+count = 1
+ingredients = [{ material = "ore", count = 2 }, { material = "catalyst", count = 1 }]
+
+[[recipes]]
+id = "bomb_large"
+name = "大きな爆弾"
+item = "bomb_large"
+count = 1
+ingredients = [{ material = "ore", count = 2 }, { material = "catalyst", count = 2 }]
+
+[[recipes]]
+id = "potion"
+name = "回復薬"
+item = "potion"
+count = 1
+ingredients = [{ material = "ore", count = 1 }, { material = "catalyst", count = 1 }]
+
+[[recipes]]
+id = "tonic_power"
+name = "剛力薬"
+item = "tonic_power"
+count = 1
+ingredients = [{ material = "ore", count = 1 }, { material = "catalyst", count = 2 }]
+
+[[recipes]]
+id = "snare_bottle"
+name = "粘着瓶"
+item = "snare_bottle"
+count = 1
+ingredients = [{ material = "ore", count = 2 }, { material = "catalyst", count = 1 }]

@@ -18,6 +18,7 @@ func (s *SceneController) enterPrepare() {
 	s.deployment = map[int]bool{}
 	s.prepareStockTop = 0
 	s.prepareRosterTop = 0
+	s.craftOpen = false
 	s.prepareTab = TabRoster
 	s.prepareItem = prepareItem{}
 	for i, m := range s.campaign.Roster {
@@ -307,6 +308,9 @@ func (s *SceneController) prepareButtons() []prepareButton {
 // choosePrepare は描画順のボタンを操作する（DES-UI-13、DES-UI-32）。出し入れは既存の操作を呼び、失敗では状態を変えず理由を出す。
 func (s *SceneController) choosePrepare(i int) {
 	if s.cfg.HiRes {
+		if s.craftOpen {
+			return
+		}
 		if i == 0 {
 			s.enterDeploy()
 		}

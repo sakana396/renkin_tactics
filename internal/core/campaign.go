@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
@@ -44,6 +45,7 @@ type Campaign struct {
 	Roster       []Member
 	StockWeapons []WeaponCount // 武器の在庫（DES-SAV-05）。
 	Stock        []defs.ItemCount
+	Materials    map[string]int // 共有の材料在庫（DES-NG-19）。
 	cat          *defs.Catalog
 }
 
@@ -129,7 +131,9 @@ func NewCampaignAt(cat *defs.Catalog, rule Rule, chapterID string) (*Campaign, e
 		c.Roster = append(c.Roster, m)
 	}
 	for _, ic := range cat.Game.Stock {
-		c.addReward(ic)
+		if err := c.addReward(ic); err != nil {
+			return nil, err
+		}
 	}
 	for i := 0; i <= target; i++ {
 		c.Chapter = i
@@ -138,7 +142,9 @@ func NewCampaignAt(cat *defs.Catalog, rule Rule, chapterID string) (*Campaign, e
 		}
 		if i < target {
 			for _, ic := range chapters[i].Reward {
-				c.addReward(ic)
+				if err := c.addReward(ic); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -147,12 +153,30 @@ func NewCampaignAt(cat *defs.Catalog, rule Rule, chapterID string) (*Campaign, e
 }
 
 // addReward は道具または武器の報酬を対応する在庫に足す（DES-ITM-02）。
-func (c *Campaign) addReward(ic defs.ItemCount) {
-	if ic.Weapon != "" {
+func (c *Campaign) addReward(ic defs.ItemCount) error {
+	if ic.Count < 0 {
+		return fmt.Errorf("core: 報酬の数が不正です")
+	}
+	if ic.Item != "" && itemCount(c.Stock, ic.Item) > math.MaxInt-ic.Count {
+		return fmt.Errorf("core: 道具 %q の在庫が上限を超えます", ic.Item)
+	}
+	if ic.Weapon != "" && weaponCount(c.StockWeapons, ic.Weapon) > math.MaxInt-ic.Count {
+		return fmt.Errorf("core: 武器 %q の在庫が上限を超えます", ic.Weapon)
+	}
+	if ic.Material != "" && (ic.Count < 0 || c.Materials[ic.Material] > math.MaxInt-ic.Count) {
+		return fmt.Errorf("core: 材料 %q の在庫が上限を超えます", ic.Material)
+	}
+	if ic.Material != "" {
+		if c.Materials == nil {
+			c.Materials = make(map[string]int)
+		}
+		c.Materials[ic.Material] += ic.Count
+	} else if ic.Weapon != "" {
 		c.StockWeapons = changeWeapon(c.StockWeapons, ic.Weapon, ic.Count)
 	} else {
 		c.Stock = changeItem(c.Stock, ic.Item, ic.Count)
 	}
+	return nil
 }
 
 // newMember はキャラの加入時の状態を作る。手持ちは定義から写す（DES-CMP-03）。
@@ -489,6 +513,12 @@ func (c *Campaign) FinishChapter(s *Sortie) (ChapterResult, error) {
 		return ChapterResult{}, ErrNotWon
 	}
 	next := *c
+	if c.Materials != nil {
+		next.Materials = make(map[string]int, len(c.Materials))
+		for id, count := range c.Materials {
+			next.Materials[id] = count
+		}
+	}
 	next.Roster = append([]Member(nil), c.Roster...)
 	next.Stock = append([]defs.ItemCount(nil), c.Stock...)
 	next.StockWeapons = append([]WeaponCount(nil), c.StockWeapons...)
@@ -521,7 +551,9 @@ func (c *Campaign) FinishChapter(s *Sortie) (ChapterResult, error) {
 		}
 	}
 	for _, ic := range chapter.Reward {
-		next.addReward(ic)
+		if err := next.addReward(ic); err != nil {
+			return ChapterResult{}, err
+		}
 	}
 	next.sortStock()
 	next.Chapter++

@@ -155,9 +155,26 @@ type SkillDef struct {
 
 // ItemCount は道具の個数を表す。報酬と初めの在庫では武器も表す（DES-DAT-01、DES-ITM-02）。
 type ItemCount struct {
-	Item   string
-	Weapon string // 報酬では Item と一方だけを使う（DES-ITM-02）。
-	Count  int
+	Material string // 材料の章報酬（DES-NG-18）。
+	Item     string
+	Weapon   string // 報酬では Item と一方だけを使う（DES-ITM-02）。
+	Count    int
+}
+
+// MaterialDef は共有材料の定義（DES-NG-18）。
+type MaterialDef struct{ ID, Name string }
+
+// MaterialCount は材料の必要数（DES-NG-18）。
+type MaterialCount struct {
+	Material string
+	Count    int
+}
+
+// RecipeDef は道具を 1 個生成するレシピ（DES-NG-18）。
+type RecipeDef struct {
+	ID, Name, Item string
+	Count          int
+	Ingredients    []MaterialCount
 }
 
 // Growth は成長率（%）（DES-DAT-01 の反復 2 の変更）。移動は成長しない。
@@ -279,6 +296,9 @@ type StoryDef struct {
 type Catalog struct {
 	Game GameDef
 
+	materials []MaterialDef
+	recipes   []RecipeDef
+
 	terrains   []TerrainDef
 	terrainIDs map[string]int
 	classes    map[string]ClassDef
@@ -340,6 +360,49 @@ func NewCatalog(game GameDef, terrains []TerrainDef, classes []ClassDef, weapons
 		c.stories[v.ID] = v
 	}
 	return c
+}
+
+// SetAlchemy は検証済みの材料とレシピを目録に設定する（DES-NG-18）。
+func (c *Catalog) SetAlchemy(materials []MaterialDef, recipes []RecipeDef) {
+	c.materials = append([]MaterialDef(nil), materials...)
+	c.recipes = make([]RecipeDef, len(recipes))
+	for i, r := range recipes {
+		r.Ingredients = append([]MaterialCount(nil), r.Ingredients...)
+		c.recipes[i] = r
+	}
+}
+
+// Materials は材料を定義順に返す（DES-NG-18）。
+func (c *Catalog) Materials() []MaterialDef { return append([]MaterialDef(nil), c.materials...) }
+
+// Material は材料を ID で引く（DES-NG-18）。
+func (c *Catalog) Material(id string) (MaterialDef, bool) {
+	for _, m := range c.materials {
+		if m.ID == id {
+			return m, true
+		}
+	}
+	return MaterialDef{}, false
+}
+
+// Recipes はレシピを定義順に返す（DES-NG-18）。
+func (c *Catalog) Recipes() []RecipeDef {
+	out := make([]RecipeDef, len(c.recipes))
+	for i, r := range c.recipes {
+		r.Ingredients = append([]MaterialCount(nil), r.Ingredients...)
+		out[i] = r
+	}
+	return out
+}
+
+// Recipe はレシピを ID で引く（DES-NG-18）。
+func (c *Catalog) Recipe(id string) (RecipeDef, bool) {
+	for _, r := range c.Recipes() {
+		if r.ID == id {
+			return r, true
+		}
+	}
+	return RecipeDef{}, false
 }
 
 // Terrain は ID で地形を引く（DES-DAT-01）。
