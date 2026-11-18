@@ -47,7 +47,7 @@ func (b *Battle) healWithStaff(events []Event, i, target, w int) []Event {
 
 // staffHealAmount は、武器の列の w 番目の杖の回復量に魔力と兵種の上限を適用する（DES-HEL-01、DES-ITM-02）。
 func staffHealAmount(u Unit, w int) int {
-	amount := u.Weapons[w].Heal + u.Stats.Mag
+	amount := u.Weapons[w].Heal + u.EffectiveStats().Mag
 	if u.StaffHealCap > 0 {
 		amount = min(amount, u.StaffHealCap)
 	}

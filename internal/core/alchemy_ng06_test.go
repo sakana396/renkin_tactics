@@ -101,7 +101,7 @@ func TestAlchemyData(t *testing.T) {
 				reward[ch.ID][ic.Item] = ic.Count
 			}
 		}
-		// 設計書 6.3 節の表: 各章 回復薬 2・小さな爆弾 3・投げ火 1。
+		// DES-NG01 6.3 節と DES-NG-17: 1・2 章は新道具を各 1 個追加。
 		wantReward := map[string]map[string]int{
 			"ch01": {"potion": 2, "bomb_small": 3, "bomb_far": 1, "tonic_power": 1, "snare_bottle": 1},
 			"ch02": {"potion": 2, "bomb_small": 3, "bomb_far": 1, "tonic_power": 1, "snare_bottle": 1},

@@ -8,6 +8,9 @@ import (
 
 // availableItems は移動先から使える品目を返す（DES-NG-16）。
 func (c *Controller) availableItems() []int {
+	if c.itemAvailableValid {
+		return c.itemAvailable
+	}
 	var out []int
 	u := c.battle.Units()[c.unit]
 	for i, stack := range u.Items {
@@ -20,6 +23,7 @@ func (c *Controller) availableItems() []int {
 			out = append(out, i)
 		}
 	}
+	c.itemAvailable, c.itemAvailableValid = out, true
 	return out
 }
 
@@ -30,21 +34,11 @@ func (c *Controller) itemCommand(k int, p tactics.Pos) tactics.Command {
 
 // itemTargets は core の予想と同じ検証で使える対象を求める（DES-NG-16）。
 func (c *Controller) itemTargets(k int) []int {
-	var out []int
-	for i, u := range c.battle.Units() {
-		p := u.Pos
-		if i == c.unit {
-			p = c.dest
-		}
-		if _, err := c.battle.ItemForecast(c.itemCommand(k, p)); err == nil {
-			out = append(out, i)
-		}
-	}
-	return out
+	return c.battle.ItemTargets(c.itemCommand(k, c.dest))
 }
 
 func (c *Controller) clickItemTarget(p tactics.Pos) {
-	for _, i := range c.itemTargets(c.item) {
+	for _, i := range c.itemCandidates {
 		if c.Units()[i].Pos != p {
 			continue
 		}
@@ -52,6 +46,12 @@ func (c *Controller) clickItemTarget(p tactics.Pos) {
 			c.act(c.itemCommand(c.item, p))
 			return
 		}
+		f, err := c.battle.ItemForecast(c.itemCommand(c.item, p))
+		if err != nil {
+			c.message = fmt.Sprintf("使えません: %v", err)
+			return
+		}
+		c.itemForecast = f
 		c.target, c.message = i, ""
 		return
 	}
@@ -66,11 +66,7 @@ func (c *Controller) itemGuide() []string {
 	if c.target < 0 {
 		return []string{"左クリック: 対象を選ぶ　右クリック・Esc: 戻る"}
 	}
-	p := c.Units()[c.target].Pos
-	f, err := c.battle.ItemForecast(c.itemCommand(c.item, p))
-	if err != nil {
-		return []string{err.Error()}
-	}
+	f := c.itemForecast
 	line := fmt.Sprintf("%s　力 %d→%d　魔力 %d→%d", f.Name, f.Before.Str, f.After.Str, f.Before.Mag, f.After.Mag)
 	if f.Effect == "snare" {
 		line = fmt.Sprintf("%s　移動 %d→%d", f.Name, f.Before.Mov, f.After.Mov)

@@ -156,6 +156,18 @@ func EventText(e tactics.Event) string {
 	case tactics.EventBlast:
 		// 爆弾を使ったこと（DES-NG-05）。
 		return fmt.Sprintf("%s が %s を投げた", name(e.Unit), e.Item)
+	case tactics.EventItemUse:
+		return fmt.Sprintf("%s が %s を使った", name(e.Unit), e.Item)
+	case tactics.EventEffectApply:
+		if e.Effect == "power_tonic" {
+			return fmt.Sprintf("%s の力・魔力が %d 上がった", name(e.Unit), e.Amount)
+		}
+		return fmt.Sprintf("%s の移動が止まった", name(e.Unit))
+	case tactics.EventEffectExpire:
+		if e.Effect == "power_tonic" {
+			return fmt.Sprintf("%s の剛力薬の効果が切れた", name(e.Unit))
+		}
+		return fmt.Sprintf("%s の粘着の効果が切れた", name(e.Unit))
 	case tactics.EventBlastHit:
 		return fmt.Sprintf("%s は爆発で %d ダメージ", name(e.Unit), e.Amount)
 	case tactics.EventFall:

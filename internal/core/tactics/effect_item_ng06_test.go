@@ -81,6 +81,21 @@ func TestEffectItems(t *testing.T) {
 		}
 		mustAct(t, b, effectCmd(pos(0, 3)))
 	})
+	t.Run("TC-DES-NG-14-04 粘着瓶は味方に使えない", func(t *testing.T) {
+		b := mustNewStill(t, effectSetup("snare"))
+		before := b.Units()
+		if _, err := b.Act(effectCmd(pos(0, 3))); err == nil || !reflect.DeepEqual(before, b.Units()) {
+			t.Fatal("味方への使用が成功または状態が変化")
+		}
+	})
+	t.Run("TC-DES-NG-14-05 移動後の本人", func(t *testing.T) {
+		b := mustNewStill(t, effectSetup("power_tonic"))
+		p := pos(1, 0)
+		mustAct(t, b, tactics.Command{Unit: 0, To: p, Action: tactics.UseItem, ItemTarget: &p})
+		if b.Units()[0].PowerTonic != 4 {
+			t.Fatal("移動後の本人に付与されない")
+		}
+	})
 	t.Run("TC-DES-NG-14-05 本人と距離外", func(t *testing.T) {
 		s := effectSetup("power_tonic")
 		s.Units[1].Pos = pos(0, 4)

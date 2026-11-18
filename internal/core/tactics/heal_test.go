@@ -459,3 +459,25 @@ func TestHealDeterminism(t *testing.T) {
 		assertEqual(t, "状態", s1, s2)
 	})
 }
+
+// 剛力薬は杖の予想と実際の回復の両方に効く（DES-NG-14）。
+func TestTonicStaff(t *testing.T) {
+	t.Run("TC-DES-NG-14-07 杖の予想と実行", func(t *testing.T) {
+		s := healSetup()
+		s.Units[1].Items = []tactics.ItemStack{{Item: tactics.Item{Name: "薬", Effect: "power_tonic", Amount: 4, Range: 3}, Count: 1}}
+		s.Units[1].Stats.HP = 30
+		b := mustNew(t, s)
+		b.SetHP(1, 1)
+		p := tactics.Pos{X: 2, Y: 1}
+		mustAct(t, b, tactics.Command{Unit: 1, To: tactics.Pos{X: 3, Y: 1}, Action: tactics.UseItem, ItemTarget: &p})
+		cmd := healCmd(0, p, 1)
+		f, err := b.HealForecast(cmd)
+		if err != nil || f.Amount != 14 {
+			t.Fatalf("予想 %+v %v", f, err)
+		}
+		mustAct(t, b, cmd)
+		if got := b.Units()[1].HP; got != 15 {
+			t.Fatalf("回復後 HP %d", got)
+		}
+	})
+}

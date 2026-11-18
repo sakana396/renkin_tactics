@@ -22,6 +22,22 @@ func TestEffectLifecycleNG06(t *testing.T) {
 			t.Fatalf("開始 %+v", ev)
 		}
 	})
+	t.Run("TC-DES-NG-14-01 重い武器の支え", func(t *testing.T) {
+		u := Unit{Stats: Stats{Str: 3, Spd: 10}, PowerTonic: 4, Weapons: []Weapon{{Weight: 9}}}
+		if got := attackSpeed(u); got != 8 {
+			t.Fatalf("攻撃の速さ %d", got)
+		}
+	})
+	t.Run("TC-DES-NG-14-07 杖の回復量と上限", func(t *testing.T) {
+		u := Unit{Stats: Stats{Mag: 2}, PowerTonic: 4, Weapons: []Weapon{{Heal: 10}}}
+		if got := staffHealAmount(u, 0); got != 16 {
+			t.Fatalf("回復量 %d", got)
+		}
+		u.StaffHealCap = 8
+		if got := staffHealAmount(u, 0); got != 8 {
+			t.Fatalf("上限 %d", got)
+		}
+	})
 	t.Run("TC-DES-NG-14-06 撃破と戦闘終了", func(t *testing.T) {
 		b := snapshotBattle(t)
 		b.units[1].PowerTonic = 4

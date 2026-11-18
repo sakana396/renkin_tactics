@@ -57,4 +57,49 @@ func TestNG06ItemUI(t *testing.T) {
 			t.Fatalf("使用結果 %+v %+v", units[0].Items, units[1])
 		}
 	})
+	t.Run("TC-DES-NG-16-01 効果中と射程外は候補外", func(t *testing.T) {
+		c := newIdleWith(t, func() tactics.Setup { s := itemNG06Setup(); s.Units[1].Items = s.Units[0].Items; return s })
+		p := tactics.Pos{X: 4, Y: 2}
+		if _, err := c.battle.Act(tactics.Command{Unit: 0, To: tactics.Pos{X: 2, Y: 2}, Action: tactics.UseItem, Item: 0, ItemTarget: &p}); err != nil {
+			t.Fatal(err)
+		}
+		c.unit, c.dest = 1, p
+		// 本人に効果が残るため候補にならず、射程外の敵も候補にならない。
+		if got := c.itemTargets(0); !reflect.DeepEqual(got, []int{0}) {
+			t.Fatalf("候補 %v", got)
+		}
+	})
+
+	t.Run("TC-DES-NG-16-02 攻撃予想と危険範囲", func(t *testing.T) {
+		setup := func() tactics.Setup { s := itemNG06Setup(); s.Units[3].Stats.Mov = 3; return s }
+		c := newIdleWith(t, setup)
+		c.danger = true
+		beforeDanger := c.Danger()
+		cmd := tactics.Command{Unit: 1, To: tactics.Pos{X: 4, Y: 2}, Action: tactics.Attack, Target: 3}
+		before, err := c.battle.Forecast(cmd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		p := tactics.Pos{X: 4, Y: 2}
+		if _, err = c.battle.Act(tactics.Command{Unit: 0, To: tactics.Pos{X: 2, Y: 2}, Action: tactics.UseItem, Item: 0, ItemTarget: &p}); err != nil {
+			t.Fatal(err)
+		}
+		after, err := c.battle.Forecast(cmd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if after.Attacker.Damage != before.Attacker.Damage+4 {
+			t.Fatalf("攻撃予想 %d→%d", before.Attacker.Damage, after.Attacker.Damage)
+		}
+		c2 := newIdleWith(t, setup)
+		c2.danger = true
+		enemy := tactics.Pos{X: 5, Y: 2}
+		if _, err := c2.battle.Act(tactics.Command{Unit: 0, To: tactics.Pos{X: 2, Y: 2}, Action: tactics.UseItem, Item: 1, ItemTarget: &enemy}); err != nil {
+			t.Fatal(err)
+		}
+		if reflect.DeepEqual(beforeDanger, c2.Danger()) {
+			t.Fatal("危険範囲が変わらない")
+		}
+	})
+
 }

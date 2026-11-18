@@ -134,3 +134,30 @@ func (b *Battle) clearEffects() {
 		b.units[i].Snared = false
 	}
 }
+
+// ItemTargets は移動の検証を一度だけ行い、有効な対象を列挙する（DES-NG-16）。
+func (b *Battle) ItemTargets(cmd Command) []int {
+	if cmd.Action != UseItem || b.validateCommand(cmd) != nil {
+		return nil
+	}
+	u := b.units[cmd.Unit]
+	if cmd.Item < 0 || cmd.Item >= len(u.Items) {
+		return nil
+	}
+	it := u.Items[cmd.Item].Item
+	if it.Effect == "" {
+		return nil
+	}
+	var out []int
+	for i, target := range b.units {
+		p := target.Pos
+		if i == cmd.Unit {
+			p = cmd.To
+		}
+		cmd.ItemTarget = &p
+		if b.validateEffectItem(cmd, it) == nil {
+			out = append(out, i)
+		}
+	}
+	return out
+}

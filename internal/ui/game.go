@@ -609,7 +609,7 @@ func (g *Game) drawSelection(dst *ebiten.Image) {
 		g.strokeCell(dst, dest, cursorColor)
 	case ItemTargeting:
 		g.strokeCell(dst, dest, cursorColor)
-		for _, i := range c.itemTargets(c.item) {
+		for _, i := range c.itemCandidates {
 			g.strokeCell(dst, units[i].Pos, c.targetFrameColor(i))
 		}
 	case BombTargeting:

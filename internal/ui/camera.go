@@ -191,7 +191,7 @@ func (c *Controller) focusEvent(e tactics.Event) {
 		if e.Target >= 0 && e.Target < len(e.Units) {
 			c.camera.Focus(e.Units[e.Target].Pos)
 		}
-	case tactics.EventBlast:
+	case tactics.EventBlast, tactics.EventItemUse, tactics.EventEffectApply, tactics.EventEffectExpire:
 		// 爆心に寄る（DES-NG-05）。
 		c.camera.Focus(e.To)
 	case tactics.EventHeal, tactics.EventFall, tactics.EventWait, tactics.EventExp, tactics.EventLevelUp, tactics.EventBlastHit:

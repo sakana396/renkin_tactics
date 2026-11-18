@@ -97,9 +97,13 @@ type Controller struct {
 	confirmEnd bool
 
 	// item は爆弾を選んだときの手持ちの添字、blast は仮に選んだ爆心、blastPicked は爆心を仮選択していること（DES-NG-05）。
-	item        int
-	blast       tactics.Pos
-	blastPicked bool
+	item               int
+	blast              tactics.Pos
+	blastPicked        bool
+	itemAvailable      []int
+	itemAvailableValid bool
+	itemCandidates     []int
+	itemForecast       tactics.ItemEffectForecast
 
 	// events は再生中の出来事、index は表示している出来事、frame はその出来事を表示したフレーム数。
 	events []tactics.Event
@@ -187,6 +191,7 @@ func (c *Controller) Click(p tactics.Pos) {
 	case Selected:
 		if _, ok := c.battle.Reachable(c.unit)[p]; ok {
 			c.state, c.dest = Moved, p
+			c.itemAvailableValid = false
 			c.camera.Focus(p)
 		} else if i, ok := c.unitAt(p); ok && c.battle.Units()[i].Side == tactics.Enemy {
 			// 範囲を出すより、敵をクリックして攻撃する操作を優先する（DES-UI-27）。
@@ -313,7 +318,8 @@ func (c *Controller) ChooseItem(k int) {
 	}
 	// 一時効果の道具は対象を選ぶ（DES-NG-16）。
 	if it := c.battle.Units()[c.unit].Items[k].Item; it.Effect != "" {
-		if len(c.itemTargets(k)) == 0 {
+		c.itemCandidates = c.itemTargets(k)
+		if len(c.itemCandidates) == 0 {
 			c.message = "使える対象がいません"
 			return
 		}
@@ -992,6 +998,7 @@ func (c *Controller) checkLog() {
 
 // play は出来事の再生を始める（DES-UI-04）。
 func (c *Controller) play(events []tactics.Event) {
+	c.itemAvailableValid = false
 	c.record = append(c.record, events...)
 	c.state, c.events, c.index, c.frame = Playing, events, 0, 0
 	// 出している敵の範囲（watched）は保ち、再生のあとで戦死した敵を除く（DES-UI-27）。

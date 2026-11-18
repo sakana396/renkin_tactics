@@ -108,6 +108,7 @@ func (c *Controller) RewindEnter() {
 		return
 	}
 	entry := h[i]
+	c.itemAvailableValid = false
 	if err := c.log.Rewind(c.battle, entry.ID); err != nil {
 		c.rewind.confirm = false
 		c.rewind.detailOffset = 0
