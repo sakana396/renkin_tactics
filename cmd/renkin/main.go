@@ -109,6 +109,7 @@ func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.
 		PlayLog: logs.Create, Now: now, Stderr: stderr}
 	if *game == gameAlchemy {
 		cfg.Media = data.AlchemyMedia()
+		cfg.HiRes = true
 	}
 	if err := start(cfg); err != nil {
 		fmt.Fprintln(stderr, err)

@@ -65,9 +65,11 @@ type Controller struct {
 	// 巻き戻しの表示と通し出来事の境界を保持する（DES-UI-19）。
 	camera Camera
 	rewind rewindMenu
-	record []tactics.Event
-	battle *tactics.Battle
-	state  State
+	// gameOver は敗北の場面で使っているとき true。巻き戻しの入口を中央寄せの層の中へ置く（DES-NG-10）。
+	gameOver bool
+	record   []tactics.Event
+	battle   *tactics.Battle
+	state    State
 
 	// unit は選んだ自軍、dest は移動先、target は攻撃・回復の相手（いなければ -1）。
 	unit   int

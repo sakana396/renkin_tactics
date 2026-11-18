@@ -14,9 +14,10 @@ const zocNote = "相手の重騎士の隣: +1"
 const (
 	zocMarkInset = 5
 	zocMarkArm   = 5
-	// zocEnemyCornerY は敵軍の角印の頂点の y（マスの上端から）。HP の棒（下端の 5 px）より上に置く。
-	zocEnemyCornerY = CellSize - 8
 )
+
+// zocEnemyCornerY は敵軍の角印の頂点の y（マスの上端から）。HP の棒（下端の 5 px）より上に置く（DES-NG-10。マスの大きさに従う）。
+var zocEnemyCornerY int
 
 // zocMarkLine は重騎士の ZOC の角印の線分 1 本（DES-UI-29、DES-IT07 3.8 節）。Side は重騎士の陣営で、線の色を決める。
 type zocMarkLine struct {
@@ -40,16 +41,16 @@ func zocMarkLines(board tactics.BoardView, cam Camera) []zocMarkLine {
 			sides := board.ZOCSides(p)
 			pt := cam.Screen(p)
 			if sides[tactics.Player] {
-				c := image.Pt(pt.X+zocMarkInset, pt.Y+zocMarkInset)
+				c := image.Pt(pt.X+scaled(zocMarkInset), pt.Y+scaled(zocMarkInset))
 				lines = append(lines,
-					zocMarkLine{From: c, To: image.Pt(c.X+zocMarkArm, c.Y), Side: tactics.Player},
-					zocMarkLine{From: c, To: image.Pt(c.X, c.Y+zocMarkArm), Side: tactics.Player})
+					zocMarkLine{From: c, To: image.Pt(c.X+scaled(zocMarkArm), c.Y), Side: tactics.Player},
+					zocMarkLine{From: c, To: image.Pt(c.X, c.Y+scaled(zocMarkArm)), Side: tactics.Player})
 			}
 			if sides[tactics.Enemy] {
-				c := image.Pt(pt.X+zocMarkInset, pt.Y+zocEnemyCornerY)
+				c := image.Pt(pt.X+scaled(zocMarkInset), pt.Y+zocEnemyCornerY)
 				lines = append(lines,
-					zocMarkLine{From: c, To: image.Pt(c.X+zocMarkArm, c.Y), Side: tactics.Enemy},
-					zocMarkLine{From: image.Pt(c.X, c.Y-zocMarkArm), To: c, Side: tactics.Enemy})
+					zocMarkLine{From: c, To: image.Pt(c.X+scaled(zocMarkArm), c.Y), Side: tactics.Enemy},
+					zocMarkLine{From: image.Pt(c.X, c.Y-scaled(zocMarkArm)), To: c, Side: tactics.Enemy})
 			}
 		}
 	}
