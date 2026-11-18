@@ -81,7 +81,7 @@
 | FR-ITM-09 | #211 | DES-NG-14、DES-NG-17 | TC-DES-NG-14-01〜07、TC-DES-NG-17-01〜03 | `internal/core/tactics`、`internal/core`、`data/alchemy` | 実装済み（TC-DES-NG-17-03 は手動・未実施） |
 | FR-ITM-10 | #211 | DES-NG-15 | TC-DES-NG-15-01〜03 | `internal/core/tactics`、`internal/core` | 実装済み |
 | FR-ITM-11 | #211 | DES-NG-16 | TC-DES-NG-16-01〜02 | `internal/ui`、`internal/core/tactics` | 自動・実装済み（Windows で実行） |
-| FR-ITM-12（案） | #212 | DES-NG-18 | TC-DES-NG-18-01〜03 | 実装済み（defs、defload） | 案（開発者の承認待ち） |
-| FR-ITM-13（案） | #212 | DES-NG-19、DES-NG-22 | TC-DES-NG-19-01〜06、TC-DES-NG-22-01 | 実装済み（internal/core、internal/ui） | 案（開発者の承認待ち） |
-| FR-ITM-14（案） | #212 | DES-NG-20 | TC-DES-NG-20-01〜03 | 実装済み（ui、手動試験未実施） | 案（開発者の承認待ち） |
-| FR-ITM-15（案） | #212 | DES-NG-21 | TC-DES-NG-21-01〜03 | 実装済み（internal/core、data/alchemy、手動試遊未実施） | 案（開発者の承認待ち） |
+| FR-ITM-12 | #212 | DES-NG-18 | TC-DES-NG-18-01〜03 | 実装済み（defs、defload） | 承認（2026-11-19、E-151） |
+| FR-ITM-13 | #212 | DES-NG-19、DES-NG-22 | TC-DES-NG-19-01〜06、TC-DES-NG-22-01 | 実装済み（internal/core、internal/ui） | 承認（2026-11-19、E-151） |
+| FR-ITM-14 | #212 | DES-NG-20 | TC-DES-NG-20-01〜03 | 実装済み（ui、手動試験未実施） | 承認（2026-11-19、E-151） |
+| FR-ITM-15 | #212 | DES-NG-21 | TC-DES-NG-21-01〜03 | 実装済み（internal/core、data/alchemy、手動試遊未実施） | 承認（2026-11-19、E-151） |
