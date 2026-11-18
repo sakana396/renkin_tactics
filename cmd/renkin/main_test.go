@@ -47,7 +47,7 @@ func TestRun(t *testing.T) {
 		fsys["items.toml"] = &fstest.MapFile{Data: []byte("[[items]]\nid = \"potion\"\nname = \"回復薬\"\nheal = 0\n")}
 		var stderr bytes.Buffer
 		started := false
-		code := run(nil, &stderr, fsys, fixedNow, func(ui.Config) error { started = true; return nil })
+		code := run([]string{"-game", "base"}, &stderr, fsys, fixedNow, func(ui.Config) error { started = true; return nil })
 		if code != 1 || started {
 			t.Fatal(code, started)
 		}
@@ -81,7 +81,7 @@ func TestRun(t *testing.T) {
 		var stderr bytes.Buffer
 		var cfg ui.Config
 		dir := t.TempDir()
-		code := run([]string{"-seed", "7", "-savedir", dir}, &stderr, data.Base(), fixedNow, func(c ui.Config) error { cfg = c; return nil })
+		code := run([]string{"-game", "base", "-seed", "7", "-savedir", dir}, &stderr, data.Base(), fixedNow, func(c ui.Config) error { cfg = c; return nil })
 		if code != 0 || cfg.Catalog == nil || cfg.Store == nil || cfg.NextSeed == nil || cfg.StartChapter != "" || stderr.Len() != 0 {
 			t.Fatal(code, stderr.String())
 		}
@@ -111,7 +111,7 @@ func TestRun(t *testing.T) {
 		if s.Scene() != ui.Title {
 			t.Fatal(s.Scene())
 		}
-		code = run([]string{"-savedir", dir}, &stderr, data.Base(), fixedNow, func(ui.Config) error { return errors.New("窓を開けない") })
+		code = run([]string{"-game", "base", "-savedir", dir}, &stderr, data.Base(), fixedNow, func(ui.Config) error { return errors.New("窓を開けない") })
 		if code != 1 || !strings.Contains(stderr.String(), "窓を開けない") {
 			t.Fatal(code, stderr.String())
 		}
@@ -168,7 +168,8 @@ func TestSaveDirStartup(t *testing.T) {
 				}
 				var stderr bytes.Buffer
 				started := false
-				code := runWithDirEnv(nil, &stderr, data.Base(), fixedNow, func(cfg ui.Config) error {
+				// 旧作の保存先を確かめる。既定の作品は新作なので -game base を付ける（E-139、#208）。
+				code := runWithDirEnv([]string{"-game", "base"}, &stderr, data.Base(), fixedNow, func(cfg ui.Config) error {
 					started = true
 					store := cfg.Store.(savefile.Store)
 					want := filepath.Join("user", "renkin_tactics")
@@ -215,7 +216,7 @@ func TestStartChapterFlag(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				var stderr bytes.Buffer
 				started := false
-				code := run(tc.args, &stderr, fsys, fixedNow, func(cfg ui.Config) error {
+				code := run(append([]string{"-game", "base"}, tc.args...), &stderr, fsys, fixedNow, func(cfg ui.Config) error {
 					started = true
 					if cfg.StartChapter != tc.chapter {
 						t.Fatal(cfg.StartChapter, tc.chapter)

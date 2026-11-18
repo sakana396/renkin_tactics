@@ -18,7 +18,7 @@ func TestHiResFlag(t *testing.T) {
 		}{
 			{"alchemy", []string{"-game", "alchemy", "-savedir", "dev"}, true},
 			{"base を明示", []string{"-game", "base", "-savedir", "dev"}, false},
-			{"指定なし", []string{"-savedir", "dev"}, false},
+			{"指定なし（既定は新作。#208、E-139）", []string{"-savedir", "dev"}, true},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				var stderr bytes.Buffer

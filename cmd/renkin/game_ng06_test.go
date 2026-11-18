@@ -20,15 +20,15 @@ func TestGameFlag(t *testing.T) {
 		}
 		return strings.Join(ids, ",")
 	}
-	t.Run("TC-DES-NG-06-06 -game alchemy は新作の 1 章を渡し、指定しないか base なら既存の作品のまま", func(t *testing.T) {
+	t.Run("TC-DES-NG-06-06 指定なしと alchemy は新作、base は旧作を渡す", func(t *testing.T) {
 		for _, tc := range []struct {
 			name string
 			args []string
 			want string
 		}{
-			{"alchemy", []string{"-game", "alchemy", "-savedir", "dev"}, "ch01"},
+			{"alchemy", []string{"-game", "alchemy", "-savedir", "dev"}, "ch01,ch02,ch03"},
 			{"base を明示", []string{"-game", "base", "-savedir", "dev"}, "ch01,ch02,ch03,ch04,ch05,ch06,ch07,ch08,ch09"},
-			{"指定なし", []string{"-savedir", "dev"}, "ch01,ch02,ch03,ch04,ch05,ch06,ch07,ch08,ch09"},
+			{"指定なし", []string{"-savedir", "dev"}, "ch01,ch02,ch03"},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				var stderr bytes.Buffer
@@ -69,7 +69,7 @@ func TestGameFlag(t *testing.T) {
 			return dir
 		}
 		base := filepath.Join("xdg", "renkin_tactics")
-		if got := storeDir(); got != base {
+		if got := storeDir(); got != filepath.Join("xdg", "renkin_tactics_alchemy") {
 			t.Fatal(got)
 		}
 		if got := storeDir("-game", "base"); got != base {
@@ -90,7 +90,17 @@ func TestGameFlag(t *testing.T) {
 			t.Fatal(code, stderr.String())
 		}
 		stderr.Reset()
-		if code := run([]string{"-game", "alchemy", "-chapter", "ch02", "-savedir", "dev"}, &stderr, data.Base(), fixedNow, func(ui.Config) error { return nil }); code != 2 || !strings.Contains(stderr.String(), "ch02") || !strings.Contains(stderr.String(), "ch01") {
+		started = false
+		if code := run([]string{"-game", "alchemy", "-chapter", "ch02", "-savedir", "dev"}, &stderr, data.Base(), fixedNow, func(c ui.Config) error { started = true; return nil }); code != 0 || !started {
+			t.Fatal(code, stderr.String())
+		}
+		stderr.Reset()
+		started = false
+		if code := run([]string{"-game", "alchemy", "-chapter", "ch03", "-savedir", "dev"}, &stderr, data.Base(), fixedNow, func(ui.Config) error { started = true; return nil }); code != 0 || !started {
+			t.Fatal(code, stderr.String())
+		}
+		stderr.Reset()
+		if code := run([]string{"-game", "alchemy", "-chapter", "ch04", "-savedir", "dev"}, &stderr, data.Base(), fixedNow, func(ui.Config) error { return nil }); code != 2 || !strings.Contains(stderr.String(), "ch04") || !strings.Contains(stderr.String(), "ch03") {
 			t.Fatal(code, stderr.String())
 		}
 	})
