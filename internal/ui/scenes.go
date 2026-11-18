@@ -3,6 +3,7 @@ package ui
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"io"
 	"io/fs"
 	"os"
@@ -77,6 +78,7 @@ type SceneController struct {
 	paragraph        int
 	joined           int
 	prepareMember    int
+	prepareCursor    image.Point
 	prepareStockTop  int
 	prepareRosterTop int
 	// prepareTab・prepareItem は準備の表示タブと持ち物で選んだ品（DES-UI-32）。表示だけに使う。
