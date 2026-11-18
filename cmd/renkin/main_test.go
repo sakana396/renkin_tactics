@@ -168,7 +168,8 @@ func TestSaveDirStartup(t *testing.T) {
 				}
 				var stderr bytes.Buffer
 				started := false
-				code := runWithDirEnv(nil, &stderr, data.Base(), fixedNow, func(cfg ui.Config) error {
+				// 旧作の保存先を確かめる。既定の作品は新作なので -game base を付ける（E-139、#208）。
+				code := runWithDirEnv([]string{"-game", "base"}, &stderr, data.Base(), fixedNow, func(cfg ui.Config) error {
 					started = true
 					store := cfg.Store.(savefile.Store)
 					want := filepath.Join("user", "renkin_tactics")
