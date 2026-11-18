@@ -54,15 +54,22 @@ func TestAlchemyData(t *testing.T) {
 		if _, ok := cat.Character("haru"); !ok {
 			t.Fatal("ハルの定義がない")
 		}
-		// 本体（data/base）と同じファイル構成。
-		want, _ := fs.Glob(data.Base(), "*.toml")
-		got, _ := fs.Glob(data.Alchemy(), "*.toml")
-		if strings.Join(got, ",") != strings.Join(want, ",") {
-			t.Fatal(got, want)
+		// 旧作は 10 ファイル、新作は材料・レシピを加えた 12 ファイル（DES-NG07）。
+		base := "chapters.toml,characters.toml,classes.toml,game.toml,items.toml,maps.toml,skills.toml,story.toml,terrains.toml,weapons.toml"
+		alchemy := "chapters.toml,characters.toml,classes.toml,game.toml,items.toml,maps.toml,materials.toml,recipes.toml,skills.toml,story.toml,terrains.toml,weapons.toml"
+		for _, tc := range []struct {
+			name string
+			fsys fs.FS
+			want string
+		}{{"旧作", data.Base(), base}, {"新作", data.Alchemy(), alchemy}} {
+			got, err := fs.Glob(tc.fsys, "*.toml")
+			if err != nil || strings.Join(got, ",") != tc.want {
+				t.Fatalf("%s: %v、エラー: %v", tc.name, got, err)
+			}
 		}
 	})
 
-	t.Run("TC-DES-NG-06-02 爆弾 3 種が目録・初期の持ち物・章の報酬にあり、回復薬が先頭にある", func(t *testing.T) {
+	t.Run("TC-DES-NG-06-02 爆弾 3 種と初期の持ち物・章の報酬が決まりどおりで、回復薬が先頭にある", func(t *testing.T) {
 		want := map[string][3]int{"bomb_small": {8, 1, 4}, "bomb_large": {12, 2, 3}, "bomb_far": {10, 0, 5}}
 		for id, v := range want {
 			it, ok := cat.Item(id)
@@ -98,14 +105,18 @@ func TestAlchemyData(t *testing.T) {
 		for _, ch := range cat.Chapters() {
 			reward[ch.ID] = map[string]int{}
 			for _, ic := range ch.Reward {
-				reward[ch.ID][ic.Item] = ic.Count
+				key := "item:" + ic.Item
+				if ic.Material != "" {
+					key = "material:" + ic.Material
+				}
+				reward[ch.ID][key] = ic.Count
 			}
 		}
-		// DES-NG01 6.3 節と DES-NG-17: 1・2 章は新道具を各 1 個追加。
+		// DES-NG-21 の基準維持と DES-NG-17: 1・2 章は新道具を各 1 個追加。
 		wantReward := map[string]map[string]int{
-			"ch01": {"potion": 2, "bomb_small": 3, "bomb_far": 1, "tonic_power": 1, "snare_bottle": 1},
-			"ch02": {"potion": 2, "bomb_small": 3, "bomb_far": 1, "tonic_power": 1, "snare_bottle": 1},
-			"ch03": {"potion": 2, "bomb_small": 3, "bomb_far": 1},
+			"ch01": {"item:potion": 2, "material:ore": 5, "material:catalyst": 4, "item:tonic_power": 1, "item:snare_bottle": 1},
+			"ch02": {"item:potion": 2, "material:ore": 5, "material:catalyst": 4, "item:tonic_power": 1, "item:snare_bottle": 1},
+			"ch03": {"item:potion": 2, "material:ore": 5, "material:catalyst": 4},
 		}
 		if fmt.Sprint(reward) != fmt.Sprint(wantReward) {
 			t.Fatal(reward, wantReward)
