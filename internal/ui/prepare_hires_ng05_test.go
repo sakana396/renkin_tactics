@@ -511,7 +511,7 @@ func TestPrepareHiResNG05(t *testing.T) {
 		if s.fullWindowPrepare() {
 			t.Fatal("HiRes でないのに全面")
 		}
-		// 改修前（コミット f864969）の出力から取った期待値と、代表的な状態ごとに一致する。
+		// 改修前（試作のコミット f864969 を元に、main の #207 の前の出力に合わせた）期待値と、代表的な状態ごとに一致する。
 		got := strings.Split(prepareViewStates(t), "== ")
 		want := strings.Split(prepareViewGolden, "== ")
 		if len(got) != len(want) {
