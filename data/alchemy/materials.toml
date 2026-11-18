@@ -1,0 +1,8 @@
+# 調合の共有材料（DES-NG-18）
+[[materials]]
+id = "ore"
+name = "鉱粉"
+
+[[materials]]
+id = "catalyst"
+name = "触媒"

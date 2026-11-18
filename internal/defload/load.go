@@ -18,6 +18,8 @@ import (
 
 // 定義データのファイル名（DES-DAT-02）。
 const (
+	FileMaterials  = "materials.toml"
+	FileRecipes    = "recipes.toml"
 	FileGame       = "game.toml"
 	FileTerrains   = "terrains.toml"
 	FileClasses    = "classes.toml"
@@ -80,6 +82,27 @@ func (e Errors) Error() string {
 
 // TOML の形（DES-DAT-02）。defs の型と分けて、TOML のキーの名前をここに閉じ込める。
 type (
+	materialsFile struct {
+		Materials []rawMaterial `toml:"materials"`
+	}
+	recipesFile struct {
+		Recipes []rawRecipe `toml:"recipes"`
+	}
+	rawMaterial struct {
+		ID   string `toml:"id"`
+		Name string `toml:"name"`
+	}
+	rawIngredient struct {
+		Material string `toml:"material"`
+		Count    int    `toml:"count"`
+	}
+	rawRecipe struct {
+		ID          string          `toml:"id"`
+		Name        string          `toml:"name"`
+		Item        string          `toml:"item"`
+		Count       int             `toml:"count"`
+		Ingredients []rawIngredient `toml:"ingredients"`
+	}
 	gameFile struct {
 		Party []string       `toml:"party"`
 		Stock []rawItemCount `toml:"stock"`
@@ -183,9 +206,10 @@ type (
 		Multiplier int    `toml:"multiplier"`
 	}
 	rawItemCount struct {
-		Item   string `toml:"item"`
-		Weapon string `toml:"weapon"`
-		Count  int    `toml:"count"`
+		Material string `toml:"material"`
+		Item     string `toml:"item"`
+		Weapon   string `toml:"weapon"`
+		Count    int    `toml:"count"`
 	}
 	rawGrowth struct {
 		HP  int `toml:"hp"`
@@ -303,6 +327,8 @@ type (
 func Load(fsys fs.FS) (*defs.Catalog, error) {
 	var errs Errors
 	var (
+		materials  materialsFile
+		recipes    recipesFile
 		game       gameFile
 		terrains   terrainsFile
 		classes    classesFile
@@ -337,6 +363,19 @@ func Load(fsys fs.FS) (*defs.Catalog, error) {
 		}
 		unknown = append(unknown, u...)
 	}
+	for _, f := range []struct {
+		name string
+		v    any
+	}{{FileMaterials, &materials}, {FileRecipes, &recipes}} {
+		if _, err := fs.Stat(fsys, f.name); errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		d, ok, u := decode(fsys, f.name, f.v)
+		if !ok {
+			errs = append(errs, d)
+		}
+		unknown = append(unknown, u...)
+	}
 	if len(errs) > 0 {
 		return nil, errs
 	}
@@ -344,6 +383,8 @@ func Load(fsys fs.FS) (*defs.Catalog, error) {
 	// 知らないキーがあっても中身は読めているので、意味の検証も続ける（規則 13）。
 	v := &validator{errs: unknown}
 	cat := v.build(rawData{
+		materials:  materials.Materials,
+		recipes:    recipes.Recipes,
 		game:       game,
 		terrains:   terrains.Terrains,
 		classes:    classes.Classes,
@@ -596,7 +637,7 @@ func toItems(raw []rawItemCount) []defs.ItemCount {
 	}
 	out := make([]defs.ItemCount, len(raw))
 	for i, r := range raw {
-		out[i] = defs.ItemCount{Item: r.Item, Weapon: r.Weapon, Count: r.Count}
+		out[i] = defs.ItemCount{Item: r.Item, Weapon: r.Weapon, Material: r.Material, Count: r.Count}
 	}
 	return out
 }
@@ -627,6 +668,8 @@ func (v *validator) stats(file, path string, base, bonus defs.Stats) {
 
 // rawData は読み込んだすべてのファイルの中身（DES-DAT-02）。
 type rawData struct {
+	materials  []rawMaterial
+	recipes    []rawRecipe
 	game       gameFile
 	terrains   []rawTerrain
 	classes    []rawClass
@@ -641,24 +684,26 @@ type rawData struct {
 
 // refs は、ほかの定義から参照を引くための表（DES-DAT-03 規則 3）。
 type refs struct {
-	bySymbol   map[string]defs.TerrainDef
-	classByID  map[string]defs.ClassDef
-	weaponByID map[string]defs.WeaponDef
-	itemIDs    map[string]bool
-	skillIDs   map[string]bool
-	charByID   map[string]defs.CharacterDef
+	materialIDs map[string]bool
+	bySymbol    map[string]defs.TerrainDef
+	classByID   map[string]defs.ClassDef
+	weaponByID  map[string]defs.WeaponDef
+	itemIDs     map[string]bool
+	skillIDs    map[string]bool
+	charByID    map[string]defs.CharacterDef
 }
 
 // build は定義を検証し、目録を作る（DES-DAT-03 規則 2〜22。反復 2 で変更）。
 func (v *validator) build(rd rawData) *defs.Catalog {
 	weaponTypes := []string{defs.WeaponSword, defs.WeaponLance, defs.WeaponAxe, defs.WeaponBow, defs.WeaponStaff, defs.WeaponMagic}
 	ref := refs{
-		bySymbol:   map[string]defs.TerrainDef{},
-		classByID:  map[string]defs.ClassDef{},
-		weaponByID: map[string]defs.WeaponDef{},
-		itemIDs:    map[string]bool{},
-		skillIDs:   map[string]bool{},
-		charByID:   map[string]defs.CharacterDef{},
+		materialIDs: map[string]bool{},
+		bySymbol:    map[string]defs.TerrainDef{},
+		classByID:   map[string]defs.ClassDef{},
+		weaponByID:  map[string]defs.WeaponDef{},
+		itemIDs:     map[string]bool{},
+		skillIDs:    map[string]bool{},
+		charByID:    map[string]defs.CharacterDef{},
 	}
 
 	// 地形（規則 2、6、7）。
@@ -869,6 +914,51 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		storyIDs[r.ID] = true
 	}
 
+	// 材料とレシピの参照を検証する（DES-NG-18）。
+	materials := make([]defs.MaterialDef, 0, len(rd.materials))
+	materialID := v.ids(FileMaterials)
+	for i, m := range rd.materials {
+		p := fmt.Sprintf("materials[%d]", i)
+		materialID.check(p, m.ID)
+		if strings.TrimSpace(m.Name) == "" {
+			v.add(FileMaterials, p+".name", "名前が空です")
+		}
+		ref.materialIDs[m.ID] = true
+		materials = append(materials, defs.MaterialDef{ID: m.ID, Name: m.Name})
+	}
+	recipes := make([]defs.RecipeDef, 0, len(rd.recipes))
+	rid := v.ids(FileRecipes)
+	for i, r := range rd.recipes {
+		p := fmt.Sprintf("recipes[%d]", i)
+		rid.check(p, r.ID)
+		if strings.TrimSpace(r.Name) == "" {
+			v.add(FileRecipes, p+".name", "名前が空です")
+		}
+		if !ref.itemIDs[r.Item] {
+			v.add(FileRecipes, p+".item", "道具 %q がありません", r.Item)
+		}
+		if r.Count != 1 {
+			v.add(FileRecipes, p+".count", "生成数は 1 にしてください")
+		}
+		if len(r.Ingredients) == 0 {
+			v.add(FileRecipes, p+".ingredients", "材料が必要です")
+		}
+		seen := map[string]bool{}
+		recipe := defs.RecipeDef{ID: r.ID, Name: r.Name, Item: r.Item, Count: r.Count}
+		for j, m := range r.Ingredients {
+			q := fmt.Sprintf("%s.ingredients[%d]", p, j)
+			if !ref.materialIDs[m.Material] || m.Material == "" {
+				v.add(FileRecipes, q+".material", "材料 %q がありません", m.Material)
+			}
+			if seen[m.Material] {
+				v.add(FileRecipes, q+".material", "材料が重複しています")
+			}
+			seen[m.Material] = true
+			v.atLeast(FileRecipes, q+".count", m.Count, 1)
+			recipe.Ingredients = append(recipe.Ingredients, defs.MaterialCount{Material: m.Material, Count: m.Count})
+		}
+		recipes = append(recipes, recipe)
+	}
 	// 章（規則 3、14、15、17、20）。
 	if len(rd.chapters) == 0 {
 		v.add(FileChapters, "chapters", "章を 1 つ以上書いてください")
@@ -914,7 +1004,9 @@ func (v *validator) build(rd rawData) *defs.Catalog {
 		chapters[i] = defs.ChapterDef{ID: r.ID, Name: r.Name, Goal: r.Goal, Map: r.Map, Before: r.Before, After: r.After, Joins: append([]string(nil), r.Joins...), Reward: toItems(r.Reward)}
 	}
 
-	return defs.NewCatalog(game, terrains, classes, weapons, items, skills, characters, maps, chapters, stories)
+	cat := defs.NewCatalog(game, terrains, classes, weapons, items, skills, characters, maps, chapters, stories)
+	cat.SetAlchemy(materials, recipes)
+	return cat
 }
 
 // item は、アイテム 1 つを確かめて定義にする（DES-DAT-03 規則 6、DES-NG-01）。
@@ -1103,6 +1195,9 @@ func (v *validator) hand(ref refs, file, path string, list []rawItemCount, limit
 	total := 0
 	for j, it := range list {
 		q := fmt.Sprintf("%s.items[%d]", path, j)
+		if it.Material != "" {
+			v.add(file, q+".material", "道具の手持ちに材料は書けません")
+		}
 		if it.Weapon != "" {
 			v.add(file, q+".weapon", "道具の手持ちに武器は書けません")
 		}
@@ -1125,6 +1220,9 @@ func (v *validator) itemList(ref refs, file, path string, list []rawItemCount) {
 	seen := map[string]string{}
 	for j, it := range list {
 		q := fmt.Sprintf("%s[%d]", path, j)
+		if it.Material != "" {
+			v.add(file, q+".material", "道具の在庫に材料は書けません")
+		}
 		if it.Weapon != "" {
 			v.add(file, q+".weapon", "道具の在庫に武器は書けません")
 		}
@@ -1145,10 +1243,14 @@ func (v *validator) rewardList(ref refs, file, path string, list []rawItemCount)
 	for j, it := range list {
 		q := fmt.Sprintf("%s[%d]", path, j)
 		switch {
-		case it.Item != "" && it.Weapon != "":
-			v.add(file, q, "item と weapon の両方は書けません")
-		case it.Item == "" && it.Weapon == "":
-			v.add(file, q, "item または weapon を書いてください")
+		case (it.Item != "" && it.Weapon != "") || (it.Material != "" && (it.Item != "" || it.Weapon != "")):
+			v.add(file, q, "item と weapon の両方、または material との混在は書けません")
+		case it.Item == "" && it.Weapon == "" && it.Material == "":
+			v.add(file, q, "item または weapon または material を書いてください")
+		case it.Material != "":
+			if file != FileChapters || !ref.materialIDs[it.Material] {
+				v.add(file, q+".material", "材料 %q がありません", it.Material)
+			}
 		case it.Item != "":
 			if !ref.itemIDs[it.Item] {
 				v.add(file, q+".item", "アイテム %q がありません", it.Item)
@@ -1158,11 +1260,13 @@ func (v *validator) rewardList(ref refs, file, path string, list []rawItemCount)
 				v.add(file, q+".weapon", "武器 %q がありません", it.Weapon)
 			}
 		}
-		key := it.Item + "/" + it.Weapon
-		if first, ok := seen[key]; ok && (it.Item != "" || it.Weapon != "") {
+		key := it.Item + "/" + it.Weapon + "/" + it.Material
+		if first, ok := seen[key]; ok && (it.Item != "" || it.Weapon != "" || it.Material != "") {
 			kind, label, id := "item", "アイテム", it.Item
 			if it.Weapon != "" {
 				kind, label, id = "weapon", "武器", it.Weapon
+			} else if it.Material != "" {
+				kind, label, id = "material", "材料", it.Material
 			}
 			v.add(file, q+"."+kind, "%s %q を 2 回書いています（%s と同じ）", label, id, first)
 		}

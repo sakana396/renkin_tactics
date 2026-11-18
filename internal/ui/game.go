@@ -256,7 +256,7 @@ type sceneKeys struct {
 // 準備の実入力は Game.Update → sceneInput → SceneController.Click・Cancel の経路を通る。
 func (g *Game) sceneInput(k sceneKeys, x, y int) {
 	s := g.scenes
-	if k.Tab {
+	if k.Tab && !s.craftOpen {
 		s.ToggleInfoPage()
 	}
 	if s.Scene() == Prepare && s.cfg.HiRes {
@@ -269,11 +269,23 @@ func (g *Game) sceneInput(k sceneKeys, x, y int) {
 		case k.Left:
 			s.Click(x, y)
 		case k.Up:
-			s.movePrepareMember(-1)
+			if s.craftOpen {
+				s.moveCraft(-1)
+			} else {
+				s.movePrepareMember(-1)
+			}
 		case k.Down:
-			s.movePrepareMember(1)
+			if s.craftOpen {
+				s.moveCraft(1)
+			} else {
+				s.movePrepareMember(1)
+			}
 		case k.Enter:
-			s.Advance()
+			if s.craftOpen {
+				s.makeCraft()
+			} else {
+				s.Advance()
+			}
 		}
 		return
 	}

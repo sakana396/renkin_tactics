@@ -1,6 +1,6 @@
 # 章（新作「古代都市の復旧」。DES-NG-06）。1〜3 章は #208 で作り直した（制作記録 docs/iterations/it08/map-ng-ch01〜03.md）
 # 書いた順が章の順。before・after は story.toml の物語の ID
-# 爆弾は章の報酬で在庫に入り、準備の画面で仲間に持たせる
+# 章の材料報酬は準備での調合に使う（DES-NG-21）
 
 [[chapters]]
 id = "ch01"
@@ -9,7 +9,7 @@ goal = "野盗の頭目を倒す"
 map = "ch01"
 before = "ch01_before"
 after = "ch01_after"
-reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }, { item = "bomb_far", count = 1 }, { item = "tonic_power", count = 1 }, { item = "snare_bottle", count = 1 }]
+reward = [{ item = "potion", count = 2 }, { material = "ore", count = 5 }, { material = "catalyst", count = 4 }, { item = "tonic_power", count = 1 }, { item = "snare_bottle", count = 1 }]
 
 [[chapters]]
 id = "ch02"
@@ -19,7 +19,7 @@ map = "ch02"
 before = "ch02_before"
 after = "ch02_after"
 joins = ["haru"]
-reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }, { item = "bomb_far", count = 1 }, { item = "tonic_power", count = 1 }, { item = "snare_bottle", count = 1 }]
+reward = [{ item = "potion", count = 2 }, { material = "ore", count = 5 }, { material = "catalyst", count = 4 }, { item = "tonic_power", count = 1 }, { item = "snare_bottle", count = 1 }]
 
 [[chapters]]
 id = "ch03"
@@ -28,4 +28,4 @@ goal = "施設の指揮官を倒す"
 map = "ch03"
 before = "ch03_before"
 after = "ch03_after"
-reward = [{ item = "potion", count = 2 }, { item = "bomb_small", count = 3 }, { item = "bomb_far", count = 1 }]
+reward = [{ item = "potion", count = 2 }, { material = "ore", count = 5 }, { material = "catalyst", count = 4 }]

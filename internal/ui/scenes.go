@@ -81,6 +81,10 @@ type SceneController struct {
 	prepareCursor    image.Point
 	prepareStockTop  int
 	prepareRosterTop int
+	craftOpen        bool
+	craftTop         int
+	craftSelected    int
+	craftMessage     string
 	// prepareTab・prepareItem は準備の表示タブと持ち物で選んだ品（DES-UI-32）。表示だけに使う。
 	prepareTab     PrepareTabKind
 	prepareItem    prepareItem
@@ -311,7 +315,11 @@ func (s *SceneController) Advance() {
 			s.enterPrepare()
 		}
 	case Prepare:
-		s.enterDeploy()
+		if s.cfg.HiRes && s.craftOpen {
+			s.makeCraft()
+		} else {
+			s.enterDeploy()
+		}
 	case Battle:
 		if s.battle == nil || (s.battle.State() != Over || s.battle.rewind.open) {
 			return

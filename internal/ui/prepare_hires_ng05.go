@@ -187,6 +187,8 @@ type PrepareHiResView struct {
 	RosterUp, RosterDown SceneButton
 	StockUp, StockDown   SceneButton
 	Deploy               SceneButton
+	Craft                SceneButton
+	CraftWindow          *craftView
 }
 
 // EnemyGroup は章の情報の敵の 1 行（同じ兵種・同じ武器の種類の数）。
@@ -321,9 +323,18 @@ func (s *SceneController) prepareHiResView() PrepareHiResView {
 
 	// フッター: 操作の案内、理由、「配置へ」。
 	box(image.Rect(0, hrFooter.Min.Y, hrFooter.Dx(), hrFooter.Min.Y+1), hrBoxLine)
-	txt("↑↓ キャラを選ぶ　クリック 持ち物を渡す・戻す　右クリック 武器を装備にする", 32, 766, 1, hrText)
+	guide := "↑↓ キャラを選ぶ　クリック 持ち物を渡す・戻す　右クリック 武器を装備にする"
+	if len(cat.Recipes()) > 0 {
+		guide = fitText(guide, 670)
+	}
+	txt(guide, 32, 766, 1, hrText)
 	if s.message != "" {
-		for i, line := range wrapSceneTextWidth(s.message, hrDeployRect.Min.X-32-24) {
+		for i, line := range wrapSceneTextWidth(s.message, func() int {
+			if len(cat.Recipes()) > 0 {
+				return 660
+			}
+			return hrDeployRect.Min.X - 32 - 24
+		}()) {
 			if i >= 2 {
 				break
 			}
@@ -336,6 +347,15 @@ func (s *SceneController) prepareHiResView() PrepareHiResView {
 	box(hrDeployRect, hrBoxButton)
 	label := "配置へ ▶"
 	txt(label, hrDeployRect.Min.X+(hrDeployRect.Dx()-textWidth(label)*2)/2, hrDeployRect.Min.Y+(hrDeployRect.Dy()-2*lineHeight)/2, 2, hrDark)
+	if len(cat.Recipes()) > 0 {
+		v.Craft = SceneButton{Label: "調合", Rect: image.Rect(720, 764, 834, 818), Enabled: true}
+		box(v.Craft.Rect, hrBoxButton)
+		txt("調合", 752, 778, 2, hrDark)
+	}
+	if s.craftOpen {
+		w := s.craftWindow()
+		v.CraftWindow = &w
+	}
 	return v
 }
 
@@ -738,6 +758,17 @@ func (s *SceneController) hrChapter(v *PrepareHiResView, info ChapterInfo, box h
 func (s *SceneController) clickPrepareHiRes(x, y int) {
 	pt := image.Pt(x, y)
 	v := s.prepareHiResView()
+	if s.craftOpen {
+		s.clickCraft(pt, *v.CraftWindow)
+		return
+	}
+	if v.Craft.Enabled && pt.In(v.Craft.Rect) {
+		s.craftOpen = true
+		s.craftSelected = -1
+		s.craftTop = 0
+		s.craftMessage = ""
+		return
+	}
 	if v.RosterUp.Label != "" {
 		if pt.In(v.RosterUp.Rect) {
 			if v.RosterUp.Enabled {
@@ -870,6 +901,10 @@ func (s *SceneController) rightClickPrepare(x, y int) bool {
 	if s.scene != Prepare || !s.cfg.HiRes {
 		return false
 	}
+	if s.craftOpen {
+		s.closeCraft()
+		return true
+	}
 	pt := image.Pt(x, y)
 	for _, h := range s.prepareHiResView().Hand {
 		if pt.In(h.Rect) && h.Weapon >= 0 {
@@ -906,6 +941,10 @@ func (s *SceneController) movePrepareMember(delta int) {
 
 // cancelPrepareHiRes は Esc・右クリックで、選んだ在庫の品を外す。
 func (s *SceneController) cancelPrepareHiRes() {
+	if s.craftOpen {
+		s.closeCraft()
+		return
+	}
 	s.prepareItem = prepareItem{}
 	s.message = ""
 }

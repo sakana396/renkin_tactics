@@ -52,6 +52,7 @@ type saveData struct {
 	Roster       []saveMember      `json:"roster"`
 	Stock        []saveItem        `json:"stock"`
 	StockWeapons []saveWeaponCount `json:"stock_weapons"`
+	Materials    []saveMaterial    `json:"materials,omitempty"`
 }
 type saveMember struct {
 	Character string     `json:"character"`
@@ -73,6 +74,11 @@ type saveStats struct {
 	Res int `json:"res"`
 	Mov int `json:"mov"`
 }
+type saveMaterial struct {
+	Material string `json:"material"`
+	Count    int    `json:"count"`
+}
+
 type saveItem struct {
 	Item  string `json:"item"`
 	Count int    `json:"count"`
@@ -116,6 +122,12 @@ func (c *Campaign) Save(w io.Writer) error {
 	for i, w := range c.StockWeapons {
 		d.StockWeapons[i] = saveWeaponCount{Weapon: w.Weapon, Count: w.Count}
 	}
+	for id, count := range c.Materials {
+		if count != 0 {
+			d.Materials = append(d.Materials, saveMaterial{Material: id, Count: count})
+		}
+	}
+	sort.Slice(d.Materials, func(i, j int) bool { return d.Materials[i].Material < d.Materials[j].Material })
 	sort.Slice(d.StockWeapons, func(i, j int) bool { return d.StockWeapons[i].Weapon < d.StockWeapons[j].Weapon })
 	sort.Slice(d.Stock, func(i, j int) bool { return d.Stock[i].Item < d.Stock[j].Item })
 	data, err := json.MarshalIndent(d, "", "  ")
@@ -301,6 +313,23 @@ func LoadCampaign(cat *defs.Catalog, r io.Reader) (*Campaign, error) {
 	// 武器の本数と道具の個数が 5 枠を超える仲間は、あふれた道具を同じ ID の在庫に足す（DES-IT06 6.3 節、REV-069）。
 	for i := range c.Roster {
 		c.Roster[i].Items, c.Stock = overflowToStock(c.Roster[i], c.Stock)
+	}
+
+	for i, m := range d.Materials {
+		path := fmt.Sprintf("materials[%d]", i)
+		if _, ok := cat.Material(m.Material); !ok {
+			return nil, invalidSave(path+".material", "目録に材料がありません")
+		}
+		if m.Count < 0 {
+			return nil, invalidSave(path+".count", "数は 0 以上です")
+		}
+		if c.Materials == nil {
+			c.Materials = make(map[string]int)
+		}
+		if _, ok := c.Materials[m.Material]; ok {
+			return nil, invalidSave(path+".material", "材料が重複しています")
+		}
+		c.Materials[m.Material] = m.Count
 	}
 
 	seenWeapons := map[string]bool{}

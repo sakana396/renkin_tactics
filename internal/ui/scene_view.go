@@ -198,6 +198,9 @@ func (s *SceneController) View() SceneView {
 			if r.Weapon != "" {
 				weapon, _ := s.cfg.Catalog.Weapon(r.Weapon)
 				rewards = append(rewards, fmt.Sprintf("%s ×%d", weapon.Name, r.Count))
+			} else if r.Material != "" {
+				material, _ := s.cfg.Catalog.Material(r.Material)
+				rewards = append(rewards, fmt.Sprintf("%s ×%d", material.Name, r.Count))
 			} else {
 				item, _ := s.cfg.Catalog.Item(r.Item)
 				rewards = append(rewards, fmt.Sprintf("%s ×%d", item.Name, r.Count))

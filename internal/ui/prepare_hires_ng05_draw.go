@@ -55,6 +55,14 @@ func (g *Game) drawPrepareHiRes(dst *ebiten.Image, v PrepareHiResView) {
 	for _, t := range v.Texts {
 		hrDrawText(dst, t)
 	}
+	if v.CraftWindow != nil {
+		for _, b := range v.CraftWindow.Boxes {
+			hrDrawBox(dst, b)
+		}
+		for _, t := range v.CraftWindow.Texts {
+			hrDrawText(dst, t)
+		}
+	}
 }
 
 // hrDrawGlyph は ▲▼ の三角と → の矢印を、フォントの字形を使わず vector で描く（F-05）。
