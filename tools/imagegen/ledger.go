@@ -76,7 +76,7 @@ func makeRow(in rowInput) (string, error) {
 		"`" + in.File + "`",
 		makeDescription(in),
 		tool,
-		"「" + oneLine(in.Meta.Prompt) + "」（全文。改行は空白に置き換えた）",
+		"「" + oneLine(in.Meta.Prompt) + "」（全文。改行は空白に置き換えた）。Codex の会話のモデルに、wrapPrompt の依頼文で指示を変えずに image_gen へ渡すよう頼んだ。image_gen が実際に受け取った文は確認していない",
 		oneLine(in.Terms),
 		in.CheckedOn,
 		oneLine(in.CheckedBy),

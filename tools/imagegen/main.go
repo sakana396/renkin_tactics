@@ -3,10 +3,10 @@
 //
 // 2 つの段に分ける。
 //
-//	generate: 指示文から Codex CLI で 1 枚作り、生の画像と生成の記録（<画像>.json）を media の外に保存する
+//	generate: 指示文から Codex CLI で 1 枚作り、生の画像と生成の記録（<画像>.json）を リポジトリの外に保存する
 //	place:    生の画像を種類に合わせて加工し（透過・切り出し・縮小）、art の下に置き、台帳に 1 行足す
 //
-// 使い方は tools/imagegen/README.md。名前・大きさ・台帳の書き方は DES-NG-08（docs/03_design/design-ng02-art.md 3 章・5 章）。
+// 使い方は tools/imagegen/README.md。名前・大きさ・台帳の書き方は DES-NG-08・DES-NG-12（docs/03_design/design-ng02-art.md）。
 package main
 
 import (
@@ -64,11 +64,64 @@ func insideDir(p, dir string) bool {
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
+// resolvePath は存在する親まで遡ってリンクを解き、未作成の末尾を付け直す。
+func resolvePath(path string) (string, error) {
+	p, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	var tail []string
+	for {
+		resolved, err := filepath.EvalSymlinks(p)
+		if err == nil {
+			for i := len(tail) - 1; i >= 0; i-- {
+				resolved = filepath.Join(resolved, tail[i])
+			}
+			return resolved, nil
+		}
+		if !os.IsNotExist(err) {
+			return "", err
+		}
+		if _, statErr := os.Lstat(p); statErr == nil {
+			return "", err
+		} else if !os.IsNotExist(statErr) {
+			return "", statErr
+		}
+		parent := filepath.Dir(p)
+		if parent == p {
+			return "", err
+		}
+		tail = append(tail, filepath.Base(p))
+		p = parent
+	}
+}
+
+// repositoryRoot は作業ディレクトリから go.mod を探す（DES-NG-12）。
+func repositoryRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return resolvePath(dir)
+		} else if !os.IsNotExist(err) {
+			return "", err
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("go.mod が見つかりません")
+		}
+		dir = parent
+	}
+}
+
 func runGenerate(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("generate", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	promptPath := fs.String("prompt", "", "指示文のファイル（英語の全文。台帳にそのまま書く）")
-	out := fs.String("out", "", "生の画像の保存先（.png。data/alchemy/media の外）")
+	out := fs.String("out", "", "生の画像の保存先（.png。リポジトリの外）")
+	replace := fs.Bool("replace", false, "既存の生の画像と記録を置き換える")
 	codex := fs.String("codex", "codex", "Codex CLI のコマンド")
 	model := fs.String("model", "", "Codex の会話のモデル（省けば Codex の設定のまま）")
 	media := fs.String("media", "data/alchemy/media", "画像の置き場（ここの中には保存しない）")
@@ -79,9 +132,44 @@ func runGenerate(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "-prompt と -out を指定してください")
 		return 2
 	}
-	if insideDir(*out, *media) {
-		fmt.Fprintf(stderr, "生の画像は %s の外に保存してください（置くのは place で）\n", *media)
+	root, err := repositoryRoot()
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	resolvedOut, err := resolvePath(*out)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	resolvedMeta, err := resolvePath(*out + ".json")
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	mediaPath := *media
+	if !filepath.IsAbs(mediaPath) {
+		mediaPath = filepath.Join(root, mediaPath)
+	}
+	resolvedMedia, err := resolvePath(mediaPath)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	if insideDir(resolvedOut, root) || insideDir(resolvedMeta, root) || insideDir(resolvedOut, resolvedMedia) || insideDir(resolvedMeta, resolvedMedia) {
+		fmt.Fprintln(stderr, "生の画像と記録はリポジトリと media の外に保存してください")
 		return 2
+	}
+	if !*replace {
+		for _, path := range []string{*out, *out + ".json"} {
+			if _, err := os.Lstat(path); err == nil {
+				fmt.Fprintf(stderr, "%s はもうあります（置き換えるときは -replace）\n", path)
+				return 1
+			} else if !os.IsNotExist(err) {
+				fmt.Fprintln(stderr, err)
+				return 1
+			}
+		}
 	}
 	raw, err := os.ReadFile(*promptPath)
 	if err != nil {
@@ -109,7 +197,7 @@ func runGenerate(args []string, stdout, stderr io.Writer) int {
 			usedModel = configuredModel(string(cfg))
 		}
 	}
-	// Codex は空の作業ディレクトリで動かす（読み取り専用。リポジトリを見せない）。
+	// 作業ディレクトリを空にする。read-only でもディスクは読め、~/.codex の設定も読まれる（DES-NG-12）。
 	work, err := os.MkdirTemp("", "imagegen-")
 	if err != nil {
 		fmt.Fprintln(stderr, err)

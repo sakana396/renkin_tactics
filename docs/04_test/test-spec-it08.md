@@ -3,7 +3,7 @@
 - 文書 ID: TST-IT08
 - 版: 0.2
 - 作成日: 2026-11-15
-- 対象: IT08-PLAN v0.3 9 章 I・J、E-132、E-131・E-133、反復 7 測り直し 3 章の案 B
+- 対象: IT08-PLAN v0.3 9 章 I・J、DES-NG-12、E-132、E-131・E-133、反復 7 測り直し 3 章の案 B
 
 ## 1. 方針
 
@@ -19,11 +19,11 @@
 
 ### 2.2 画像生成の道具（#210）
 
-IT08-PLAN 9 章 J の道具 `tools/imagegen`（Codex CLI の画像生成を呼び、加工して `data/alchemy/media/art` に置き、台帳に行を足す）を確かめる。要求は FR-SYS-08（台帳の記録）。DES-NG02 は画像の生成を範囲外としているので、設計 ID がない。TST-NG02 は DES-NG-08 のケースで連番が 99 まで埋まっているため、反復 8 の道具として本書に置き、要求の ID で `TC-FR-SYS-08-xx` と採番した。期待値は、README の手順と設計の大きさ（DES-NG-08 3 章）から手で数えた。実際の生成（Codex CLI とサブスクリプションの枠）は自動では行わず、偽の Codex CLI で確かめる。
+IT08-PLAN 9 章 J の道具 `tools/imagegen`（Codex CLI の画像生成を呼び、加工して `data/alchemy/media/art` に置き、台帳に行を足す）を確かめる。要求は FR-SYS-08（台帳の記録）。画像生成の道具の設計は DES-NG-12。TST-NG02 は DES-NG-08 のケースで連番が 99 まで埋まっているため、反復 8 の道具として本書に置き、要求の ID で `TC-FR-SYS-08-xx` と採番した。期待値は、README の手順と設計の大きさ（DES-NG-08 3 章）から手で数えた。実際の生成（Codex CLI とサブスクリプションの枠）は自動では行わず、偽の Codex CLI で確かめる。
 
 | ID | 対象（要求・根拠） | 前提 | 入力・操作 | 期待結果 | 種別 |
 |---|---|---|---|---|---|
-| TC-FR-SYS-08-01 | FR-SYS-08 / IT08-PLAN 9 章 J | 複数行で 縦棒（パイプ） を含む指示文 | `wrapPrompt`・`execArgs` | 指示文が前後の空白を除いてそのまま印の間に入る。1 回だけ・ファイルを作らない依頼がある。引数は `exec --skip-git-repo-check --ephemeral -s read-only -C <dir> --json -`（モデル指定時は `-m` が `-` の前） | 自動・正常 |
+| TC-FR-SYS-08-01 | FR-SYS-08 / DES-NG-12 | 複数行で 縦棒（パイプ） を含む指示文 | `wrapPrompt`・`execArgs` | 指示文が前後の空白を除いてそのまま印の間に入る。1 回だけ・ファイルを作らない依頼がある。引数は `exec --skip-git-repo-check --ephemeral -c approval_policy="never" -s read-only -C <dir> --json -`（モデル指定時は `-m` が `-` の前） | 自動・正常 |
 | TC-FR-SYS-08-02 | 同上 | `codex exec --json` の JSONL（JSON でない行、reasoning の項目を含む）、`error`・`turn.failed` の出来事、`thread.started` のない出力 | `parseExecEvents` | スレッドの ID と、前後の空白を除いた最後の agent_message を返す。誤りの出来事はその文を含む誤り。`thread.started` がなければ誤り | 自動・正常・異常 |
 | TC-FR-SYS-08-03 | 同上 | `generated_images/<ID>/` に PNG が 0・1・2 個、正しくない ID（空・`..`・区切りを含む）、置き場がない | `findGenerated` | 1 個のときだけその道筋（`.txt` は数えない）。ほかは誤り | 自動・正常・異常 |
 | TC-FR-SYS-08-04 | 同上 | Codex の `config.toml`（最上位の model、表の中の model、model なし） | `configuredModel` | 最上位の model だけを返す。表の中・なしは空 | 自動・正常 |
@@ -31,17 +31,17 @@ IT08-PLAN 9 章 J の道具 `tools/imagegen`（Codex CLI の画像生成を呼�
 | TC-FR-SYS-08-06 | 同上 | 100×100 の透明に 10×50 の中身、α がちょうど下限（10）の画素。中身のない画像 | `trimSquare` | 一辺 56（50 + 余白 3×2）、中身は (23,3)-(33,53)（横の中央、下端から 3 px）。下限ちょうどの画素は数えない。中身がなければ誤り | 自動・正常・境界 |
 | TC-FR-SYS-08-07 | FR-SYS-08 / DES-NG-08 3 章の大きさ | 1536×1024・1024×1536・1254×1254・832×576 | `coverRect`（832:576、512:512） | (28,0)-(1507,1024)、(0,413)-(1024,1122)、そのまま、そのまま | 自動・正常 |
 | TC-FR-SYS-08-08 | 同上 | 1536×1024 の背景、緑の背景の 400×400 に赤の人物、1254×1254、正方形でない種類の透過、全体が緑 | `processImage` | story は 832×576 で不透明、units は 128×128 で隅は透明・中央は赤の不透明・緑の残る半透明の画素 0、portraits は 512×512。後の 2 つは誤り | 自動・正常・異常 |
-| TC-FR-SYS-08-09 | FR-SYS-08 / DES-NG-08 5 章の列 | 背景と units の生成の記録、利用条件・確かめた日・人 | `makeRow` | 7 列。作り方は「AI 生成」で始まり加工の手順を書く。ツール欄は版・会話のモデル・日付。指示は改行を空白にした全文。縦棒（パイプ） を含む欄、空の利用条件・確かめた人、YYYY-MM-DD でない日付、知らない種類は誤り | 自動・正常・異常 |
+| TC-FR-SYS-08-09 | FR-SYS-08 / DES-NG-08 5 章の列 | 背景と units の生成の記録、利用条件・確かめた日・人 | `makeRow` | 7 列。作り方は「AI 生成」で始まり加工の手順を書く。ツール欄は版・会話のモデル・日付。指示は改行を空白にした全文と、wrapPrompt で変えずに渡すよう頼んだこと、実際に受け取った文は未確認であること。縦棒（パイプ） を含む欄、空の利用条件・確かめた人、YYYY-MM-DD でない日付、知らない種類は誤り | 自動・正常・異常 |
 | TC-FR-SYS-08-10 | FR-SYS-08 / DES-NG-08 5 章 | 囲み（```）の中の見本の行と、本物の表のある台帳 | `insertRow` | 表の最後の行の次に足す（後ろの節は変えない）。同じファイルの行があれば誤り、置き換えの指定なら 1 行を置き換える。囲みの中の見本は表の行とみなさない。表がなければ誤り | 自動・正常・異常 |
-| TC-FR-SYS-08-11 | FR-SYS-08 / DES-NG-08 3 章の名前の規則 | 種類と ID の組。media の中への生の画像の保存 | `artPath`・`run generate` | `art/units/aoi.png`・`art/units/enemy_bandit.png`・`art/portraits/nemu.png`・`art/story/ch01_before.png`・`art/title.png`。大文字・`-`・空・`..`・知らない種類は誤り。media の中への保存は終了コード 2 | 自動・正常・異常 |
+| TC-FR-SYS-08-11 | FR-SYS-08 / DES-NG-08 3 章の名前の規則 | 種類と ID の組。リポジトリ内・media 内・リンク経由の生の画像の保存 | `artPath`・`run generate` | `art/units/aoi.png`・`art/units/enemy_bandit.png`・`art/portraits/nemu.png`・`art/story/ch01_before.png`・`art/title.png`。大文字・`-`・空・`..`・知らない種類は誤り。リポジトリ内・media 内・リンク経由の保存は終了コード 2 | 自動・正常・異常 |
 | TC-FR-SYS-08-12 | FR-SYS-08 / DES-NG-08 5 章の検査 | 空の台帳の一時の media、背景と units の生の画像と記録 | `run place` を 2 回、同じ名前でもう 1 回、`-replace` で 1 回 | 置いた画像と行で `data.CheckMediaLedger` の問題がない。背景は 832×576。`-replace` なしの再実行は終了コード 1、`-replace` なら行は 1 つのまま検査を通る | 自動・正常・異常 |
-| TC-FR-SYS-08-13 | FR-SYS-08 / IT08-PLAN 9 章 J | 偽の Codex CLI（版を返し、JSONL を出す）と、`CODEX_HOME` の `generated_images/<ID>/` の PNG、`config.toml` | `run generate` | 生の画像を保存し、記録に版・設定のモデル・スレッドの ID・日付・指示文が入る。Codex へ渡した依頼に指示文が印の間で入る（Windows では飛ばす） | 自動・正常 |
+| TC-FR-SYS-08-13 | FR-SYS-08 / DES-NG-12 | 偽の Codex CLI（版を返し、JSONL を出す）と、`CODEX_HOME` の `generated_images/<ID>/` の PNG、`config.toml` | `run generate` | 生の画像を保存し、記録に版・設定のモデル・スレッドの ID・日付・指示文が入る。Codex へ渡した依頼に指示文が印の間で入る。既存の画像または記録があれば変更せず終了コード 1、`-replace` なら置き換える（Windows では飛ばす） | 自動・正常 |
 
 ## 3. 実施結果
 
 9 章の 120 試遊の結果と条件は [測り直し](../iterations/it08/ch09-candidate-b.md) に記録する。
 
-#210（2026-11-18）: `tools/imagegen` で 1 章の物語の背景 `art/story/ch01_before.png` を作って置き、台帳の検査（TC-DES-NG-08-11）が通ることと、`tools/shot`（`-game alchemy -chapter ch01 -scene story`）で 1・8・9 段落目に背景が出ること（9 段落目は肖像と重なる）を確かめた。生成は 2 回。1 回目は道具を作る前に、手で codex exec を呼んで生成した（引数と依頼文は道具の generate と同じ）。2 回目は道具の generate で、生成から記録までが通ることを確かめた。水路が乾いている 1 回目を採った。1 回目の生成の記録（.json）は道具で作ったものではなく、手で作った（スレッドの ID と保存先は 1 回目の実際の出力から取った）。
+#210（2026-11-18）: `tools/imagegen` で 1 章の物語の背景 `art/story/ch01_before.png` を作って置き、台帳の検査（TC-DES-NG-08-11）が通ることと、`tools/shot`（`-game alchemy -chapter ch01 -scene story`）で 1・8・9 段落目に背景が出ること（9 段落目は肖像と重なる）を確かめた。生成は 2 回。1 回目は道具を作る前に、手で codex exec を呼んで生成した（引数と依頼文は道具の generate と同じ）。2 回目は道具の generate で、生成から記録までが通ることを確かめた。水路が乾いている 1 回目を採った。画像を置き台帳を place で書き、そのあと 1 回目の経緯を「作り方」・「使ったツールと版・生成した日」の 2 欄に手で書き足した。生の画像と 1 回目の生成の記録は `/home/sakana/renkin_media_raw/2026-11-18-ch01_before/` に保管する。1 回目の生成の記録（.json）は道具で作ったものではなく、手で作った（スレッドの ID と保存先は 1 回目の実際の出力から取った）。
 
 ## 4. 変更履歴
 

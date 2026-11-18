@@ -44,7 +44,7 @@ flowchart TB
 - `core` と `core/tactics` は Ebitengine と実時間（`time`）を使わない（NFR-04、NFR-05）。テストで `go list` の結果を調べて自動で確かめる（DES-NFR-01）
 - `tactics` は定義データの型を知らない。テストでは Go のコードで `tactics.Setup` を組み立てられる
 - AGENTS.md のパッケージ構成の表にも、この構成を書いた（E-18）
-- （反復 8 で追記。#203、IT08-PLAN 3.1 節、REV-112 F-10）新作の音のために `internal/ui/audio` を足した（DES-NG03）。`ui` だけが `ui/audio` を使う。`github.com/ebitengine/oto/v3` は `ui/audio` が直接使う。`golang.org/x/image` は、試し用の絵の道具 `tools/mkplaceholder`（DES-NG-08）だけが直接 import し、`ui` を含むゲーム本体は直接 import しない（Ebitengine を通して間接に使う。試作ブランチの import で確かめた）。`tools/` の下の道具は、この表の外に置く。この行は、試作の取り込み（#205）のあとに有効になる
+- （反復 8 で追記。#203、IT08-PLAN 3.1 節、REV-112 F-10）新作の音のために `internal/ui/audio` を足した（DES-NG03）。`ui` だけが `ui/audio` を使う。`github.com/ebitengine/oto/v3` は `ui/audio` が直接使う。`golang.org/x/image` は、試し用の絵の道具 `tools/mkplaceholder`（DES-NG-08）と画像生成の道具 `tools/imagegen`（DES-NG-12）が直接 import し、`ui` を含むゲーム本体は直接 import しない（Ebitengine を通して間接に使う。試作ブランチの import で確かめた）。`tools/` の下の道具は、この表の外に置く。この行は、試作の取り込み（#205）のあとに有効になる
 
 ### 1.2 乱数（DES-RNG-01）
 

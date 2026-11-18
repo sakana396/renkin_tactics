@@ -51,12 +51,12 @@ func TestCodexCall(t *testing.T) {
 			t.Fatalf("1 回だけ・ファイルを作らない、の依頼がない: %q", w)
 		}
 		got := strings.Join(execArgs("/w", ""), " ")
-		want := "exec --skip-git-repo-check --ephemeral -s read-only -C /w --json -"
+		want := "exec --skip-git-repo-check --ephemeral -c approval_policy=\"never\" -s read-only -C /w --json -"
 		if got != want {
 			t.Fatalf("引数 = %q、want %q", got, want)
 		}
 		got = strings.Join(execArgs("/w", "m1"), " ")
-		if got != "exec --skip-git-repo-check --ephemeral -s read-only -C /w --json -m m1 -" {
+		if got != "exec --skip-git-repo-check --ephemeral -c approval_policy=\"never\" -s read-only -C /w --json -m m1 -" {
 			t.Fatalf("モデル指定の引数 = %q", got)
 		}
 	})
@@ -138,7 +138,7 @@ func TestProcess(t *testing.T) {
 				t.Errorf("keyAlpha(%d) = %d、want %d", c.k, got, c.want)
 			}
 		}
-		// 20×20 の緑の背景に、赤の 4×4（x 2〜5）と、緑がかった灰色の 2×2（x 12〜13）と、遠い灰色（x 0..1, y 18..19 は端で背景に接する）。
+		// 20×20 の緑の背景に、赤の 4×4（x 2〜5）と、緑がかった灰色の 2×2（x 12〜13）。
 		img := fill(20, 20, green)
 		rect(img, image.Rect(2, 2, 6, 6), red)
 		rect(img, image.Rect(12, 12, 14, 14), color.NRGBA{100, 150, 100, 255}) // k = 50 → 不透明、縁の帯の中
@@ -253,7 +253,7 @@ func TestLedger(t *testing.T) {
 			"`art/story/ch01_before.png`",
 			"AI 生成（Codex CLI の画像生成）。元の 1536×1024 の画像を、tools/imagegen で、中央を残して 832:576 の比に切り（はみ出しを左右か上下で等しく切る）、832×576 の PNG に縮小した（Catmull-Rom）。ほかの加工はしていない",
 			"codex-cli 0.169.0（codex exec の組み込みの image_gen ツール。Codex の会話のモデルは gpt-x。画像のモデル名は表示されない）、2026-11-18。加工は tools/imagegen",
-			"「Line one. Line two.」（全文。改行は空白に置き換えた）",
+			"「Line one. Line two.」（全文。改行は空白に置き換えた）。Codex の会話のモデルに、wrapPrompt の依頼文で指示を変えずに image_gen へ渡すよう頼んだ。image_gen が実際に受け取った文は確認していない",
 			"規約 A 第 3 条", "2026-11-18", "Claude（エージェント）",
 		}
 		for i := range want {
@@ -327,6 +327,25 @@ func TestLedger(t *testing.T) {
 			if _, err := artPath(c[0], c[1]); err == nil {
 				t.Errorf("artPath(%q, %q) が誤りにならない", c[0], c[1])
 			}
+		}
+		root, err := repositoryRoot()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, path := range []string{filepath.Join(root, "other", "raw.png"), filepath.Join(root, "data", "alchemy", "media", "raw.png")} {
+			var errb bytes.Buffer
+			if code := run([]string{"generate", "-prompt", "unused", "-out", path}, &bytes.Buffer{}, &errb); code != 2 {
+				t.Fatalf("リポジトリ内 %s: %d %s", path, code, errb.String())
+			}
+		}
+		link := filepath.Join(t.TempDir(), "link")
+		if err := os.Symlink(root, link); err == nil {
+			var errb bytes.Buffer
+			if code := run([]string{"generate", "-prompt", "unused", "-out", filepath.Join(link, "new", "raw.png")}, &bytes.Buffer{}, &errb); code != 2 {
+				t.Fatalf("リンク経由: %d %s", code, errb.String())
+			}
+		} else if runtime.GOOS != "windows" {
+			t.Fatal(err)
 		}
 		media := t.TempDir()
 		var stderr bytes.Buffer
@@ -437,6 +456,23 @@ func TestEndToEnd(t *testing.T) {
 		}
 		if m.Tool != "codex-cli 9.9.9" || m.Model != "gpt-test" || m.ThreadID != "th-9" || m.Prompt != "A quiet stone city." || !datePattern.MatchString(m.Date) {
 			t.Fatalf("生成の記録 = %+v", m)
+		}
+		for _, remove := range []string{"", ".json"} {
+			if remove != "" {
+				os.Remove(outPath)
+				os.WriteFile(outPath+".json", []byte("元の記録"), 0644)
+			}
+			before, _ := os.ReadFile(outPath + remove)
+			if code := run([]string{"generate", "-prompt", prompt, "-out", outPath, "-codex", fake}, &out, &errb); code != 1 {
+				t.Fatalf("既存 %s: %d", remove, code)
+			}
+			after, _ := os.ReadFile(outPath + remove)
+			if !bytes.Equal(before, after) {
+				t.Fatal("既存ファイルが変わった")
+			}
+		}
+		if code := run([]string{"generate", "-prompt", prompt, "-out", outPath, "-codex", fake, "-replace"}, &out, &errb); code != 0 {
+			t.Fatalf("置き換え: %d %s", code, errb.String())
 		}
 		sent, _ := os.ReadFile(filepath.Join(dir, "stdin.txt"))
 		if !strings.Contains(string(sent), "<<<PROMPT\nA quiet stone city.\nPROMPT>>>") {

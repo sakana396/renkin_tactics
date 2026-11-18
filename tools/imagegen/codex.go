@@ -29,7 +29,7 @@ func wrapPrompt(prompt string) string {
 
 // execArgs は `codex exec` の引数。読み取り専用のサンドボックスで、セッションを残さず、出来事を JSONL で受け取る。
 func execArgs(workdir, model string) []string {
-	args := []string{"exec", "--skip-git-repo-check", "--ephemeral", "-s", "read-only", "-C", workdir, "--json"}
+	args := []string{"exec", "--skip-git-repo-check", "--ephemeral", "-c", `approval_policy="never"`, "-s", "read-only", "-C", workdir, "--json"}
 	if model != "" {
 		args = append(args, "-m", model)
 	}
@@ -118,7 +118,7 @@ func findGenerated(codexHome, threadID string) (string, error) {
 	case 1:
 		return pngs[0], nil
 	default:
-		return "", fmt.Errorf("%s に PNG が %d 個あります。使うものを選んで -in で place に渡してください", dir, len(pngs))
+		return "", fmt.Errorf("%s に PNG が %d 個あります。候補を確認し、生成の記録を手で用意してから place に渡してください", dir, len(pngs))
 	}
 }
 
