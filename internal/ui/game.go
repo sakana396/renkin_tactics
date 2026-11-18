@@ -1015,7 +1015,11 @@ func (g *Game) drawScene(dst *ebiten.Image) {
 
 // cursor は、場面の配置の座標でのカーソルの位置を返す。盤面を持たない場面は窓の中央に置くので、その分を引く（DES-NG-10）。
 func (g *Game) cursor() (x, y int) {
-	x, y = ebiten.CursorPosition()
+	return g.sceneCursorAt(ebiten.CursorPosition())
+}
+
+// sceneCursorAt は、窓の座標 (x, y) を、今の場面の配置の座標に変える。新作の準備は窓の全体に描くので変えない（DES-NG-10、DES-NG-11）。
+func (g *Game) sceneCursorAt(x, y int) (int, int) {
 	if g.scenes == nil {
 		return x, y
 	}

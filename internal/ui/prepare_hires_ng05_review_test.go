@@ -503,3 +503,28 @@ func TestPrepareWindowSceneCursor(t *testing.T) {
 		}
 	})
 }
+
+func TestPrepareGameCursor(t *testing.T) {
+	t.Run("TC-DES-NG-11-24 Game が窓の座標を準備の座標に変える（新作は変えず、旧作は中央寄せの分を引く）", func(t *testing.T) {
+		useTestMetrics(t, HiResCellSize)
+		for _, tc := range []struct {
+			name         string
+			hires        bool
+			wantX, wantY int
+		}{
+			{"新作", true, 400, 300},
+			{"旧作", false, 272, 172},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				g := &Game{scenes: ng05Scenes(t, "ch01", tc.hires)}
+				if g.scenes.Scene() != Prepare {
+					t.Fatalf("場面 = %v, 期待 Prepare", g.scenes.Scene())
+				}
+				x, y := g.sceneCursorAt(400, 300)
+				if x != tc.wantX || y != tc.wantY {
+					t.Fatalf("座標 = (%d, %d), 期待 = (%d, %d)", x, y, tc.wantX, tc.wantY)
+				}
+			})
+		}
+	})
+}
