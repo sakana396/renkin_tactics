@@ -248,6 +248,7 @@ func TestPrepareHiResReview(t *testing.T) {
 	t.Run("TC-DES-NG-11-22 ▲▼ と → は vector の図形で描く（文字ではない）。クリックの範囲は変えない", func(t *testing.T) {
 		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch03", true)
+		s.campaign.StockWeapons = append(s.campaign.StockWeapons, core.WeaponCount{Weapon: "iron_axe", Count: 1})
 		s.campaign.Roster = append(s.campaign.Roster, core.Member{Character: "haru", Level: 1, Weapons: []string{"fire"}, Stats: tactics.Stats{HP: 10}, Alive: true})
 		v := s.prepareHiResView()
 		for _, tx := range v.Texts {

@@ -168,7 +168,11 @@ func (s *SceneController) View() SceneView {
 		}
 		lines("左クリック: 章の準備へ", 528, StyleLabel)
 	case Prepare:
-		v = s.prepareView()
+		if s.fullWindowPrepare() {
+			v = s.hrSceneView()
+		} else {
+			v = s.prepareView()
+		}
 	case Deploy:
 		v = s.deployView()
 	case Result:

@@ -410,9 +410,9 @@ func TestPrepareHiResNG05(t *testing.T) {
 			return EnemyGroup{Name: name, Weapon: w, Count: 1, Boss: true}
 		}
 		want := []ChapterInfo{
-			{Goal: "野盗の頭目を倒す", Total: 9, Groups: []EnemyGroup{g("野盗", tactics.Sword, 6), g("槍兵", tactics.Lance, 1), g("弓兵", tactics.Bow, 1)}, Bosses: []EnemyGroup{boss("野盗の頭目", tactics.Sword)}},
-			{Goal: "公国の隊長を倒す", Total: 9, Groups: []EnemyGroup{g("槍兵", tactics.Lance, 2), g("剣士", tactics.Sword, 2), g("弓兵", tactics.Bow, 2), g("重装兵", tactics.Lance, 2)}, Bosses: []EnemyGroup{boss("先遣隊長ドルク", tactics.Lance)}},
-			{Goal: "施設の指揮官を倒す", Total: 12, Groups: []EnemyGroup{g("重装兵", tactics.Lance, 3), g("槍兵", tactics.Lance, 3), g("剣士", tactics.Sword, 3), g("弓兵", tactics.Bow, 2)}, Bosses: []EnemyGroup{boss("将軍ベルナド", tactics.Lance)}},
+			{Goal: "野盗の頭目を倒す", Total: 18, Reinforce: true, Groups: []EnemyGroup{g("野盗", tactics.Sword, 7), g("剣士", tactics.Sword, 2), g("弓兵", tactics.Bow, 5), g("槍兵", tactics.Lance, 3)}, Bosses: []EnemyGroup{boss("野盗の頭目", tactics.Lance)}},
+			{Goal: "公国の隊長を倒す", Total: 11, Reinforce: true, Groups: []EnemyGroup{g("野盗", tactics.Sword, 3), g("剣士", tactics.Sword, 2), g("弓兵", tactics.Bow, 3), g("槍兵", tactics.Lance, 2)}, Bosses: []EnemyGroup{boss("公国の隊長", tactics.Lance)}},
+			{Goal: "施設の指揮官を倒す", Total: 10, Reinforce: true, Groups: []EnemyGroup{g("野盗", tactics.Sword, 2), g("剣士", tactics.Sword, 2), g("槍兵", tactics.Lance, 2), g("弓兵", tactics.Bow, 3)}, Bosses: []EnemyGroup{boss("施設の指揮官", tactics.Lance)}},
 		}
 		for i, w := range want {
 			got := chapterInfo(cat, i)
@@ -600,6 +600,7 @@ func TestPrepareHiResNG05(t *testing.T) {
 	t.Run("TC-DES-NG-11-19 手持ちの 5 枠と在庫の行は、それぞれの欄に収まり、重ならない。在庫は 3 行を超えるとスクロールする", func(t *testing.T) {
 		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch03", true)
+		s.campaign.StockWeapons = append(s.campaign.StockWeapons, core.WeaponCount{Weapon: "iron_axe", Count: 1})
 		v := s.prepareHiResView()
 		for i, h := range v.Hand {
 			if !h.Rect.In(hrHandPanel) || h.Rect.Dx() != 54 || h.Rect.Dy() != 54 {
