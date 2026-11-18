@@ -6,5 +6,7 @@
 
 画像素材は Kenney の CC0 素材を使う（[internal/ui/assets/README.md](internal/ui/assets/README.md)）。
 
+起動は `go run ./cmd/renkin`。既定は新作「古代都市の復旧」で、旧作は `-game base` を指定する。セーブ先は作品ごとに分かれる。
+
 Linux でビルドするには、Ebitengine に必要な X11・OpenGL の開発用パッケージに加え、ALSA の開発用ヘッダ（Debian / Ubuntu では `libasound2-dev`）をインストールする。
 Linux で実行するには ALSA のランタイムライブラリ（Debian / Ubuntu では `libasound2`）も必要。
