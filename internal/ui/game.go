@@ -73,6 +73,7 @@ func Run(cfg Config) error {
 // Update は場面ごとの入力を読み替える。戦闘中のキー操作と早送りは Controller へ渡す（DES-UI-09、17）。
 func (g *Game) Update() error {
 	scene := g.scenes.Scene()
+	// 準備（高解像度）の Enter は場面を変えるので、入力を読む前の場面で調べる（DES-NG-09、DES-NG-11）。
 	hiresPrepare := g.scenes.fullWindowPrepare()
 	err := g.update()
 	if g.sound.sound != nil {
@@ -244,10 +245,11 @@ func (g *Game) priorityInput(k priorityKeys) bool {
 	return false
 }
 
-// sceneKeys は戦闘以外の場面へ渡す、そのフレームの入力（DES-UI-09）。Deploy は配置の入力を先に渡したこと。
+// sceneKeys は戦闘以外の場面へ渡す、そのフレームの入力（DES-UI-09、DES-NG-11）。Deploy は配置の入力を先に渡したこと。
 type sceneKeys struct {
 	Tab, Left, Cancel, Deploy, Advance bool
-	Right, Up, Down, Enter             bool
+	// Right は右クリック、Up・Down・Enter は準備（高解像度）のキー（DES-NG-11）。
+	Right, Up, Down, Enter bool
 }
 
 // sceneInput は戦闘以外の場面の Tab・取消し・左クリック・送りを場面へ渡す（DES-UI-09、DES-UI-32）。
@@ -1018,7 +1020,15 @@ func (g *Game) cursor() (x, y int) {
 		return x, y
 	}
 	c := g.scenes.BattleController()
-	return sceneCursor(x, y, g.scenes.Scene(), c != nil && c.rewind.open)
+	return windowSceneCursor(x, y, g.scenes.Scene(), c != nil && c.rewind.open, g.scenes.fullWindowPrepare())
+}
+
+// windowSceneCursor は全画面の準備を除き場面の座標へ変換する（DES-NG-10、DES-NG-11）。
+func windowSceneCursor(x, y int, scene Scene, rewindOpen, fullWindowPrepare bool) (int, int) {
+	if fullWindowPrepare {
+		return x, y
+	}
+	return sceneCursor(x, y, scene, rewindOpen)
 }
 
 // drawSceneView は配置・文・ボタンを描く（DES-UI-20、DES-UI-19、DES-UI-09）。

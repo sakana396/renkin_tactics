@@ -56,9 +56,9 @@ func readSoundInput(scene Scene, hiresPrepare bool) soundInput {
 	})
 }
 
-// soundInputOf は押されたものを音の入力に読み替える。
-// 決定は左クリックと、物語の送り（Enter・Space）、取消しは右クリックと Esc、
-// 選択音は Tab・I・Q（表示の切り替え）。
+// soundInputOf は押されたものを音の入力に読み替える（DES-NG-09、DES-NG-11）。
+// 決定は左クリックと、物語の送り（Enter・Space）、高解像度の準備の Enter（配置へ）、取消しは右クリックと Esc、
+// 選択音は Tab・I・Q（表示の切り替え）と、高解像度の準備の ↑↓（キャラの選択）。
 func soundInputOf(scene Scene, hiresPrepare bool, k soundKeys) soundInput {
 	return soundInput{
 		Confirm: k.Left || scene == Story && (k.Enter || k.Space) || hiresPrepare && k.Enter,

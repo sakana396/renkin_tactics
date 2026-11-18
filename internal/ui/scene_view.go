@@ -303,7 +303,7 @@ func (s *SceneController) Click(x, y int) {
 
 // infoTabClick は準備と配置の情報欄のページの印のクリックを受ける（DES-UI-28）。印を出しているときだけ受け、表示だけを変える。
 func (s *SceneController) infoTabClick(x, y int) bool {
-	if s.scene != Prepare {
+	if s.scene != Prepare || s.cfg.HiRes {
 		return false
 	}
 	v := s.View()
@@ -322,7 +322,7 @@ func (s *SceneController) infoTabClick(x, y int) bool {
 
 // ToggleInfoPage は準備と配置での Tab キーの処理（DES-UI-28）。表示だけを変える。
 func (s *SceneController) ToggleInfoPage() {
-	if s.scene == Prepare {
+	if s.scene == Prepare && !s.cfg.HiRes {
 		s.infoPage = s.infoPage.next()
 	}
 }

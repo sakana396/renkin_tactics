@@ -104,7 +104,7 @@ func TestPrepareHiResReview(t *testing.T) {
 		}
 		s.prepareItem = prepareItem{}
 		clickStockRow(t, s, "potion")
-		if got, want := texts(), []string{"選んだ品: 回復薬", "道具　HP を 10 回復"}; !reflect.DeepEqual(got, want) {
+		if got, want := texts(), []string{"選んだ品: 回復薬", "道具　回復 10"}; !reflect.DeepEqual(got, want) {
 			t.Fatal(got)
 		}
 		// 選んでいなければ、指している手持ちの枠・在庫の行の品（名前は「選んだ品:」なし）。選んでいればそちらが先。
@@ -112,7 +112,7 @@ func TestPrepareHiResReview(t *testing.T) {
 		s.prepareMember = 1
 		v := s.prepareHiResView()
 		s.prepareCursor = v.Hand[1].Rect.Min.Add(image.Pt(5, 5)) // ダインの回復薬
-		if got, want := texts(), []string{"回復薬", "道具　HP を 10 回復"}; !reflect.DeepEqual(got, want) {
+		if got, want := texts(), []string{"回復薬", "道具　回復 10"}; !reflect.DeepEqual(got, want) {
 			t.Fatal(got)
 		}
 		s.prepareMember = 0
@@ -479,6 +479,27 @@ func TestPrepareHiResReview(t *testing.T) {
 		}
 		if got := soundInputOf(Battle, false, soundKeys{Tab: true}); !got.Select {
 			t.Error("Tab は選択音")
+		}
+	})
+}
+
+func TestPrepareWindowSceneCursor(t *testing.T) {
+	t.Run("TC-DES-NG-11-24 窓の座標を準備の座標に変換", func(t *testing.T) {
+		useTestMetrics(t, HiResCellSize)
+		for _, tc := range []struct {
+			name         string
+			full         bool
+			wantX, wantY int
+		}{
+			{"新作", true, 400, 300},
+			{"旧作", false, 272, 172},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				x, y := windowSceneCursor(400, 300, Prepare, false, tc.full)
+				if x != tc.wantX || y != tc.wantY {
+					t.Fatalf("座標 = (%d, %d), 期待 = (%d, %d)", x, y, tc.wantX, tc.wantY)
+				}
+			})
 		}
 	})
 }

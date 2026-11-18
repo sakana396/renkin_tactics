@@ -630,8 +630,5 @@ func itemCount(items []defs.ItemCount) int {
 
 // itemDetailText は道具の性能を表示する（DES-NG-11）。
 func itemDetailText(d defs.ItemDef) string {
-	if d.Bomb {
-		return "道具　" + itemEffect(core.ItemOf(d))
-	}
-	return fmt.Sprintf("道具　HP を %d 回復", d.Heal)
+	return "道具　" + itemEffect(core.ItemOf(d))
 }
