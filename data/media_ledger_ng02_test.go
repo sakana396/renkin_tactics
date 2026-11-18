@@ -71,6 +71,11 @@ func TestCheckMediaLedgerNG02(t *testing.T) {
 				"art/units/Aoi.png", "art/units/aoi.jpg", "art/misc/x.png", "art/units/sub/a.png", "art/Title.png", "art/portraits/aoi-1.png"),
 			[]string{"art/units/Aoi.png は art の名前の規則", "art/units/aoi.jpg は art の名前の規則", "art/misc/x.png は art の名前の規則",
 				"art/units/sub/a.png は art の名前の規則", "art/Title.png は art の名前の規則", "art/portraits/aoi-1.png は art の名前の規則"}},
+		{"TC-DES-NG-10-27 terrain/<地形の ID>.png と変種（_2〜_4）は規則に合う。大文字・深い階層・拡張子違いは誤り",
+			mediaFS(ledgerHead+ledgerRowOf("art/terrain/canal.png")+ledgerRowOf("art/terrain/canal_2.png")+ledgerRowOf("art/terrain/Canal.png")+
+				ledgerRowOf("art/terrain/sub/x.png")+ledgerRowOf("art/terrain/canal.jpg"),
+				"art/terrain/canal.png", "art/terrain/canal_2.png", "art/terrain/Canal.png", "art/terrain/sub/x.png", "art/terrain/canal.jpg"),
+			[]string{"art/terrain/Canal.png は art の名前の規則", "art/terrain/sub/x.png は art の名前の規則", "art/terrain/canal.jpg は art の名前の規則"}},
 		{"TC-DES-NG-08-13 audio の名前は規則を問わない",
 			mediaFS(ledgerHead+ledgerRowOf("audio/se/Any Name.WAV"), "audio/se/Any Name.WAV"), nil},
 		{"TC-DES-NG-08-14 実在しない日付（2026-02-30・2026-13-01）は落ちる。実在する日付は通る",
@@ -111,6 +116,20 @@ func TestAlchemyMediaLedgerNG02(t *testing.T) {
 	t.Run("TC-DES-NG-08-11 実際の data/alchemy/media が台帳と一致している", func(t *testing.T) {
 		if problems := CheckMediaLedger(AlchemyMedia()); len(problems) != 0 {
 			t.Fatalf("台帳 data/alchemy/media/ASSETS.md の問題:\n%s", strings.Join(problems, "\n"))
+		}
+	})
+}
+
+// terrain の名前の規則（DES-NG-10 フェーズ 2）。規則に合う名前は規則の誤りを出さない。
+func TestLedgerTerrainNameNG04(t *testing.T) {
+	t.Run("TC-DES-NG-10-27 terrain/<ID>.png と _2〜_4 の変種は名前の規則の誤りにならない", func(t *testing.T) {
+		files := []string{"art/terrain/canal.png", "art/terrain/canal_2.png", "art/terrain/canal_4.png", "art/terrain/plain.png"}
+		ledger := ledgerHead
+		for _, f := range files {
+			ledger += ledgerRowOf(f)
+		}
+		if got := CheckMediaLedger(mediaFS(ledger, files...)); got != nil {
+			t.Fatalf("問題なしのはずが %v", got)
 		}
 	})
 }
