@@ -118,3 +118,8 @@
 ## 図
 
 UML は [Mermaid](https://mermaid.js.org/) で Markdown に直接書く（GitHub 上でそのまま描画され、差分も追える）。
+
+| 工程 | 成果物 | 置き場所 | 状態 |
+|---|---|---|---|
+| 設計 | 新作 NG06 錬金アイテムの種類 | [03_design/design-ng06-items.md](03_design/design-ng06-items.md) | 案（開発者の承認待ち）、#211 |
+| 試験 | 新作 NG06 試験仕様 | [04_test/test-spec-ng06.md](04_test/test-spec-ng06.md) | 案（開発者の承認待ち）、全ケース未実装 |
