@@ -34,7 +34,7 @@
 | 設計 | 新作 NG06 錬金アイテムの種類 | [03_design/design-ng06-items.md](03_design/design-ng06-items.md) | v0.2 承認（2026-11-19。#212、E-151、REV-123）。v0.1 承認（2026-11-18、E-149・E-150、#211） |
 | 設計 | 新作 NG07 章の間の調合 | [03_design/design-ng07-crafting.md](03_design/design-ng07-crafting.md) | v0.1 承認（2026-11-19。#212、E-151、REV-123） |
 | 試験 | 新作 NG07 試験仕様 | [04_test/test-spec-ng07.md](04_test/test-spec-ng07.md) | v0.1。自動は実装済み（一部を含む）、手動は未実施 |
-| 試験 | テスト仕様書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.8（#208、REV-119 対応）。TC-DES-NG-01〜06 は実装済み |
+| 試験 | テスト仕様書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.9（#209）。TC-DES-NG-01〜06 は実装済み |
 | 試験 | テスト仕様書（新作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.6（#207）。自動は実装済み（高解像度の配置は #206）、実画面の確認は管理役の撮影で実施（人の目では #214） |
 | 試験 | テスト仕様書（新作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.4（#205）。自動は実装済み、耳での確認は手動・未実施 |
 | 試験 | テスト仕様書（新作 NG04: 高解像度の表示） | [04_test/test-spec-ng04.md](04_test/test-spec-ng04.md) | v0.6（#207）。準備の全面表示に合わせて TC-DES-NG-10-12 を更新。v0.5（#206）、v0.4 承認（E-143、#203） |
@@ -79,6 +79,7 @@
 | 制作 | ch07 の制作記録（反復 6） | [iterations/it06/map-ch07.md](iterations/it06/map-ch07.md) | v0.2（#132。自動の下限は確認、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
 | 制作 | ch08 の制作記録（反復 6） | [iterations/it06/map-ch08.md](iterations/it06/map-ch08.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
 | 制作 | ch09 の制作記録（反復 6） | [iterations/it06/map-ch09.md](iterations/it06/map-ch09.md) | v0.2（#133。報酬武器を含む名簿で自動の下限を再測定、開発者の短い試遊は未実施）。#154 で釣り出し対策を追記（REV-084 で作り直した） |
+| 制作 | 新作 1〜3 章の素材確認（反復 8） | [iterations/it08/ch01-03-assets.md](iterations/it08/ch01-03-assets.md) | #209。素材の現状と画像生成・画面確認の引き継ぎ |
 | 制作 | 新作 ch01 の制作記録（反復 8） | [iterations/it08/map-ng-ch01.md](iterations/it08/map-ng-ch01.md) | #208。自動試遊と撮影を記録、開発者の試遊待ち |
 | 制作 | 新作 ch02 の制作記録（反復 8） | [iterations/it08/map-ng-ch02.md](iterations/it08/map-ng-ch02.md) | #208。自動試遊と撮影を記録、開発者の試遊待ち |
 | 制作 | 新作 ch03 の制作記録（反復 8） | [iterations/it08/map-ng-ch03.md](iterations/it08/map-ng-ch03.md) | #208。自動試遊と撮影を記録、開発者の試遊待ち |

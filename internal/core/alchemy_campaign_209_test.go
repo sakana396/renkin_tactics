@@ -48,8 +48,21 @@ func TestAlchemyCampaign209(t *testing.T) {
 			}
 			if i < 2 {
 				ore, catalyst := c.Materials["ore"], c.Materials["catalyst"]
+				potionCount := func() int {
+					count := 0
+					for _, item := range c.Stock {
+						if item.Item == "potion" {
+							count += item.Count
+						}
+					}
+					return count
+				}
+				before := potionCount()
 				if err := c.Craft("potion"); err != nil {
 					t.Fatalf("%s 後の調合: %v", chapter, err)
+				}
+				if got := potionCount(); got != before+1 {
+					t.Fatalf("%s 後の回復薬の在庫: 調合前=%d 調合後=%d", chapter, before, got)
 				}
 				if c.Materials["ore"] != ore-1 || c.Materials["catalyst"] != catalyst-1 {
 					t.Fatal("調合で材料が消費されない")
