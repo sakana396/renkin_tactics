@@ -67,6 +67,9 @@ var frameErrorIT07 error
 
 // RunGame はメインスレッドから呼ぶ必要があるため、測定ループは TestMain で実行する。
 func TestMain(m *testing.M) {
+	if ch := os.Getenv("RENKIN_227_DRAW"); ch != "" {
+		runDrawBench227(ch)
+	}
 	if os.Getenv("RENKIN_IT07_FPS") != "" {
 		frameResultIT07, frameErrorIT07 = runFrameTimingIT07()
 	}

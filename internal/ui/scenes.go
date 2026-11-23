@@ -396,6 +396,7 @@ func (s *SceneController) startDeployedBattle() {
 		s.message = err.Error()
 		return
 	}
+	ctrl.itemHelp = s.cfg.HiRes
 	// 行動の記録は、戦闘を作れたあとに始める。作れなくても遊べる（DES-LOG-02）。
 	if s.cfg.PlayLog != nil {
 		chapter := s.cfg.Catalog.Chapters()[s.campaign.Chapter].ID

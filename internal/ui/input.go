@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/sakana396/renkin_tactics/internal/core"
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
@@ -93,6 +94,12 @@ type Controller struct {
 	cursorX, cursorY int
 	// danger は、Q キーで敵の危険範囲を出していること（DES-UI-08）。もう一度押すまで、番をまたいでも残す。
 	danger bool
+	// dangerCache は前に求めた全敵の危険範囲、dangerSig と dangerBattle はそのときの盤面の印と戦闘（#227）。
+	dangerCache  map[tactics.Pos]bool
+	dangerSig    []int
+	dangerBattle *tactics.Battle
+	// itemHelp は、案内欄に道具の説明を出すこと（新作の高解像度の表示だけ。#227）。
+	itemHelp bool
 	// confirmEnd は、行動していない自軍がいるときに E を 1 回押したこと。
 	confirmEnd bool
 
@@ -761,6 +768,18 @@ func (c *Controller) hoveredWeapon() int {
 	return -1
 }
 
+// hoveredItem は、アイテムの一覧の上でカーソルが指している手持ちの添字を返す。なければ -1（#227）。
+func (c *Controller) hoveredItem() int {
+	if c.state != ItemMenu {
+		return -1
+	}
+	ks := c.availableItems()
+	if i := HitMenu(c.Camera().MenuRectsFor(c.dest, c.MenuLabels()), c.cursorX, c.cursorY); i >= 0 && i < len(ks) {
+		return ks[i]
+	}
+	return -1
+}
+
 // Overlay は移動範囲と武器の射程を返す（DES-UI-03、DES-UI-18）。
 // 第二戻り値の色は RangeStyle に従い、杖なら緑、攻撃なら赤になる。
 // 敵の範囲（全敵・固定・カーソル）は塗りに混ぜず、EnemyRangeLayers で別の層として返す（DES-UI-29）。
@@ -941,6 +960,18 @@ func (c *Controller) Danger() map[tactics.Pos]bool {
 	if !c.danger || c.state == Playing || c.state == Over {
 		return nil
 	}
+	// 盤面の状態が前と同じなら、前に求めた結果を返す（#227）。返した地図は読むだけにする。
+	sig := c.dangerSignature()
+	if c.dangerCache != nil && c.dangerBattle == c.battle && slices.Equal(sig, c.dangerSig) {
+		return c.dangerCache
+	}
+	out := c.computeDanger()
+	c.dangerCache, c.dangerBattle, c.dangerSig = out, c.battle, sig
+	return out
+}
+
+// computeDanger は、全敵の危険範囲を今の盤面から求め直す（DES-UI-08、DES-UI-29）。
+func (c *Controller) computeDanger() map[tactics.Pos]bool {
 	out := map[tactics.Pos]bool{}
 	for i, u := range c.battle.Units() {
 		if !u.Alive || u.Side != tactics.Enemy {
@@ -953,6 +984,29 @@ func (c *Controller) Danger() map[tactics.Pos]bool {
 		}
 	}
 	return out
+}
+
+// dangerSignature は、危険範囲の結果を左右する盤面の値を並べた印を返す（#227）。
+// 位置・生死・陣営・移動力・粘着（移動 0）・武器の射程と種類。地形と兵種のスキルは戦闘中に変わらない。
+// 値が 1 つでも違えば印が変わる。範囲に影響しない値（HP や剛力薬など）は入れない。
+func (c *Controller) dangerSignature() []int {
+	units := c.battle.Units()
+	sig := make([]int, 0, len(units)*8)
+	for _, u := range units {
+		alive := 0
+		if u.Alive {
+			alive = 1
+		}
+		snared := 0
+		if u.Snared {
+			snared = 1
+		}
+		sig = append(sig, alive, int(u.Side), u.Pos.X, u.Pos.Y, u.Stats.Mov, snared, len(u.Weapons))
+		for _, w := range u.Weapons {
+			sig = append(sig, int(w.Type), w.MinRange, w.MaxRange)
+		}
+	}
+	return sig
 }
 
 // ranges はユニット i の移動できるマスと攻撃できるマスを返す（DES-UI-03）。

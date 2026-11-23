@@ -209,7 +209,7 @@ func TestSoundBGM(t *testing.T) {
 		s := New(fullMedia(), openFake(f), &bytes.Buffer{})
 		s.PlayBGM(BGMTitle)
 		s.Play(SEHit)
-		if f.bgmVols[0] != BGMVolume || f.seVols[0] != SEVolume || !(BGMVolume < SEVolume) || BGMVolume <= 0 || SEVolume > 1 {
+		if f.bgmVols[0] != BGMVolume || f.seVols[0] != 0.5 || !(BGMVolume < SEVolume) || BGMVolume <= 0 || SEVolume > 1 {
 			t.Errorf("BGM %v, 効果音 %v", f.bgmVols, f.seVols)
 		}
 	})
