@@ -25,7 +25,7 @@ var kinds = map[string]kindSpec{
 	"title":     {W: 832, H: 576},
 }
 
-// クロマキーの決まり（試作の台帳 art/units/aoi.png の行に書かれた手順に合わせた）。
+// クロマキーの決まり。境目は画像の縁の緑らしさから決める（REV-118 R-01）。緑かぶりの帯と余白は試作の台帳 art/units/aoi.png の行の手順に合わせた。
 const (
 	spillBand     = 6    // 透明の画素から何 px までを縁の帯とし、緑かぶりを除くか
 	trimAlpha     = 10   // 切り出しの範囲に数える α の下限（約 0.04）
@@ -111,17 +111,6 @@ func chromaKey(src image.Image) (*image.NRGBA, error) {
 			p[3] = uint8(int(p[3]) * int(a) / 255)
 			clear[y*w+x] = p[3] == 0
 		}
-	}
-	unclear := 0
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
-			if (x < 5 || y < 5 || x >= w-5 || y >= h-5) && !clear[y*w+x] {
-				unclear++
-			}
-		}
-	}
-	if unclear*100 > n {
-		return nil, errors.New("画像の縁をほぼ透明にできませんでした")
 	}
 	band := dilate(clear, w, h, spillBand)
 	for y := 0; y < h; y++ {

@@ -216,7 +216,7 @@ func TestProcess(t *testing.T) {
 		}
 		rect(dark, image.Rect(0, 0, 20, 20), red)
 		if _, err := processImage(dark, kinds["units"], true); err == nil {
-			t.Fatal("縁が抜けない画像を受け入れた")
+			t.Fatal("縁の 1% 以上が緑でない画像を受け入れた")
 		}
 		unit := fill(400, 400, green)
 		rect(unit, image.Rect(150, 100, 250, 300), red)
