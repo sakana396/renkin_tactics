@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
 	"image/draw"
 	"math"
 
@@ -26,8 +27,6 @@ var kinds = map[string]kindSpec{
 
 // クロマキーの決まり（試作の台帳 art/units/aoi.png の行に書かれた手順に合わせた）。
 const (
-	keyOpaque     = 70   // 緑らしさ k = G − max(R,B) がこれ以下なら不透明
-	keyClear      = 170  // これ以上なら透明。間は直線で α を決める
 	spillBand     = 6    // 透明の画素から何 px までを縁の帯とし、緑かぶりを除くか
 	trimAlpha     = 10   // 切り出しの範囲に数える α の下限（約 0.04）
 	trimMargin    = 0.06 // 切り出した中身に足す余白（中身の長い辺に対する割合）
@@ -41,7 +40,7 @@ func greenness(r, g, b uint8) int {
 }
 
 // keyAlpha は緑らしさ k から α を決める。
-func keyAlpha(k int) uint8 {
+func keyAlpha(k, keyOpaque, keyClear int) uint8 {
 	switch {
 	case k <= keyOpaque:
 		return 255
@@ -62,18 +61,67 @@ func toNRGBA(src image.Image) *image.NRGBA {
 
 // chromaKey は緑の背景を透過にし、緑かぶりを除く。
 // ① k から α を決める。② α が 255 未満の画素と、透明の画素から spillBand px 以内の画素は、G を max(R,B) まで下げる。
-func chromaKey(src image.Image) *image.NRGBA {
+func chromaKey(src image.Image) (*image.NRGBA, error) {
 	img := toNRGBA(src)
 	w, h := img.Rect.Dx(), img.Rect.Dy()
+	var hist [511]int
+	n := 0
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			if x >= 5 && y >= 5 && x < w-5 && y < h-5 {
+				continue
+			}
+			p := img.NRGBAAt(x, y)
+			hist[greenness(p.R, p.G, p.B)+255]++
+			n++
+		}
+	}
+	lower, count := -255, 0
+	for i, v := range hist {
+		count += v
+		if count*100 >= n {
+			lower = i - 255
+			break
+		}
+	}
+	keyClear := lower
+	keyOpaque := keyClear / 2
+	if keyClear < 40 {
+		return nil, errors.New("縁の背景が十分に緑ではありません")
+	}
+	foreground := false
+	for y := 5; y < h-5 && !foreground; y++ {
+		for x := 5; x < w-5; x++ {
+			p := img.NRGBAAt(x, y)
+			if p.A > 0 && greenness(p.R, p.G, p.B) <= keyOpaque {
+				foreground = true
+				break
+			}
+		}
+	}
+	if !foreground {
+		return nil, errors.New("背景と中身の色を分けられません")
+	}
 	clear := make([]bool, w*h)
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
 			i := img.PixOffset(x, y)
 			p := img.Pix[i : i+4]
-			a := keyAlpha(greenness(p[0], p[1], p[2]))
+			a := keyAlpha(greenness(p[0], p[1], p[2]), keyOpaque, keyClear)
 			p[3] = uint8(int(p[3]) * int(a) / 255)
 			clear[y*w+x] = p[3] == 0
 		}
+	}
+	unclear := 0
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			if (x < 5 || y < 5 || x >= w-5 || y >= h-5) && !clear[y*w+x] {
+				unclear++
+			}
+		}
+	}
+	if unclear*100 > n {
+		return nil, errors.New("画像の縁をほぼ透明にできませんでした")
 	}
 	band := dilate(clear, w, h, spillBand)
 	for y := 0; y < h; y++ {
@@ -85,7 +133,7 @@ func chromaKey(src image.Image) *image.NRGBA {
 			}
 		}
 	}
-	return img
+	return img, nil
 }
 
 // dilate は真の画素を n 回、8 近傍へ広げる。
@@ -193,7 +241,10 @@ func processImage(src image.Image, spec kindSpec, chroma bool) (*image.NRGBA, er
 	if spec.W != spec.H {
 		return nil, fmt.Errorf("透過の切り出しは正方形の種類（units・portraits）だけです（%d×%d）", spec.W, spec.H)
 	}
-	keyed := chromaKey(src)
+	keyed, err := chromaKey(src)
+	if err != nil {
+		return nil, err
+	}
 	sq, err := trimSquare(keyed)
 	if err != nil {
 		return nil, err
@@ -203,14 +254,34 @@ func processImage(src image.Image, spec kindSpec, chroma bool) (*image.NRGBA, er
 	return out, nil
 }
 
-// residualGreen は、緑が目立つ半透明の画素（G ≧ 180 かつ k ≧ 60）の数（仕上がりの確かめに使う）。
-func residualGreen(img *image.NRGBA) int {
-	n := 0
-	for i := 0; i+3 < len(img.Pix); i += 4 {
-		p := img.Pix[i : i+4]
-		if p[3] > 0 && p[3] < 255 && p[1] >= 180 && greenness(p[0], p[1], p[2]) >= 60 {
+// residualGreen は元画像の縁の色、または緑かぶり除去後の色に近い残存画素を数える。
+func residualGreen(img *image.NRGBA, src image.Image) int {
+	b := src.Bounds()
+	var rs, gs, bs, n int
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			if x >= b.Min.X+5 && y >= b.Min.Y+5 && x < b.Max.X-5 && y < b.Max.Y-5 {
+				continue
+			}
+			p := color.NRGBAModel.Convert(src.At(x, y)).(color.NRGBA)
+			rs += int(p.R)
+			gs += int(p.G)
+			bs += int(p.B)
 			n++
 		}
 	}
-	return n
+	if n == 0 {
+		return 0
+	}
+	r, g, bl := rs/n, gs/n, bs/n
+	despill := min(g, max(r, bl))
+	near := func(a, b int) bool { return a-b <= 20 && b-a <= 20 }
+	count := 0
+	for i := 0; i+3 < len(img.Pix); i += 4 {
+		p := img.Pix[i : i+4]
+		if p[3] > 0 && near(int(p[0]), r) && near(int(p[2]), bl) && (near(int(p[1]), g) || near(int(p[1]), despill)) {
+			count++
+		}
+	}
+	return count
 }

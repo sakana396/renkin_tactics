@@ -379,7 +379,7 @@ func runPlace(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "置いた画像: %s（%d×%d）\n台帳に行を足した: %s\n", dst, out.Rect.Dx(), out.Rect.Dy(), ledgerPath)
 	if useChroma {
-		fmt.Fprintf(stdout, "緑の残る半透明の画素: %d 個\n", residualGreen(out))
+		fmt.Fprintf(stdout, "背景に似た色の残存画素: %d 個\n", residualGreen(out, src))
 	}
 	fmt.Fprintln(stdout, "次に `go test ./data` で台帳の検査を通し、tools/shot で画面を撮って確かめる")
 	return 0

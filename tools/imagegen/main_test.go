@@ -134,22 +134,25 @@ func TestProcess(t *testing.T) {
 			want uint8
 		}{{-50, 255}, {70, 255}, {71, 252}, {120, 127}, {169, 2}, {170, 0}, {255, 0}}
 		for _, c := range cases {
-			if got := keyAlpha(c.k); got != c.want {
+			if got := keyAlpha(c.k, 70, 170); got != c.want {
 				t.Errorf("keyAlpha(%d) = %d、want %d", c.k, got, c.want)
 			}
 		}
 		// 20×20 の緑の背景に、赤の 4×4（x 2〜5）と、緑がかった灰色の 2×2（x 12〜13）。
-		img := fill(20, 20, green)
-		rect(img, image.Rect(2, 2, 6, 6), red)
-		rect(img, image.Rect(12, 12, 14, 14), color.NRGBA{100, 150, 100, 255}) // k = 50 → 不透明、縁の帯の中
-		out := chromaKey(img)
+		img := fill(40, 40, green)
+		rect(img, image.Rect(7, 7, 11, 11), red)
+		rect(img, image.Rect(30, 30, 32, 32), color.NRGBA{100, 150, 100, 255}) // k = 50 → 不透明、縁の帯の中
+		out, err := chromaKey(img)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if a := out.NRGBAAt(0, 0).A; a != 0 {
 			t.Errorf("緑の背景の α = %d、want 0", a)
 		}
-		if c := out.NRGBAAt(3, 3); c != red {
+		if c := out.NRGBAAt(8, 8); c != red {
 			t.Errorf("赤の中身 = %v、want 変わらない %v", c, red)
 		}
-		if c := out.NRGBAAt(12, 12); c.A != 255 || c.G != 100 {
+		if c := out.NRGBAAt(30, 30); c.A != 255 || c.G != 100 {
 			t.Errorf("縁の帯の緑がかった画素 = %v、want α 255・G 100（max(R,B)）", c)
 		}
 	})
@@ -205,6 +208,16 @@ func TestProcess(t *testing.T) {
 		if c := out.NRGBAAt(0, 0); c.A != 255 {
 			t.Errorf("背景の画像が透過になった: %v", c)
 		}
+		dark := fill(100, 100, color.NRGBA{0, 177, 64, 255})
+		rect(dark, image.Rect(30, 20, 70, 80), red)
+		d, err := processImage(dark, kinds["units"], true)
+		if err != nil || d.NRGBAAt(0, 0).A != 0 || d.NRGBAAt(64, 64).A != 255 {
+			t.Fatalf("暗い緑の背景: %v", err)
+		}
+		rect(dark, image.Rect(0, 0, 20, 20), red)
+		if _, err := processImage(dark, kinds["units"], true); err == nil {
+			t.Fatal("縁が抜けない画像を受け入れた")
+		}
 		unit := fill(400, 400, green)
 		rect(unit, image.Rect(150, 100, 250, 300), red)
 		u, err := processImage(unit, kinds["units"], true)
@@ -217,7 +230,7 @@ func TestProcess(t *testing.T) {
 		if c := u.NRGBAAt(64, 64); c.A != 255 || c.R < 190 || c.G > 50 {
 			t.Errorf("units の中央 = %v、want 赤の不透明", c)
 		}
-		if n := residualGreen(u); n != 0 {
+		if n := residualGreen(u, unit); n != 0 {
 			t.Errorf("緑の残る半透明の画素 = %d、want 0", n)
 		}
 		p, err := processImage(fill(1254, 1254, red), kinds["portraits"], false)

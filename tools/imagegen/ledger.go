@@ -43,11 +43,11 @@ func makeDescription(in rowInput) string {
 	src := fmt.Sprintf("元の %d×%d の画像", in.SrcW, in.SrcH)
 	if in.Chroma {
 		return fmt.Sprintf("AI 生成（Codex CLI の画像生成）。%s（背景は緑）を、tools/imagegen で、緑の背景を透過にし"+
-			"（クロマキー: 緑らしさ k = G − max(R,B) が %d 以下は不透明、%d 以上は透明、その間は直線で α を決める。"+
+			"（クロマキー: 縁の緑らしさ k = G − max(R,B) の下位 1%% を透明の境目とし、その半分以下は不透明、間は直線で α を決める。"+
 			"α が 1 未満の画素と、透明の画素から %d px 以内の画素は G を max(R,B) に揃える）、"+
 			"α > 0.04 の範囲で切り出して %.0f%% の余白を足し、足元をそろえて正方形にし、乗算済みアルファで %d×%d の PNG に縮小した（Catmull-Rom）。"+
 			"縮小のあと、α %d 以下で k が %d 以上の画素は透明にし、残る半透明の画素は G を max(R,B) に揃えた",
-			src, keyOpaque, keyClear, spillBand, trimMargin*100, spec.W, spec.H, residualAlpha, residualKey)
+			src, spillBand, trimMargin*100, spec.W, spec.H, residualAlpha, residualKey)
 	}
 	return fmt.Sprintf("AI 生成（Codex CLI の画像生成）。%sを、tools/imagegen で、中央を残して %d:%d の比に切り（はみ出しを左右か上下で等しく切る）、"+
 		"%d×%d の PNG に縮小した（Catmull-Rom）。ほかの加工はしていない", src, spec.W, spec.H, spec.W, spec.H)
