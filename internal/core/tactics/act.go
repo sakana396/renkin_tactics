@@ -44,7 +44,7 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 	}
 	record := b.beginHistory(historyEntry{Kind: historyAction, Action: cmd.Action, Unit: cmd.Unit, Target: target, To: cmd.To})
 	// 残りの移動力は、移動力から行動の前の位置から To までの最小の費用を引いたもの（DES-IT06 8.2 節）。
-	remaining := b.units[cmd.Unit].Stats.Mov - b.Reachable(cmd.Unit)[cmd.To]
+	remaining := b.units[cmd.Unit].moveBudget() - b.Reachable(cmd.Unit)[cmd.To]
 	// ここから状態を変える。まず移動する。
 	var events []Event
 	u := &b.units[cmd.Unit]
@@ -62,7 +62,9 @@ func (b *Battle) Act(cmd Command) ([]Event, error) {
 		u.Equipped = weapon
 		events = b.attack(events, cmd.Unit, cmd.Target, cmd.To == from)
 	case UseItem:
-		if b.units[cmd.Unit].Items[cmd.Item].Item.Bomb {
+		if b.units[cmd.Unit].Items[cmd.Item].Item.Effect != "" {
+			events = b.useEffectItem(events, cmd.Unit, cmd.Item, *cmd.ItemTarget)
+		} else if b.units[cmd.Unit].Items[cmd.Item].Item.Bomb {
 			events = b.useBomb(events, cmd.Unit, cmd.Item, *cmd.Blast)
 		} else {
 			events = b.useItem(events, cmd.Unit, cmd.Item)
@@ -99,7 +101,7 @@ func (b *Battle) validateCommand(cmd Command) error {
 		return ErrInvalidAction
 	}
 	// 爆心を渡せるのはアイテムの使用だけ（DES-NG-02）。
-	if cmd.Blast != nil && cmd.Action != UseItem {
+	if (cmd.Blast != nil || cmd.ItemTarget != nil) && cmd.Action != UseItem {
 		return ErrInvalidAction
 	}
 	// 1. 戦闘が終わっていない。
@@ -164,6 +166,7 @@ func (b *Battle) allPlayersActed() bool {
 // 自軍の全員の Acted を偽にし、PhaseStart を出し、砦にいる自軍を回復する。
 func (b *Battle) startPlayerPhase(events []Event) []Event {
 	b.Phase = Player
+	events = b.expireEffects(events)
 	for i := range b.units {
 		if b.units[i].Side == Player {
 			b.units[i].Acted = false

@@ -54,7 +54,7 @@ type SceneView struct {
 
 // wrapSceneText は 48 px の左右余白を残し、文字の単位で折り返す（DES-UI-12）。
 func wrapSceneText(s string) []string {
-	return wrapSceneTextWidth(s, ScreenWidth-96)
+	return wrapSceneTextWidth(s, sceneCanvasWidth-96)
 }
 
 // wrapSceneTextWidth は場面の表示領域の幅で文字を折り返す（DES-UI-12、DES-UI-13）。
@@ -96,7 +96,7 @@ func (s *SceneController) View() SceneView {
 	switch s.scene {
 	case Title:
 		v.Backdrop, _ = s.art.BackdropPath(artTitlePath, true)
-		add(windowTitle, ScreenWidth/2-textWidth(windowTitle), 48, true, StyleTitle)
+		add(windowTitle, sceneCanvasWidth/2-textWidth(windowTitle), 48, true, StyleTitle)
 		if s.confirmOverwrite {
 			lines("セーブを上書きして、はじめから始めますか", 136, StylePlain)
 			button("はい", 208, true)
@@ -122,7 +122,7 @@ func (s *SceneController) View() SceneView {
 			storyID = ch.After
 		}
 		v.Backdrop, _ = s.art.BackdropPath(storyBackdropPath(storyID))
-		textX, width := 48, ScreenWidth-96
+		textX, width := 48, sceneCanvasWidth-96
 		if path, ok := s.art.StoryPortraitPath(s.paragraphs[s.paragraph]); ok {
 			box, x, w := storyArtLayout(true)
 			textX, width = x, w
@@ -132,7 +132,7 @@ func (s *SceneController) View() SceneView {
 			add(line, textX, 160+i*20, false, StylePlain)
 		}
 		count := fmt.Sprintf("%d/%d", s.paragraph+1, len(s.paragraphs))
-		add(count, ScreenWidth-48-textWidth(count), 488, false, StyleLabel)
+		add(count, sceneCanvasWidth-48-textWidth(count), 488, false, StyleLabel)
 		lines("左クリック・Enter・Space: 次へ　右クリック・Esc: 残りを飛ばす", 528, StyleLabel)
 	case Joined:
 		heading(s.storyChapter)
@@ -168,7 +168,11 @@ func (s *SceneController) View() SceneView {
 		}
 		lines("左クリック: 章の準備へ", 528, StyleLabel)
 	case Prepare:
-		v = s.prepareView()
+		if s.fullWindowPrepare() {
+			v = s.hrSceneView()
+		} else {
+			v = s.prepareView()
+		}
 	case Deploy:
 		v = s.deployView()
 	case Result:
@@ -194,6 +198,9 @@ func (s *SceneController) View() SceneView {
 			if r.Weapon != "" {
 				weapon, _ := s.cfg.Catalog.Weapon(r.Weapon)
 				rewards = append(rewards, fmt.Sprintf("%s ×%d", weapon.Name, r.Count))
+			} else if r.Material != "" {
+				material, _ := s.cfg.Catalog.Material(r.Material)
+				rewards = append(rewards, fmt.Sprintf("%s ×%d", material.Name, r.Count))
 			} else {
 				item, _ := s.cfg.Catalog.Item(r.Item)
 				rewards = append(rewards, fmt.Sprintf("%s ×%d", item.Name, r.Count))
@@ -230,7 +237,9 @@ func (s *SceneController) View() SceneView {
 	if s.message != "" && s.scene != Prepare {
 		y := 424
 		if s.scene == Deploy {
-			add(s.message, 280, 552, false, StyleBad)
+			// 注意文は盤面の下の案内欄の 3 行目に置く。x は既定の 280 とし、文が窓の右端を越えるときは左へ寄せる（DES-NG-10）。
+			x := max(16, min(280, ScreenWidth-16-textWidth(s.message)))
+			add(s.message, x, MapSize+40, false, StyleBad)
 		} else {
 			lines(s.message, y, StyleBad)
 		}
@@ -297,7 +306,7 @@ func (s *SceneController) Click(x, y int) {
 
 // infoTabClick は準備と配置の情報欄のページの印のクリックを受ける（DES-UI-28）。印を出しているときだけ受け、表示だけを変える。
 func (s *SceneController) infoTabClick(x, y int) bool {
-	if s.scene != Prepare {
+	if s.scene != Prepare || s.cfg.HiRes {
 		return false
 	}
 	v := s.View()
@@ -316,7 +325,7 @@ func (s *SceneController) infoTabClick(x, y int) bool {
 
 // ToggleInfoPage は準備と配置での Tab キーの処理（DES-UI-28）。表示だけを変える。
 func (s *SceneController) ToggleInfoPage() {
-	if s.scene == Prepare {
+	if s.scene == Prepare && !s.cfg.HiRes {
 		s.infoPage = s.infoPage.next()
 	}
 }

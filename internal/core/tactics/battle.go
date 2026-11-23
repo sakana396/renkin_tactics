@@ -342,6 +342,30 @@ func validateUnit(u UnitSetup) error {
 // validateItemKind は、アイテムが回復薬（回復量 1 以上、爆弾の値は 0）か、
 // 爆弾（回復量 0、固定ダメージ・投げられる距離は 1 以上、半径は 0 以上）のどちらかであることを確かめる（DES-NG-02）。
 func validateItemKind(it Item) error {
+	if it.Effect != "" {
+		if it.Heal != 0 || it.Bomb || it.BlastDamage != 0 || it.BlastRadius != 0 || it.ThrowRange != 0 {
+			return fmt.Errorf("effect: 他の種類の値と混在しています")
+		}
+		if it.Range < 1 {
+			return fmt.Errorf("range: 1 以上が必要です")
+		}
+		switch it.Effect {
+		case "power_tonic":
+			if it.Amount < 1 {
+				return fmt.Errorf("amount: 1 以上が必要です")
+			}
+		case "snare":
+			if it.Amount != 0 {
+				return fmt.Errorf("amount: 粘着瓶には指定できません")
+			}
+		default:
+			return fmt.Errorf("effect: 未対応の値 %q", it.Effect)
+		}
+		return nil
+	}
+	if it.Amount != 0 || it.Range != 0 {
+		return fmt.Errorf("effect: 効果の値がありません")
+	}
 	if !it.Bomb {
 		if it.BlastDamage != 0 || it.BlastRadius != 0 || it.ThrowRange != 0 {
 			return fmt.Errorf("爆弾でないアイテムに爆弾の値があります")

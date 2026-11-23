@@ -186,6 +186,18 @@ func TestSceneIconViewsNG02(t *testing.T) {
 // 描画: 絵があれば縮めた画像を作って覚え、描いて、タイルは描かない（DES-NG-08）。
 func TestDrawSceneIconNG02(t *testing.T) {
 	t.Run("TC-DES-NG-08-99 絵があれば縮めた画像を 1 つだけ作って描く（顔は 24 px、全身は縦横比を保つ）", func(t *testing.T) {
+		useTestMetrics(t, HiResCellSize)
+		s := hiresScenes(t, Prepare)
+		v := s.prepareHiResView()
+		if len(v.Cards) == 0 || len(v.Portraits) < len(v.Cards) {
+			t.Fatal("名簿のカードまたは肖像がない")
+		}
+		for i, card := range v.Cards {
+			portrait := v.Portraits[i].Rect
+			if card.Rect.Dy() != 104 || portrait.Dx() != 84 || portrait.Dy() != 84 || !portrait.In(card.Rect) {
+				t.Errorf("肖像 %v が名簿の行 %v に収まらない", portrait, card.Rect)
+			}
+		}
 		cat := alchemyCatalog(t)
 		media := fstest.MapFS{"art/units/aoi.png": {Data: pngBytes(t, 128, 128, 255)}}
 		store := NewArtStore(media, &bytes.Buffer{}, cat)

@@ -29,7 +29,10 @@ const (
 const detailGuide = "Tab: 節を送る　I・Esc・右クリック: 戻る"
 
 // deployDetailButtonRect は配置の既存ボタンの下に置く詳細の入口（DES-UI-31）。
-var deployDetailButtonRect = image.Rect(752, 336, 824, 356)
+var deployDetailButtonRect image.Rectangle
+
+// detailBottom は詳しい画面の下端（DES-NG-10。盤面の大きさに従う）。
+var detailBottom int
 
 // 詳しい画面の配置（DES-IT07 3.4 節）。左の列 x = 16〜304 に能力と武器の短い行・スキル、右の列 x = 320〜816 に手持ち 5 枠と全武器。
 const (
@@ -37,7 +40,6 @@ const (
 	detailLeftWidth  = 288
 	detailRightX     = 320
 	detailRightWidth = 496
-	detailBottom     = MapSize - infoMargin
 	detailStatGap    = 18
 	detailWeaponGap  = 18
 	detailHandSlots  = 5
@@ -140,12 +142,23 @@ func DetailView(u tactics.Unit, section DetailSection) InfoView {
 		v.text(x, y, mark+label, st)
 	}
 	title := strings.TrimSpace(unitName(u) + "　" + u.ClassName + "　" + levelText(u))
-	v.text(detailLeftX, 12, fitRewind(title, ScreenWidth-2*detailLeftX), StyleTitle)
+	v.text(detailLeftX, 12, fitRewind(title, sceneCanvasWidth-2*detailLeftX), StyleTitle)
 
 	// 左の列: 能力 9 種と武器の短い行。
 	head(detailLeftX, 40, "能力", SectionStats)
 	v.Icons = append(v.Icons, InfoIcon{X: detailLeftX + 160, Y: 60, Size: PortraitSize, Tile: unitTile(u), Art: artKeyOf(u)})
 	s := u.Stats
+	s.Str += u.PowerTonic
+	s.Mag += u.PowerTonic
+	if u.Snared {
+		s.Mov = 0
+	}
+	if u.PowerTonic > 0 {
+		v.text(detailLeftX+160, 150, "剛力薬：次の自軍開始まで", StyleGood)
+	}
+	if u.Snared {
+		v.text(detailLeftX+160, 150, "粘着：次の自軍開始まで", StyleBad)
+	}
 	y := 60
 	for _, row := range [][2]string{
 		{"HP", fmt.Sprintf("%d/%d", u.HP, s.HP)}, {"力", fmt.Sprint(s.Str)}, {"魔力", fmt.Sprint(s.Mag)},

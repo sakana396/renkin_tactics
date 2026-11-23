@@ -65,7 +65,9 @@ func (c Camera) MenuRects(p tactics.Pos, n int) []image.Rectangle {
 }
 
 const cameraGuide = "矢印／ホイールで盤面移動"
-const cameraGuideY = ScreenHeight - lineHeight
+
+// cameraGuideY は案内の行の y（DES-NG-10。窓の高さに従う）。
+var cameraGuideY int
 
 // Camera は履歴閲覧中なら専用カメラを返す（DES-UI-25）。
 func (c *Controller) Camera() Camera {
@@ -87,7 +89,7 @@ func (c *Controller) Scroll(dx, dy int) {
 		return
 	}
 	switch c.state {
-	case Idle, Selected, Targeting, HealTargeting, Canto, BombTargeting:
+	case Idle, Selected, Targeting, HealTargeting, Canto, BombTargeting, ItemTargeting:
 		c.camera.Move(dx, dy)
 	}
 }
@@ -189,7 +191,7 @@ func (c *Controller) focusEvent(e tactics.Event) {
 		if e.Target >= 0 && e.Target < len(e.Units) {
 			c.camera.Focus(e.Units[e.Target].Pos)
 		}
-	case tactics.EventBlast:
+	case tactics.EventBlast, tactics.EventItemUse, tactics.EventEffectApply, tactics.EventEffectExpire:
 		// 爆心に寄る（DES-NG-05）。
 		c.camera.Focus(e.To)
 	case tactics.EventHeal, tactics.EventFall, tactics.EventWait, tactics.EventExp, tactics.EventLevelUp, tactics.EventBlastHit:

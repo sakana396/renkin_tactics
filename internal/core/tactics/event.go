@@ -40,6 +40,10 @@ const (
 	// EventBlastHit は爆発が 1 体に当たったこと。Unit（巻き込まれたユニット）、Target（使った人）、Amount（与えた固定ダメージ。
 	// HP の残りで切らない）を持つ。HP が 0 になれば、直後に EventFall が続く（DES-NG-02）。
 	EventBlastHit
+	// 新道具の使用・付与・期限切れ（DES-NG-15）。
+	EventItemUse
+	EventEffectApply
+	EventEffectExpire
 )
 
 // Event は起きたこと 1 つ（DES-EVT-01）。Kind ごとに決まった項目だけが意味を持つ。
@@ -56,6 +60,7 @@ type Event struct {
 	Amount int
 	Crit   bool
 	Pavise bool
+	Effect string
 	Item   string
 	Level  int
 	Gains  Stats

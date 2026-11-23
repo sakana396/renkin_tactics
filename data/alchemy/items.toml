@@ -31,3 +31,17 @@ name = "投げ火"
 blast_damage = 10
 blast_radius = 0
 throw_range = 5
+
+# 一時的に力と魔力を高める（DES-NG-13）。
+[[items]]
+id = "tonic_power"
+name = "剛力薬"
+effect = "power_tonic"
+amount = 4
+range = 3
+
+[[items]]
+id = "snare_bottle"
+name = "粘着瓶"
+effect = "snare"
+range = 4

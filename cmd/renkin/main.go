@@ -41,7 +41,7 @@ func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.
 	flags.SetOutput(stderr)
 	savedir := flags.String("savedir", "", "セーブのディレクトリ（指定しなければ OS の標準の場所）")
 	chapter := flags.String("chapter", "", "開発用の開始章 ID（-savedir も必須。成長は初期値）")
-	game := flags.String("game", gameBase, "遊ぶ作品: base または alchemy")
+	game := flags.String("game", gameAlchemy, "遊ぶ作品: base または alchemy")
 	seed := flags.Uint64("seed", 0, "乱数の種。指定すると、やり直しても同じ種を使う（指定しなければ時刻から決める）")
 	if err := flags.Parse(args); err != nil {
 		return 2
@@ -109,6 +109,7 @@ func runWithDirEnv(args []string, stderr io.Writer, fsys fs.FS, now func() time.
 		PlayLog: logs.Create, Now: now, Stderr: stderr}
 	if *game == gameAlchemy {
 		cfg.Media = data.AlchemyMedia()
+		cfg.HiRes = true
 	}
 	if err := start(cfg); err != nil {
 		fmt.Fprintln(stderr, err)

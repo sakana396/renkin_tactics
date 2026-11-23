@@ -3,6 +3,7 @@ package ui
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"io"
 	"io/fs"
 	"os"
@@ -35,6 +36,8 @@ type Config struct {
 	Stderr io.Writer
 	// Media は画像と音の置き場（DES-NG-07）。nil なら既存の素材を使う。
 	Media fs.FS
+	// HiRes は、1 マス 48 px の高解像度の表示にする（DES-NG-10）。新作（-game alchemy）だけが真にする。
+	HiRes bool
 }
 
 // Scene はキャンペーンの場面（DES-UI-09）。
@@ -75,8 +78,13 @@ type SceneController struct {
 	paragraph        int
 	joined           int
 	prepareMember    int
+	prepareCursor    image.Point
 	prepareStockTop  int
 	prepareRosterTop int
+	craftOpen        bool
+	craftTop         int
+	craftSelected    int
+	craftMessage     string
 	// prepareTab・prepareItem は準備の表示タブと持ち物で選んだ品（DES-UI-32）。表示だけに使う。
 	prepareTab     PrepareTabKind
 	prepareItem    prepareItem
@@ -307,7 +315,11 @@ func (s *SceneController) Advance() {
 			s.enterPrepare()
 		}
 	case Prepare:
-		s.enterDeploy()
+		if s.cfg.HiRes && s.craftOpen {
+			s.makeCraft()
+		} else {
+			s.enterDeploy()
+		}
 	case Battle:
 		if s.battle == nil || (s.battle.State() != Over || s.battle.rewind.open) {
 			return
@@ -326,6 +338,7 @@ func (s *SceneController) Advance() {
 			s.scene = Result
 		case tactics.Lost:
 			s.scene = GameOver
+			s.battle.gameOver = true
 		}
 	case Result:
 		s.saveWarning = ""

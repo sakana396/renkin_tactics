@@ -45,6 +45,12 @@ func itemLabel(s tactics.ItemStack) string {
 
 // itemEffect は道具の効果を示す（DES-NG-05）。
 func itemEffect(it tactics.Item) string {
+	if it.Effect == "power_tonic" {
+		return fmt.Sprintf("力・魔力 +%d　距離 0〜%d", it.Amount, it.Range)
+	}
+	if it.Effect == "snare" {
+		return fmt.Sprintf("移動 0　距離 1〜%d", it.Range)
+	}
 	if it.Bomb {
 		return fmt.Sprintf("爆弾 ダメージ %d　範囲 %d　投げる %d", it.BlastDamage, it.BlastRadius, it.ThrowRange)
 	}
@@ -150,6 +156,18 @@ func EventText(e tactics.Event) string {
 	case tactics.EventBlast:
 		// 爆弾を使ったこと（DES-NG-05）。
 		return fmt.Sprintf("%s が %s を投げた", name(e.Unit), e.Item)
+	case tactics.EventItemUse:
+		return fmt.Sprintf("%s が %s を使った", name(e.Unit), e.Item)
+	case tactics.EventEffectApply:
+		if e.Effect == "power_tonic" {
+			return fmt.Sprintf("%s の力・魔力が %d 上がった", name(e.Unit), e.Amount)
+		}
+		return fmt.Sprintf("%s の移動が止まった", name(e.Unit))
+	case tactics.EventEffectExpire:
+		if e.Effect == "power_tonic" {
+			return fmt.Sprintf("%s の剛力薬の効果が切れた", name(e.Unit))
+		}
+		return fmt.Sprintf("%s の粘着の効果が切れた", name(e.Unit))
 	case tactics.EventBlastHit:
 		return fmt.Sprintf("%s は爆発で %d ダメージ", name(e.Unit), e.Amount)
 	case tactics.EventFall:
@@ -224,6 +242,8 @@ func (c *Controller) Guide() []string {
 			lines = append(lines, "左クリック: 回復する味方を選ぶ　右クリック・Esc: 戻る")
 		}
 		lines = append(lines, guideDanger)
+	case ItemTargeting:
+		lines = append(lines, c.itemGuide()...)
 	case BombTargeting:
 		lines = append(lines, c.bombGuide()...)
 		if c.message == "" || !c.blastPicked {

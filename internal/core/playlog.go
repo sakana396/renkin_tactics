@@ -107,6 +107,7 @@ type logEvent struct {
 	Amount *int      `json:"amount,omitempty"`
 	HP     *int      `json:"hp,omitempty"`
 	Item   string    `json:"item,omitempty"`
+	Effect string    `json:"effect,omitempty"`
 	Level  int       `json:"level,omitempty"`
 	Gains  *logStats `json:"gains,omitempty"`
 	Event  string    `json:"event,omitempty"`
@@ -122,7 +123,8 @@ type logCommand struct {
 	Item   int    `json:"item"`
 	Weapon *int   `json:"weapon"`
 	// Blast は爆弾の爆心 [x, y]（DES-NG-04）。爆弾以外では書かない（既存の記録の形を変えない）。
-	Blast *logPos `json:"blast,omitempty"`
+	Blast      *logPos `json:"blast,omitempty"`
+	ItemTarget *logPos `json:"item_target,omitempty"`
 }
 
 // logRecord は記録 1 行（DES-LOG-01）。Type ごとに決まった項目だけを書く。
@@ -182,6 +184,7 @@ var eventNames = map[tactics.EventKind]string{
 	tactics.EventWon: "won", tactics.EventLost: "lost", tactics.EventExp: "exp", tactics.EventLevelUp: "level_up",
 	tactics.EventTrigger: "trigger", tactics.EventGroupCharge: "group_charge",
 	tactics.EventBlast: "blast", tactics.EventBlastHit: "blast_hit",
+	tactics.EventItemUse: "item_use", tactics.EventEffectApply: "effect_apply", tactics.EventEffectExpire: "effect_expire",
 }
 
 // toLogEvent は出来事を記録の形にする（DES-LOG-01）。
@@ -211,6 +214,8 @@ func toLogEvent(e tactics.Event) logEvent {
 		out.Unit, out.To, out.Item = intPtr(e.Unit), toLogPos(e.To), e.Item
 	case tactics.EventBlastHit:
 		out.Unit, out.Target, out.Amount, out.Item, out.HP = intPtr(e.Unit), intPtr(e.Target), intPtr(e.Amount), e.Item, hpOf(e.Unit)
+	case tactics.EventItemUse, tactics.EventEffectApply, tactics.EventEffectExpire:
+		out.Unit, out.Target, out.To, out.Amount, out.Item, out.Effect = intPtr(e.Unit), intPtr(e.Target), toLogPos(e.To), intPtr(e.Amount), e.Item, e.Effect
 	case tactics.EventFall, tactics.EventWait:
 		out.Unit = intPtr(e.Unit)
 	case tactics.EventExp:
@@ -321,6 +326,9 @@ func (l *PlayLog) Act(b *tactics.Battle, cmd tactics.Command) ([]tactics.Event, 
 	lc := &logCommand{Unit: cmd.Unit, To: logPos{cmd.To.X, cmd.To.Y}, Action: actionNames[cmd.Action], Target: cmd.Target, Item: cmd.Item}
 	if cmd.Weapon != nil {
 		lc.Weapon = intPtr(*cmd.Weapon)
+	}
+	if cmd.ItemTarget != nil {
+		lc.ItemTarget = toLogPos(*cmd.ItemTarget)
 	}
 	if cmd.Blast != nil {
 		lc.Blast = toLogPos(*cmd.Blast)
@@ -565,6 +573,9 @@ func (r logRecord) command() (tactics.Command, error) {
 	}
 	if r.Cmd.Weapon != nil {
 		cmd.Weapon = intPtr(*r.Cmd.Weapon)
+	}
+	if r.Cmd.ItemTarget != nil {
+		cmd.ItemTarget = &tactics.Pos{X: r.Cmd.ItemTarget[0], Y: r.Cmd.ItemTarget[1]}
 	}
 	if r.Cmd.Blast != nil {
 		cmd.Blast = &tactics.Pos{X: r.Cmd.Blast[0], Y: r.Cmd.Blast[1]}
