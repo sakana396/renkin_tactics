@@ -36,6 +36,7 @@ func TestItemHelp227(t *testing.T) {
 		}{
 			{"剛力薬", tactics.Item{Effect: "power_tonic", Amount: 4, Range: 3}, "味方 1 人の力・魔力 +4　距離 0〜3　次の自軍開始まで"},
 			{"粘着瓶", tactics.Item{Effect: "snare", Range: 4}, "敵 1 体の移動を 0 にする　距離 1〜4　次の自軍開始まで"},
+			{"投げ火", tactics.Item{Bomb: true, BlastDamage: 10, BlastRadius: 0, ThrowRange: 5}, "爆心の 1 マスにダメージ 10　投げる 5"},
 			{"爆弾", tactics.Item{Bomb: true, BlastDamage: 12, BlastRadius: 2, ThrowRange: 3}, "爆心から距離 2 までの全員にダメージ 12（敵味方の区別なし）　投げる 3"},
 			{"回復薬", tactics.Item{Heal: 10}, "自分の HP を 10 回復する"},
 		} {
@@ -110,6 +111,48 @@ func TestItemHelp227(t *testing.T) {
 		hoverItemRow(c, 0)
 		if g := c.Guide(); len(g) > max {
 			t.Fatalf("message あり: %d 行", len(g))
+		}
+	})
+}
+
+func TestItemHelpRewind227(t *testing.T) {
+	t.Run("TC-DES-NG-16-06 巻き戻し後の案内", func(t *testing.T) {
+		c := newIdleWith(t, itemNG06Setup)
+		c.itemHelp = true
+		c.Click(tactics.Pos{X: 2, Y: 2})
+		c.Click(tactics.Pos{X: 2, Y: 2})
+		c.ChooseAction(tactics.Wait)
+		playOut(c)
+		c.OpenRewind()
+		c.RewindEnter()
+		c.RewindEnter()
+		if c.unit != -1 || c.State() != Idle {
+			t.Fatalf("巻き戻し後の状態: %v unit=%d", c.State(), c.unit)
+		}
+		if c.itemHelpLine() != "" || len(c.Guide()) == 0 {
+			t.Fatal("巻き戻し後の案内が不正")
+		}
+		for _, state := range []State{ItemMenu, ItemTargeting, BombTargeting} {
+			c.state = state
+			for _, unit := range []int{-1, len(c.battle.Units())} {
+				c.unit = unit
+				if got := c.itemHelpLine(); got != "" {
+					t.Fatalf("状態 %v unit=%d: %q", state, unit, got)
+				}
+			}
+		}
+	})
+}
+
+func TestItemHelpScene227(t *testing.T) {
+	t.Run("TC-DES-NG-16-07 戦闘開始時の設定", func(t *testing.T) {
+		for _, hires := range []bool{false, true} {
+			s := ng05Scenes(t, "ch01", hires)
+			s.enterDeploy()
+			s.startDeployedBattle()
+			if s.Scene() != Battle || s.battle == nil || s.battle.itemHelp != hires {
+				t.Fatalf("HiRes=%v: scene=%v battle=%v", hires, s.Scene(), s.battle)
+			}
 		}
 	})
 }

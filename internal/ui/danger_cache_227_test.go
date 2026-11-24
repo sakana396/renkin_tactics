@@ -91,7 +91,7 @@ func TestDangerCache227(t *testing.T) {
 		if len(b.Units()) != 4 {
 			t.Fatalf("巻き戻しで増援が消えていない: %d 体", len(b.Units()))
 		}
-		// 敵が倒れる・切り替え。Q を切ると nil、また出すと正しい結果。
+		// 切り替え。Q を切ると nil、また出すと正しい結果。
 		c.ToggleDanger()
 		if c.Danger() != nil {
 			t.Fatal("Q を切っても出ている")

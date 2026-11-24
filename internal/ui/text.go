@@ -65,6 +65,8 @@ func itemDescription(it tactics.Item) string {
 		return fmt.Sprintf("味方 1 人の力・魔力 +%d　距離 0〜%d　次の自軍開始まで", it.Amount, it.Range)
 	case it.Effect == "snare":
 		return fmt.Sprintf("敵 1 体の移動を 0 にする　距離 1〜%d　次の自軍開始まで", it.Range)
+	case it.Bomb && it.BlastRadius == 0:
+		return fmt.Sprintf("爆心の 1 マスにダメージ %d　投げる %d", it.BlastDamage, it.ThrowRange)
 	case it.Bomb:
 		return fmt.Sprintf("爆心から距離 %d までの全員にダメージ %d（敵味方の区別なし）　投げる %d", it.BlastRadius, it.BlastDamage, it.ThrowRange)
 	}
@@ -77,13 +79,19 @@ func (c *Controller) itemHelpLine() string {
 	if !c.itemHelp {
 		return ""
 	}
-	items := c.battle.Units()[c.unit].Items
-	k := -1
 	switch c.state {
-	case ItemMenu:
+	case ItemMenu, ItemTargeting, BombTargeting:
+	default:
+		return ""
+	}
+	units := c.battle.Units()
+	if c.unit < 0 || c.unit >= len(units) {
+		return ""
+	}
+	items := units[c.unit].Items
+	k := c.item
+	if c.state == ItemMenu {
 		k = c.hoveredItem()
-	case ItemTargeting, BombTargeting:
-		k = c.item
 	}
 	if k < 0 || k >= len(items) {
 		return ""
