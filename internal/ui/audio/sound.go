@@ -12,7 +12,7 @@ import (
 
 // 音量（0〜1）。BGM は効果音より小さくする（DES-NG-09）。
 const (
-	SEVolume  = 0.7
+	SEVolume  = 0.5
 	BGMVolume = 0.3
 )
 

@@ -57,6 +57,48 @@ func itemEffect(it tactics.Item) string {
 	return fmt.Sprintf("回復 %d", it.Heal)
 }
 
+// itemDescription は道具の説明の 1 行を返す（#227）。効果・射程・持続を、itemEffect と同じ言い方で書く。
+// 新作（高解像度）の戦闘の案内欄に、一覧で指している道具、または選んだ道具の説明として出す。
+func itemDescription(it tactics.Item) string {
+	switch {
+	case it.Effect == "power_tonic":
+		return fmt.Sprintf("味方 1 人の力・魔力 +%d　距離 0〜%d　次の自軍開始まで", it.Amount, it.Range)
+	case it.Effect == "snare":
+		return fmt.Sprintf("敵 1 体の移動を 0 にする　距離 1〜%d　次の自軍開始まで", it.Range)
+	case it.Bomb && it.BlastRadius == 0:
+		return fmt.Sprintf("爆心の 1 マスにダメージ %d　投げる %d", it.BlastDamage, it.ThrowRange)
+	case it.Bomb:
+		return fmt.Sprintf("爆心から距離 %d までの全員にダメージ %d（敵味方の区別なし）　投げる %d", it.BlastRadius, it.BlastDamage, it.ThrowRange)
+	}
+	return fmt.Sprintf("自分の HP を %d 回復する", it.Heal)
+}
+
+// itemHelpLine は案内欄に足す道具の説明の行を返す。出さないときは空（#227）。
+// 一覧では指している行、対象や爆心を選ぶ間は選んだ道具の説明。旧作（itemHelp が偽）では出さない。
+func (c *Controller) itemHelpLine() string {
+	if !c.itemHelp {
+		return ""
+	}
+	switch c.state {
+	case ItemMenu, ItemTargeting, BombTargeting:
+	default:
+		return ""
+	}
+	units := c.battle.Units()
+	if c.unit < 0 || c.unit >= len(units) {
+		return ""
+	}
+	items := units[c.unit].Items
+	k := c.item
+	if c.state == ItemMenu {
+		k = c.hoveredItem()
+	}
+	if k < 0 || k >= len(items) {
+		return ""
+	}
+	return itemDescription(items[k].Item)
+}
+
 // weaponDetail は武器・杖の詳しい欄の 1 行（DES-UI-26、DES-IT06 12.1 節）。
 // 名前・物理／魔法・威力・命中・必殺・重さ・射程・特効の対象。杖は回復量・射程・残りの回数。
 func weaponDetail(w tactics.Weapon) string {
@@ -285,6 +327,10 @@ func (c *Controller) Guide() []string {
 	}
 	if c.message != "" {
 		lines = append(lines, c.message)
+	}
+	// 案内欄は 4 行まで。入るときだけ道具の説明を足す（#227）。
+	if help := c.itemHelpLine(); help != "" && len(lines) < GuideHeight/lineHeight {
+		lines = append(lines, help)
 	}
 	return lines
 }
