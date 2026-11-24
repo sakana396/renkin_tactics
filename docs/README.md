@@ -36,7 +36,7 @@
 | 試験 | 新作 NG07 試験仕様 | [04_test/test-spec-ng07.md](04_test/test-spec-ng07.md) | v0.1。自動は実装済み（一部を含む）、手動は未実施 |
 | 試験 | テスト仕様書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.9（#209）。TC-DES-NG-01〜06 は実装済み |
 | 試験 | テスト仕様書（新作 NG02: 画像の差し込み） | [04_test/test-spec-ng02.md](04_test/test-spec-ng02.md) | v0.6（#207）。自動は実装済み（高解像度の配置は #206）、実画面の確認は管理役の撮影で実施（人の目では #214） |
-| 試験 | テスト仕様書（新作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.4（#205）。自動は実装済み、耳での確認は手動・未実施 |
+| 試験 | テスト仕様書（新作 NG03: 音） | [04_test/test-spec-ng03.md](04_test/test-spec-ng03.md) | v0.6（#214）。自動は実装済み、耳での確認は手動・実施（E-153・E-159） |
 | 試験 | テスト仕様書（新作 NG04: 高解像度の表示） | [04_test/test-spec-ng04.md](04_test/test-spec-ng04.md) | v0.6（#207）。準備の全面表示に合わせて TC-DES-NG-10-12 を更新。v0.5（#206）、v0.4 承認（E-143、#203） |
 | 試験 | テスト仕様書（新作 NG05: 準備画面の作り直し） | [04_test/test-spec-ng05.md](04_test/test-spec-ng05.md) | v0.4（#207、E-148）。自動は実装済み、現行章の撮影を実施、窓の実操作は #214。v0.3 承認（E-143、#203） |
 | 試験 | 新作 NG06 試験仕様 | [04_test/test-spec-ng06.md](04_test/test-spec-ng06.md) | v0.1、自動・実装済み（Windows で実行）、手動未実施 |
@@ -66,6 +66,8 @@
 | 計画 | 反復 7 計画書 | [iterations/it07/plan.md](iterations/it07/plan.md) | v0.3（承認（E-119））。画面の作り直し・指揮官・重騎士の ZOC（E-117・E-118）。REV-090 の指摘を反映 |
 | 計画 | 反復 8 計画書（IT08-PLAN） | [iterations/it08/plan.md](iterations/it08/plan.md) | v0.3（承認（E-134）。REV-112 の指摘と E-135・E-136 を反映）。新作「古代都市の復旧」の試作ブランチの仕組みを取り込み、1〜3 章を作り直し、画像生成の環境、錬金アイテムの種類と調合、#190 の案 B（E-130〜E-136） |
 | 計画 | 反復 8 9 章の増援の案 B の測定 | [iterations/it08/ch09-candidate-b.md](iterations/it08/ch09-candidate-b.md) | #213。反復 7 の案 B の表と 120 試遊が一致 |
+| 計画 | 反復 8 の振り返り（IT08-RETRO） | [iterations/it08/retrospective.md](iterations/it08/retrospective.md) | v0.1 案（開発者の承認待ち）。#214。#227 を足した。H-31・H-33 は今の 1〜3 章では成り立たなかった（開発者が決めた、2026-11-25）、H-32 は一部（案）、H-28・H-29 は未検証。反復 9 の候補（敵の密度・敵の魔法使い・重装兵の強さほか） |
+| 試験 | 反復 8 の試遊の記録（IT08-PLAYTEST） | [iterations/it08/playtest.md](iterations/it08/playtest.md) | v0.1 案（開発者の承認待ち）。#214。2026-11-23 の試遊（main 95c3d86）と 11-24 の #227 の版の確認、行動の記録（1〜3 章）、E-153〜E-159、#214 の申し送りの確かめ |
 | 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
