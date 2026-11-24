@@ -28,10 +28,10 @@
 | 試験 | テスト仕様書（反復 7） | [04_test/test-spec-it07.md](04_test/test-spec-it07.md) | v1.4（#175。人の試遊は行わずに締めた、E-128）。v1.3（#188）。ZOCの経路計測と増援の最終経路・全試行の区別を追加し、新版920試遊を測り直し。v1.2（#189）は射程とフレーム内範囲共有の回帰を追加し、同じ基準PCの合成条件で最低79.808fps |
 | 設計 | 設計書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.7 承認（2026-11-19。#212、E-151、REV-123）。v0.6 承認（2026-11-18、#211 の報酬の注記）。v0.5 承認（E-147、#208、REV-119 F-03）。v0.4 承認（E-145）。DES-NG-01〜06。爆弾の経験は案 A で決定（E-142）。5 章に改める既存の ID（DES-MAP-04・DES-CMP-06・DES-GRW-01） |
 | 設計 | 設計書（新作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.4 承認（E-143、#203）。DES-NG-07・08 |
-| 設計 | 設計書（新作 NG03: 音） | [03_design/design-ng03-audio.md](03_design/design-ng03-audio.md) | v0.3 承認（E-143、#203）。DES-NG-09。ミュートのキーは N（E-142） |
+| 設計 | 設計書（新作 NG03: 音） | [03_design/design-ng03-audio.md](03_design/design-ng03-audio.md) | v0.4 承認（2026-11-24、#227。効果音 0.5）。v0.3 承認（E-143、#203）。DES-NG-09。ミュートのキーは N（E-142） |
 | 設計 | 設計書（新作 NG04: 高解像度の表示） | [03_design/design-ng04-display.md](03_design/design-ng04-display.md) | v0.4 承認（E-143、#203）。DES-NG-10。D-12 は持ち越し（E-142） |
 | 設計 | 設計書（新作 NG05: 準備画面の作り直し） | [03_design/design-ng05-prepare.md](03_design/design-ng05-prepare.md) | v0.5 承認（E-143、#203）。DES-NG05（準備画面）。モック [03_design/mock/prepare-ng05.png](03_design/mock/prepare-ng05.png) |
-| 設計 | 新作 NG06 錬金アイテムの種類 | [03_design/design-ng06-items.md](03_design/design-ng06-items.md) | v0.2 承認（2026-11-19。#212、E-151、REV-123）。v0.1 承認（2026-11-18、E-149・E-150、#211） |
+| 設計 | 新作 NG06 錬金アイテムの種類 | [03_design/design-ng06-items.md](03_design/design-ng06-items.md) | v0.3 承認（2026-11-24、#227。道具の説明欄）。v0.2 承認（2026-11-19。#212、E-151、REV-123）。v0.1 承認（2026-11-18、E-149・E-150、#211） |
 | 設計 | 新作 NG07 章の間の調合 | [03_design/design-ng07-crafting.md](03_design/design-ng07-crafting.md) | v0.1 承認（2026-11-19。#212、E-151、REV-123） |
 | 試験 | 新作 NG07 試験仕様 | [04_test/test-spec-ng07.md](04_test/test-spec-ng07.md) | v0.1。自動は実装済み（一部を含む）、手動は未実施 |
 | 試験 | テスト仕様書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [04_test/test-spec-ng01.md](04_test/test-spec-ng01.md) | v0.9（#209）。TC-DES-NG-01〜06 は実装済み |
