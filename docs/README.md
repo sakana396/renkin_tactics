@@ -67,6 +67,7 @@
 | 計画 | 反復 8 計画書（IT08-PLAN） | [iterations/it08/plan.md](iterations/it08/plan.md) | v0.3（承認（E-134）。REV-112 の指摘と E-135・E-136 を反映）。新作「古代都市の復旧」の試作ブランチの仕組みを取り込み、1〜3 章を作り直し、画像生成の環境、錬金アイテムの種類と調合、#190 の案 B（E-130〜E-136） |
 | 計画 | 反復 8 9 章の増援の案 B の測定 | [iterations/it08/ch09-candidate-b.md](iterations/it08/ch09-candidate-b.md) | #213。反復 7 の案 B の表と 120 試遊が一致 |
 | 計画 | 反復 8 の振り返り（IT08-RETRO） | [iterations/it08/retrospective.md](iterations/it08/retrospective.md) | v0.2 承認（2026-11-25、REV-127）。#214。#227 を足した。H-31・H-33 は今の 1〜3 章では成り立たなかった（E-160）、H-32 は一部（案）、H-28・H-29 は未検証。反復 9 の候補（敵の密度・敵の魔法使い・重装兵の強さほか） |
+| 計画 | 反復 9 計画書（IT09-PLAN） | [iterations/it09/plan.md](iterations/it09/plan.md) | v0.2 案（開発者の承認待ち）。1〜3 章を道具が要る章に手直し、仲間の全員に固有スキル、4 章（軽歩兵、古代の装置で門を開く）、画面と絵の持ち越し（E-161・E-162） |
 | 試験 | 反復 8 の試遊の記録（IT08-PLAYTEST） | [iterations/it08/playtest.md](iterations/it08/playtest.md) | v0.1 案（開発者の承認待ち）。#214。2026-11-23 の試遊（main 95c3d86）と 11-24 の #227 の版の確認、行動の記録（1〜3 章）、E-153〜E-160、#214 の申し送りの確かめ |
 | 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
