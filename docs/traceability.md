@@ -90,5 +90,5 @@
 
 | 対象 | Issue | 設計 | テストケース | 実装 | 状態 |
 |---|---|---|---|---|---|
-| Q-IT09-01 | #235 | DES-NG-23（案） | TC-DES-NG-23-01 | `internal/core/measure_it09_test.go` | 測定用、基準は承認待ち |
+| Q-IT09-01 | #235 | DES-NG-23（案） | TC-DES-NG-23-01、TC-DES-NG-23-02 | `internal/core/measure_it09_test.go` | 測定用、3章の修正条件は案・時間切れが残る |
 | DES-NG-24 | #235（一部） | DES-NG-24 | TC-DES-NG-24-01、TC-DES-NG-24-02、TC-DES-NG-24-03、TC-DES-NG-24-04、TC-DES-NG-24-05、TC-DES-NG-24-06、TC-DES-NG-24-07、TC-DES-NG-24-08 | `data/alchemy/classes.toml`、`data/alchemy/weapons.toml`、`internal/core/enemies_ng08_test.go` | 兵種・武器の定義と戦闘予測を実装。SRS 改訂案は承認待ち。配置は #236 |
