@@ -393,13 +393,11 @@ func (s *SceneController) startDeployedBattle() {
 		return
 	}
 	ctrl, err := NewController(func() (*tactics.Battle, []tactics.Event, error) { return sortie.Battle, events, nil })
-	if err == nil {
-		ctrl.metrics = s.metrics
-	}
 	if err != nil {
 		s.message = err.Error()
 		return
 	}
+	ctrl.metrics = s.metrics
 	ctrl.itemHelp = s.cfg.HiRes
 	// 行動の記録は、戦闘を作れたあとに始める。作れなくても遊べる（DES-LOG-02）。
 	if s.cfg.PlayLog != nil {

@@ -23,7 +23,7 @@ func itemHelpController(t *testing.T, help bool) *Controller {
 
 // hoverItemRow は一覧の i 行目の中心にカーソルを置く。
 func hoverItemRow(c *Controller, i int) {
-	r := c.Camera().MenuRectsFor(baseMetrics(), c.dest, c.MenuLabels())[i]
+	r := c.Camera().MenuRectsFor(c.metrics, c.dest, c.MenuLabels())[i]
 	c.SetCursor((r.Min.X+r.Max.X)/2, (r.Min.Y+r.Max.Y)/2)
 }
 
@@ -83,6 +83,7 @@ func TestItemHelp227(t *testing.T) {
 	t.Run("TC-DES-NG-16-05 説明を足しても案内欄は 4 行まで・幅に収まり、右の案内と重ならない（高解像度）", func(t *testing.T) {
 		mt := NewMetrics(HiResCellSize)
 		c := itemHelpController(t, true)
+		c.metrics = mt
 		max := GuideHeight / lineHeight
 		for k := 0; k < 2; k++ {
 			hoverItemRow(c, k)

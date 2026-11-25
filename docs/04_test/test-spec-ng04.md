@@ -3,7 +3,7 @@
 - 文書 ID: TST-NG04
 - 版: 0.7（#233）。0.6（#207）。0.5（#206）。0.4 承認（E-143）。0.3 までは試作ブランチ `claude/capabilities-question-0hf0gp` のテスト仕様書（未承認。フェーズ 2 の TC-DES-NG-10-18〜28 を足し、v0.3 で REV-109 の指摘に合わせて TC-DES-NG-10-29〜34 を足し、12・14 を直した）
 - 作成日: 2026-11-13
-- 対象: [DES-NG04](../03_design/design-ng04-display.md) v0.4（DES-NG-10）。[SRS-001](../02_requirements/srs.md) v0.9 の FR-MAP-07
+- 対象: [DES-NG04](../03_design/design-ng04-display.md) v0.6（DES-NG-10）。[SRS-001](../02_requirements/srs.md) v0.9 の FR-MAP-07
 
 ケース ID は `TC-DES-NG-10-<連番 2 桁>`。表の列は、ID、対象、前提、入力・操作、期待結果、種別の 6 列。期待値は実装の出力を写さず、設計書の規則と、切り替えを入れる前の定数（1 マス 32 px の配置）から手で決めた。
 表示の大きさはパッケージの変数ではなく `Metrics` の値なので、48 のテストは `NewMetrics(HiResCellSize)` で作った値を、関数・`Game`・`SceneController`・`Controller` に渡す（#233。後始末は要らない）。`NewMetrics` の試験は値ごとに 32・48 の配置を確かめる（TC-DES-NG-10-35・36）。既定（32）のままの既存のテストが、そのまま通ることも合格の条件にする（全体の `go test`）。
@@ -81,6 +81,7 @@ ID の 18〜26・28 は `internal/ui`、27 は `data`。仮の地形の画像は
 | TC-DES-NG-10-34 | `-chapter ch02`、2 章が「水路の向こう」 | `-chapter ch01` と、仮の 1 章の名前「水の止まった都」で確かめる |
 | 2 章「手動の確認」の仮の地形 | 新作の戦闘 ch01・ch02・ch03 を撮る | 仮の 1 章（ch01）を撮る |
 | TC-DES-NG-10-17 | 指定なしは旧作（`HiRes` が偽） | #208 で `-game` の既定を新作に切り替えた（FR-SYS-05。E-139）ので、#206 のマージの前に指定なしの期待結果を `HiRes` が真に改めた |
+
 ## 4. 変更履歴
 
 | 版 | 日付 | 内容 |

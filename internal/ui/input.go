@@ -147,6 +147,7 @@ type Controller struct {
 }
 
 // NewController は、newBattle で戦闘を作り、初めの出来事の再生から始める（DES-UI-02、DES-UI-04）。
+// 表示の大きさは既定（32）。場面から作るときは SceneController の値で上書きする（DES-NG-10）。
 func NewController(newBattle Factory) (*Controller, error) {
 	c := &Controller{metrics: NewMetrics(BaseCellSize), target: -1, weapon: -1, cursorX: -1, cursorY: -1}
 	b, events, err := newBattle()

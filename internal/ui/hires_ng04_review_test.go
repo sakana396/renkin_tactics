@@ -55,11 +55,15 @@ func TestHiResGameOver(t *testing.T) {
 	})
 	t.Run("TC-DES-NG-10-29 既定（32）では敗北の入口は今までの位置（y = MapSize）", func(t *testing.T) {
 		s := hiresScenes(t, Battle)
+		// hiresScenes は 48 で作るので、32 の値に差し替えて確かめる。
+		mt := baseMetrics()
+		s.metrics = mt
+		s.battle.metrics = mt
 		s.scene = GameOver
 		s.battle.state = Over
 		s.battle.gameOver = true
 		b := s.battle.RewindView().Buttons
-		if len(b) != 1 || b[0].Rect != image.Rect(304, 512, 504, 530) {
+		if len(b) != 1 || b[0].Rect != image.Rect(304, mt.Map, 504, mt.Map+18) {
 			t.Fatal(b)
 		}
 	})
