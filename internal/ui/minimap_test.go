@@ -277,7 +277,7 @@ func TestMinimap(t *testing.T) {
 	t.Run("TC-FR-MAP-06-05 戦闘のクリック: 地図だけカメラを動かし、余白と再生中は無視し、選択・乱数・履歴・敵の範囲を変えない", func(t *testing.T) {
 		c := newIdleWith(t, minimapSetup)
 		control := newIdleWith(t, minimapSetup)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		// ボスをクリックして範囲を出し、Q も出しておく。
 		for _, k := range []*Controller{c, control} {
 			k.Click(tactics.Pos{X: 30, Y: 30})
@@ -580,7 +580,7 @@ func TestInfoPagesLayout(t *testing.T) {
 		two := tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, HP: 20, Weapons: []tactics.Weapon{testLance}, Alive: true,
 			Skill: tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}, ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}},
 			Items: []tactics.ItemStack{{Item: potion, Count: 2}}}
-		fits("2 つのスキル", twoTierInfo([]tactics.Unit{two}, 0, 0, &forest))
+		fits("2 つのスキル", twoTierInfo(NewMetrics(BaseCellSize), []tactics.Unit{two}, 0, 0, &forest))
 		c.Click(tactics.Pos{X: 2, Y: 3})
 		fits("選択と相手", c.BattleInfoView(cellCenter(tactics.Pos{X: 3, Y: 3})))
 		// 盤面の外（ミニマップの上）では選んでいるユニットを出す。
@@ -697,7 +697,7 @@ func TestInfoPagesLayout(t *testing.T) {
 
 	t.Run("TC-FR-MAP-06-07 カーソルが情報欄の上にあるときは、選んでいるユニットか直前に盤面で見ていたマスを出し続け、「詳細 I」で同じ人物を開く", func(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		r := detailButtonRect
 		tx, ty := r.Min.X+2, r.Min.Y+2
 		// 何も見ていなければ空で、「詳細 I」は押せず、押しても開かない。
@@ -747,7 +747,7 @@ func TestInfoPagesLayout(t *testing.T) {
 
 	t.Run("TC-FR-MAP-06-07 Tab は詳しい画面の節だけを送り、選択・カメラ・敵の範囲は変えない（E-120）", func(t *testing.T) {
 		c := newIdleWith(t, minimapSetup)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		c.Click(tactics.Pos{X: 20, Y: 20})
 		if c.State() != Selected {
 			t.Fatal("前提: 選択")

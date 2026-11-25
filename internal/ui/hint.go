@@ -50,7 +50,7 @@ func (c *Controller) ReinforcementHintView() HintView {
 	return c.Camera().hintView(HintView{
 		Visible: true,
 		Areas:   append([]tactics.ReinforcementHint(nil), c.hints...),
-		Text:    SceneText{Text: hintText, X: MapSize - 8 - textWidth(hintText), Y: MapSize + 2 + 2*lineHeight, Style: StyleHint},
+		Text:    SceneText{Text: hintText, X: c.metrics.Map - 8 - textWidth(hintText), Y: c.metrics.Map + 2 + 2*lineHeight, Style: StyleHint},
 	})
 }
 
@@ -63,7 +63,7 @@ func (c *Controller) rewindHintView(areas []tactics.ReinforcementHint) HintView 
 	return c.Camera().hintView(HintView{
 		Visible: true,
 		Areas:   append([]tactics.ReinforcementHint(nil), areas...),
-		Text:    SceneText{Text: hintText, X: rewindLeft, Y: hintRewindY, Style: StyleHint},
+		Text:    SceneText{Text: hintText, X: c.metrics.rewindLeft, Y: c.metrics.hintRewindY, Style: StyleHint},
 	})
 }
 

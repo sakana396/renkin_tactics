@@ -32,7 +32,7 @@ func RunShot(cfg Config, opt ShotOptions) error {
 	if err != nil {
 		return err
 	}
-	g := &Game{scenes: scenes, sheets: map[assets.Sheet]*ebiten.Image{}}
+	g := &Game{metrics: metricsForConfig(cfg), scenes: scenes, sheets: map[assets.Sheet]*ebiten.Image{}}
 	for s, img := range imgs {
 		g.sheets[s] = ebiten.NewImageFromImage(img)
 	}
@@ -80,10 +80,10 @@ func (g *shotGame) Draw(_ *ebiten.Image) {
 	if g.done || !g.started {
 		return
 	}
-	img := ebiten.NewImage(ScreenWidth, ScreenHeight)
+	img := ebiten.NewImage(g.Game.metrics.ScreenW, g.Game.metrics.ScreenH)
 	defer img.Dispose()
 	g.Game.Draw(img)
-	rgba := image.NewRGBA(image.Rect(0, 0, ScreenWidth, ScreenHeight))
+	rgba := image.NewRGBA(image.Rect(0, 0, g.Game.metrics.ScreenW, g.Game.metrics.ScreenH))
 	img.ReadPixels(rgba.Pix)
 	f, err := os.Create(g.options.Path)
 	if err == nil {
@@ -268,7 +268,7 @@ func (g *shotGame) step(raw string) error {
 			}
 			c.camera.Focus(p)
 			pt := c.Camera().Screen(p)
-			g.shotCursor = &image.Point{X: pt.X + CellSize/2, Y: pt.Y + CellSize/2}
+			g.shotCursor = &image.Point{X: pt.X + g.Game.metrics.Cell/2, Y: pt.Y + g.Game.metrics.Cell/2}
 			c.SetCursor(g.shotCursor.X, g.shotCursor.Y)
 			c.Click(p)
 		}

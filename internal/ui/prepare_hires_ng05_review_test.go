@@ -349,7 +349,7 @@ func TestPrepareHiResReview(t *testing.T) {
 	t.Run("TC-DES-NG-11-24 準備の入力は Game.sceneInput の経路で動く（左クリック・右クリック・↑↓・Enter・Esc）", func(t *testing.T) {
 		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
-		g := &Game{scenes: s}
+		g := &Game{metrics: s.metrics, scenes: s}
 		click := func(r image.Rectangle) { g.sceneInput(sceneKeys{Left: true}, r.Min.X+5, r.Min.Y+5) }
 		right := func(x, y int) { g.sceneInput(sceneKeys{Right: true, Cancel: true}, x, y) }
 		// カード: 左クリックで選ぶ（マウスの位置が準備の値に渡る）。
@@ -421,14 +421,14 @@ func TestPrepareHiResReview(t *testing.T) {
 			t.Fatal(s.Scene())
 		}
 		s = ng05Scenes(t, "ch01", true)
-		g = &Game{scenes: s}
+		g = &Game{metrics: s.metrics, scenes: s}
 		g.sceneInput(sceneKeys{Enter: true}, 0, 0)
 		if s.Scene() != Deploy {
 			t.Fatal("Enter で配置へ進まない", s.Scene())
 		}
 		// HiRes でない準備は、↑↓・Enter を受けない。
 		s = ng05Scenes(t, "ch01", false)
-		g = &Game{scenes: s}
+		g = &Game{metrics: s.metrics, scenes: s}
 		g.sceneInput(sceneKeys{Down: true}, 0, 0)
 		g.sceneInput(sceneKeys{Enter: true}, 0, 0)
 		if s.Scene() != Prepare || s.prepareMember != 0 {
@@ -495,7 +495,7 @@ func TestPrepareWindowSceneCursor(t *testing.T) {
 			{"旧作", false, 272, 172},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				x, y := windowSceneCursor(400, 300, Prepare, false, tc.full)
+				x, y := NewMetrics(HiResCellSize).windowSceneCursor(400, 300, Prepare, false, tc.full)
 				if x != tc.wantX || y != tc.wantY {
 					t.Fatalf("座標 = (%d, %d), 期待 = (%d, %d)", x, y, tc.wantX, tc.wantY)
 				}
@@ -516,7 +516,7 @@ func TestPrepareGameCursor(t *testing.T) {
 			{"旧作", false, 272, 172},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				g := &Game{scenes: ng05Scenes(t, "ch01", tc.hires)}
+				g := &Game{metrics: metricsForConfig(Config{HiRes: tc.hires}), scenes: ng05Scenes(t, "ch01", tc.hires)}
 				if g.scenes.Scene() != Prepare {
 					t.Fatalf("場面 = %v, 期待 Prepare", g.scenes.Scene())
 				}

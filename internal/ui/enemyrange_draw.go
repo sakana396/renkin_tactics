@@ -26,7 +26,7 @@ func (g *Game) drawEnemyRanges(dst *ebiten.Image, layers []EnemyRangeLayer) {
 // drawRangeCell は層 l の 1 マスを、画面の左上 pt に描く（DES-UI-29）。
 func (g *Game) drawRangeCell(dst *ebiten.Image, l EnemyRangeLayer, pt image.Point) {
 	if l.Stroke == StrokeFill {
-		vector.DrawFilledRect(dst, float32(pt.X), float32(pt.Y), float32(CellSize), float32(CellSize), dangerFill, false)
+		vector.DrawFilledRect(dst, float32(pt.X), float32(pt.Y), float32(g.metrics.Cell), float32(g.metrics.Cell), dangerFill, false)
 		return
 	}
 	clr, inset := color.Color(watchedLine), watchedInset
@@ -67,7 +67,7 @@ func (g *Game) drawWatchedPins(dst *ebiten.Image, pins []tactics.Pos, units []ta
 			}
 		}
 		head, stem := pinShape(g.drawCamera.Screen(p), boss)
-		fillImageRect(dst, head.Inset(-scaled(1)), rangeLineEdge)
+		fillImageRect(dst, head.Inset(-g.metrics.scaled(1)), rangeLineEdge)
 		fillImageRect(dst, stem, gold)
 		fillImageRect(dst, head, gold)
 	}

@@ -22,7 +22,7 @@ func TestHiResGameOver(t *testing.T) {
 		if !onCanvas(GameOver) || !canvasInUse(GameOver, false) || canvasInUse(GameOver, true) {
 			t.Fatal("敗北は一覧を閉じている間だけ中央寄せの層を使う")
 		}
-		off := sceneOffset()
+		off := NewMetrics(HiResCellSize).sceneOffset()
 		inner := image.Rect(0, 0, sceneCanvasWidth, sceneCanvasHeight)
 		v := s.View()
 		if bad := sceneViewBounds(v, inner); len(bad) > 0 {
@@ -47,7 +47,7 @@ func TestHiResGameOver(t *testing.T) {
 		// 層の座標の入口をクリックすると、一覧が開く（窓の座標では off を引いて渡る）。
 		r := entry.Buttons[0].Rect
 		wx, wy := r.Min.X+4+off.X, r.Min.Y+4+off.Y
-		x, y := sceneCursor(wx, wy, GameOver, false)
+		x, y := NewMetrics(HiResCellSize).sceneCursor(wx, wy, GameOver, false)
 		s.Click(x, y)
 		if !s.battle.rewind.open {
 			t.Fatal("入口のクリックで一覧が開かない")
@@ -128,7 +128,7 @@ func TestSceneCursor(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			useTestMetrics(t, tc.cell)
-			x, y := sceneCursor(tc.x, tc.y, tc.scene, tc.rewindOpen)
+			x, y := NewMetrics(tc.cell).sceneCursor(tc.x, tc.y, tc.scene, tc.rewindOpen)
 			if x != tc.wantX || y != tc.wantY {
 				t.Fatalf("(%d,%d) = (%d,%d)、期待 (%d,%d)", tc.x, tc.y, x, y, tc.wantX, tc.wantY)
 			}

@@ -586,7 +586,7 @@ func (s *SceneController) prepareWeapon(id string) tactics.Weapon {
 func (s *SceneController) prepareInfo() InfoView {
 	u := s.prepareUnit(s.prepareMember)
 	v := (Panel{Unit: &u, Page: s.infoPage, Tabs: true}).View()
-	v = v.translate(prepareRightArea.Min.X-MapSize, prepareRightArea.Min.Y)
+	v = v.translate(prepareRightArea.Min.X-s.metrics.Map, prepareRightArea.Min.Y)
 	// 長い名前などで右列を越す文は縮める（DES-UI-32）。
 	for i, t := range v.Texts {
 		if !t.Big {

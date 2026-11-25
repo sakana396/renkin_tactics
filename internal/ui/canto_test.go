@@ -168,7 +168,7 @@ func TestCantoUI(t *testing.T) {
 		}
 
 		c := cantoController(t, false)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		// 行けないマス（ボタンの外）は受け付けず、再移動を待ち続ける。
 		if x, y := at(c, tactics.Pos{X: 5, Y: 3}); inMenu(c, x, y) {
 			t.Fatal("前提: (5, 3) がボタンに重なる")
@@ -194,7 +194,7 @@ func TestCantoUI(t *testing.T) {
 
 		// 「終える」のボタンを押すと、その場で終える（ボタンの下のマスより優先する）。
 		c = cantoController(t, false)
-		g = &Game{ctrl: c}
+		g = &Game{metrics: c.metrics, ctrl: c}
 		_, dest, _ := c.Selection()
 		r := c.Camera().MenuRects(dest, len(c.MenuLabels()))[0]
 		g.leftClick(r.Min.X+2, r.Min.Y+2)
@@ -205,7 +205,7 @@ func TestCantoUI(t *testing.T) {
 
 		// 行動の一覧（Moved）では、今までどおりボタンの外のクリックを受け付けない。
 		c = newIdleWith(t, cantoSetup)
-		g = &Game{ctrl: c}
+		g = &Game{metrics: c.metrics, ctrl: c}
 		c.Click(tactics.Pos{X: 0, Y: 0})
 		c.Click(tactics.Pos{X: 1, Y: 0})
 		if c.State() != Moved {

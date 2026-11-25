@@ -43,7 +43,7 @@ func bombSetup() tactics.Setup {
 func bombGame(t *testing.T, dest tactics.Pos) (*Game, *Controller) {
 	t.Helper()
 	c := newIdleWith(t, bombSetup)
-	g := &Game{ctrl: c}
+	g := &Game{metrics: c.metrics, ctrl: c}
 	g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
 	g.leftClick(cellCenter(dest))
 	if c.State() != Moved {
@@ -76,7 +76,7 @@ func clickMenuLabel(t *testing.T, g *Game, label string) {
 func TestNG01BombUI(t *testing.T) {
 	t.Run("TC-DES-NG-05-01 HP が最大でも「アイテム」が出て、一覧に爆弾の効果が出る。爆弾を選ぶとすぐには使わず爆心を選ぶ状態になる", func(t *testing.T) {
 		c := newIdleWith(t, bombSetup)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
 		g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
 		clickMenuLabel(t, g, "アイテム")
@@ -251,7 +251,7 @@ func TestNG01BombUI(t *testing.T) {
 
 	t.Run("TC-DES-NG-05-09 回復薬だけで HP が最大なら、今までどおり「アイテム」は出ない", func(t *testing.T) {
 		c := newIdle(t)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		g.leftClick(cellCenter(tactics.Pos{X: 0, Y: 0}))
 		g.leftClick(cellCenter(tactics.Pos{X: 0, Y: 0}))
 		for _, a := range c.Actions() {
@@ -302,7 +302,7 @@ func TestNG01BombUI(t *testing.T) {
 		}
 		// HP が最大: 爆弾だけが出る。ボタンの 0 番目は手持ちの 1 番目（爆弾）。
 		c := newIdleWith(t, both)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
 		g.leftClick(cellCenter(tactics.Pos{X: 4, Y: 2}))
 		clickMenuLabel(t, g, "アイテム")
@@ -316,7 +316,7 @@ func TestNG01BombUI(t *testing.T) {
 
 		// HP が減っている: 主人公の爆弾で (4, 2) の味方を巻き込んでから、回復薬と爆弾の両方が出る。
 		c = newIdleWith(t, both)
-		g = &Game{ctrl: c}
+		g = &Game{metrics: c.metrics, ctrl: c}
 		g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
 		g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
 		clickMenuLabel(t, g, "アイテム")
@@ -348,7 +348,7 @@ func TestNG01BombUI(t *testing.T) {
 				s.Units[1].Items = items
 				return s
 			})
-			g := &Game{ctrl: c}
+			g := &Game{metrics: c.metrics, ctrl: c}
 			g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
 			g.leftClick(cellCenter(tactics.Pos{X: 2, Y: 2}))
 			clickMenuLabel(t, g, "アイテム")
@@ -410,7 +410,7 @@ func TestNG01BombUI(t *testing.T) {
 	t.Run("TC-DES-NG-05-10 爆弾の予想は core の BlastForecast と一致する（範囲と数は core が決める）", func(t *testing.T) {
 		_, c := bombGame(t, tactics.Pos{X: 2, Y: 2})
 		center := tactics.Pos{X: 4, Y: 2}
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		g.leftClick(cellCenter(center))
 		f, ok := c.BombForecast()
 		if !ok {

@@ -124,7 +124,7 @@ func runDrawBench227(chapter string) {
 		fmt.Println(err)
 		return
 	}
-	g := &Game{scenes: NewSceneController(cfg), sheets: map[assets.Sheet]*ebiten.Image{}}
+	g := &Game{metrics: metricsForConfig(cfg), scenes: NewSceneController(cfg), sheets: map[assets.Sheet]*ebiten.Image{}}
 	for s, img := range imgs {
 		g.sheets[s] = ebiten.NewImageFromImage(img)
 	}

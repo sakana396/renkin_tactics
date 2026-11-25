@@ -64,7 +64,7 @@ func infoMarkAt(t *testing.T, c *Controller, p tactics.Pos) (InfoMark, InfoText,
 func TestCommandMarks(t *testing.T) {
 	t.Run("TC-FR-UNT-09-30 右欄の上下段に指揮の印と短い語を出す", func(t *testing.T) {
 		c := newIdleWith(t, commandSetup)
-		v := twoTierInfo(c.Units(), 1, 2, nil)
+		v := twoTierInfo(NewMetrics(BaseCellSize), c.Units(), 1, 2, nil)
 		for _, want := range []struct {
 			y    int
 			mark CommandMark

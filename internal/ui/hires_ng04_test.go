@@ -121,8 +121,8 @@ func infoViewBounds(v InfoView, bound image.Rectangle) []string {
 func TestHiResMetrics(t *testing.T) {
 	t.Run("TC-DES-NG-10-01 既定は 32 px・盤面 512・窓 832×576、配置の値も今までのまま", func(t *testing.T) {
 		useTestMetrics(t, BaseCellSize)
-		if CellSize != 32 || MapSize != 512 || ScreenWidth != 832 || ScreenHeight != 576 || sceneOffset() != (image.Point{}) {
-			t.Fatal(CellSize, MapSize, ScreenWidth, ScreenHeight, sceneOffset())
+		if CellSize != 32 || MapSize != 512 || ScreenWidth != 832 || ScreenHeight != 576 || NewMetrics(BaseCellSize).sceneOffset() != (image.Point{}) {
+			t.Fatal(CellSize, MapSize, ScreenWidth, ScreenHeight, NewMetrics(BaseCellSize).sceneOffset())
 		}
 		// 期待値は、切り替えを入れる前の定数（右欄 x = 512〜831、案内欄 y = 512〜575 の配置）から手で置いた。
 		for name, c := range map[string][2]any{
@@ -408,7 +408,7 @@ func TestHiResBoard(t *testing.T) {
 func TestHiResScenes(t *testing.T) {
 	t.Run("TC-DES-NG-10-12 盤面のない場面は既定の配置（832×576）が窓の中央に収まる", func(t *testing.T) {
 		useTestMetrics(t, HiResCellSize)
-		if off := sceneOffset(); off != image.Pt(128, 128) {
+		if off := NewMetrics(HiResCellSize).sceneOffset(); off != image.Pt(128, 128) {
 			t.Fatal(off)
 		}
 		// タイトル・ルール選択・物語に加え、加入・勝利の結果・クリアも調べる（REV-109 F-08）。
@@ -450,7 +450,7 @@ func TestHiResScenes(t *testing.T) {
 			if s.Scene() != sc || !onCanvas(sc) {
 				t.Fatal(tc.name, s.Scene())
 			}
-			off := sceneOffset()
+			off := NewMetrics(HiResCellSize).sceneOffset()
 			canvas := image.Rect(off.X, off.Y, off.X+sceneCanvasWidth, off.Y+sceneCanvasHeight)
 			if !canvas.In(windowRect()) {
 				t.Fatal(canvas)
@@ -587,7 +587,7 @@ func TestHiResScenes(t *testing.T) {
 		useTestMetrics(t, HiResCellSize)
 		c := newIdleWith(t, wideSetup)
 		u := c.Units()[0]
-		dx := sceneOffset().X
+		dx := NewMetrics(HiResCellSize).sceneOffset().X
 		if dx != 128 {
 			t.Fatal(dx)
 		}

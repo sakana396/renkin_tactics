@@ -277,7 +277,7 @@ func (c *Controller) OverviewClick(x, y int) bool {
 		return false
 	}
 	pt := image.Pt(x, y)
-	if pt.In(overviewButtonRect) {
+	if pt.In(c.metrics.overviewButtonRect) {
 		c.nav.overview = false
 		return true
 	}
@@ -331,8 +331,8 @@ func (c *Controller) NavButtons() []SceneButton {
 	}
 	on := c.navAccepts()
 	return []SceneButton{
-		{overviewButtonLabel, overviewButtonRect, on || c.OverviewOpen()},
-		{nextAllyButtonLabel, nextAllyButtonRect, on && !c.OverviewOpen()},
+		{overviewButtonLabel, c.metrics.overviewButtonRect, on || c.OverviewOpen()},
+		{nextAllyButtonLabel, c.metrics.nextAllyButtonRect, on && !c.OverviewOpen()},
 	}
 }
 
@@ -363,7 +363,7 @@ func (s *SceneController) DeployOverviewClick(x, y int) bool {
 	if !s.DeployOverviewOpen() {
 		return false
 	}
-	if image.Pt(x, y).In(overviewButtonRect) {
+	if image.Pt(x, y).In(s.metrics.overviewButtonRect) {
 		s.deployNav.overview = false
 		return true
 	}
@@ -418,8 +418,8 @@ func (s *SceneController) DeployNavButtons() []SceneButton {
 		return nil
 	}
 	return []SceneButton{
-		{overviewButtonLabel, overviewButtonRect, true},
-		{nextAllyButtonLabel, nextAllyButtonRect, !s.deployNav.overview},
+		{overviewButtonLabel, s.metrics.overviewButtonRect, true},
+		{nextAllyButtonLabel, s.metrics.nextAllyButtonRect, !s.deployNav.overview},
 	}
 }
 

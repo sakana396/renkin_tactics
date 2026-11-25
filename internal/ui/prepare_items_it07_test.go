@@ -584,7 +584,7 @@ func TestIT07PrepareItems(t *testing.T) {
 	})
 	t.Run("TC-FR-CMP-03-16 / TC-FR-CMP-03-17 実入力の経路（Game.Update の場面の入力 → SceneController）でタブ・出し入れ・Tab・取消し", func(t *testing.T) {
 		s := recruitScenes(t, "ch09", core.Withdraw)
-		g := &Game{scenes: s}
+		g := &Game{metrics: s.metrics, scenes: s}
 		click := func(x, y int) { g.sceneInput(sceneKeys{Left: true}, x, y) }
 		cancel := func() { g.sceneInput(sceneKeys{Cancel: true}, 0, 0) }
 		gald := memberOf(t, s, "gald")

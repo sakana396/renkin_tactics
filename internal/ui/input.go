@@ -66,6 +66,7 @@ type Factory func() (*tactics.Battle, []tactics.Event, error)
 // 描画と Ebitengine から分けてあり、マウスとキーの入力は Game が Controller のメソッドに読み替える。
 // 時間はフレーム数（Tick）で数え、core には渡さない。
 type Controller struct {
+	metrics Metrics
 	// 巻き戻しの表示と通し出来事の境界を保持する（DES-UI-19）。
 	camera Camera
 	rewind rewindMenu
@@ -147,7 +148,7 @@ type Controller struct {
 
 // NewController は、newBattle で戦闘を作り、初めの出来事の再生から始める（DES-UI-02、DES-UI-04）。
 func NewController(newBattle Factory) (*Controller, error) {
-	c := &Controller{target: -1, weapon: -1, cursorX: -1, cursorY: -1}
+	c := &Controller{metrics: NewMetrics(BaseCellSize), target: -1, weapon: -1, cursorX: -1, cursorY: -1}
 	b, events, err := newBattle()
 	if err != nil {
 		return nil, err

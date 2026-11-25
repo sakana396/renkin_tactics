@@ -180,10 +180,10 @@ func TestTerrainStoreNG04(t *testing.T) {
 			t.Error("知らない ID に仮の絵はない")
 		}
 		// HiRes でない Game は、仮の絵を使わない。
-		if (&Game{scenes: &SceneController{cfg: Config{HiRes: false}}}).hiRes() || (&Game{}).hiRes() {
+		if (&Game{metrics: NewMetrics(BaseCellSize), scenes: &SceneController{metrics: NewMetrics(BaseCellSize), cfg: Config{HiRes: false}}}).hiRes() || (&Game{}).hiRes() {
 			t.Error("HiRes でないときは偽")
 		}
-		if !(&Game{scenes: &SceneController{cfg: Config{HiRes: true}}}).hiRes() {
+		if !(&Game{metrics: NewMetrics(HiResCellSize), scenes: &SceneController{metrics: NewMetrics(HiResCellSize), cfg: Config{HiRes: true}}}).hiRes() {
 			t.Error("HiRes のときは真")
 		}
 	})

@@ -219,7 +219,7 @@ func TestCavalierScenes(t *testing.T) {
 			if unitTile(u) == assets.Cavalier {
 				cavaliers++
 				// 右欄の上段の絵（DES-UI-31）。
-				if pic := portraitOf(t, twoTierInfo(c.Units(), i, -1, nil)); pic.Tile != assets.Cavalier {
+				if pic := portraitOf(t, twoTierInfo(NewMetrics(BaseCellSize), c.Units(), i, -1, nil)); pic.Tile != assets.Cavalier {
 					t.Errorf("戦闘の情報欄の %s = %v", u.Name, pic.Tile)
 				}
 			}

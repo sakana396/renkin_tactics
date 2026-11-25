@@ -252,7 +252,7 @@ func (c *Controller) RewindView() SceneView {
 			return v
 		}
 		// 入口は、戦闘では盤面の下の案内欄。敗北では中央寄せの層（832×576）の中の同じ位置（盤面 512 の下）に置く（DES-NG-10）。
-		top := MapSize
+		top := c.metrics.Map
 		if c.gameOver {
 			top = sceneCanvasHeight - GuideHeight
 		}
@@ -264,52 +264,52 @@ func (c *Controller) RewindView() SceneView {
 	h := c.battle.History()
 	n := c.battle.RewindsLeft()
 	ok := c.previewOK()
-	add(fmt.Sprintf("巻き戻し 残り %d/10", n), rewindLeft, rewindTitleY, StyleTitle)
-	left := image.Rect(rewindLeft, MapSize+8, rewindLeft+144, MapSize+48)
-	right := image.Rect(rewindRight-144, MapSize+8, rewindRight, MapSize+48)
+	add(fmt.Sprintf("巻き戻し 残り %d/10", n), c.metrics.rewindLeft, rewindTitleY, StyleTitle)
+	left := image.Rect(c.metrics.rewindLeft, c.metrics.Map+8, c.metrics.rewindLeft+144, c.metrics.Map+48)
+	right := image.Rect(c.metrics.rewindRight-144, c.metrics.Map+8, c.metrics.rewindRight, c.metrics.Map+48)
 	detail := c.rewindDetail()
 	// 選択中の写しに予兆があれば、右欄の理由の下の空きに同じ案内を出す（DES-UI-24）。
 	if hv := c.RewindBoard().Hint; hv.Visible {
 		v.Texts = append(v.Texts, hv.Text)
 	}
 	if c.rewind.confirm {
-		add("確認（左の盤面に戻ります）", rewindLeft, rewindSubY, StylePlain)
+		add("確認（左の盤面に戻ります）", c.metrics.rewindLeft, rewindSubY, StylePlain)
 		for i, t := range detail[min(len(detail), c.rewind.detailOffset):] {
 			if i >= rewindConfirmLines {
 				break
 			}
-			add(t.Text, rewindLeft, rewindRowTop+i*lineHeight, t.Style)
+			add(t.Text, c.metrics.rewindLeft, rewindRowTop+i*lineHeight, t.Style)
 		}
-		add(fmt.Sprintf("残り %d → %d", n, n-1), rewindLeft, rewindGuideY, StylePlain)
-		add("ホイール: 全文を読む", rewindLeft, rewindReasonY, StyleLabel)
+		add(fmt.Sprintf("残り %d → %d", n, n-1), c.metrics.rewindLeft, rewindGuideY, StylePlain)
+		add("ホイール: 全文を読む", c.metrics.rewindLeft, rewindReasonY, StyleLabel)
 		button("やめる", left, true)
 		button("戻す", right, n > 0 && ok && c.rewindAllowed())
 		return v
 	}
-	add("選んだ行動の「前」に戻る", rewindLeft, rewindSubY, StylePlain)
+	add("選んだ行動の「前」に戻る", c.metrics.rewindLeft, rewindSubY, StylePlain)
 	start := max(0, c.rewind.selected/8*8)
 	for i := start; i < min(len(h), start+8); i++ {
-		r := image.Rect(rewindLeft, rewindRowTop+(i-start)*rewindRowH, rewindRight, rewindRowTop+(i-start+1)*rewindRowH)
+		r := image.Rect(c.metrics.rewindLeft, rewindRowTop+(i-start)*rewindRowH, c.metrics.rewindRight, rewindRowTop+(i-start+1)*rewindRowH)
 		v.Rows = append(v.Rows, PrepareRow{Rect: r, Selected: i == c.rewind.selected})
-		add(fitRewind(c.rewindLabel(h[i]), rewindWidth-16), rewindLeft+8, r.Min.Y+rewindRowText, rewindStyle(h[i]))
+		add(fitRewind(c.rewindLabel(h[i]), rewindWidth-16), c.metrics.rewindLeft+8, r.Min.Y+rewindRowText, rewindStyle(h[i]))
 	}
 	if len(h) == 0 {
-		add("戻せる行動がありません", rewindLeft+8, rewindRowTop+rewindRowText, StylePlain)
+		add("戻せる行動がありません", c.metrics.rewindLeft+8, rewindRowTop+rewindRowText, StylePlain)
 	}
-	button("前", image.Rect(rewindLeft, rewindPageY, rewindLeft+80, rewindPageY+20), start > 0)
-	button("次", image.Rect(rewindLeft+88, rewindPageY, rewindLeft+168, rewindPageY+20), start+8 < len(h))
+	button("前", image.Rect(c.metrics.rewindLeft, rewindPageY, c.metrics.rewindLeft+80, rewindPageY+20), start > 0)
+	button("次", image.Rect(c.metrics.rewindLeft+88, rewindPageY, c.metrics.rewindLeft+168, rewindPageY+20), start+8 < len(h))
 	for i, t := range detail[min(len(detail), c.rewind.detailOffset):] {
 		if i >= rewindDetailLines {
 			break
 		}
-		add(t.Text, rewindLeft, rewindDetailY+i*lineHeight, t.Style)
+		add(t.Text, c.metrics.rewindLeft, rewindDetailY+i*lineHeight, t.Style)
 	}
-	add("右欄ホイール: 詳細／盤面: 移動", rewindLeft, rewindGuideY, StyleLabel)
+	add("右欄ホイール: 詳細／盤面: 移動", c.metrics.rewindLeft, rewindGuideY, StyleLabel)
 	for i, line := range c.rewindReasons()[min(c.rewind.reasonOffset, len(c.rewindReasons())):] {
 		if i >= 2 {
 			break
 		}
-		add(line, rewindLeft, rewindReasonY+i*lineHeight, StyleBad)
+		add(line, c.metrics.rewindLeft, rewindReasonY+i*lineHeight, StyleBad)
 	}
 	button("戻る", left, true)
 	button("決定", right, n > 0 && ok && c.rewindAllowed())

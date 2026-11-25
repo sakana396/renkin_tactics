@@ -158,7 +158,7 @@ func (c *Controller) infoCell(x, y int) (tactics.Pos, bool) {
 	if onMap {
 		return cell, true
 	}
-	if image.Pt(x, y).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
+	if image.Pt(x, y).In(image.Rect(c.metrics.Map, 0, c.metrics.ScreenW, InfoHeight)) {
 		return c.lastCell, c.lastCellOK
 	}
 	return tactics.Pos{}, false
@@ -188,7 +188,7 @@ func (c *Controller) liveUnitAt(p tactics.Pos) bool {
 // InfoClick は右欄の操作行の「詳細 I」のクリックを受ける（DES-UI-31）。ボタンの中なら真を返し、盤面に渡さない。
 // 巻き戻しの一覧の間は受けない。予測を右欄に収め直している間は、予測の窓が先に受ける（ForecastClick）。
 func (c *Controller) InfoClick(x, y int) bool {
-	if c.rewind.open || !image.Pt(x, y).In(detailButtonRect) {
+	if c.rewind.open || !image.Pt(x, y).In(c.metrics.detailButtonRect) {
 		return false
 	}
 	c.OpenDetail()

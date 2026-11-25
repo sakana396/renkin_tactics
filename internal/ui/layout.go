@@ -38,57 +38,110 @@ var (
 	ScreenHeight = boardCells*BaseCellSize + GuideHeight
 )
 
-// useMetrics は、1 マスの大きさを cell（px）に切り替え、それに従う値を計算し直す（DES-NG-10）。
-// 窓を作る前に 1 回だけ呼ぶ。グローバルな状態を書き換えるので、テストでは useTestMetrics を使う。
-func useMetrics(cell int) {
-	CellSize = cell
-	MapSize = boardCells * cell
-	ScreenWidth = MapSize + InfoWidth
-	ScreenHeight = MapSize + GuideHeight
-	recomputeMetrics()
+// Metrics は表示の大きさと配置をまとめた値（DES-NG-10）。
+type Metrics struct {
+	Cell, Map, ScreenW, ScreenH int
+	forecastCandidates          [4]image.Rectangle
+	forecastFallbackRect        image.Rectangle
+	summaryX                    int
+	summaryPortraitX            int
+	summaryNarrow               int
+	detailButtonRect            image.Rectangle
+	deployDetailButtonRect      image.Rectangle
+	detailBottom                int
+	rewindLeft                  int
+	rewindRight                 int
+	cameraGuideY                int
+	hintRewindY                 int
+	minimapBoxX                 int
+	equipMarkSize               int
+	equipMarkOffset             int
+	unitHPBarRight              int
+	zocEnemyCornerY             int
+	overviewButtonRect          image.Rectangle
+	nextAllyButtonRect          image.Rectangle
+	rangeStatusRect             image.Rectangle
+	rangeClearRect              image.Rectangle
 }
 
-// scaled は、32 px のマスを前提に決めた長さ n（px）を、今のマスの大きさに比例させた長さにする（DES-NG-10 フェーズ 2）。
-// 既定（32）では n のまま。1 マス 48 px では 1.5 倍（端数は切り捨て）。HP の棒・印など、マスの中の小さな部品に使う。
-func scaled(n int) int { return n * CellSize / BaseCellSize }
-
-// boardShift は、既定の盤面（512 px）に対する盤面の大きさの差（px）。既定では 0、1 マス 48 px では 256。
-// 右欄の x と、盤面の下の案内欄の y は、この分だけ後ろへずれる（DES-NG-10）。
-func boardShift() int { return MapSize - boardCells*BaseCellSize }
-
-// recomputeMetrics は、盤面の大きさ（MapSize）に従う配置の値を計算し直す（DES-NG-10）。
-// 既定の値は、盤面 512・右欄 x = 512〜831・案内欄 y = 512〜575 の配置と同じになる。
-// package の init と useMetrics から呼ぶ。盤面の大きさに従う値を足すときは、ここに足す。
-func recomputeMetrics() {
-	sh := boardShift()
+// NewMetrics はマスの大きさから配置を計算する（DES-NG-10）。
+func NewMetrics(cell int) Metrics {
+	m := Metrics{Cell: cell, Map: boardCells * cell}
+	m.ScreenW = m.Map + InfoWidth
+	m.ScreenH = m.Map + GuideHeight
+	sh := m.boardShift()
 	// 予測窓の候補: 盤面の四隅の 416×240（上は y = 8、下は盤面の下端から 8 px 空ける。右は盤面の右端に付ける）。
-	forecastCandidates = [4]image.Rectangle{
-		image.Rect(0, 8, 416, 248), image.Rect(MapSize-416, 8, MapSize, 248),
-		image.Rect(0, MapSize-248, 416, MapSize-8), image.Rect(MapSize-416, MapSize-248, MapSize, MapSize-8),
+	m.forecastCandidates = [4]image.Rectangle{
+		image.Rect(0, 8, 416, 248), image.Rect(m.Map-416, 8, m.Map, 248),
+		image.Rect(0, m.Map-248, 416, m.Map-8), image.Rect(m.Map-416, m.Map-248, m.Map, m.Map-8),
 	}
-	forecastFallbackRect = image.Rect(MapSize, 0, ScreenWidth, InfoHeight)
-	summaryX = MapSize + infoMargin
-	summaryPortraitX = ScreenWidth - infoMargin - PortraitSize
-	summaryNarrow = summaryPortraitX - infoMargin - summaryX
-	detailButtonRect = image.Rect(672+sh, infoControlTop, 744+sh, infoControlTop+32)
-	deployDetailButtonRect = image.Rect(752+sh, 336, 824+sh, 356)
-	detailBottom = MapSize - infoMargin
-	rewindLeft = MapSize + 8
-	rewindRight = rewindLeft + rewindWidth
-	cameraGuideY = ScreenHeight - lineHeight
-	hintRewindY = ScreenHeight - lineHeight
-	minimapBoxX = MapSize + (InfoWidth-minimapBox)/2
-	equipMarkSize = scaled(EquipMarkSize)
-	equipMarkOffset = CellSize - equipMarkSize
-	unitHPBarRight = equipMarkOffset - scaled(1)
-	zocEnemyCornerY = CellSize - scaled(8)
-	overviewButtonRect = image.Rect(744+sh, 472, 824+sh, 504)
-	nextAllyButtonRect = image.Rect(704+sh, 520+sh, 824+sh, 544+sh)
-	rangeStatusRect = image.Rect(520+sh, 304, 664+sh, 336)
-	rangeClearRect = image.Rect(752+sh, 304, 824+sh, 336)
+	m.forecastFallbackRect = image.Rect(m.Map, 0, m.ScreenW, InfoHeight)
+	m.summaryX = m.Map + infoMargin
+	m.summaryPortraitX = m.ScreenW - infoMargin - PortraitSize
+	m.summaryNarrow = m.summaryPortraitX - infoMargin - m.summaryX
+	m.detailButtonRect = image.Rect(672+sh, infoControlTop, 744+sh, infoControlTop+32)
+	m.deployDetailButtonRect = image.Rect(752+sh, 336, 824+sh, 356)
+	m.detailBottom = m.Map - infoMargin
+	m.rewindLeft = m.Map + 8
+	m.rewindRight = m.rewindLeft + rewindWidth
+	m.cameraGuideY = m.ScreenH - lineHeight
+	m.hintRewindY = m.ScreenH - lineHeight
+	m.minimapBoxX = m.Map + (InfoWidth-minimapBox)/2
+	m.equipMarkSize = m.scaled(EquipMarkSize)
+	m.equipMarkOffset = m.Cell - m.equipMarkSize
+	m.unitHPBarRight = m.equipMarkOffset - m.scaled(1)
+	m.zocEnemyCornerY = m.Cell - m.scaled(8)
+	m.overviewButtonRect = image.Rect(744+sh, 472, 824+sh, 504)
+	m.nextAllyButtonRect = image.Rect(704+sh, 520+sh, 824+sh, 544+sh)
+	m.rangeStatusRect = image.Rect(520+sh, 304, 664+sh, 336)
+	m.rangeClearRect = image.Rect(752+sh, 304, 824+sh, 336)
+	return m
 }
 
-func init() { recomputeMetrics() }
+func (m Metrics) scaled(n int) int { return n * m.Cell / BaseCellSize }
+func (m Metrics) boardShift() int  { return m.Map - boardCells*BaseCellSize }
+func (m Metrics) sceneOffset() image.Point {
+	return image.Pt((m.ScreenW-sceneCanvasWidth)/2, (m.ScreenH-sceneCanvasHeight)/2)
+}
+
+// useMetrics は互換のグローバル値に配置を写す（DES-NG-10）。
+func useMetrics(cell int) {
+	m := NewMetrics(cell)
+	CellSize, MapSize, ScreenWidth, ScreenHeight = m.Cell, m.Map, m.ScreenW, m.ScreenH
+	forecastCandidates = m.forecastCandidates
+	forecastFallbackRect = m.forecastFallbackRect
+	summaryX = m.summaryX
+	summaryPortraitX = m.summaryPortraitX
+	summaryNarrow = m.summaryNarrow
+	detailButtonRect = m.detailButtonRect
+	deployDetailButtonRect = m.deployDetailButtonRect
+	detailBottom = m.detailBottom
+	rewindLeft = m.rewindLeft
+	rewindRight = m.rewindRight
+	cameraGuideY = m.cameraGuideY
+	hintRewindY = m.hintRewindY
+	minimapBoxX = m.minimapBoxX
+	equipMarkSize = m.equipMarkSize
+	equipMarkOffset = m.equipMarkOffset
+	unitHPBarRight = m.unitHPBarRight
+	zocEnemyCornerY = m.zocEnemyCornerY
+	overviewButtonRect = m.overviewButtonRect
+	nextAllyButtonRect = m.nextAllyButtonRect
+	rangeStatusRect = m.rangeStatusRect
+	rangeClearRect = m.rangeClearRect
+}
+
+func scaled(n int) int { return n * CellSize / BaseCellSize }
+func boardShift() int  { return MapSize - boardCells*BaseCellSize }
+func init()            { useMetrics(BaseCellSize) }
+
+// metricsForConfig は設定から表示の大きさを決める（DES-NG-10）。
+func metricsForConfig(cfg Config) Metrics {
+	if cfg.HiRes {
+		return NewMetrics(HiResCellSize)
+	}
+	return NewMetrics(BaseCellSize)
+}
 
 // useConfigMetrics は、設定に従って 1 マスの大きさを切り替える。窓を作る前に呼ぶ（DES-NG-10）。
 func useConfigMetrics(cfg Config) {
@@ -97,12 +150,6 @@ func useConfigMetrics(cfg Config) {
 		return
 	}
 	useMetrics(BaseCellSize)
-}
-
-// sceneOffset は、盤面を持たない場面の配置（sceneCanvasWidth × sceneCanvasHeight）を窓の中央に置く位置を返す（DES-NG-10）。
-// 既定の表示では窓と同じ大きさなので (0, 0)。
-func sceneOffset() image.Point {
-	return image.Pt((ScreenWidth-sceneCanvasWidth)/2, (ScreenHeight-sceneCanvasHeight)/2)
 }
 
 // onCanvas は、場面 sc が盤面を持たない配置（sceneOffset で中央に置く）かを返す（DES-NG-10）。
@@ -127,11 +174,11 @@ func canvasInUse(sc Scene, rewindOpen bool) bool {
 
 // sceneCursor は、窓の座標 (x, y) を場面の配置の座標へ直す。中央寄せの層に描く場面では、sceneOffset の分を引く（DES-NG-10）。
 // 盤面を持つ場面と、高解像度でない表示（sceneOffset が (0, 0)）では、そのまま返す。
-func sceneCursor(x, y int, sc Scene, rewindOpen bool) (int, int) {
+func (m Metrics) sceneCursor(x, y int, sc Scene, rewindOpen bool) (int, int) {
 	if !canvasInUse(sc, rewindOpen) {
 		return x, y
 	}
-	off := sceneOffset()
+	off := m.sceneOffset()
 	return x - off.X, y - off.Y
 }
 

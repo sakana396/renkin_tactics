@@ -144,7 +144,7 @@ func (g *Game) drawDeployNav(dst *ebiten.Image) {
 // drawOverview は盤面の (0,0)〜(512,512) に全体図を、右上の欄に凡例を描く（DES-UI-30）。右下のミニマップはそのまま残す。
 // 地形 → 予兆 → 全敵の危険範囲 → ユニット（陣営の色の下地と絵）→ 固定した敵の金の縁 → 表示範囲の白い枠の順に重ねる。
 func (g *Game) drawOverview(dst *ebiten.Image, v MapOverviewView) {
-	fillImageRect(dst, image.Rect(0, 0, MapSize, MapSize), bgColor)
+	fillImageRect(dst, image.Rect(0, 0, g.metrics.Map, g.metrics.Map), bgColor)
 	l := v.Layout
 	for _, c := range v.Cells {
 		g.drawTileSize(dst, assets.Grass, c.Rect.Min.X, c.Rect.Min.Y, l.Cell)

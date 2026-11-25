@@ -309,7 +309,7 @@ var detailButtonRect image.Rectangle
 func (c *Controller) BattleInfoView(x, y int) InfoView {
 	units := c.Units()
 	cell, onMap := c.Camera().CellAt(x, y)
-	if !onMap && image.Pt(x, y).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
+	if !onMap && image.Pt(x, y).In(image.Rect(c.metrics.Map, 0, c.metrics.ScreenW, InfoHeight)) {
 		cell, onMap = c.lastCell, c.lastCellOK
 	}
 	upper := -1
@@ -328,10 +328,10 @@ func (c *Controller) BattleInfoView(x, y int) InfoView {
 		t := c.battle.TerrainAt(cell)
 		terrain = &t
 	}
-	v := twoTierInfo(units, upper, selected, terrain)
+	v := twoTierInfo(c.metrics, units, upper, selected, terrain)
 	if terrain != nil && hasZOCAt(c.battle.BoardView(), cell) {
 		// 上段の要約の下に置き、下段の地形と操作行を避ける（DES-UI-29、DES-UI-31）。
-		v.text(summaryX, infoLowerTop-lineHeight-8, zocNote, StyleLabel)
+		v.text(c.metrics.summaryX, infoLowerTop-lineHeight-8, zocNote, StyleLabel)
 	}
 	return v
 }
@@ -348,34 +348,34 @@ func liveUnitIndex(units []tactics.Unit, p tactics.Pos) int {
 
 // twoTierInfo は右欄の上下 2 段を作る（DES-UI-31）。戦闘と配置で共有する。upper・selected は units の添字（なければ −1）。
 // 上段がいなければ選択中を上段に出す。terrain が nil でなければ下段の最下行に出す。
-func twoTierInfo(units []tactics.Unit, upper, selected int, terrain *tactics.Terrain) InfoView {
+func twoTierInfo(m Metrics, units []tactics.Unit, upper, selected int, terrain *tactics.Terrain) InfoView {
 	var v InfoView
 	if upper < 0 {
 		upper = selected
 	}
 	if upper >= 0 {
-		v.addUnitSummary(units[upper], 0)
+		v.addUnitSummary(m, units[upper], 0)
 	}
 	switch {
 	case selected >= 0 && selected != upper:
-		v.addUnitSummary(units[selected], infoLowerTop)
+		v.addUnitSummary(m, units[selected], infoLowerTop)
 	case selected >= 0:
 		// 同じ人物: 下段は地形・スキルの要約にする。
 		y := infoLowerTop + infoMargin
-		v.text(summaryX, y, "地形・スキル", StyleLabel)
+		v.text(m.summaryX, y, "地形・スキル", StyleLabel)
 		skills := unitSkills(units[selected])
 		if len(skills) == 0 {
-			v.text(summaryX, y+lineHeight, "スキル なし", StylePlain)
+			v.text(m.summaryX, y+lineHeight, "スキル なし", StylePlain)
 		}
 		for i, sk := range skills {
 			if row := y + (i+1)*lineHeight; row+lineHeight <= summaryTerrainY {
-				v.text(summaryX, row, fitRewind(sk.Name+"　"+skillDescription(sk), summaryWide), StyleSkill)
+				v.text(m.summaryX, row, fitRewind(sk.Name+"　"+skillDescription(sk), summaryWide), StyleSkill)
 			}
 		}
 	}
 	if terrain != nil {
 		lines := TerrainLines(*terrain)
-		v.text(summaryX, summaryTerrainY, fitRewind(lines[0]+"　"+lines[1], summaryWide), StylePlain)
+		v.text(m.summaryX, summaryTerrainY, fitRewind(lines[0]+"　"+lines[1], summaryWide), StylePlain)
 	}
 	// 一番下は最下行（地形）の下端。配置のボタン（y = 296〜）とも重ならない。
 	v.Bottom = summaryTerrainY + lineHeight
@@ -384,11 +384,11 @@ func twoTierInfo(units []tactics.Unit, upper, selected int, terrain *tactics.Ter
 
 // addUnitSummary は段の上端 top から、名前・兵種と Lv・HP・装備の名前と種類（E 印）・力/魔力と守備/魔防・速さを
 // 1 行ずつ並べ、段の右上にユニットの絵を置く（DES-UI-31、DES-UI-33）。6 行は 96 px で、下段（128 px）の最下行の地形と重ならない。
-func (v *InfoView) addUnitSummary(u tactics.Unit, top int) {
+func (v *InfoView) addUnitSummary(m Metrics, u tactics.Unit, top int) {
 	y := top + infoMargin
-	v.Icons = append(v.Icons, InfoIcon{X: summaryPortraitX, Y: y, Size: PortraitSize, Tile: unitTile(u), Art: artKeyOf(u)})
+	v.Icons = append(v.Icons, InfoIcon{X: m.summaryPortraitX, Y: y, Size: PortraitSize, Tile: unitTile(u), Art: artKeyOf(u)})
 	// 上下段とも名前の横に指揮の印と短い語を置く（DES-UI-35）。
-	v.addCommandMark(u, summaryX, y, unitName(u))
+	v.addCommandMark(u, m.summaryX, y, unitName(u))
 	equip := "装備 なし"
 	if w := u.EquippedWeapon(); w.Name != "" {
 		equip = fmt.Sprintf("装備 %s %s（%s）", weaponRowMark, w.Name, weaponTypeName(w.Type))
@@ -407,13 +407,13 @@ func (v *InfoView) addUnitSummary(u tactics.Unit, top int) {
 	} {
 		width := summaryWide
 		if i < 4 {
-			width = summaryNarrow
+			width = m.summaryNarrow
 		}
 		text := row.text
 		if i > 0 {
 			// 名前は敵の範囲の印（nameMarkRect）が文の一致で探すので省かない。
 			text = fitRewind(text, width)
 		}
-		v.text(summaryX, y+i*lineHeight, text, row.st)
+		v.text(m.summaryX, y+i*lineHeight, text, row.st)
 	}
 }

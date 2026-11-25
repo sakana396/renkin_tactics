@@ -188,7 +188,7 @@ func TestCraftSceneInputNG07(t *testing.T) {
 		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.campaign.Materials = map[string]int{"ore": 10, "catalyst": 10}
-		g := &Game{scenes: s}
+		g := &Game{metrics: s.metrics, scenes: s}
 		b := s.prepareHiResView().Craft
 		g.sceneInput(sceneKeys{Left: true}, b.Rect.Min.X+1, b.Rect.Min.Y+1)
 		page := s.infoPage

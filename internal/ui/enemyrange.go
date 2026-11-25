@@ -203,16 +203,16 @@ func (c *Controller) RangeStatus() RangeStatusView {
 	}
 	n := c.WatchedCount()
 	return RangeStatusView{
-		Danger:  InfoText{X: rangeStatusRect.Min.X, Y: rangeStatusRect.Min.Y, Text: "全敵 Q " + state, Style: StyleLabel},
-		Watched: InfoText{X: rangeStatusRect.Min.X, Y: rangeStatusRect.Min.Y + lineHeight, Text: fmt.Sprintf("固定 %d", n), Style: StyleLabel},
-		Clear:   SceneButton{Label: "消す", Rect: rangeClearRect, Enabled: n > 0 && c.rangeAccepts()},
+		Danger:  InfoText{X: c.metrics.rangeStatusRect.Min.X, Y: c.metrics.rangeStatusRect.Min.Y, Text: "全敵 Q " + state, Style: StyleLabel},
+		Watched: InfoText{X: c.metrics.rangeStatusRect.Min.X, Y: c.metrics.rangeStatusRect.Min.Y + lineHeight, Text: fmt.Sprintf("固定 %d", n), Style: StyleLabel},
+		Clear:   SceneButton{Label: "消す", Rect: c.metrics.rangeClearRect, Enabled: n > 0 && c.rangeAccepts()},
 	}
 }
 
 // RangeClick は「消す」ボタンのクリックを受ける（DES-UI-29）。ボタンの中なら真を返し、盤面・情報欄には渡さない。
 // 巻き戻しの一覧の間は巻き戻しの操作を優先するので受けない（偽を返す）。
 func (c *Controller) RangeClick(x, y int) bool {
-	if c.rewind.open || !image.Pt(x, y).In(rangeClearRect) || c.RangeStatusIn(c.BattleInfoView(x, y)).HideClear {
+	if c.rewind.open || !image.Pt(x, y).In(c.metrics.rangeClearRect) || c.RangeStatusIn(c.BattleInfoView(x, y)).HideClear {
 		return false
 	}
 	c.ClearWatched()

@@ -64,7 +64,7 @@ func newSoundRig(t *testing.T, scenes *SceneController) *soundRig {
 		rig.bgmLen[samples*4] = n
 	}
 	glue := soundGlue{sound: audio.New(media, func() (audio.Backend, error) { return rig.rec, nil }, &bytes.Buffer{})}
-	rig.g = &Game{scenes: scenes, sound: glue}
+	rig.g = &Game{metrics: scenes.metrics, scenes: scenes, sound: glue}
 	return rig
 }
 
@@ -316,7 +316,7 @@ func TestSyncSound(t *testing.T) {
 		if g := newSoundGlue(Config{}); g.sound != nil {
 			t.Error("media が nil なのに音を作った")
 		}
-		g := &Game{scenes: newScenes(t, &memoryStore{})}
+		g := &Game{metrics: NewMetrics(BaseCellSize), scenes: newScenes(t, &memoryStore{})}
 		g.syncSound(soundInput{Confirm: true, Mute: true}) // 落ちない
 	})
 }

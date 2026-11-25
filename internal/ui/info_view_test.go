@@ -267,7 +267,7 @@ func TestInfoView(t *testing.T) {
 		u := c.Units()[0]
 		u.Level, u.Exp = 2, 40
 		units := []tactics.Unit{c.Units()[1], u}
-		for _, v := range []InfoView{twoTierInfo(units, 1, 0, &forest), twoTierInfo(units, 0, 1, &forest), twoTierInfo(units, 1, 1, &forest)} {
+		for _, v := range []InfoView{twoTierInfo(NewMetrics(BaseCellSize), units, 1, 0, &forest), twoTierInfo(NewMetrics(BaseCellSize), units, 0, 1, &forest), twoTierInfo(NewMetrics(BaseCellSize), units, 1, 1, &forest)} {
 			checkInfoArea(t, "2 段", v)
 			if !strings.Contains(strings.Join(rows(v), "\n"), "アーマー　Lv 2　経験 40") {
 				t.Errorf("Lv の行がない: %q", rows(v))

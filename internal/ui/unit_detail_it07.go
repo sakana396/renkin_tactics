@@ -64,7 +64,7 @@ func (c *Controller) OpenDetail() bool {
 func (c *Controller) detailTarget() int {
 	units := c.Units()
 	cell, ok := c.Camera().CellAt(c.cursorX, c.cursorY)
-	if !ok && image.Pt(c.cursorX, c.cursorY).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
+	if !ok && image.Pt(c.cursorX, c.cursorY).In(image.Rect(c.metrics.Map, 0, c.metrics.ScreenW, InfoHeight)) {
 		cell, ok = c.lastCell, c.lastCellOK
 	}
 	if ok {
@@ -81,7 +81,7 @@ func (c *Controller) detailTarget() int {
 // DetailButton は操作行の「詳細 I」を返す（DES-UI-31）。開けるユニットがいて、再生中・Over でなければ押せる。
 func (c *Controller) DetailButton() SceneButton {
 	enabled := c.state != Playing && c.state != Over && c.detailTarget() >= 0
-	return SceneButton{Label: "詳細 I", Rect: detailButtonRect, Enabled: enabled}
+	return SceneButton{Label: "詳細 I", Rect: c.metrics.detailButtonRect, Enabled: enabled}
 }
 
 // DetailOpen は詳しい画面を出しているかを返す（DES-UI-31）。

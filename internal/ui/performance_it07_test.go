@@ -86,7 +86,7 @@ func runFrameTimingIT07() (*frameMeasureIT07, error) {
 	if err != nil {
 		return nil, err
 	}
-	game := &Game{ctrl: c, sheets: map[assets.Sheet]*ebiten.Image{}, shotCursor: &cursor}
+	game := &Game{metrics: c.metrics, ctrl: c, sheets: map[assets.Sheet]*ebiten.Image{}, shotCursor: &cursor}
 	for sheet, img := range imgs {
 		game.sheets[sheet] = ebiten.NewImageFromImage(img)
 	}

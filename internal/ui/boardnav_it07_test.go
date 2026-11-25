@@ -15,7 +15,7 @@ import (
 
 // navGame は、戦闘の Controller を持つ場面と Game を作る（実際の入力の経路 Game.navInput → leftClick を通すため）。
 func navGame(c *Controller) *Game {
-	return &Game{ctrl: c, scenes: &SceneController{scene: Battle, battle: c}}
+	return &Game{metrics: c.metrics, ctrl: c, scenes: &SceneController{scene: Battle, battle: c}}
 }
 
 // allySetup は wideSetup（32×32）に、名簿の最後の自軍を足す。
@@ -230,7 +230,7 @@ func TestBoardNavIT07(t *testing.T) {
 
 		// 配置: M で開き、地図のクリックで配置のカメラを移して閉じる。仮配置・選んだ味方・出撃の印は変えない。Esc は配置を離れず全体図だけ閉じる。
 		s := minimapDeployScenes(t)
-		dg := &Game{scenes: s}
+		dg := &Game{metrics: s.metrics, scenes: s}
 		s.deploySelected = 1
 		slots := append([]int(nil), s.deploySlots...)
 		marks := len(s.deployment)
@@ -496,7 +496,7 @@ func TestBoardNavIT07(t *testing.T) {
 
 		// 配置: 名簿の順に主人公（枠 (31,31)）→ 仲間（枠 (0,0)）→ 主人公。選択とカメラの中心を移し、枠と出撃の印は変えない。
 		s := minimapDeployScenes(t)
-		dg := &Game{scenes: s}
+		dg := &Game{metrics: s.metrics, scenes: s}
 		slots := append([]int(nil), s.deploySlots...)
 		marks := len(s.deployment)
 		for _, w := range []struct {
@@ -600,7 +600,7 @@ func TestBoardNavIT07(t *testing.T) {
 		}
 		// 配置でも同じく配置のカメラだけを動かす。
 		s := minimapDeployScenes(t)
-		dg := &Game{scenes: s}
+		dg := &Game{metrics: s.metrics, scenes: s}
 		dg.navInput(navKeys{Middle: true, MiddleStart: true}, 100, 100)
 		dg.navInput(navKeys{Middle: true}, 164, 132)
 		if s.deployCamera.X != 14 || s.deployCamera.Y != 15 || s.deploySelected != -1 {

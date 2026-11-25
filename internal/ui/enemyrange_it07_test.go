@@ -91,7 +91,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 
 	t.Run("TC-FR-UNT-09-27 全敵は塗り、固定は橙の実線・破線と金のピン、カーソルは青白の実線・破線。塗り → 固定 → カーソルの順。右欄に「全敵 Q」「固定 n」、「消す」で一括解除。Selected の敵クリックは固定を変えない", func(t *testing.T) {
 		c := newIdle(t)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		status := func(what, danger, watched string, enabled bool) {
 			t.Helper()
 			v := c.RangeStatus()
@@ -267,7 +267,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 
 		// 入力を待つ状態はすべて固定を出す（E-124）: ItemMenu・Targeting（相手を選んだ予測を含む）。
 		d := damaged(t)
-		dg := &Game{ctrl: d}
+		dg := &Game{metrics: d.metrics, ctrl: d}
 		dg.leftClick(cellCenter(boss))
 		d.Click(tactics.Pos{X: 0, Y: 0})
 		d.Click(tactics.Pos{X: 0, Y: 1})
@@ -367,7 +367,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 		// 武器 5 本のレオン（平地）にカーソルを合わせる。右欄は上下 2 段で y < 296 に収まる（#166、DES-UI-31）ので、
 		// 範囲の状態と「消す」をすべて描いて重ならない。
 		c := newIdleWith(t, five)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		hx, hy := cellCenter(tactics.Pos{X: 0, Y: 0})
 		c.SetCursor(hx, hy)
 		v := c.BattleInfoView(hx, hy)
@@ -477,7 +477,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 		}
 
 		k := newIdleWith(t, killSetup)
-		g := &Game{ctrl: k}
+		g := &Game{metrics: k.metrics, ctrl: k}
 		k.ToggleDanger()
 		k.SetCursor(-1, -1)
 		g.leftClick(cellCenter(tactics.Pos{X: 1}))
@@ -540,7 +540,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 
 		// 位置が変わる盤面（通路）: 固定・カーソル・全敵のどれも、今の盤面の core の到達と射程に一致する。
 		c := newIdleWith(t, corridorSetup)
-		g = &Game{ctrl: c}
+		g = &Game{metrics: c.metrics, ctrl: c}
 		c.ToggleDanger()
 		c.SetCursor(-1, -1)
 		g.leftClick(cellCenter(tactics.Pos{X: 4}))
@@ -602,7 +602,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 			boss := tactics.UnitSetup{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 5, Y: 0}, Weapon: testSword, Boss: true, AI: tactics.Hold}
 			return tactics.Setup{Terrain: field(6, 3), Units: []tactics.UnitSetup{{Name: "主人公", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 5, Y: 2}, Weapon: testSword, Lord: true}, armor, enemy, boss}}
 		})
-		gz := &Game{ctrl: z}
+		gz := &Game{metrics: z.metrics, ctrl: z}
 		z.ToggleDanger()
 		z.SetCursor(-1, -1)
 		gz.leftClick(cellCenter(tactics.Pos{X: 0, Y: 1}))
