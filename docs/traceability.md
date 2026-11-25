@@ -85,3 +85,9 @@
 | FR-ITM-13 | #212 | DES-NG-19、DES-NG-22 | TC-DES-NG-19-01〜06、TC-DES-NG-22-01 | 実装済み（internal/core、internal/ui） | 承認（2026-11-19、E-151） |
 | FR-ITM-14 | #212 | DES-NG-20 | TC-DES-NG-20-01〜03 | 実装済み（ui、手動試験未実施） | 承認（2026-11-19、E-151） |
 | FR-ITM-15 | #212 | DES-NG-21 | TC-DES-NG-21-01〜03、TC-DES-NG-06-18 | 実装済み（internal/core、data/alchemy、手動試遊未実施） | 承認（2026-11-19、E-151） |
+
+### #235 手直し前の測定（案）
+
+| 対象 | Issue | 設計 | テストケース | 実装 | 状態 |
+|---|---|---|---|---|---|
+| Q-IT09-01 | #235 | DES-NG-23（案） | TC-DES-NG-23-01 | `internal/core/measure_it09_test.go` | 測定用、基準は承認待ち |
