@@ -1,7 +1,7 @@
 # 反復 8 計画書: 新作「古代都市の復旧」の試作を本線にする
 
 - 文書 ID: IT08-PLAN
-- 版: 0.4（案。開発者の承認待ち）。0.3（開発者が承認（E-134）。REV-112 の指摘と E-135・E-136 の答えを反映した）
+- 版: 0.4（承認（2026-11-25。#232、E-166、REV-129））。0.3（開発者が承認（E-134）。REV-112 の指摘と E-135・E-136 の答えを反映した）
 - 作成日: 2026-11-14
 - 入力: PLAN-001 v0.1、CON-001 v0.6、SRS-001 v0.8、UC-DOC-001 v0.13、IT07-PLAN v0.3、IT07-RETRO v0.2（承認 E-129）、E-02・E-07・E-114・E-128〜E-137、Issue #190・#191、試作のブランチ `claude/capabilities-question-0hf0gp`（以下「試作ブランチ」）の文書: CON-DRAFT-NG01 v0.1・新作の見た目の方針（`new-game-visual-draft.md`）・画像の指示文（`new-game-prompts.md`）、DES-NG01 v0.2（NG-FR-01〜04、DES-NG-01〜06）、DES-NG02 v0.3（DES-NG-07・08）、DES-NG03 v0.2（DES-NG-09）、DES-NG04 v0.3（DES-NG-10）、DES-NG05 v0.4（DES-NG-11）、TST-NG01〜05、REV-107〜110
 

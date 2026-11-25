@@ -1,12 +1,12 @@
 # REV-129: 文書の後追い（UC-08 の名簿と「承認を待つ」「未決」の文面）
 
 - 日付: 2026-11-25
-- 対象: PR #243、ブランチ `it09/232-doc-followup`（初回 `dec2295`）。`docs/02_requirements/use-cases.md`（UC-DOC-001 v0.17 案）、`docs/02_requirements/srs.md`（SRS v0.12 案、E-165 で追加）、`docs/03_design/design-ng02-art.md`（v0.6 案）、`design-ng03-audio.md`（v0.5 案）、`design-ng04-display.md`（v0.5 案）、`design-ng05-prepare.md`（v0.6 案）、`docs/iterations/it08/plan.md`（IT08-PLAN v0.4 案）、`docs/README.md`、`docs/01_concept/elicitation-notes.md`（E-164 の確認、E-165）
+- 対象: PR #243、ブランチ `it09/232-doc-followup`（初回 `dec2295`、再確認 `bea48fb`）。`docs/02_requirements/use-cases.md`（UC-DOC-001 v0.17 案）、`docs/02_requirements/srs.md`（SRS v0.12 案、E-165 で追加）、`docs/03_design/design-ng02-art.md`（v0.6 案）、`design-ng03-audio.md`（v0.5 案）、`design-ng04-display.md`（v0.5 案）、`design-ng05-prepare.md`（v0.6 案）、`docs/iterations/it08/plan.md`（IT08-PLAN v0.4 案）、`docs/README.md`、`docs/01_concept/elicitation-notes.md`（E-164 の確認、E-165）
 - 方針・統合・記録: 管理役（Claude Code）
 - 実装: Codex（初回と指摘の直し）
 - 独立レビュー: Claude spec-reviewer（Opus、読み取り専用）
 - 根拠: Issue #232、IT09-PLAN v0.2（承認 E-164。3.1 節・6 章・8 章 A）、IT08-RETRO v0.2 7.2 節、REV-116「RV-4 の扱い」、REV-117 F-10、REV-118 R-07、REV-120 F-09、REV-122 F-07、REV-127 F-10、REV-128、E-140・E-142・E-144〜E-148・E-152・E-153・E-159〜E-165、SRS-001 v0.11（FR-CMP-03）、test-spec-ng03 v0.6、traceability（FR-SYS-07〜09）、`data/base`・`data/alchemy` の定義、`ASSETS.md`、map-ng-ch01.md 7 章
-- 結論: 修正すれば承認（初回）
+- 結論: 修正すれば承認（初回）→ 承認（再確認）。開発者が 7 文書の改訂を承認した（E-166）
 
 ## 独立レビューで確かめたこと（`dec2295`）
 
@@ -33,7 +33,18 @@
 | F-11 | 情報 | PR の説明の「テスト」 | PR の説明を直した |
 | F-12 | 情報 | E-164 の要約の確認 | E-165 で開発者が「よい」と確かめた |
 
+## 再確認（`bea48fb`）
+
+独立レビュー（Claude spec-reviewer、Opus、読み取り専用）が `git diff dec2295..HEAD` を読み、F-01〜F-12 の対応と新しい食い違いを確かめた。検証: `gofmt -l .` 出力なし、`GOOS=windows go vet ./...` 成功、`go run ./tools/tccheck` OK（警告 56 件）、CI 成功。F-01〜F-12 はすべて正しく対応した。SRS FR-CMP-03 の新しい文面は `data/alchemy` の定義（party は錬金術師・重装兵・槍兵・弓兵、ch02 で調合の見習いが加わる）、UC-08、CON-001 3.4 節と合い、旧作の文は `data/base` と合う。結論: 承認。
+
+| ID | 重さ | 内容 | 対応 |
+|---|---|---|---|
+| R-01 | 情報 | 人物名の検索を #239 で行うことが #239 の本文にない | #239 にコメントで書き足した |
+| R-02 | 情報 | E-165 の要約は確認待ち | E-166 で開発者が「よい」と確かめた |
+
 ## 開発者の承認
 
 - E-165: FR-CMP-03 をこの PR で直す、人物名の検索は #239、DES-NG05 8.4 節 9 を決定に含める、E-164 の要約でよい
-- 6 文書と SRS の改訂の承認: （待ち）
+- 7 文書の改訂（UC-DOC-001 v0.17・SRS v0.12・DES-NG02 v0.6・DES-NG03 v0.5・DES-NG04 v0.5・DES-NG05 v0.6・IT08-PLAN v0.4）: 2026-11-25、開発者が選択式の質問に「承認する (推奨)」と答えた（E-166）
+- E-165 の要約: E-166 で開発者が「よい」と確かめた
+- E-166 の要約は、次の文書の PR で確かめる
