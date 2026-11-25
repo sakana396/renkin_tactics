@@ -111,7 +111,7 @@ func (g *Game) navInput(k navKeys, x, y int) bool {
 // dragBoard は中ボタンのドラッグを、矢印と同じ盤面の移動（scroll）に渡す（DES-UI-30）。
 // 動かせない状態（行動の一覧など）や上限で動かなかった分の蓄積は捨てる。
 func (g *Game) dragBoard(k navKeys, x, y int, camera func() Camera, scroll func(dx, dy int)) {
-	dx, dy := g.drag.update(k.Middle, k.MiddleStart, x, y)
+	dx, dy := g.drag.update(g.metrics, k.Middle, k.MiddleStart, x, y)
 	if dx == 0 && dy == 0 {
 		return
 	}

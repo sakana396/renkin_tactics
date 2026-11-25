@@ -686,8 +686,8 @@ func TestControllerTransitions(t *testing.T) {
 // 画面の配置とボタンの判定（DES-UI-01、DES-UI-02）。
 func TestLayout(t *testing.T) {
 	t.Run("TC-IF-01-15 窓は 832 × 576 で、盤面のマスと行動の一覧のボタンを座標から引ける", func(t *testing.T) {
-		if ScreenWidth != 832 || ScreenHeight != 576 || MapSize != 512 {
-			t.Errorf("窓 %d × %d、盤面 %d", ScreenWidth, ScreenHeight, MapSize)
+		if baseMetrics().ScreenW != 832 || baseMetrics().ScreenH != 576 || baseMetrics().Map != 512 {
+			t.Errorf("窓 %d × %d、盤面 %d", baseMetrics().ScreenW, baseMetrics().ScreenH, baseMetrics().Map)
 		}
 		cells := []struct {
 			x, y int
@@ -702,17 +702,17 @@ func TestLayout(t *testing.T) {
 			{-1, 3, tactics.Pos{}, false},
 		}
 		for _, tc := range cells {
-			if got, ok := CellAt(tc.x, tc.y); got != tc.want || ok != tc.ok {
+			if got, ok := CellAt(baseMetrics(), tc.x, tc.y); got != tc.want || ok != tc.ok {
 				t.Errorf("CellAt(%d, %d) = %v, %v", tc.x, tc.y, got, ok)
 			}
 		}
 		// 左上のマスなら右に出す。右下のマスなら左に寄せ、下にはみ出さないよう上にずらす。
-		r := MenuRects(tactics.Pos{X: 0, Y: 0}, 3)
+		r := MenuRects(baseMetrics(), tactics.Pos{X: 0, Y: 0}, 3)
 		if r[0] != image.Rect(32, 0, 32+menuWidth, menuHeight) || r[2].Min.Y != 2*menuHeight {
 			t.Errorf("左上 = %v", r)
 		}
-		r = MenuRects(tactics.Pos{X: 15, Y: 15}, 3)
-		if r[0].Max.X != 15*CellSize || r[2].Max.Y != MapSize {
+		r = MenuRects(baseMetrics(), tactics.Pos{X: 15, Y: 15}, 3)
+		if r[0].Max.X != 15*baseMetrics().Cell || r[2].Max.Y != baseMetrics().Map {
 			t.Errorf("右下 = %v", r)
 		}
 		if got := HitMenu(r, r[1].Min.X+1, r[1].Min.Y+1); got != 1 {

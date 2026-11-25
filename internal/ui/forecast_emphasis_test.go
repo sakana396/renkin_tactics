@@ -54,7 +54,7 @@ func TestForecastEmphasis(t *testing.T) {
 				if infoStyleColor(m.Style) != wantColor {
 					t.Error("文字色が違う")
 				}
-				v := p.View()
+				v := p.View(baseMetrics())
 				shift := 0
 				if tc.emphasis == ForecastNormal {
 					if v.Banner != nil {
@@ -111,7 +111,7 @@ func TestForecastEmphasis(t *testing.T) {
 				c.dest = tactics.Pos{X: 6, Y: 6}
 			}
 			p := c.Panel(tactics.Pos{}, false)
-			if len(p.Forecast) != 0 || p.Emphasis != ForecastNormal || p.View().Banner != nil {
+			if len(p.Forecast) != 0 || p.Emphasis != ForecastNormal || p.View(baseMetrics()).Banner != nil {
 				t.Errorf("状態 %v: %+v", state, p)
 			}
 			if m := c.TargetView(); m.Visible || m.Danger {

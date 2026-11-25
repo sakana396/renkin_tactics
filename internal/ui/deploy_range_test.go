@@ -43,7 +43,7 @@ func TestDeployRange(t *testing.T) {
 			v := s.View()
 			d := v.Deploy
 			for _, tx := range v.Texts {
-				if tx.X+textWidth(tx.Text) > ScreenWidth || tx.Y+lineHeight > ScreenHeight {
+				if tx.X+textWidth(tx.Text) > baseMetrics().ScreenW || tx.Y+lineHeight > baseMetrics().ScreenH {
 					t.Fatal("案内・理由が画面外", tx)
 				}
 			}

@@ -103,14 +103,14 @@ func checkGuideLayout(t *testing.T, c *Controller, step string) {
 		t.Fatalf("%s: 予兆が出ていない", step)
 	}
 	r := textRect(v.Text)
-	if !r.In(image.Rect(0, MapSize, MapSize, ScreenHeight)) {
+	if !r.In(image.Rect(0, baseMetrics().Map, baseMetrics().Map, baseMetrics().ScreenH)) {
 		t.Fatalf("%s: 気配の案内が案内欄の外 %v", step, r)
 	}
 	for j, line := range c.Guide() {
 		if j >= GuideHeight/lineHeight {
 			break
 		}
-		y := MapSize + 2 + j*lineHeight
+		y := baseMetrics().Map + 2 + j*lineHeight
 		if r.Overlaps(image.Rect(8, y, 8+textWidth(line), y+lineHeight)) {
 			t.Fatalf("%s: 気配の案内が案内文 %q と重なる %v", step, line, r)
 		}
@@ -376,7 +376,7 @@ func TestReinforcementHintRewind(t *testing.T) {
 		long := strings.Repeat("長い名前", 100)
 		c := newIdleWith(t, func() tactics.Setup { s := hintSetup(); s.Units[1].Name = long; return s })
 		endTurn(c)
-		right := image.Rect(rewindLeft, 0, rewindRight, ScreenHeight)
+		right := image.Rect(baseMetrics().rewindLeft, 0, baseMetrics().rewindRight, baseMetrics().ScreenH)
 		check := func(step string) {
 			t.Helper()
 			hv := c.RewindBoard().Hint
@@ -452,12 +452,12 @@ func TestReinforcementHintRewind(t *testing.T) {
 func TestReinforcementHintShapes(t *testing.T) {
 	t.Run("TC-FR-MAP-03-11 破線は領域の外周の帯にだけあり、重なる領域でも同じ線を重ねない", func(t *testing.T) {
 		areas := []tactics.ReinforcementHint{area(0, 0, 7, 7), area(4, 0, 7, 3), area(0, 0, 7, 7)}
-		dashes, marks := hintShapes(areas)
+		dashes, marks := hintShapes(baseMetrics(), areas)
 		if len(dashes) == 0 {
 			t.Fatal("破線がない")
 		}
 		seen := map[image.Rectangle]bool{}
-		board := image.Rect(0, 0, MapSize, MapSize)
+		board := image.Rect(0, 0, baseMetrics().Map, baseMetrics().Map)
 		for _, d := range dashes {
 			if seen[d] {
 				t.Fatalf("同じ線が 2 本 %v", d)
@@ -468,7 +468,7 @@ func TestReinforcementHintShapes(t *testing.T) {
 			}
 			onEdge := false
 			for _, a := range areas {
-				outer := image.Rect(a.Min.X*CellSize, a.Min.Y*CellSize, (a.Max.X+1)*CellSize, (a.Max.Y+1)*CellSize)
+				outer := image.Rect(a.Min.X*baseMetrics().Cell, a.Min.Y*baseMetrics().Cell, (a.Max.X+1)*baseMetrics().Cell, (a.Max.Y+1)*baseMetrics().Cell)
 				inner := outer.Inset(hintInset + hintThick)
 				if d.In(outer) && !d.Overlaps(inner) {
 					onEdge = true

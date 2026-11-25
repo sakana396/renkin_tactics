@@ -282,12 +282,12 @@ func TestMarkScaleNG04(t *testing.T) {
 			{48, 15, 6, 32, 36, 18},
 			{64, 20, 8, 42, 48, 24},
 		} {
-			useTestMetrics(t, tc.cell)
+			mt := NewMetrics(tc.cell)
 			pt := image.Pt(96, 160)
-			cell := image.Rect(pt.X, pt.Y, pt.X+CellSize, pt.Y+CellSize)
-			equip, bar, cmd := equipMarkRect(pt), unitHPBarRect(pt), CommandMarkRect(pt)
-			if equip.Dx() != tc.equip || bar.Dy() != tc.barThick || bar.Max.X != pt.X+tc.barRight || zocEnemyCornerY != tc.zocY || cmd.Dx() != tc.cmd {
-				t.Errorf("%d: 印 %d 棒 %v 角印 y=%d 指揮 %d", tc.cell, equip.Dx(), bar, zocEnemyCornerY, cmd.Dx())
+			cell := image.Rect(pt.X, pt.Y, pt.X+mt.Cell, pt.Y+mt.Cell)
+			equip, bar, cmd := equipMarkRect(mt, pt), unitHPBarRect(mt, pt), CommandMarkRect(mt, pt)
+			if equip.Dx() != tc.equip || bar.Dy() != tc.barThick || bar.Max.X != pt.X+tc.barRight || mt.zocEnemyCornerY != tc.zocY || cmd.Dx() != tc.cmd {
+				t.Errorf("%d: 印 %d 棒 %v 角印 y=%d 指揮 %d", tc.cell, equip.Dx(), bar, mt.zocEnemyCornerY, cmd.Dx())
 			}
 			if tc.cell == BaseCellSize && (bar.Min.X != pt.X+2 || bar.Max.Y != pt.Y+31) {
 				t.Errorf("32 の棒が今までと違う: %v", bar)
@@ -296,7 +296,7 @@ func TestMarkScaleNG04(t *testing.T) {
 				t.Errorf("%d: はみ出し・重なり 印 %v 棒 %v 指揮 %v", tc.cell, equip, bar, cmd)
 			}
 			for _, boss := range []bool{false, true} {
-				head, stem := pinShape(pt, boss)
+				head, stem := pinShape(mt, pt, boss)
 				if !head.In(cell) || !stem.In(cell) || head.Overlaps(equip) || stem.Overlaps(equip) {
 					t.Errorf("%d: ピン boss=%v %v %v", tc.cell, boss, head, stem)
 				}
@@ -305,14 +305,14 @@ func TestMarkScaleNG04(t *testing.T) {
 				}
 			}
 			// 敵軍の角印（HP の棒の上）が棒と重ならない。
-			var arm = scaled(zocMarkArm)
-			if pt.Y+zocEnemyCornerY >= bar.Min.Y || zocEnemyCornerY-arm < 0 {
+			var arm = mt.scaled(zocMarkArm)
+			if pt.Y+mt.zocEnemyCornerY >= bar.Min.Y || mt.zocEnemyCornerY-arm < 0 {
 				t.Errorf("%d: 敵軍の角印が棒に重なる", tc.cell)
 			}
 		}
 	})
 	t.Run("TC-DES-NG-10-28 既定（32）では scaled は恒等で、ZOC の角印の寸法は変わらない", func(t *testing.T) {
-		if scaled(zocMarkInset) != 5 || scaled(zocMarkArm) != 5 || scaled(2) != 2 {
+		if baseMetrics().scaled(zocMarkInset) != 5 || baseMetrics().scaled(zocMarkArm) != 5 || baseMetrics().scaled(2) != 2 {
 			t.Fatal("32 では scaled は恒等")
 		}
 	})

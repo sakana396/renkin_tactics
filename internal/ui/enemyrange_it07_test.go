@@ -113,7 +113,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 		if v.Clear.Rect != image.Rect(752, 304, 824, 336) || v.Clear.Label != "消す" {
 			t.Errorf("消すボタン %+v", v.Clear)
 		}
-		guide := InfoTabGuide()
+		guide := InfoTabGuide(baseMetrics())
 		guideRect := rectOfText(guide.X, guide.Y, guide.Text, false)
 		for _, tx := range []InfoText{v.Danger, v.Watched} {
 			for _, label := range []string{tx.Text, "全敵 Q OFF", "固定 99"} {
@@ -121,17 +121,17 @@ func TestEnemyRangeIT07(t *testing.T) {
 				if !r.In(image.Rect(520, 304, 664, 336)) {
 					t.Errorf("%q %v が範囲の状態の欄 (520,304)〜(664,336) からはみ出す", label, r)
 				}
-				if r.Overlaps(v.Clear.Rect) || r.Overlaps(MinimapRect()) {
+				if r.Overlaps(v.Clear.Rect) || r.Overlaps(MinimapRect(baseMetrics())) {
 					t.Errorf("%q %v がボタン・ミニマップと重なる", label, r)
 				}
-				for _, tab := range InfoTabRects() {
+				for _, tab := range InfoTabRects(baseMetrics()) {
 					if r.Overlaps(tab) {
 						t.Errorf("%q %v がページの印 %v と重なる", label, r, tab)
 					}
 				}
 			}
 		}
-		for _, tab := range append(InfoTabRects(), guideRect, MinimapRect()) {
+		for _, tab := range append(InfoTabRects(baseMetrics()), guideRect, MinimapRect(baseMetrics())) {
 			if v.Clear.Rect.Overlaps(tab) {
 				t.Errorf("消すボタンが %v と重なる", tab)
 			}
@@ -185,7 +185,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 		if wantMark := image.Rect(name.X+textWidth(name.Text)+4, name.Y+3, name.X+textWidth(name.Text)+14, name.Y+13); !ok || mark != wantMark {
 			t.Errorf("名前の横の印 %v %v、want %v", mark, ok, wantMark)
 		}
-		if !mark.In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
+		if !mark.In(image.Rect(baseMetrics().Map, 0, baseMetrics().ScreenW, InfoHeight)) {
 			t.Errorf("名前の横の印 %v が情報欄の外", mark)
 		}
 		c.SetCursor(cellCenter(empty))
@@ -414,10 +414,10 @@ func TestEnemyRangeIT07(t *testing.T) {
 
 	t.Run("TC-FR-UNT-09-27 線とピンの形: 固定は内側 3 px、カーソルは内側 8 px。破線は 4 px の線と 3 px の空き。ピンは右上で、ボスの ★ を隠さない", func(t *testing.T) {
 		pt := image.Pt(64, 32)
-		if r := rangeFrameRect(pt, watchedInset); r != image.Rect(67, 35, 93, 61) {
+		if r := rangeFrameRect(baseMetrics(), pt, watchedInset); r != image.Rect(67, 35, 93, 61) {
 			t.Errorf("固定の線 %v", r)
 		}
-		if r := rangeFrameRect(pt, cursorInset); r != image.Rect(72, 40, 88, 56) {
+		if r := rangeFrameRect(baseMetrics(), pt, cursorInset); r != image.Rect(72, 40, 88, 56) {
 			t.Errorf("カーソルの線 %v", r)
 		}
 		// 26 px の辺は 0〜4、7〜11、14〜18、21〜25 の 4 本。4 辺で 16 本。
@@ -437,13 +437,13 @@ func TestEnemyRangeIT07(t *testing.T) {
 		if len(short) != 12 || short[2] != [2]image.Point{{86, 40}, {88, 40}} {
 			t.Errorf("16 px の破線 %v", short)
 		}
-		head, stem := pinShape(pt, false)
+		head, stem := pinShape(baseMetrics(), pt, false)
 		if head != image.Rect(87, 33, 93, 39) || stem != image.Rect(89, 39, 91, 43) {
 			t.Errorf("ピン %v %v", head, stem)
 		}
 		// ボスの ★ はマスの x = 20〜 に描く。ピンはその左、マスの右半分寄りに置く。
-		bossHead, _ := pinShape(pt, true)
-		if bossHead.Max.X > pt.X+CellSize-12 || bossHead.Min.X < pt.X+8 {
+		bossHead, _ := pinShape(baseMetrics(), pt, true)
+		if bossHead.Max.X > pt.X+baseMetrics().Cell-12 || bossHead.Min.X < pt.X+8 {
 			t.Errorf("ボスのピン %v", bossHead)
 		}
 	})

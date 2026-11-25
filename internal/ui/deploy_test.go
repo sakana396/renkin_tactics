@@ -11,7 +11,9 @@ import (
 	"github.com/sakana396/renkin_tactics/internal/core/tactics"
 )
 
-func clickDeployCell(s *SceneController, p tactics.Pos) { s.Click(p.X*CellSize+16, p.Y*CellSize+16) }
+func clickDeployCell(s *SceneController, p tactics.Pos) {
+	s.Click(p.X*baseMetrics().Cell+16, p.Y*baseMetrics().Cell+16)
+}
 func campaignBytes(t *testing.T, s *SceneController) []byte {
 	t.Helper()
 	var b bytes.Buffer
@@ -205,12 +207,12 @@ func TestDeployLayout(t *testing.T) {
 				t.Fatal("情報とボタンが重なる", v.Info)
 			}
 			for _, tx := range v.Info.Texts {
-				if tx.X < MapSize || tx.X+textWidth(tx.Text) > ScreenWidth || tx.Y+lineHeight > 432 {
+				if tx.X < baseMetrics().Map || tx.X+textWidth(tx.Text) > baseMetrics().ScreenW || tx.Y+lineHeight > 432 {
 					t.Fatal("情報が欄外", tx)
 				}
 			}
 			for i, tx := range v.Texts {
-				if tx.X < 0 || tx.X+textWidth(tx.Text) > ScreenWidth || tx.Y+lineHeight > ScreenHeight {
+				if tx.X < 0 || tx.X+textWidth(tx.Text) > baseMetrics().ScreenW || tx.Y+lineHeight > baseMetrics().ScreenH {
 					t.Fatal("案内が画面外", tx)
 				}
 				r := image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+lineHeight)
@@ -226,7 +228,7 @@ func TestDeployLayout(t *testing.T) {
 				}
 			}
 			for _, b := range v.Buttons {
-				if !b.Rect.In(image.Rect(MapSize, 0, ScreenWidth, MapSize)) || textWidth(b.Label)+24 > b.Rect.Dx() {
+				if !b.Rect.In(image.Rect(baseMetrics().Map, 0, baseMetrics().ScreenW, baseMetrics().Map)) || textWidth(b.Label)+24 > b.Rect.Dx() {
 					t.Fatal("ボタンが欄外", b)
 				}
 			}

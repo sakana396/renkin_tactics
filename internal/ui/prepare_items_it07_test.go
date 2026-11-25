@@ -99,7 +99,7 @@ func checkPrepareLayout(t *testing.T, step string, v SceneView) {
 	}
 	for _, tx := range v.Texts {
 		r := sceneTextRect(tx)
-		if !r.In(image.Rect(0, 0, ScreenWidth, ScreenHeight)) {
+		if !r.In(image.Rect(0, 0, baseMetrics().ScreenW, baseMetrics().ScreenH)) {
 			t.Errorf("%s: 文 %q %v が窓の外", step, tx.Text, r)
 		}
 		if tx.Style == StyleBad && tx.Y >= it07BottomArea.Min.Y && !r.In(it07BottomArea) {

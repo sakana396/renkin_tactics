@@ -88,8 +88,8 @@ func example3Setup() tactics.Setup {
 
 // 予測の列の左端（画面の座標）と、武器の絵の行の y（DES-UI-07）。
 var (
-	attackColX = MapSize + infoMargin + forecastAttackX
-	defendColX = MapSize + infoMargin + forecastDefendX
+	attackColX = baseMetrics().Map + infoMargin + forecastAttackX
+	defendColX = baseMetrics().Map + infoMargin + forecastDefendX
 	iconRowY   = infoMargin + lineHeight
 )
 
@@ -159,7 +159,7 @@ func TestForecastVisual(t *testing.T) {
 				if p.ForecastAfter != tc.wantAfter || p.ForecastWeapons[0] != tc.attackerWeapon {
 					t.Errorf("後の HP = %v、武器 %v", p.ForecastAfter, p.ForecastWeapons)
 				}
-				v := p.View()
+				v := p.View(baseMetrics())
 				for _, side := range []struct {
 					col  int
 					want string
@@ -234,7 +234,7 @@ func TestForecastVisual(t *testing.T) {
 		} {
 			c := newIdleWith(t, tc.setup)
 			target(t, c, tc.unit, tc.target)
-			v := c.Panel(tc.target, true).View()
+			v := c.Panel(tc.target, true).View(baseMetrics())
 			// 武器の絵は、両側の列の頭（見出しの下）に 32 px で描く。
 			iconY := iconRowY
 			if v.Banner != nil {
@@ -371,7 +371,7 @@ func TestForecastVisual(t *testing.T) {
 		if p.Forecast[1] != (ForecastRow{"HP", "13 → 0", "17 → 4"}) || p.Forecast[5] != (ForecastRow{"必殺", "52%", "4%"}) {
 			t.Errorf("HP・必殺の行 = %q、%q", p.Forecast[1], p.Forecast[5])
 		}
-		v := p.View()
+		v := p.View(baseMetrics())
 		if m := c.TargetView(); !m.Danger || m.DangerPos != (tactics.Pos{X: 4, Y: 2}) || m.Style != StyleBad {
 			t.Errorf("移動後の危険枠 = %+v", m)
 		}
@@ -396,7 +396,7 @@ func TestForecastVisual(t *testing.T) {
 			c := newIdleWith(t, tc.setup)
 			target(t, c, tc.unit, tc.target)
 			p := c.Panel(tc.target, true)
-			v := p.View()
+			v := p.View(baseMetrics())
 			bottom := forecastBottom(len(p.Forecast)) - lineHeight
 			if v.Banner != nil {
 				bottom += 44
@@ -414,7 +414,7 @@ func TestForecastVisual(t *testing.T) {
 					t.Errorf("項目の名前 %q が攻撃する側の列にはみ出す", tx.Text)
 				case tx.X >= attackColX && tx.X < defendColX && right > defendColX:
 					t.Errorf("攻撃する側の %q（右端 %d）が守る側の列にはみ出す", tx.Text, right)
-				case right > ScreenWidth-infoMargin:
+				case right > baseMetrics().ScreenW-infoMargin:
 					t.Errorf("守る側の %q（右端 %d）が情報欄からはみ出す", tx.Text, right)
 				}
 				// 絵の右に置く印（2 倍）と「撃破」「危険」は、絵とも互いとも重ならない。表の文は絵より下に置く。

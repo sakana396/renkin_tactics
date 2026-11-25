@@ -12,7 +12,7 @@ import (
 func TestIT07ForecastWeapon(t *testing.T) {
 	window := func(c *Controller) image.Rectangle { w, _ := c.ForecastWindow(); return w.Rect }
 	click := func(g *Game, p tactics.Pos) {
-		pt := g.ctrl.Camera().Screen(p)
+		pt := g.ctrl.Camera().Screen(baseMetrics(), p)
 		g.leftClick(pt.X+2, pt.Y+2)
 	}
 	t.Run("TC-FR-BTL-08-27 相手選択で武器一覧を省き届く武器を仮選択", func(t *testing.T) {
@@ -21,7 +21,7 @@ func TestIT07ForecastWeapon(t *testing.T) {
 		click(g, tactics.Pos{X: 1, Y: 1})
 		click(g, tactics.Pos{X: 1, Y: 1})
 		_, dest, _ := c.Selection()
-		r := c.Camera().MenuRects(dest, len(c.MenuLabels()))[0]
+		r := c.Camera().MenuRects(baseMetrics(), dest, len(c.MenuLabels()))[0]
 		g.leftClick(r.Min.X+2, r.Min.Y+2)
 		if c.State() != Targeting || c.target != -1 || !reflect.DeepEqual(c.Targets(), []int{2}) {
 			t.Fatalf("攻撃から相手: %v %d %v", c.State(), c.target, c.Targets())

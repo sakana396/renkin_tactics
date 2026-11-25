@@ -26,7 +26,6 @@ func RunShot(cfg Config, opt ShotOptions) error {
 	if opt.Path == "" {
 		return errors.New("出力先を指定してください")
 	}
-	useConfigMetrics(cfg)
 	scenes := NewSceneController(cfg)
 	imgs, err := assets.Load()
 	if err != nil {
@@ -267,7 +266,7 @@ func (g *shotGame) step(raw string) error {
 				return errors.New("盤面の座標が範囲外です")
 			}
 			c.camera.Focus(p)
-			pt := c.Camera().Screen(p)
+			pt := c.Camera().Screen(g.Game.metrics, p)
 			g.shotCursor = &image.Point{X: pt.X + g.Game.metrics.Cell/2, Y: pt.Y + g.Game.metrics.Cell/2}
 			c.SetCursor(g.shotCursor.X, g.shotCursor.Y)
 			c.Click(p)

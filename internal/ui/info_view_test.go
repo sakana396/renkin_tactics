@@ -65,9 +65,9 @@ func TestInfoView(t *testing.T) {
 			Items: []tactics.ItemStack{{Item: potion, Count: 2}},
 		}
 	}
-	view := func(u tactics.Unit) InfoView { return Panel{Unit: &u}.View() }
+	view := func(u tactics.Unit) InfoView { return Panel{Unit: &u}.View(baseMetrics()) }
 	// equip は「装備・スキル」のページ（DES-UI-28）。
-	equip := func(u tactics.Unit) InfoView { return Panel{Unit: &u, Page: PageEquip}.View() }
+	equip := func(u tactics.Unit) InfoView { return Panel{Unit: &u, Page: PageEquip}.View(baseMetrics()) }
 
 	t.Run("TC-FR-UNT-09-07 力・魔力・技・速さ・幸運・守備・魔防の棒は値 × 6 px で、120 px で止める。移動は棒にしない", func(t *testing.T) {
 		for _, tc := range []struct{ value, want int }{{0, 0}, {1, 6}, {6, 36}, {19, 114}, {20, 120}, {25, 120}} {
@@ -123,7 +123,7 @@ func TestInfoView(t *testing.T) {
 			t.Fatal("絵がない")
 		}
 		pic := v.Icons[0]
-		if pic.Size != 64 || pic.Tile != assets.PlayerLord || pic.X != MapSize+infoMargin || pic.Y != infoMargin {
+		if pic.Size != 64 || pic.Tile != assets.PlayerLord || pic.X != baseMetrics().Map+infoMargin || pic.Y != infoMargin {
 			t.Errorf("ユニットの絵 = %+v、情報欄の左上に PlayerLord を 64 px のはず", pic)
 		}
 		// 名前とクラスは絵の右に、絵の高さの中に並べる。
@@ -148,10 +148,10 @@ func TestInfoView(t *testing.T) {
 		}
 		// ユニットのいないマスと盤面の外では絵を描かない。
 		c := newIdleWith(t, example1Setup)
-		if v := c.Panel(tactics.Pos{X: 0, Y: 0}, true).View(); len(v.Icons) != 0 || len(v.Bars) != 0 {
+		if v := c.Panel(tactics.Pos{X: 0, Y: 0}, true).View(baseMetrics()); len(v.Icons) != 0 || len(v.Bars) != 0 {
 			t.Errorf("空きマスの絵 = %+v、棒 = %+v", v.Icons, v.Bars)
 		}
-		if v := c.Panel(tactics.Pos{X: 0, Y: 0}, false).View(); len(v.Icons) != 0 || len(v.Texts) != 0 {
+		if v := c.Panel(tactics.Pos{X: 0, Y: 0}, false).View(baseMetrics()); len(v.Icons) != 0 || len(v.Texts) != 0 {
 			t.Errorf("盤面の外 = %+v", v)
 		}
 	})

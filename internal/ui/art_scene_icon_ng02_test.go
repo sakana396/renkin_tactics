@@ -186,7 +186,6 @@ func TestSceneIconViewsNG02(t *testing.T) {
 // 描画: 絵があれば縮めた画像を作って覚え、描いて、タイルは描かない（DES-NG-08）。
 func TestDrawSceneIconNG02(t *testing.T) {
 	t.Run("TC-DES-NG-08-99 絵があれば縮めた画像を 1 つだけ作って描く（顔は 24 px、全身は縦横比を保つ）", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := hiresScenes(t, Prepare)
 		v := s.prepareHiResView()
 		if len(v.Cards) == 0 || len(v.Portraits) < len(v.Cards) {

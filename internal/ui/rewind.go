@@ -179,8 +179,6 @@ func fitRewind(s string, width int) string {
 // 一覧・詳細・理由は右上の情報欄（y < 360）に収め、右下のミニマップ（y = 360〜511）と重ねない。座標だけを詰め、
 // 8 行の一覧と最大 5 行の詳細（DES-UI-21、DES-IT04 7.1 節）は保つ（REV-071 F-03 案 B）。
 // 「戻る」「決定」などのボタンと気配の案内は下の行（y = 520〜576）に置く（DES-UI-28）。
-// rewindLeft・rewindRight は右欄の一覧の左端・右端（DES-NG-10。盤面の大きさに従う）。
-var rewindLeft, rewindRight int
 
 const (
 	rewindWidth   = InfoWidth - 16

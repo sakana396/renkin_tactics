@@ -100,7 +100,7 @@ func TestRewindUI(t *testing.T) {
 			t.Fatal("成功時の破棄または二重消費", c)
 		}
 		for _, b := range c.RewindView().Buttons {
-			if !b.Rect.In(image.Rect(0, 0, ScreenWidth, ScreenHeight)) {
+			if !b.Rect.In(image.Rect(0, 0, baseMetrics().ScreenW, baseMetrics().ScreenH)) {
 				t.Fatal("画面外", b)
 			}
 		}
@@ -265,7 +265,7 @@ func TestRewindBoundaries(t *testing.T) {
 			t.Fatal("詳細先頭")
 		}
 		for _, tx := range c.RewindView().Texts {
-			if tx.X+textWidth(tx.Text) > ScreenWidth || tx.Y+lineHeight > ScreenHeight {
+			if tx.X+textWidth(tx.Text) > baseMetrics().ScreenW || tx.Y+lineHeight > baseMetrics().ScreenH {
 				t.Fatal("表示が窓外", tx)
 			}
 		}
@@ -335,11 +335,11 @@ func checkInputLayout(t *testing.T, c *Controller) {
 	t.Helper()
 	v := c.RewindView()
 	for i, b := range v.Buttons {
-		if !b.Rect.In(image.Rect(0, MapSize, MapSize, ScreenHeight)) {
+		if !b.Rect.In(image.Rect(0, baseMetrics().Map, baseMetrics().Map, baseMetrics().ScreenH)) {
 			t.Fatal("自軍入力待ちのボタンが盤面に重なるか案内欄の外にある", b)
 		}
 		for j, line := range c.Guide() {
-			y := MapSize + 2 + j*lineHeight
+			y := baseMetrics().Map + 2 + j*lineHeight
 			if b.Rect.Overlaps(image.Rect(8, y, 8+textWidth(line), y+lineHeight)) {
 				t.Fatal("自軍入力待ちのボタンが案内文を隠す", b, line)
 			}

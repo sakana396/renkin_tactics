@@ -65,7 +65,7 @@ func clickMenuLabel(t *testing.T, g *Game, label string) {
 	for i, l := range labels {
 		if l == label {
 			_, dest, _ := c.Selection()
-			r := c.Camera().MenuRectsFor(dest, labels)[i]
+			r := c.Camera().MenuRectsFor(baseMetrics(), dest, labels)[i]
 			g.leftClick(r.Min.X+2, r.Min.Y+2)
 			return
 		}
@@ -468,7 +468,7 @@ func TestNG01MenuFitsLabels(t *testing.T) {
 		labels := []string{"傷薬 ×1（回復 10）", "大きな爆弾 ×1（爆弾 ダメージ 12　範囲 2　投げる 3）"}
 		cam := Camera{Width: 16, Height: 16}
 		for _, dest := range []tactics.Pos{{X: 0, Y: 0}, {X: 7, Y: 8}, {X: 15, Y: 15}} {
-			rs := cam.MenuRectsFor(dest, labels)
+			rs := cam.MenuRectsFor(baseMetrics(), dest, labels)
 			if len(rs) != len(labels) {
 				t.Fatalf("移動先 %v: ボタン %d 個", dest, len(rs))
 			}
@@ -477,7 +477,7 @@ func TestNG01MenuFitsLabels(t *testing.T) {
 				if r.Dx() < textWidth(labels[i])+16 || r.Dx() < menuWidth {
 					t.Errorf("移動先 %v の %d 行目: 幅 %d が文の幅 %d に足りない", dest, i, r.Dx(), textWidth(labels[i]))
 				}
-				if r.Min.X < 0 || r.Max.X > MapSize || r.Min.Y < 0 || r.Max.Y > MapSize {
+				if r.Min.X < 0 || r.Max.X > baseMetrics().Map || r.Min.Y < 0 || r.Max.Y > baseMetrics().Map {
 					t.Errorf("移動先 %v の %d 行目: %v が盤面の外に出る", dest, i, r)
 				}
 				// 文の右端の近くをクリックしても、その行に当たる。
@@ -488,7 +488,7 @@ func TestNG01MenuFitsLabels(t *testing.T) {
 		}
 		// 短い文だけの一覧は、これまでどおりの幅と位置のまま。
 		short := []string{"攻撃", "待機"}
-		if got, want := cam.MenuRectsFor(tactics.Pos{X: 3, Y: 3}, short), MenuRects(tactics.Pos{X: 3, Y: 3}, 2); !reflect.DeepEqual(got, want) {
+		if got, want := cam.MenuRectsFor(baseMetrics(), tactics.Pos{X: 3, Y: 3}, short), MenuRects(baseMetrics(), tactics.Pos{X: 3, Y: 3}, 2); !reflect.DeepEqual(got, want) {
 			t.Errorf("短い一覧 = %v, 期待 %v", got, want)
 		}
 	})

@@ -121,7 +121,7 @@ func (s *SceneController) SetDeployCursor(x, y int) {
 	if s.scene != Deploy {
 		return
 	}
-	p, ok := s.deployCamera.CellAt(x, y)
+	p, ok := s.deployCamera.CellAt(s.metrics, x, y)
 	if !ok {
 		p = tactics.Pos{X: -1, Y: -1}
 	} else {

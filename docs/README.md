@@ -29,7 +29,7 @@
 | 設計 | 設計書（新作 NG01: 錬金の爆弾と新作の定義データの口） | [03_design/design-ng01.md](03_design/design-ng01.md) | v0.7 承認（2026-11-19。#212、E-151、REV-123）。v0.6 承認（2026-11-18、#211 の報酬の注記）。v0.5 承認（E-147、#208、REV-119 F-03）。v0.4 承認（E-145）。DES-NG-01〜06。爆弾の経験は案 A で決定（E-142）。5 章に改める既存の ID（DES-MAP-04・DES-CMP-06・DES-GRW-01） |
 | 設計 | 設計書（新作 NG02: 画像の差し込み） | [03_design/design-ng02-art.md](03_design/design-ng02-art.md) | v0.6 承認（2026-11-25。#232、E-166、REV-129）。v0.5 承認（E-147、#210）。DES-NG-07・08・12 |
 | 設計 | 設計書（新作 NG03: 音） | [03_design/design-ng03-audio.md](03_design/design-ng03-audio.md) | v0.5 承認（2026-11-25。#232、E-166、REV-129）。v0.4 承認（2026-11-24、#227。効果音 0.5）。v0.3 承認（E-143、#203）。DES-NG-09。ミュートのキーは N（E-142） |
-| 設計 | 設計書（新作 NG04: 高解像度の表示） | [03_design/design-ng04-display.md](03_design/design-ng04-display.md) | v0.6（案。開発者の承認待ち、#233）。v0.5 承認（2026-11-25。#232、E-166、REV-129）。DES-NG-10。D-12 の Metrics への移行は途中 |
+| 設計 | 設計書（新作 NG04: 高解像度の表示） | [03_design/design-ng04-display.md](03_design/design-ng04-display.md) | v0.6（案。開発者の承認待ち、#233）。v0.5 承認（2026-11-25。#232、E-166、REV-129）。DES-NG-10。D-12 の Metrics への移行は #233 で完了（承認待ち） |
 | 設計 | 設計書（新作 NG05: 準備画面の作り直し） | [03_design/design-ng05-prepare.md](03_design/design-ng05-prepare.md) | v0.6 承認（2026-11-25。#232、E-166、REV-129）。v0.5 承認（E-143、#203）。DES-NG05（準備画面）。モック [03_design/mock/prepare-ng05.png](03_design/mock/prepare-ng05.png) |
 | 設計 | 新作 NG06 錬金アイテムの種類 | [03_design/design-ng06-items.md](03_design/design-ng06-items.md) | v0.3 承認（2026-11-24、#227。道具の説明欄）。v0.2 承認（2026-11-19。#212、E-151、REV-123）。v0.1 承認（2026-11-18、E-149・E-150、#211） |
 | 設計 | 新作 NG07 章の間の調合 | [03_design/design-ng07-crafting.md](03_design/design-ng07-crafting.md) | v0.1 承認（2026-11-19。#212、E-151、REV-123） |

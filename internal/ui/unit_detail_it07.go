@@ -28,12 +28,6 @@ const (
 // detailGuide は詳しい画面の下の操作の案内。
 const detailGuide = "Tab: 節を送る　I・Esc・右クリック: 戻る"
 
-// deployDetailButtonRect は配置の既存ボタンの下に置く詳細の入口（DES-UI-31）。
-var deployDetailButtonRect image.Rectangle
-
-// detailBottom は詳しい画面の下端（DES-NG-10。盤面の大きさに従う）。
-var detailBottom int
-
 // 詳しい画面の配置（DES-IT07 3.4 節）。左の列 x = 16〜304 に能力と武器の短い行・スキル、右の列 x = 320〜816 に手持ち 5 枠と全武器。
 const (
 	detailLeftX      = 16
@@ -63,7 +57,7 @@ func (c *Controller) OpenDetail() bool {
 // カーソルが右欄の上なら直前に盤面で見ていたマスのユニット、どちらもいなければ選択中のユニット。いなければ −1。
 func (c *Controller) detailTarget() int {
 	units := c.Units()
-	cell, ok := c.Camera().CellAt(c.cursorX, c.cursorY)
+	cell, ok := c.Camera().CellAt(c.metrics, c.cursorX, c.cursorY)
 	if !ok && image.Pt(c.cursorX, c.cursorY).In(image.Rect(c.metrics.Map, 0, c.metrics.ScreenW, InfoHeight)) {
 		cell, ok = c.lastCell, c.lastCellOK
 	}
@@ -132,7 +126,7 @@ func (s *SceneController) DeployDetailInput(tab, close bool) bool {
 // DetailView は詳しい画面に描くものを返す（DES-UI-31）。能力 9 種、手持ち 5 枠、装備と全武器の詳しい値、キャラ・兵種のスキルを
 // 一画面に並べ、能力の欄に武器の種類の絵・名前・装備の E 印を並べる（E-97 の目的を保つ）。section の見出しに ▶ を付ける。
 // 一番下が (0,512) を越えるときは、越える行を出さずに「…」で止める。
-func DetailView(u tactics.Unit, section DetailSection) InfoView {
+func DetailView(m Metrics, u tactics.Unit, section DetailSection) InfoView {
 	var v InfoView
 	head := func(x, y int, label string, s DetailSection) {
 		st, mark := StyleLabel, "　"
@@ -196,7 +190,7 @@ func DetailView(u tactics.Unit, section DetailSection) InfoView {
 			lines = append(lines, InfoText{X: detailLeftX + 32, Text: l, Style: StylePlain})
 		}
 	}
-	v.addClipped(lines, y)
+	v.addClipped(m, lines, y)
 
 	// 右の列: 手持ち 5 枠（武器の列の順に武器、続けて道具を 1 個ずつ、残りは「―」）と全武器の詳しい値。
 	head(detailRightX, 40, "手持ち 5 枠・全武器", SectionWeapons)
@@ -217,18 +211,18 @@ func DetailView(u tactics.Unit, section DetailSection) InfoView {
 			lines = append(lines, InfoText{X: detailRightX + 32, Text: l, Style: StylePlain})
 		}
 	}
-	v.addClipped(lines, y)
-	v.Bottom = detailBottom
+	v.addClipped(m, lines, y)
+	v.Bottom = m.detailBottom
 	return v
 }
 
-// addClipped は lines を y から 1 行ずつ並べ、detailBottom を越える行は出さず、最後の行を「…」にする（DES-UI-31）。
-func (v *InfoView) addClipped(lines []InfoText, y int) {
+// addClipped は lines を y から 1 行ずつ並べ、m.detailBottom を越える行は出さず、最後の行を「…」にする（DES-UI-31）。
+func (v *InfoView) addClipped(m Metrics, lines []InfoText, y int) {
 	for i, l := range lines {
-		if y+lineHeight > detailBottom {
+		if y+lineHeight > m.detailBottom {
 			return
 		}
-		if i < len(lines)-1 && y+2*lineHeight > detailBottom {
+		if i < len(lines)-1 && y+2*lineHeight > m.detailBottom {
 			v.text(l.X, y, "…", StyleLabel)
 			return
 		}

@@ -26,18 +26,6 @@ const (
 	sceneCanvasHeight = boardCells*BaseCellSize + GuideHeight
 )
 
-// マスの大きさに従う値（DES-NG-10）。useMetrics が一か所で切り替える。
-// 既定は、1 マス 32 px・盤面 512・窓 832 × 576。
-var (
-	// CellSize は 1 マスの大きさ（px）。
-	CellSize = BaseCellSize
-	// MapSize は盤面の幅と高さ（px）。
-	MapSize = boardCells * BaseCellSize
-	// ScreenWidth と ScreenHeight は窓の大きさ（px）。
-	ScreenWidth  = boardCells*BaseCellSize + InfoWidth
-	ScreenHeight = boardCells*BaseCellSize + GuideHeight
-)
-
 // Metrics は表示の大きさと配置をまとめた値（DES-NG-10）。
 type Metrics struct {
 	Cell, Map, ScreenW, ScreenH int
@@ -104,52 +92,12 @@ func (m Metrics) sceneOffset() image.Point {
 	return image.Pt((m.ScreenW-sceneCanvasWidth)/2, (m.ScreenH-sceneCanvasHeight)/2)
 }
 
-// useMetrics は互換のグローバル値に配置を写す（DES-NG-10）。
-func useMetrics(cell int) {
-	m := NewMetrics(cell)
-	CellSize, MapSize, ScreenWidth, ScreenHeight = m.Cell, m.Map, m.ScreenW, m.ScreenH
-	forecastCandidates = m.forecastCandidates
-	forecastFallbackRect = m.forecastFallbackRect
-	summaryX = m.summaryX
-	summaryPortraitX = m.summaryPortraitX
-	summaryNarrow = m.summaryNarrow
-	detailButtonRect = m.detailButtonRect
-	deployDetailButtonRect = m.deployDetailButtonRect
-	detailBottom = m.detailBottom
-	rewindLeft = m.rewindLeft
-	rewindRight = m.rewindRight
-	cameraGuideY = m.cameraGuideY
-	hintRewindY = m.hintRewindY
-	minimapBoxX = m.minimapBoxX
-	equipMarkSize = m.equipMarkSize
-	equipMarkOffset = m.equipMarkOffset
-	unitHPBarRight = m.unitHPBarRight
-	zocEnemyCornerY = m.zocEnemyCornerY
-	overviewButtonRect = m.overviewButtonRect
-	nextAllyButtonRect = m.nextAllyButtonRect
-	rangeStatusRect = m.rangeStatusRect
-	rangeClearRect = m.rangeClearRect
-}
-
-func scaled(n int) int { return n * CellSize / BaseCellSize }
-func boardShift() int  { return MapSize - boardCells*BaseCellSize }
-func init()            { useMetrics(BaseCellSize) }
-
 // metricsForConfig は設定から表示の大きさを決める（DES-NG-10）。
 func metricsForConfig(cfg Config) Metrics {
 	if cfg.HiRes {
 		return NewMetrics(HiResCellSize)
 	}
 	return NewMetrics(BaseCellSize)
-}
-
-// useConfigMetrics は、設定に従って 1 マスの大きさを切り替える。窓を作る前に呼ぶ（DES-NG-10）。
-func useConfigMetrics(cfg Config) {
-	if cfg.HiRes {
-		useMetrics(HiResCellSize)
-		return
-	}
-	useMetrics(BaseCellSize)
 }
 
 // onCanvas は、場面 sc が盤面を持たない配置（sceneOffset で中央に置く）かを返す（DES-NG-10）。
@@ -189,26 +137,26 @@ const (
 )
 
 // CellAt は原点・16×16 の座標変換を返す互換の入口（DES-UI-01、DES-UI-25）。実画面では Camera.CellAt を使う。
-func CellAt(x, y int) (p tactics.Pos, ok bool) {
-	return (Camera{Width: boardCells, Height: boardCells}).CellAt(x, y)
+func CellAt(m Metrics, x, y int) (p tactics.Pos, ok bool) {
+	return (Camera{Width: boardCells, Height: boardCells}).CellAt(m, x, y)
 }
 
 // MenuRects は、移動先 dest の横に n 個のボタンを縦に並べたときの、各ボタンの範囲を返す（DES-UI-02）。
 // 盤面の右に出られなければ左に出し、下に出られなければ上にずらす。描画とクリックの判定の両方で使う。
-func MenuRects(dest tactics.Pos, n int) []image.Rectangle {
-	return menuRectsWidth(dest, n, menuWidth)
+func MenuRects(m Metrics, dest tactics.Pos, n int) []image.Rectangle {
+	return menuRectsWidth(m, dest, n, menuWidth)
 }
 
 // menuRectsWidth は MenuRects のボタンの幅を w にしたもの。長い行（爆弾の効果の文）を一覧の枠と盤面に収めるのに使う（DES-NG-05）。
-func menuRectsWidth(dest tactics.Pos, n, menuWidth int) []image.Rectangle {
-	x := (dest.X + 1) * CellSize
-	if x+menuWidth > MapSize {
-		x = dest.X*CellSize - menuWidth
+func menuRectsWidth(m Metrics, dest tactics.Pos, n, menuWidth int) []image.Rectangle {
+	x := (dest.X + 1) * m.Cell
+	if x+menuWidth > m.Map {
+		x = dest.X*m.Cell - menuWidth
 	}
-	x = max(0, min(x, MapSize-menuWidth))
-	y := dest.Y * CellSize
-	if y+n*menuHeight > MapSize {
-		y = MapSize - n*menuHeight
+	x = max(0, min(x, m.Map-menuWidth))
+	y := dest.Y * m.Cell
+	if y+n*menuHeight > m.Map {
+		y = m.Map - n*menuHeight
 	}
 	rects := make([]image.Rectangle, n)
 	for i := range rects {
@@ -280,6 +228,6 @@ func (c *Controller) MenuLabels() []string {
 }
 
 // BattleEndRect は勝利・敗北の帯の描画とクリックに使う範囲（DES-UI-17）。
-func BattleEndRect() image.Rectangle {
-	return image.Rect(0, MapSize/2-56, MapSize, MapSize/2+40)
+func BattleEndRect(m Metrics) image.Rectangle {
+	return image.Rect(0, m.Map/2-56, m.Map, m.Map/2+40)
 }

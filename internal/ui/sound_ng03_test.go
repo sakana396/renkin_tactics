@@ -64,7 +64,11 @@ func newSoundRig(t *testing.T, scenes *SceneController) *soundRig {
 		rig.bgmLen[samples*4] = n
 	}
 	glue := soundGlue{sound: audio.New(media, func() (audio.Backend, error) { return rig.rec, nil }, &bytes.Buffer{})}
-	rig.g = &Game{metrics: scenes.metrics, scenes: scenes, sound: glue}
+	m := baseMetrics()
+	if scenes != nil {
+		m = scenes.metrics
+	}
+	rig.g = &Game{metrics: m, scenes: scenes, sound: glue}
 	return rig
 }
 

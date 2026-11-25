@@ -52,7 +52,6 @@ func clickStockRow(t *testing.T, s *SceneController, id string) {
 
 func TestPrepareHiResReview(t *testing.T) {
 	t.Run("TC-DES-NG-11-20 選んだ品（なければ指している品）の性能を、手持ちの欄の下部に出す", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.campaign.StockWeapons = append(s.campaign.StockWeapons, core.WeaponCount{Weapon: "iron_axe", Count: 1})
 		s.prepareMember = 1 // ダイン（重装兵。斧は装備できない）。手持ちは鉄の槍・回復薬
@@ -148,7 +147,6 @@ func TestPrepareHiResReview(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-20 性能の文は、全武器・全道具で 2 行以内に収まり、手持ちの欄の中に収まる", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		cat, err := defload.Load(data.Alchemy())
 		if err != nil {
 			t.Fatal(err)
@@ -194,7 +192,6 @@ func TestPrepareHiResReview(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-21 道具の丸は、爆弾の範囲（BlastRadius）で色と大きさが変わり、爆弾の ID を使わない", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch03", true)
 		cat := s.cfg.Catalog
 		seen := map[color.NRGBA]string{}
@@ -246,7 +243,6 @@ func TestPrepareHiResReview(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-22 ▲▼ と → は vector の図形で描く（文字ではない）。クリックの範囲は変えない", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch03", true)
 		s.campaign.StockWeapons = append(s.campaign.StockWeapons, core.WeaponCount{Weapon: "iron_axe", Count: 1})
 		s.campaign.Roster = append(s.campaign.Roster, core.Member{Character: "haru", Level: 1, Weapons: []string{"fire"}, Stats: tactics.Stats{HP: 10}, Alive: true})
@@ -315,7 +311,6 @@ func TestPrepareHiResReview(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-23 名簿のカードの手持ちの使用数の箱は、使っている枠を琥珀で塗り、空きは暗いまま", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		v := s.prepareHiResView()
 		for _, c := range v.Cards {
@@ -347,7 +342,6 @@ func TestPrepareHiResReview(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-24 準備の入力は Game.sceneInput の経路で動く（左クリック・右クリック・↑↓・Enter・Esc）", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		g := &Game{metrics: s.metrics, scenes: s}
 		click := func(r image.Rectangle) { g.sceneInput(sceneKeys{Left: true}, r.Min.X+5, r.Min.Y+5) }
@@ -436,7 +430,6 @@ func TestPrepareHiResReview(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-25 高解像度の準備の Enter（配置へ）は決定音、↑↓（キャラの選択）は選択音を鳴らす。今の準備・ほかの場面は変わらない", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		play := func(scene Scene, hires bool, k soundKeys) []audio.SE {
 			s := ng05Scenes(t, "ch01", hires)
 			rig := newSoundRig(t, s)
@@ -485,7 +478,6 @@ func TestPrepareHiResReview(t *testing.T) {
 
 func TestPrepareWindowSceneCursor(t *testing.T) {
 	t.Run("TC-DES-NG-11-24 窓の座標を準備の座標に変換", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		for _, tc := range []struct {
 			name         string
 			full         bool
@@ -506,7 +498,6 @@ func TestPrepareWindowSceneCursor(t *testing.T) {
 
 func TestPrepareGameCursor(t *testing.T) {
 	t.Run("TC-DES-NG-11-24 Game が窓の座標を準備の座標に変える（新作は変えず、旧作は中央寄せの分を引く）", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		for _, tc := range []struct {
 			name         string
 			hires        bool
@@ -516,7 +507,7 @@ func TestPrepareGameCursor(t *testing.T) {
 			{"旧作", false, 272, 172},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
-				g := &Game{metrics: metricsForConfig(Config{HiRes: tc.hires}), scenes: ng05Scenes(t, "ch01", tc.hires)}
+				g := &Game{metrics: NewMetrics(HiResCellSize), scenes: ng05Scenes(t, "ch01", tc.hires)}
 				if g.scenes.Scene() != Prepare {
 					t.Fatalf("場面 = %v, 期待 Prepare", g.scenes.Scene())
 				}

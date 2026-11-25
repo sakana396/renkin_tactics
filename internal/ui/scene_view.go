@@ -264,7 +264,7 @@ func (s *SceneController) Click(x, y int) {
 	if s.scene == Battle && s.battle != nil && s.battle.State() == Over && s.battle.InfoClick(x, y) {
 		return
 	}
-	if s.scene == Battle && !image.Pt(x, y).In(BattleEndRect()) {
+	if s.scene == Battle && !image.Pt(x, y).In(BattleEndRect(s.metrics)) {
 		return
 	}
 	if s.scene == Deploy {
@@ -282,7 +282,7 @@ func (s *SceneController) Click(x, y int) {
 				return
 			}
 		}
-		if p, ok := s.deployCamera.CellAt(x, y); ok {
+		if p, ok := s.deployCamera.CellAt(s.metrics, x, y); ok {
 			s.clickDeploy(p)
 		}
 		return

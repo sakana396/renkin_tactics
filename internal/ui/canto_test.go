@@ -76,10 +76,10 @@ func TestCantoUI(t *testing.T) {
 			t.Errorf("行の数 %d が案内欄に収まらない: %q", len(lines), lines)
 		}
 		for j, l := range lines {
-			if w := textWidth(l); w > MapSize-16 {
+			if w := textWidth(l); w > baseMetrics().Map-16 {
 				t.Errorf("%q の幅 %d px が案内欄に収まらない", l, w)
 			}
-			if hintX := MapSize - 8 - textWidth(hintText); j == 2 && 8+textWidth(l) > hintX {
+			if hintX := baseMetrics().Map - 8 - textWidth(hintText); j == 2 && 8+textWidth(l) > hintX {
 				t.Errorf("3 行目 %q の右端 %d px が気配の案内の左端 %d px と重なる", l, 8+textWidth(l), hintX)
 			}
 		}
@@ -159,12 +159,12 @@ func TestCantoUI(t *testing.T) {
 		// 開発者の試遊で、再移動の状態で青いマスを押しても動かなかった（E-98）。
 		// 「終える」のボタンがあるとボタンの外のクリックを捨てていたので、Game の左クリックの経路で確かめる。
 		at := func(c *Controller, p tactics.Pos) (int, int) {
-			pt := c.Camera().Screen(p)
-			return pt.X + CellSize/2, pt.Y + CellSize/2
+			pt := c.Camera().Screen(baseMetrics(), p)
+			return pt.X + baseMetrics().Cell/2, pt.Y + baseMetrics().Cell/2
 		}
 		inMenu := func(c *Controller, x, y int) bool {
 			_, dest, _ := c.Selection()
-			return HitMenu(c.Camera().MenuRects(dest, len(c.MenuLabels())), x, y) >= 0
+			return HitMenu(c.Camera().MenuRects(baseMetrics(), dest, len(c.MenuLabels())), x, y) >= 0
 		}
 
 		c := cantoController(t, false)
@@ -196,7 +196,7 @@ func TestCantoUI(t *testing.T) {
 		c = cantoController(t, false)
 		g = &Game{metrics: c.metrics, ctrl: c}
 		_, dest, _ := c.Selection()
-		r := c.Camera().MenuRects(dest, len(c.MenuLabels()))[0]
+		r := c.Camera().MenuRects(baseMetrics(), dest, len(c.MenuLabels()))[0]
 		g.leftClick(r.Min.X+2, r.Min.Y+2)
 		playOut(c)
 		if u := c.Battle().Units()[1]; c.State() != Idle || u.Pos != (tactics.Pos{X: 1, Y: 0}) || !u.Acted {
@@ -234,7 +234,7 @@ func TestCantoUI(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				u := tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, HP: 20, Weapons: []tactics.Weapon{testLance}, Skill: tc.skill, ClassSkills: tc.class, Alive: true}
 				// スキルは情報欄の「装備・スキル」のページに出す（DES-UI-28、#129）。
-				v := (Panel{Unit: &u, Page: PageEquip}).View()
+				v := (Panel{Unit: &u, Page: PageEquip}).View(baseMetrics())
 				var texts []string
 				for _, x := range v.Texts {
 					texts = append(texts, x.Text)
@@ -245,8 +245,8 @@ func TestCantoUI(t *testing.T) {
 				}
 				// どの文も情報欄（左右の余白 8 を除く）の幅に収まる（REV-073 F-01）。
 				for _, x := range v.Texts {
-					if x.X < MapSize+8 || x.X+textWidth(x.Text) > ScreenWidth-8 {
-						t.Errorf("%q（x %d・幅 %d）が情報欄 %d〜%d からはみ出す", x.Text, x.X, textWidth(x.Text), MapSize+8, ScreenWidth-8)
+					if x.X < baseMetrics().Map+8 || x.X+textWidth(x.Text) > baseMetrics().ScreenW-8 {
+						t.Errorf("%q（x %d・幅 %d）が情報欄 %d〜%d からはみ出す", x.Text, x.X, textWidth(x.Text), baseMetrics().Map+8, baseMetrics().ScreenW-8)
 					}
 				}
 			})

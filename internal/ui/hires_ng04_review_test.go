@@ -14,7 +14,6 @@ import (
 
 func TestHiResGameOver(t *testing.T) {
 	t.Run("TC-DES-NG-10-29 敗北の場面は配置（832×576）が窓の中央に収まり、巻き戻しの入口も層の中", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := hiresScenes(t, Battle)
 		s.scene = GameOver
 		s.battle.state = Over
@@ -22,7 +21,8 @@ func TestHiResGameOver(t *testing.T) {
 		if !onCanvas(GameOver) || !canvasInUse(GameOver, false) || canvasInUse(GameOver, true) {
 			t.Fatal("敗北は一覧を閉じている間だけ中央寄せの層を使う")
 		}
-		off := NewMetrics(HiResCellSize).sceneOffset()
+		mt := NewMetrics(HiResCellSize)
+		off := mt.sceneOffset()
 		inner := image.Rect(0, 0, sceneCanvasWidth, sceneCanvasHeight)
 		v := s.View()
 		if bad := sceneViewBounds(v, inner); len(bad) > 0 {
@@ -35,7 +35,7 @@ func TestHiResGameOver(t *testing.T) {
 		if bad := sceneViewBounds(entry, inner); len(bad) > 0 {
 			t.Errorf("巻き戻しの入口が配置の枠からはみ出す: %v", bad)
 		}
-		if bad := sceneViewBounds(entry.translated(off), windowRect()); len(bad) > 0 {
+		if bad := sceneViewBounds(entry.translated(off), windowRect(mt)); len(bad) > 0 {
 			t.Errorf("巻き戻しの入口が窓からはみ出す: %v", bad)
 		}
 		// 入口は、敗北のボタン（巻き戻す など）と重ならない。
@@ -54,7 +54,6 @@ func TestHiResGameOver(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-10-29 既定（32）では敗北の入口は今までの位置（y = MapSize）", func(t *testing.T) {
-		useTestMetrics(t, BaseCellSize)
 		s := hiresScenes(t, Battle)
 		s.scene = GameOver
 		s.battle.state = Over
@@ -68,8 +67,9 @@ func TestHiResGameOver(t *testing.T) {
 
 func TestHiResGameOverRewindTransition(t *testing.T) {
 	t.Run("TC-DES-NG-10-29 敗北と巻き戻しの場面遷移で入口の位置が変わる", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
+		mt := NewMetrics(HiResCellSize)
 		s := fixtureScenes(&memoryStore{}, false, false)
+		s.metrics = mt
 		startScenes(s)
 		s.campaign.Roster[0].Stats.HP = 1
 		s.campaign.Roster[0].Stats.Def = 0
@@ -99,7 +99,7 @@ func TestHiResGameOverRewindTransition(t *testing.T) {
 			t.Fatal("巻き戻しで戦闘に戻らない")
 		}
 		buttons = s.battle.RewindView().Buttons
-		if len(buttons) != 1 || buttons[0].Rect.Min.Y != MapSize {
+		if len(buttons) != 1 || buttons[0].Rect.Min.Y != mt.Map {
 			t.Fatal("戦闘復帰後の入口の位置", buttons)
 		}
 	})
@@ -127,7 +127,6 @@ func TestSceneCursor(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			useTestMetrics(t, tc.cell)
 			x, y := NewMetrics(tc.cell).sceneCursor(tc.x, tc.y, tc.scene, tc.rewindOpen)
 			if x != tc.wantX || y != tc.wantY {
 				t.Fatalf("(%d,%d) = (%d,%d)、期待 (%d,%d)", tc.x, tc.y, x, y, tc.wantX, tc.wantY)
@@ -172,20 +171,19 @@ func TestFitWindowSize(t *testing.T) {
 func TestCrackLineWidth(t *testing.T) {
 	t.Run("TC-DES-NG-10-32 崩れの割れ目の太さは描く箱の大きさに比例する（右欄の印は 48 でも変わらない）", func(t *testing.T) {
 		pt := image.Pt(0, 0)
-		useTestMetrics(t, BaseCellSize)
-		if w := crackLineWidth(CommandMarkRect(pt)); w != 1.5 {
+		if w := crackLineWidth(CommandMarkRect(baseMetrics(), pt)); w != 1.5 {
 			t.Errorf("32 の盤面の印 = %v、期待 1.5", w)
 		}
 		right := image.Rect(10, 10, 10+commandMarkSize, 10+commandMarkSize)
 		if w := crackLineWidth(right); w != 1.5 {
 			t.Errorf("32 の右欄の印 = %v、期待 1.5", w)
 		}
-		useTestMetrics(t, HiResCellSize)
+		mt := NewMetrics(HiResCellSize)
 		// 盤面の印の箱は 18 px になり、太さは 2.25（今までの 1.5 × 48 / 32 と同じ）。
-		if r := CommandMarkRect(pt); r.Dx() != 18 {
+		if r := CommandMarkRect(mt, pt); r.Dx() != 18 {
 			t.Fatal(r)
 		}
-		if w := crackLineWidth(CommandMarkRect(pt)); w != 2.25 {
+		if w := crackLineWidth(CommandMarkRect(mt, pt)); w != 2.25 {
 			t.Errorf("48 の盤面の印 = %v、期待 2.25", w)
 		}
 		if w := crackLineWidth(right); w != 1.5 {

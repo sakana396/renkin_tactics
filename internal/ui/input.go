@@ -763,7 +763,7 @@ func (c *Controller) hoveredWeapon() int {
 	if len(ws) == 0 {
 		return -1
 	}
-	if i := HitMenu(c.Camera().MenuRectsFor(c.dest, c.MenuLabels()), c.cursorX, c.cursorY); i >= 0 {
+	if i := HitMenu(c.Camera().MenuRectsFor(c.metrics, c.dest, c.MenuLabels()), c.cursorX, c.cursorY); i >= 0 {
 		return ws[i]
 	}
 	return -1
@@ -775,7 +775,7 @@ func (c *Controller) hoveredItem() int {
 		return -1
 	}
 	ks := c.availableItems()
-	if i := HitMenu(c.Camera().MenuRectsFor(c.dest, c.MenuLabels()), c.cursorX, c.cursorY); i >= 0 && i < len(ks) {
+	if i := HitMenu(c.Camera().MenuRectsFor(c.metrics, c.dest, c.MenuLabels()), c.cursorX, c.cursorY); i >= 0 && i < len(ks) {
 		return ks[i]
 	}
 	return -1
@@ -836,7 +836,7 @@ func (c *Controller) Overlay() (blue, red map[tactics.Pos]bool) {
 // 盤面の上なら、そのマスを情報欄のために覚えておく（DES-UI-28）。
 func (c *Controller) SetCursor(x, y int) {
 	c.cursorX, c.cursorY = x, y
-	if p, ok := c.Camera().CellAt(x, y); ok {
+	if p, ok := c.Camera().CellAt(c.metrics, x, y); ok {
 		c.lastCell, c.lastCellOK = p, true
 	}
 }
@@ -910,11 +910,11 @@ func (c *Controller) pruneWatched() {
 // hoveredEnemy は、カーソルのあるマスにいる生きている敵の添字を返す（DES-UI-08）。
 // いないとき、カーソルが盤面の外か行動の一覧の上にあるときは -1。
 func (c *Controller) hoveredEnemy() int {
-	p, ok := c.Camera().CellAt(c.cursorX, c.cursorY)
+	p, ok := c.Camera().CellAt(c.metrics, c.cursorX, c.cursorY)
 	if !ok {
 		return -1
 	}
-	if labels := c.MenuLabels(); len(labels) > 0 && HitMenu(c.Camera().MenuRectsFor(c.dest, labels), c.cursorX, c.cursorY) >= 0 {
+	if labels := c.MenuLabels(); len(labels) > 0 && HitMenu(c.Camera().MenuRectsFor(c.metrics, c.dest, labels), c.cursorX, c.cursorY) >= 0 {
 		return -1
 	}
 	i, ok := c.unitAt(p)

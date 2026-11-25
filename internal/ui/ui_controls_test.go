@@ -139,7 +139,7 @@ func TestUIControls(t *testing.T) {
 		}
 		// 主人公 (2, 0) を選ぶ。空きマス (3, 0) と盤面の外では選んでいる主人公、ボス (6, 0) ではボスを出す。
 		clickDeployCell(s, tactics.Pos{X: 2})
-		for _, xy := range [][2]int{{3*CellSize + 16, 16}, {100, 540}, {650, 400}} {
+		for _, xy := range [][2]int{{3*baseMetrics().Cell + 16, 16}, {100, 540}, {650, 400}} {
 			s.SetDeployCursor(xy[0], xy[1])
 			if got := infoRows(); len(got) == 0 || got[0] != "主人公" {
 				t.Errorf("選んでいるとき %v: %q", xy, got)
@@ -157,7 +157,7 @@ func TestUIControls(t *testing.T) {
 		// 選択を外し、ボスを見てから右欄の上へ動かすと、ボスを出し続ける。元の印の位置のクリックは何も変えない。
 		s.Cancel()
 		s.SetDeployCursor(cellCenter(tactics.Pos{X: 6}))
-		tab := InfoTabRects()[1]
+		tab := InfoTabRects(baseMetrics())[1]
 		s.SetDeployCursor(tab.Min.X+2, tab.Min.Y+2)
 		s.Click(tab.Min.X+2, tab.Min.Y+2)
 		if got := strings.Join(infoRows(), "\n"); !strings.HasPrefix(got, "騎兵 1　★ボス") || !strings.Contains(got, "装備 E 剣（剣）") {
@@ -199,8 +199,8 @@ func TestUIControls(t *testing.T) {
 			x, y      int
 			want, ter string
 		}{
-			{"レオン", 2*CellSize + 16, 3*CellSize + 16, "レオン", "地形: 平地"},
-			{"ボス", 3*CellSize + 16, 3*CellSize + 16, "ソルジャー 3　★ボス", "地形: 森"},
+			{"レオン", 2*baseMetrics().Cell + 16, 3*baseMetrics().Cell + 16, "レオン", "地形: 平地"},
+			{"ボス", 3*baseMetrics().Cell + 16, 3*baseMetrics().Cell + 16, "ソルジャー 3　★ボス", "地形: 森"},
 			{"空きマス", 16, 16, "地形: 平地　回避 0　守備 0　回復 0%", "地形: 平地"},
 			{"案内欄", 100, 540, "", ""},
 			{"ミニマップ", 650, 400, "", ""},
@@ -215,7 +215,7 @@ func TestUIControls(t *testing.T) {
 		if got := first(bx, by); got != "ソルジャー 3　★ボス" {
 			t.Errorf("Selected のボス: %q", got)
 		}
-		for _, xy := range [][2]int{{16, 16}, {6*CellSize + 16, 6*CellSize + 16}, {100, 540}, {650, 400}, {700, 100}} {
+		for _, xy := range [][2]int{{16, 16}, {6*baseMetrics().Cell + 16, 6*baseMetrics().Cell + 16}, {100, 540}, {650, 400}, {700, 100}} {
 			if got, ter := first(xy[0], xy[1]), last(xy[0], xy[1]); got != "レオン" || ter != "地形: 平地" {
 				t.Errorf("Selected の %v: %q・%q", xy, got, ter)
 			}

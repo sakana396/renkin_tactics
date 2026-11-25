@@ -67,12 +67,12 @@ func TestBoardNavIT07(t *testing.T) {
 			// 6×6: 512 ÷ 6 = 85 px で 510。左上に 1 の余白。
 			{6, 6, 85, image.Rect(1, 1, 511, 511)},
 		} {
-			l := overviewLayout(tc.w, tc.h)
+			l := overviewLayout(baseMetrics(), tc.w, tc.h)
 			if l.Cell != tc.cell || l.Area != tc.area {
 				t.Errorf("%d×%d: 1 マス %d、範囲 %v。%d と %v のはず", tc.w, tc.h, l.Cell, l.Area, tc.cell, tc.area)
 			}
 		}
-		if l := overviewLayout(0, 0); l.Cell != 0 || !l.Area.Empty() {
+		if l := overviewLayout(baseMetrics(), 0, 0); l.Cell != 0 || !l.Area.Empty() {
 			t.Errorf("盤面がないとき: %+v", l)
 		}
 
@@ -303,7 +303,7 @@ func TestBoardNavIT07(t *testing.T) {
 		}
 		color := func(t tactics.WeaponType) any { c, _ := weaponTypeColor(t); return c }
 		// 32×32 は 1 マス 16 px。マス (x, y) は (16x, 16y)〜(16x+16, 16y+16) で、色はその右下の 6×6。
-		v := buildOverview(gridTerrain(field(32, 32)), units, nil, nil, nil, Camera{Width: 32, Height: 32})
+		v := buildOverview(baseMetrics(), gridTerrain(field(32, 32)), units, nil, nil, nil, Camera{Width: 32, Height: 32})
 		got := map[string][2]any{}
 		for _, u := range v.Units {
 			got[u.Unit.Name] = [2]any{u.Equip, u.EquipColor}
@@ -322,7 +322,7 @@ func TestBoardNavIT07(t *testing.T) {
 			t.Error("武器なしに色を置いた")
 		}
 		// 16×16 は 1 マス 32 px でも 6×6。
-		v = buildOverview(gridTerrain(field(16, 16)), units[:1], nil, nil, nil, Camera{Width: 16, Height: 16})
+		v = buildOverview(baseMetrics(), gridTerrain(field(16, 16)), units[:1], nil, nil, nil, Camera{Width: 16, Height: 16})
 		if v.Units[0].Equip != image.Rect(58, 58, 64, 64) {
 			t.Errorf("16×16 の装備の色 %v", v.Units[0].Equip)
 		}
@@ -522,22 +522,22 @@ func TestBoardNavIT07(t *testing.T) {
 	t.Run("TC-FR-MAP-06-10 中ボタンのドラッグを 32 px のマス移動に蓄積し、上限で止め、選択には使わない", func(t *testing.T) {
 		// 蓄積: 盤面の外で押し始めてもつかまない。右へ 31 px では動かず、40 px でカメラを左へ 1、端数 8 を持ち越す。
 		var d boardDrag
-		if dx, dy := d.update(true, true, 600, 10); dx != 0 || dy != 0 || d.active {
+		if dx, dy := d.update(baseMetrics(), true, true, 600, 10); dx != 0 || dy != 0 || d.active {
 			t.Fatal("盤面の外でつかんだ")
 		}
 		d = boardDrag{}
-		d.update(true, true, 100, 100)
-		if dx, _ := d.update(true, false, 131, 100); dx != 0 {
+		d.update(baseMetrics(), true, true, 100, 100)
+		if dx, _ := d.update(baseMetrics(), true, false, 131, 100); dx != 0 {
 			t.Fatalf("31 px で %d", dx)
 		}
-		if dx, _ := d.update(true, false, 140, 100); dx != -1 || d.accX != -8 {
+		if dx, _ := d.update(baseMetrics(), true, false, 140, 100); dx != -1 || d.accX != -8 {
 			t.Fatalf("40 px で %d、端数 %d", dx, d.accX)
 		}
 		// 下から上へ 64 px で下へ 2。離すと終える。
-		if _, dy := d.update(true, false, 140, 36); dy != 2 {
+		if _, dy := d.update(baseMetrics(), true, false, 140, 36); dy != 2 {
 			t.Fatalf("上へ 64 px で %d", dy)
 		}
-		d.update(false, false, 140, 36)
+		d.update(baseMetrics(), false, false, 140, 36)
 		if d.active {
 			t.Fatal("離しても終えない")
 		}

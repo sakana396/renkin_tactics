@@ -18,7 +18,7 @@ func (g *Game) drawEnemyRanges(dst *ebiten.Image, layers []EnemyRangeLayer) {
 			if !g.drawCamera.Visible(p) {
 				continue
 			}
-			g.drawRangeCell(dst, l, g.drawCamera.Screen(p))
+			g.drawRangeCell(dst, l, g.drawCamera.Screen(g.metrics, p))
 		}
 	}
 }
@@ -33,7 +33,7 @@ func (g *Game) drawRangeCell(dst *ebiten.Image, l EnemyRangeLayer, pt image.Poin
 	if l.Owner == RangeCursor {
 		clr, inset = cursorLine, cursorInset
 	}
-	r := rangeFrameRect(pt, inset)
+	r := rangeFrameRect(g.metrics, pt, inset)
 	if l.Stroke == StrokeSolid {
 		strokeImageRect(dst, r, 4, rangeLineEdge)
 		strokeImageRect(dst, r, 2, clr)
@@ -66,7 +66,7 @@ func (g *Game) drawWatchedPins(dst *ebiten.Image, pins []tactics.Pos, units []ta
 				break
 			}
 		}
-		head, stem := pinShape(g.drawCamera.Screen(p), boss)
+		head, stem := pinShape(g.metrics, g.drawCamera.Screen(g.metrics, p), boss)
 		fillImageRect(dst, head.Inset(-g.metrics.scaled(1)), rangeLineEdge)
 		fillImageRect(dst, stem, gold)
 		fillImageRect(dst, head, gold)

@@ -29,7 +29,6 @@ func TestNewMetrics(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			got := NewMetrics(tc.cell)
 			if got != tc.want {
 				t.Errorf("NewMetrics(%d) = %+v、期待値 %+v", tc.cell, got, tc.want)
@@ -43,3 +42,6 @@ func TestNewMetrics(t *testing.T) {
 		})
 	}
 }
+
+// baseMetrics は既定（1 マス 32 px）の表示の大きさ。表示の大きさを切り替えないテストが使う（DES-NG-10）。
+func baseMetrics() Metrics { return NewMetrics(BaseCellSize) }

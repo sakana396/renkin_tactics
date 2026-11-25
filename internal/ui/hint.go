@@ -21,10 +21,6 @@ const (
 	hintPeriod = 8
 )
 
-// hintRewindY は巻き戻しの右欄で案内を出す行の上端。下の行の「戻る」「決定」（y = 520〜560）の下の空きに置き、
-// 右下のミニマップ（y = 360〜511）と重ねない（DES-UI-24、DES-UI-28、REV-071 F-03）。
-var hintRewindY int
-
 // HintView は盤面に描く増援の気配の表示値（DES-UI-24）。
 // Areas は tactics の予兆領域（4 マス単位に丸めた矩形）そのままで、正確な出現マスを持たない。
 type HintView struct {
@@ -47,7 +43,7 @@ func (c *Controller) ReinforcementHintView() HintView {
 	if c.state == Playing || c.state == Over || c.rewind.open || len(c.hints) == 0 {
 		return HintView{}
 	}
-	return c.Camera().hintView(HintView{
+	return c.Camera().hintView(c.metrics, HintView{
 		Visible: true,
 		Areas:   append([]tactics.ReinforcementHint(nil), c.hints...),
 		Text:    SceneText{Text: hintText, X: c.metrics.Map - 8 - textWidth(hintText), Y: c.metrics.Map + 2 + 2*lineHeight, Style: StyleHint},
@@ -60,7 +56,7 @@ func (c *Controller) rewindHintView(areas []tactics.ReinforcementHint) HintView 
 	if len(areas) == 0 {
 		return HintView{}
 	}
-	return c.Camera().hintView(HintView{
+	return c.Camera().hintView(c.metrics, HintView{
 		Visible: true,
 		Areas:   append([]tactics.ReinforcementHint(nil), areas...),
 		Text:    SceneText{Text: hintText, X: c.metrics.rewindLeft, Y: c.metrics.hintRewindY, Style: StyleHint},
@@ -69,7 +65,7 @@ func (c *Controller) rewindHintView(areas []tactics.ReinforcementHint) HintView 
 
 // hintShapes は予兆領域の外周の破線と、中央付近の印の左上の座標を返す（DES-UI-24）。
 // 同じ線・同じ印は 1 つにまとめ、重なる領域を描いても濃くならないようにする。
-func hintShapes(areas []tactics.ReinforcementHint) (dashes []image.Rectangle, marks []image.Point) {
+func hintShapes(m Metrics, areas []tactics.ReinforcementHint) (dashes []image.Rectangle, marks []image.Point) {
 	seenDash := map[image.Rectangle]bool{}
 	seenMark := map[image.Point]bool{}
 	add := func(r image.Rectangle) {
@@ -79,8 +75,8 @@ func hintShapes(areas []tactics.ReinforcementHint) (dashes []image.Rectangle, ma
 		}
 	}
 	for _, a := range areas {
-		x0, y0 := a.Min.X*CellSize, a.Min.Y*CellSize
-		x1, y1 := (a.Max.X+1)*CellSize, (a.Max.Y+1)*CellSize
+		x0, y0 := a.Min.X*m.Cell, a.Min.Y*m.Cell
+		x1, y1 := (a.Max.X+1)*m.Cell, (a.Max.Y+1)*m.Cell
 		// 横の辺: 角から始め、x ≡ 2 (mod 8) の位置にそろえる。
 		for x := x0 + hintInset; x+hintDash <= x1-hintInset; x += hintPeriod {
 			add(image.Rect(x, y0+hintInset, x+hintDash, y0+hintInset+hintThick))
@@ -101,13 +97,13 @@ func hintShapes(areas []tactics.ReinforcementHint) (dashes []image.Rectangle, ma
 }
 
 // hintView は世界の予兆を削らず、画面外にもあることだけを案内する（DES-UI-25）。
-func (c Camera) hintView(v HintView) HintView {
+func (c Camera) hintView(m Metrics, v HintView) HintView {
 	for _, a := range v.Areas {
 		if !c.Visible(a.Min) || !c.Visible(a.Max) {
 			v.Text.Text = hintText + " 画面外にも気配"
-			v.Text.X = rewindLeft
-			if v.Text.Y != hintRewindY {
-				v.Text.Y = ScreenHeight - 2*lineHeight
+			v.Text.X = m.rewindLeft
+			if v.Text.Y != m.hintRewindY {
+				v.Text.Y = m.ScreenH - 2*lineHeight
 			}
 			break
 		}
@@ -116,10 +112,10 @@ func (c Camera) hintView(v HintView) HintView {
 }
 
 // hintShapes は共通カメラで変換して表示領域と交差する部分だけ返す（DES-UI-25）。
-func (c Camera) hintShapes(areas []tactics.ReinforcementHint) ([]image.Rectangle, []image.Point) {
-	d, m := hintShapes(areas)
-	offset := image.Pt(c.X*CellSize, c.Y*CellSize)
-	bounds := image.Rect(0, 0, MapSize, MapSize)
+func (c Camera) hintShapes(m Metrics, areas []tactics.ReinforcementHint) ([]image.Rectangle, []image.Point) {
+	d, mk := hintShapes(m, areas)
+	offset := image.Pt(c.X*m.Cell, c.Y*m.Cell)
+	bounds := image.Rect(0, 0, m.Map, m.Map)
 	var ds []image.Rectangle
 	var ms []image.Point
 	for _, r := range d {
@@ -128,7 +124,7 @@ func (c Camera) hintShapes(areas []tactics.ReinforcementHint) ([]image.Rectangle
 			ds = append(ds, r)
 		}
 	}
-	for _, p := range m {
+	for _, p := range mk {
 		p = p.Sub(offset)
 		if p.In(bounds) {
 			ms = append(ms, p)

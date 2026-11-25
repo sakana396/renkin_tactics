@@ -68,13 +68,13 @@ func TestCavalierTile(t *testing.T) {
 		}
 		// 騎兵のボスは、騎乗の絵のまま名前に ★ の印を添える（盤面の印は drawUnitList が Boss で描く）。
 		boss := tactics.Unit{Name: "ヴォルグ", ClassName: "騎兵", Side: tactics.Enemy, Boss: true, Alive: true, HP: 10, Stats: tactics.Stats{HP: 10}, Weapons: []tactics.Weapon{lance}}
-		v := Panel{Unit: &boss}.View()
+		v := Panel{Unit: &boss}.View(baseMetrics())
 		pic := portraitOf(t, v)
 		if pic.Tile != assets.Cavalier {
 			t.Errorf("騎兵のボスの肖像 = %v", pic.Tile)
 		}
 		// 印つきの名前は肖像と重ならず、画面に収まる。
-		if tx := textOf(t, v, "ヴォルグ　★ボス"); tx.X < pic.X+pic.Size || tx.X+textWidth(tx.Text) > ScreenWidth {
+		if tx := textOf(t, v, "ヴォルグ　★ボス"); tx.X < pic.X+pic.Size || tx.X+textWidth(tx.Text) > baseMetrics().ScreenW {
 			t.Errorf("印つきの名前の位置 x = %d、肖像 %+v", tx.X, pic)
 		}
 	})
@@ -169,7 +169,7 @@ func TestCavalierScenes(t *testing.T) {
 				t.Errorf("%s: %s（%s）の絵 = %v、%v のはず", where, u.Name, u.ClassName, got, w)
 			}
 			// 情報欄の肖像（64 px）も盤面と同じ絵。
-			if pic := portraitOf(t, Panel{Unit: &u}.View()); pic.Tile != w {
+			if pic := portraitOf(t, Panel{Unit: &u}.View(baseMetrics())); pic.Tile != w {
 				t.Errorf("%s: %s の肖像 = %v、%v のはず", where, u.Name, pic.Tile, w)
 			}
 		}
@@ -248,7 +248,7 @@ func TestCavalierScenes(t *testing.T) {
 		if len(v.Icons) != 1 || v.Icons[0].Tile != assets.Cavalier || !strings.Contains(viewStrings(v), "騎兵　Lv 5") {
 			t.Fatalf("加入の絵 = %+v、文 = %s", v.Icons, viewStrings(v))
 		}
-		if v.Icons[0].X != 48 || v.Icons[0].Y != 208 || !(image.Pt(v.Icons[0].X, v.Icons[0].Y).In(image.Rect(0, 0, ScreenWidth, ScreenHeight))) {
+		if v.Icons[0].X != 48 || v.Icons[0].Y != 208 || !(image.Pt(v.Icons[0].X, v.Icons[0].Y).In(image.Rect(0, 0, baseMetrics().ScreenW, baseMetrics().ScreenH))) {
 			t.Errorf("加入の絵の位置 = %+v", v.Icons[0])
 		}
 	})
