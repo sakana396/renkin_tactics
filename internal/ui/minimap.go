@@ -19,12 +19,9 @@ const (
 	minimapBoxY = MinimapTop + lineHeight
 )
 
-// minimapBoxX は地図の本体の左端。欄の中央に置き、左右の余白は 96 px ずつ（DES-NG-10。盤面の大きさに従う）。
-var minimapBoxX int
-
 // MinimapRect はミニマップの欄の範囲（DES-UI-28）。この中のクリックは盤面・情報欄に渡さない。
-func MinimapRect() image.Rectangle {
-	return image.Rect(MapSize, MinimapTop, ScreenWidth, MapSize)
+func MinimapRect(m Metrics) image.Rectangle {
+	return image.Rect(m.Map, MinimapTop, m.ScreenW, m.Map)
 }
 
 // MinimapLayout は、幅 Width・高さ Height のマップを 128×128 に縮めたときの配置（DES-UI-28）。
@@ -37,13 +34,13 @@ type MinimapLayout struct {
 
 // minimapLayout は、縦横の長い方が 128 px に収まる整数のマスの大きさを選び、本体を 128×128 の中央に寄せる（DES-UI-28）。
 // 32×32 なら 4 px、16×16 なら 8 px。長方形のマップは短い方の向きに余白が付く。
-func minimapLayout(w, h int) MinimapLayout {
+func minimapLayout(m Metrics, w, h int) MinimapLayout {
 	l := MinimapLayout{Width: w, Height: h}
 	if w <= 0 || h <= 0 {
 		return l
 	}
 	l.Cell = max(1, minimapBox/max(w, h))
-	x := minimapBoxX + (minimapBox-w*l.Cell)/2
+	x := m.minimapBoxX + (minimapBox-w*l.Cell)/2
 	y := minimapBoxY + (minimapBox-h*l.Cell)/2
 	l.Area = image.Rect(x, y, x+w*l.Cell, y+h*l.Cell)
 	return l
@@ -145,11 +142,11 @@ type MinimapView struct {
 }
 
 // minimapTexts は見出しと、左右の余白の凡例・案内（DES-UI-28）。
-func minimapTexts() ([]MinimapLegend, []SceneText) {
+func minimapTexts(m Metrics) ([]MinimapLegend, []SceneText) {
 	texts := []SceneText{
-		{Text: "ミニマップ", X: MapSize + infoMargin, Y: MinimapTop, Style: StyleTitle},
-		{Text: "クリックで", X: minimapBoxX + minimapBox + infoMargin, Y: minimapBoxY + 4, Style: StyleLabel},
-		{Text: "その場所へ", X: minimapBoxX + minimapBox + infoMargin, Y: minimapBoxY + 4 + lineHeight, Style: StyleLabel},
+		{Text: "ミニマップ", X: m.Map + infoMargin, Y: MinimapTop, Style: StyleTitle},
+		{Text: "クリックで", X: m.minimapBoxX + minimapBox + infoMargin, Y: minimapBoxY + 4, Style: StyleLabel},
+		{Text: "その場所へ", X: m.minimapBoxX + minimapBox + infoMargin, Y: minimapBoxY + 4 + lineHeight, Style: StyleLabel},
 	}
 	var legend []MinimapLegend
 	for i, it := range []struct {
@@ -157,7 +154,7 @@ func minimapTexts() ([]MinimapLegend, []SceneText) {
 		text string
 	}{{MarkPlayer, "自軍"}, {MarkEnemy, "敵"}, {MarkView, "表示範囲"}, {MarkHint, "気配"}} {
 		y := minimapBoxY + 4 + i*(lineHeight+2)
-		x := MapSize + infoMargin
+		x := m.Map + infoMargin
 		legend = append(legend, MinimapLegend{
 			Swatch: image.Rect(x, y+4, x+8, y+12),
 			Mark:   it.mark,
@@ -169,9 +166,9 @@ func minimapTexts() ([]MinimapLegend, []SceneText) {
 
 // buildMinimap は、盤面の見え方（地形・描くユニット・分かっている予兆・カメラ）からミニマップを作る（DES-UI-28）。
 // 倒れたユニットと盤の外のユニットは描かない。まだ出ていない増援は units に入っていないので描かれない。
-func buildMinimap(b terrainSource, units []tactics.Unit, hints []tactics.ReinforcementHint, cam Camera) MinimapView {
-	v := MinimapView{Available: true, Layout: minimapLayout(b.Width(), b.Height())}
-	v.Legend, v.Texts = minimapTexts()
+func buildMinimap(m Metrics, b terrainSource, units []tactics.Unit, hints []tactics.ReinforcementHint, cam Camera) MinimapView {
+	v := MinimapView{Available: true, Layout: minimapLayout(m, b.Width(), b.Height())}
+	v.Legend, v.Texts = minimapTexts(m)
 	l := v.Layout
 	if l.Cell == 0 {
 		v.Available = false
@@ -200,10 +197,10 @@ func buildMinimap(b terrainSource, units []tactics.Unit, hints []tactics.Reinfor
 }
 
 // unavailableMinimap は盤面を表示できないときのミニマップ。古い盤面を残さない（DES-UI-21、DES-UI-28）。
-func unavailableMinimap() MinimapView {
+func unavailableMinimap(m Metrics) MinimapView {
 	var v MinimapView
-	_, v.Texts = minimapTexts()
-	v.Texts = append(v.Texts[:1], SceneText{Text: "表示できません", X: minimapBoxX, Y: minimapBoxY + 4, Style: StyleLabel})
+	_, v.Texts = minimapTexts(m)
+	v.Texts = append(v.Texts[:1], SceneText{Text: "表示できません", X: m.minimapBoxX, Y: minimapBoxY + 4, Style: StyleLabel})
 	return v
 }
 
@@ -240,19 +237,19 @@ func (c *Controller) minimapWithDanger(danger map[tactics.Pos]bool) MinimapView 
 	if c.rewind.open {
 		v := c.RewindBoard()
 		if !v.Available {
-			return unavailableMinimap()
+			return unavailableMinimap(c.metrics)
 		}
 		var hints []tactics.ReinforcementHint
 		if v.Hint.Visible {
 			hints = v.Hint.Areas
 		}
-		return buildMinimap(v.Board, v.Units, hints, c.rewind.camera)
+		return buildMinimap(c.metrics, v.Board, v.Units, hints, c.rewind.camera)
 	}
 	var hints []tactics.ReinforcementHint
 	if h := c.ReinforcementHintView(); h.Visible {
 		hints = h.Areas
 	}
-	v := buildMinimap(c.battle, c.Units(), hints, c.camera)
+	v := buildMinimap(c.metrics, c.battle, c.Units(), hints, c.camera)
 	// 盤面と同じ全敵の危険範囲と固定した敵を、マスの色とピンで示す（DES-UI-29）。
 	v.Danger = minimapDanger(v.Layout, danger)
 	v.Pins = minimapPins(v.Layout, c.WatchedPins())
@@ -264,7 +261,7 @@ func (c *Controller) minimapWithDanger(danger map[tactics.Pos]bool) MinimapView 
 // 移動・攻撃の操作として扱わず、選択・乱数・履歴・敵の範囲の設定を変えない。
 // カメラを動かせるのは、矢印・ホイールで盤面を動かせるときと同じ（再生中・行動の一覧・確認の間は動かさない）。
 func (c *Controller) MinimapClick(x, y int) bool {
-	if !image.Pt(x, y).In(MinimapRect()) {
+	if !image.Pt(x, y).In(MinimapRect(c.metrics)) {
 		return false
 	}
 	if c.rewind.open {
@@ -272,7 +269,7 @@ func (c *Controller) MinimapClick(x, y int) bool {
 			return true
 		}
 		v := c.RewindBoard()
-		if p, ok := minimapLayout(v.Board.Width(), v.Board.Height()).CellAt(x, y); ok {
+		if p, ok := minimapLayout(c.metrics, v.Board.Width(), v.Board.Height()).CellAt(x, y); ok {
 			c.rewind.camera.CenterOn(p)
 		}
 		return true
@@ -282,7 +279,7 @@ func (c *Controller) MinimapClick(x, y int) bool {
 	}
 	switch c.state {
 	case Idle, Selected, Targeting, HealTargeting, BombTargeting, ItemTargeting:
-		if p, ok := minimapLayout(c.battle.Width(), c.battle.Height()).CellAt(x, y); ok {
+		if p, ok := minimapLayout(c.metrics, c.battle.Width(), c.battle.Height()).CellAt(x, y); ok {
 			c.camera.CenterOn(p)
 		}
 	}
@@ -293,9 +290,9 @@ func (c *Controller) MinimapClick(x, y int) bool {
 // 配置ではまだ出ていない増援を見せないので、予兆は描かない。
 func (s *SceneController) deployMinimap(d *DeployView) MinimapView {
 	if len(d.Terrain) == 0 {
-		return unavailableMinimap()
+		return unavailableMinimap(s.metrics)
 	}
-	v := buildMinimap(gridTerrain(d.Terrain), d.Units, nil, s.deployCamera)
+	v := buildMinimap(s.metrics, gridTerrain(d.Terrain), d.Units, nil, s.deployCamera)
 	// 配置の全敵の危険範囲も、戦闘と同じくマスの色で示す（DES-UI-29）。配置では固定を使わない。
 	v.Danger = minimapDanger(v.Layout, d.Danger)
 	return v
@@ -303,10 +300,10 @@ func (s *SceneController) deployMinimap(d *DeployView) MinimapView {
 
 // deployMinimapClick は配置のミニマップのクリックで配置のカメラを動かす（DES-UI-28）。仮配置と選択は変えない。
 func (s *SceneController) deployMinimapClick(x, y int) bool {
-	if !image.Pt(x, y).In(MinimapRect()) {
+	if !image.Pt(x, y).In(MinimapRect(s.metrics)) {
 		return false
 	}
-	if p, ok := minimapLayout(s.deployCamera.Width, s.deployCamera.Height).CellAt(x, y); ok {
+	if p, ok := minimapLayout(s.metrics, s.deployCamera.Width, s.deployCamera.Height).CellAt(x, y); ok {
 		s.deployCamera.CenterOn(p)
 	}
 	return true

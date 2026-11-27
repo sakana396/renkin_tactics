@@ -31,9 +31,9 @@ func fitWindowSize(monW, monH, logicalW, logicalH int) (w, h int) {
 // setWindow は窓の初期の大きさと、大きさの変更の可否を決める（DES-NG-10）。
 // 高解像度の表示（1088×832）のときだけ、画面に収まる大きさに縮め、利用者による大きさの変更を許す。
 // Layout が固定の論理の大きさを返すので、絵は窓に合わせて拡大縮小される。既定の表示は今までと同じ（固定の大きさ）。
-func setWindow(cfg Config) {
+func setWindow(cfg Config, metrics Metrics) {
 	if !cfg.HiRes {
-		ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
+		ebiten.SetWindowSize(metrics.ScreenW, metrics.ScreenH)
 		return
 	}
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
@@ -41,5 +41,5 @@ func setWindow(cfg Config) {
 	if m := ebiten.Monitor(); m != nil {
 		monW, monH = m.Size()
 	}
-	ebiten.SetWindowSize(fitWindowSize(monW, monH, ScreenWidth, ScreenHeight))
+	ebiten.SetWindowSize(fitWindowSize(monW, monH, metrics.ScreenW, metrics.ScreenH))
 }

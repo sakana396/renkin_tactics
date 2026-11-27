@@ -43,7 +43,7 @@ func markAt(ms []EquipMark, p tactics.Pos) (EquipMark, bool) {
 // 印は列の左端、名前は列の左端から 30 px 右に置く。
 func equippedRowName(t *testing.T, u tactics.Unit) string {
 	t.Helper()
-	v := Panel{Unit: &u}.View()
+	v := Panel{Unit: &u}.View(baseMetrics())
 	var mark *InfoText
 	for i, tx := range v.Texts {
 		if tx.Text == weaponRowMark {
@@ -125,7 +125,7 @@ func TestEquipMarkIT07(t *testing.T) {
 			{Pos: tactics.Pos{X: 3, Y: 1}, Alive: false, Weapons: []tactics.Weapon{ironAxe}},
 			{Pos: tactics.Pos{X: 0, Y: 1}, Alive: true, Weapons: []tactics.Weapon{ironAxe}},
 		}
-		got := equipMarks(units, Camera{X: 1, Y: 0, Width: 7, Height: 7})
+		got := equipMarks(baseMetrics(), units, Camera{X: 1, Y: 0, Width: 7, Height: 7})
 		if want := []EquipMark{{Pos: tactics.Pos{X: 1, Y: 1}, Rect: image.Rect(22, 54, 32, 64), Tile: assets.WeaponBow}}; !reflect.DeepEqual(got, want) {
 			t.Errorf("2 本目・武器なし・戦死・カメラの外 = %+v\nのはず %+v", got, want)
 		}
@@ -177,24 +177,24 @@ func TestEquipMarkIT07(t *testing.T) {
 			t.Fatalf("固定のピン %v", pins)
 		}
 		for _, m := range c.EquipMarks() {
-			pt := c.Camera().Screen(m.Pos)
-			cell := image.Rect(pt.X, pt.Y, pt.X+CellSize, pt.Y+CellSize)
+			pt := c.Camera().Screen(baseMetrics(), m.Pos)
+			cell := image.Rect(pt.X, pt.Y, pt.X+baseMetrics().Cell, pt.Y+baseMetrics().Cell)
 			if !m.Rect.In(cell) {
 				t.Errorf("%v の印 %v がマス %v の外", m.Pos, m.Rect, cell)
 			}
 			// 右下の 4 分の 1 に収め、左上（指揮官の印。#172）と右上（固定・★）に出ない。
-			if m.Rect.Min.X < pt.X+CellSize/2 || m.Rect.Min.Y < pt.Y+CellSize/2 {
+			if m.Rect.Min.X < pt.X+baseMetrics().Cell/2 || m.Rect.Min.Y < pt.Y+baseMetrics().Cell/2 {
 				t.Errorf("%v の印 %v が右下にない", m.Pos, m.Rect)
 			}
 			isBoss := m.Pos == boss
-			head, stem := pinShape(pt, isBoss)
+			head, stem := pinShape(baseMetrics(), pt, isBoss)
 			if m.Rect.Overlaps(head) || m.Rect.Overlaps(stem) {
 				t.Errorf("%v の印 %v が固定のピン %v %v と重なる", m.Pos, m.Rect, head, stem)
 			}
-			if star := rectOfText(pt.X+CellSize-12, pt.Y-1, "★", false); isBoss && m.Rect.Overlaps(star) {
+			if star := rectOfText(pt.X+baseMetrics().Cell-12, pt.Y-1, "★", false); isBoss && m.Rect.Overlaps(star) {
 				t.Errorf("ボスの印 %v が ★ %v と重なる", m.Rect, star)
 			}
-			bar := unitHPBarRect(pt)
+			bar := unitHPBarRect(baseMetrics(), pt)
 			if bar != image.Rect(pt.X+2, pt.Y+27, pt.X+21, pt.Y+31) {
 				t.Errorf("%v の HP の棒 %v", m.Pos, bar)
 			}

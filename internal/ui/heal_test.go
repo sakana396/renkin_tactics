@@ -134,7 +134,7 @@ func TestHealUI(t *testing.T) {
 		}
 		c.Click(tactics.Pos{X: 3, Y: 1})
 		p := c.Panel(tactics.Pos{}, false)
-		v := p.View()
+		v := p.View(baseMetrics())
 		for _, s := range []string{"回復", "リナ → レオン", "HP 12 → 19", "回復 +7", "杖 残り 15 → 14/15"} {
 			textOf(t, v, s)
 		}
@@ -165,7 +165,7 @@ func TestHealUI(t *testing.T) {
 		moveHealer(c, tactics.Pos{X: 2, Y: 1})
 		c.ChooseAction(tactics.Heal)
 		c.Click(tactics.Pos{X: 3, Y: 1})
-		textOf(t, c.Panel(tactics.Pos{}, false).View(), "杖 残り 1 → 0/1")
+		textOf(t, c.Panel(tactics.Pos{}, false).View(baseMetrics()), "杖 残り 1 → 0/1")
 		c.Click(tactics.Pos{X: 3, Y: 1})
 		playOut(c)
 		c.EndPhase()
@@ -194,12 +194,12 @@ func TestHealUI(t *testing.T) {
 		u := c.Units()[0]
 		u.Weapons[0].Uses = 12
 		// 杖は「装備・スキル」のページ、絵は「能力」のページに出す（DES-UI-28）。
-		v := (Panel{Unit: &u, Page: PageEquip}).View()
+		v := (Panel{Unit: &u, Page: PageEquip}).View(baseMetrics())
 		textOf(t, v, "武器: 癒やしの杖（杖）")
 		// 2 行目の回復・射程・残りは、攻撃の武器の威力・命中・射程と同じ桁に置き、必殺と回数は出さない（開発者の確認（2026-11-01）で直した。#129）。
 		for i, s := range []string{"回復 10", "射程 1", "残り 12/15"} {
-			if tx := textOf(t, v, s); tx.X != MapSize+infoMargin+weaponCols[i] {
-				t.Errorf("%q の x = %d、%d のはず", s, tx.X, MapSize+infoMargin+weaponCols[i])
+			if tx := textOf(t, v, s); tx.X != baseMetrics().Map+infoMargin+weaponCols[i] {
+				t.Errorf("%q の x = %d、%d のはず", s, tx.X, baseMetrics().Map+infoMargin+weaponCols[i])
 			}
 		}
 		for _, tx := range v.Texts {
@@ -207,7 +207,7 @@ func TestHealUI(t *testing.T) {
 				t.Errorf("杖に必殺・回数 %q", tx.Text)
 			}
 		}
-		if portraitOf(t, (Panel{Unit: &u}).View()).Tile != (assets.Tile{Sheet: assets.Dungeon, N: 108}) {
+		if portraitOf(t, (Panel{Unit: &u}).View(baseMetrics())).Tile != (assets.Tile{Sheet: assets.Dungeon, N: 108}) {
 			t.Fatal(v.Icons)
 		}
 		for _, tx := range v.Texts {
@@ -234,7 +234,7 @@ func TestHealUI(t *testing.T) {
 		}
 		c.Cancel()
 		// 敵に合わせると、その敵の範囲を自軍の塗りとは別のカーソルの線（青白。CursorFrames）で出し、杖の緑に変えない（DES-UI-29）。
-		c.SetCursor(4*CellSize+1, CellSize+1)
+		c.SetCursor(4*baseMetrics().Cell+1, baseMetrics().Cell+1)
 		if move, _ := c.CursorFrames(); len(move) == 0 || c.CursorEnemy() < 0 || c.Battle().Units()[c.CursorEnemy()].Side != tactics.Enemy {
 			t.Fatalf("敵の範囲が出ない: %v、%d", move, c.CursorEnemy())
 		}

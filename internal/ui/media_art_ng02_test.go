@@ -330,12 +330,12 @@ func TestArtLayoutNG02(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-08-71 unitArtRect は 1 マスに収め、128 px の絵を CellSize に縮める", func(t *testing.T) {
-		got := unitArtRect(64, 96, CellSize, 128, 128)
-		if want := image.Rect(64, 96, 64+CellSize, 96+CellSize); got != want {
+		got := unitArtRect(64, 96, baseMetrics().Cell, 128, 128)
+		if want := image.Rect(64, 96, 64+baseMetrics().Cell, 96+baseMetrics().Cell); got != want {
 			t.Errorf("%v、%v のはず", got, want)
 		}
-		got = unitArtRect(0, 0, CellSize, 64, 32)
-		if want := image.Rect(0, 8, CellSize, 24); got != want {
+		got = unitArtRect(0, 0, baseMetrics().Cell, 64, 32)
+		if want := image.Rect(0, 8, baseMetrics().Cell, 24); got != want {
 			t.Errorf("横長: %v、%v のはず", got, want)
 		}
 	})
@@ -365,14 +365,14 @@ func TestArtLayoutNG02(t *testing.T) {
 	})
 	t.Run("TC-DES-NG-08-73 storyArtLayout は肖像なしなら今の配置、ありなら肖像の右に文を寄せ画面に収める", func(t *testing.T) {
 		box, x, w := storyArtLayout(false)
-		if !box.Empty() || x != 48 || w != ScreenWidth-96 {
+		if !box.Empty() || x != 48 || w != baseMetrics().ScreenW-96 {
 			t.Errorf("肖像なし: %v %d %d", box, x, w)
 		}
 		box, x, w = storyArtLayout(true)
-		if box.Dx() != box.Dy() || box.Min.X != 48 || x < box.Max.X || x+w != ScreenWidth-48 || w <= 0 {
+		if box.Dx() != box.Dy() || box.Min.X != 48 || x < box.Max.X || x+w != baseMetrics().ScreenW-48 || w <= 0 {
 			t.Errorf("肖像あり: %v %d %d", box, x, w)
 		}
-		if box.Max.Y > ScreenHeight || box.Min.Y < 0 {
+		if box.Max.Y > baseMetrics().ScreenH || box.Min.Y < 0 {
 			t.Errorf("肖像が画面の外: %v", box)
 		}
 	})
@@ -425,7 +425,7 @@ func TestSceneArtViewNG02(t *testing.T) {
 				if tx.X != x {
 					t.Errorf("本文の左端 %d、%d のはず: %q", tx.X, x, tx.Text)
 				}
-				if textWidth(tx.Text) > ScreenWidth-48-x {
+				if textWidth(tx.Text) > baseMetrics().ScreenW-48-x {
 					t.Errorf("本文が右の余白に食い込む: %q", tx.Text)
 				}
 			}

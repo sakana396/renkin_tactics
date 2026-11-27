@@ -64,7 +64,7 @@ func TestTexts(t *testing.T) {
 		fits := func(lines []string) {
 			t.Helper()
 			for _, l := range lines {
-				if w := textWidth(l); w > MapSize-16 {
+				if w := textWidth(l); w > baseMetrics().Map-16 {
 					t.Errorf("%q の幅 %d px が案内欄に収まらない", l, w)
 				}
 			}

@@ -9,7 +9,7 @@ import (
 
 // cellCenter はマス p の中央の画面の座標を返す。
 func cellCenter(p tactics.Pos) (x, y int) {
-	return p.X*CellSize + CellSize/2, p.Y*CellSize + CellSize/2
+	return p.X*baseMetrics().Cell + baseMetrics().Cell/2, p.Y*baseMetrics().Cell + baseMetrics().Cell/2
 }
 
 // rowSet は y = 0 の行のマス (x, 0) の集合を作る。

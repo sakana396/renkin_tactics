@@ -241,7 +241,7 @@ func TestStoryScenes(t *testing.T) {
 			t.Fatal(lines)
 		}
 		for _, line := range lines {
-			if textWidth(line) > ScreenWidth-96 {
+			if textWidth(line) > baseMetrics().ScreenW-96 {
 				t.Fatal(line)
 			}
 		}
@@ -328,11 +328,11 @@ func TestBattleScenes(t *testing.T) {
 				t.Fatal("帯をクリックする前に保存")
 			}
 			s.Click(0, 0)
-			s.Click(MapSize, MapSize/2)
+			s.Click(baseMetrics().Map, baseMetrics().Map/2)
 			if s.Scene() != Battle || m.writes != chapter+1 {
 				t.Fatal("帯の外で保存")
 			}
-			s.Click(MapSize/2, MapSize/2)
+			s.Click(baseMetrics().Map/2, baseMetrics().Map/2)
 			if s.Scene() != Result || m.writes != chapter+2 || s.campaign.Chapter != chapter+1 || s.result.Chapter != fmt.Sprintf("c%d", chapter+1) {
 				t.Fatal(s.Scene(), m.writes, s.campaign.Chapter)
 			}

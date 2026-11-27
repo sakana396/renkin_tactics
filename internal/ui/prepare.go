@@ -582,11 +582,11 @@ func (s *SceneController) prepareWeapon(id string) tactics.Weapon {
 }
 
 // prepareInfo は戦闘の情報欄と同じ部品で能力・装備を表示する（DES-UI-13）。
-// 名簿のタブでは右列（DES-UI-32）に置くため、情報欄の右上 (MapSize, 0) の配置を右列の左上へずらす。
+// 名簿のタブでは右列（DES-UI-32）に置くため、情報欄の右上 (m.Map, 0) の配置を右列の左上へずらす。
 func (s *SceneController) prepareInfo() InfoView {
 	u := s.prepareUnit(s.prepareMember)
-	v := (Panel{Unit: &u, Page: s.infoPage, Tabs: true}).View()
-	v = v.translate(prepareRightArea.Min.X-MapSize, prepareRightArea.Min.Y)
+	v := (Panel{Unit: &u, Page: s.infoPage, Tabs: true}).View(s.metrics)
+	v = v.translate(prepareRightArea.Min.X-s.metrics.Map, prepareRightArea.Min.Y)
 	// 長い名前などで右列を越す文は縮める（DES-UI-32）。
 	for i, t := range v.Texts {
 		if !t.Big {

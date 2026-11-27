@@ -16,9 +16,6 @@ const (
 	zocMarkArm   = 5
 )
 
-// zocEnemyCornerY は敵軍の角印の頂点の y（マスの上端から）。HP の棒（下端の 5 px）より上に置く（DES-NG-10。マスの大きさに従う）。
-var zocEnemyCornerY int
-
 // zocMarkLine は重騎士の ZOC の角印の線分 1 本（DES-UI-29、DES-IT07 3.8 節）。Side は重騎士の陣営で、線の色を決める。
 type zocMarkLine struct {
 	From, To image.Point
@@ -30,7 +27,7 @@ type zocMarkLine struct {
 // 右下は装備の印（DES-UI-33）、右上は固定のピンとボスの印に使うので避ける。両軍の ZOC が重なるマスには両方を描く。
 // カメラの外のマスは返さない。並びは上の行から、同じ行は左から、同じマスは自軍・敵軍の順。
 // 角印のマスは core の ZOCSides で決め、UI が独自に隣接や生死を判定しない。
-func zocMarkLines(board tactics.BoardView, cam Camera) []zocMarkLine {
+func zocMarkLines(m Metrics, board tactics.BoardView, cam Camera) []zocMarkLine {
 	var lines []zocMarkLine
 	for y := 0; y < board.Height(); y++ {
 		for x := 0; x < board.Width(); x++ {
@@ -39,18 +36,18 @@ func zocMarkLines(board tactics.BoardView, cam Camera) []zocMarkLine {
 				continue
 			}
 			sides := board.ZOCSides(p)
-			pt := cam.Screen(p)
+			pt := cam.Screen(m, p)
 			if sides[tactics.Player] {
-				c := image.Pt(pt.X+scaled(zocMarkInset), pt.Y+scaled(zocMarkInset))
+				c := image.Pt(pt.X+m.scaled(zocMarkInset), pt.Y+m.scaled(zocMarkInset))
 				lines = append(lines,
-					zocMarkLine{From: c, To: image.Pt(c.X+scaled(zocMarkArm), c.Y), Side: tactics.Player},
-					zocMarkLine{From: c, To: image.Pt(c.X, c.Y+scaled(zocMarkArm)), Side: tactics.Player})
+					zocMarkLine{From: c, To: image.Pt(c.X+m.scaled(zocMarkArm), c.Y), Side: tactics.Player},
+					zocMarkLine{From: c, To: image.Pt(c.X, c.Y+m.scaled(zocMarkArm)), Side: tactics.Player})
 			}
 			if sides[tactics.Enemy] {
-				c := image.Pt(pt.X+scaled(zocMarkInset), pt.Y+zocEnemyCornerY)
+				c := image.Pt(pt.X+m.scaled(zocMarkInset), pt.Y+m.zocEnemyCornerY)
 				lines = append(lines,
-					zocMarkLine{From: c, To: image.Pt(c.X+scaled(zocMarkArm), c.Y), Side: tactics.Enemy},
-					zocMarkLine{From: image.Pt(c.X, c.Y-scaled(zocMarkArm)), To: c, Side: tactics.Enemy})
+					zocMarkLine{From: c, To: image.Pt(c.X+m.scaled(zocMarkArm), c.Y), Side: tactics.Enemy},
+					zocMarkLine{From: image.Pt(c.X, c.Y-m.scaled(zocMarkArm)), To: c, Side: tactics.Enemy})
 			}
 		}
 	}

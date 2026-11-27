@@ -86,13 +86,13 @@ func runFrameTimingIT07() (*frameMeasureIT07, error) {
 	if err != nil {
 		return nil, err
 	}
-	game := &Game{ctrl: c, sheets: map[assets.Sheet]*ebiten.Image{}, shotCursor: &cursor}
+	game := &Game{metrics: c.metrics, ctrl: c, sheets: map[assets.Sheet]*ebiten.Image{}, shotCursor: &cursor}
 	for sheet, img := range imgs {
 		game.sheets[sheet] = ebiten.NewImageFromImage(img)
 	}
 	measured := &frameMeasureIT07{Game: game, deviceScale: ebiten.DeviceScaleFactor(), condition: condition}
 	ebiten.SetWindowTitle("レンキン・タクティクス IT07 描画測定（8秒）")
-	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
+	ebiten.SetWindowSize(baseMetrics().ScreenW, baseMetrics().ScreenH)
 	ebiten.SetTPS(60)
 	ebiten.SetVsyncEnabled(true)
 	ebiten.SetRunnableOnUnfocused(true)
@@ -113,7 +113,7 @@ func newIT07PerformanceController() (*Controller, string, error) {
 	playOut(c)
 	c.ToggleDanger()
 	c.watched = map[int]bool{7: true, 8: true}
-	cursor := image.Pt(6*CellSize+CellSize/2, 2*CellSize+CellSize/2)
+	cursor := image.Pt(6*baseMetrics().Cell+baseMetrics().Cell/2, 2*baseMetrics().Cell+baseMetrics().Cell/2)
 	c.SetCursor(cursor.X, cursor.Y)
 	if os.Getenv("RENKIN_IT07_FPS_CH") != "" {
 		c.watched = map[int]bool{}
@@ -123,8 +123,8 @@ func newIT07PerformanceController() (*Controller, string, error) {
 				if first < 0 {
 					first = i
 					c.camera.CenterOn(u.Pos)
-					pt := c.camera.Screen(u.Pos)
-					c.SetCursor(pt.X+CellSize/2, pt.Y+CellSize/2)
+					pt := c.camera.Screen(baseMetrics(), u.Pos)
+					c.SetCursor(pt.X+baseMetrics().Cell/2, pt.Y+baseMetrics().Cell/2)
 				}
 				if len(c.watched) < 2 {
 					c.watched[i] = true
@@ -225,7 +225,7 @@ func TestIT07FrameTiming(t *testing.T) {
 			lowest = min(lowest, fps)
 		}
 		// 合否は基準 PC と表示設定を記録した上で判断する。測定値を閾値に合わせて丸めない。
-		t.Logf("OS=%s arch=%s Go=%s input={%s} window=%dx%d vsync=true device_scale=%.2f warmup=2s samples_fps=%v lowest_fps=%.3f worst_frame_gap=%v", runtime.GOOS, runtime.GOARCH, runtime.Version(), measured.condition, ScreenWidth, ScreenHeight, measured.deviceScale, measured.samples, lowest, measured.worstGap)
+		t.Logf("OS=%s arch=%s Go=%s input={%s} window=%dx%d vsync=true device_scale=%.2f warmup=2s samples_fps=%v lowest_fps=%.3f worst_frame_gap=%v", runtime.GOOS, runtime.GOARCH, runtime.Version(), measured.condition, baseMetrics().ScreenW, baseMetrics().ScreenH, measured.deviceScale, measured.samples, lowest, measured.worstGap)
 	})
 }
 

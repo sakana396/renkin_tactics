@@ -62,8 +62,8 @@ var drawBenchPhases227 = []struct {
 		c := g.scenes.BattleController()
 		for _, u := range c.Units() {
 			if u.Alive && u.Side == tactics.Enemy && c.camera.Visible(u.Pos) {
-				pt := c.camera.Screen(u.Pos)
-				c.SetCursor(pt.X+CellSize/2, pt.Y+CellSize/2)
+				pt := c.camera.Screen(baseMetrics(), u.Pos)
+				c.SetCursor(pt.X+baseMetrics().Cell/2, pt.Y+baseMetrics().Cell/2)
 				return nil
 			}
 		}
@@ -118,13 +118,12 @@ func runDrawBench227(chapter string) {
 		return
 	}
 	cfg := Config{Catalog: cat, Media: data.AlchemyMedia(), HiRes: true, Store: discardStore227{}, NextSeed: func() uint64 { return 1 }, StartChapter: chapter}
-	useConfigMetrics(cfg)
 	imgs, err := assets.Load()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	g := &Game{scenes: NewSceneController(cfg), sheets: map[assets.Sheet]*ebiten.Image{}}
+	g := &Game{metrics: metricsForConfig(cfg), scenes: NewSceneController(cfg), sheets: map[assets.Sheet]*ebiten.Image{}}
 	for s, img := range imgs {
 		g.sheets[s] = ebiten.NewImageFromImage(img)
 	}

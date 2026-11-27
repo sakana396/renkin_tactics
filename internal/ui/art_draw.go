@@ -60,10 +60,10 @@ func (g *Game) drawSceneBackdrop(dst *ebiten.Image, v SceneView) {
 	if eb == nil {
 		return
 	}
-	screen := image.Rect(0, 0, ScreenWidth, ScreenHeight)
+	screen := image.Rect(0, 0, g.metrics.ScreenW, g.metrics.ScreenH)
 	b := eb.Bounds()
 	drawArtIn(dst.SubImage(screen).(*ebiten.Image), eb, coverRect(screen, b.Dx(), b.Dy()), 1)
-	vector.DrawFilledRect(dst, 0, 0, float32(ScreenWidth), float32(ScreenHeight), backdropDim, false)
+	vector.DrawFilledRect(dst, 0, 0, float32(g.metrics.ScreenW), float32(g.metrics.ScreenH), backdropDim, false)
 }
 
 // drawScenePortrait は物語の場面の肖像を描く（DES-NG-08）。

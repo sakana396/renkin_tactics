@@ -10,11 +10,6 @@ import (
 // 盤面の移動のボタンの位置（DES-UI-30、DES-IT07 3.3 節）。
 // 全体図はミニマップ欄の (744,472)〜(824,504)（minimapTexts の y=380・396 の案内より下）、
 // 次の味方は下欄の (704,520)〜(824,544)（気配の案内 y=544〜560 と cameraGuideY の行より上）に置く。
-// 位置は盤面の大きさに従う（DES-NG-10。recomputeMetrics が作る）。
-var (
-	overviewButtonRect image.Rectangle
-	nextAllyButtonRect image.Rectangle
-)
 
 const (
 	overviewButtonLabel = "全体図"
@@ -39,14 +34,14 @@ type deployNav struct {
 
 // overviewLayout は、幅 w・高さ h のマップを盤面の (0,0)〜(512,512) に置いた全体図の配置（DES-UI-30）。
 // 1 マスは長い辺で 512 px に収まる整数の大きさ（32×32 なら 16 px、16×16 なら 32 px）とし、中央に寄せる。
-func overviewLayout(w, h int) MinimapLayout {
+func overviewLayout(m Metrics, w, h int) MinimapLayout {
 	l := MinimapLayout{Width: w, Height: h}
 	if w <= 0 || h <= 0 {
 		return l
 	}
-	l.Cell = max(1, MapSize/max(w, h))
-	x := (MapSize - w*l.Cell) / 2
-	y := (MapSize - h*l.Cell) / 2
+	l.Cell = max(1, m.Map/max(w, h))
+	x := (m.Map - w*l.Cell) / 2
+	y := (m.Map - h*l.Cell) / 2
 	l.Area = image.Rect(x, y, x+w*l.Cell, y+h*l.Cell)
 	return l
 }
@@ -142,8 +137,8 @@ const (
 )
 
 // overviewTexts は右上の欄の見出し・操作の案内・凡例（DES-UI-30）。
-func overviewTexts() ([]MinimapLegend, []SceneText) {
-	x := MapSize + infoMargin
+func overviewTexts(m Metrics) ([]MinimapLegend, []SceneText) {
+	x := m.Map + infoMargin
 	texts := []SceneText{
 		{Text: "全体図", X: x, Y: 4, Style: StyleTitle},
 		{Text: "左クリック: その場所へ移って閉じる", X: x, Y: 4 + 2*lineHeight, Style: StyleLabel},
@@ -165,8 +160,8 @@ func overviewTexts() ([]MinimapLegend, []SceneText) {
 }
 
 // overviewWeaponLegend は、凡例の after 行目から装備の種類の色の行を並べる（DES-UI-33）。
-func overviewWeaponLegend(after int) []OverviewWeaponLegend {
-	x := MapSize + infoMargin
+func overviewWeaponLegend(m Metrics, after int) []OverviewWeaponLegend {
+	x := m.Map + infoMargin
 	var out []OverviewWeaponLegend
 	for i, t := range overviewWeaponTypes {
 		y := 4 + 5*lineHeight + (after+i)*(lineHeight+2)
@@ -182,10 +177,10 @@ func overviewWeaponLegend(after int) []OverviewWeaponLegend {
 
 // buildOverview は盤面の見え方から全体図を作る（DES-UI-30）。倒れたユニットと盤の外のユニットは描かない。
 // まだ出ていない増援は units に入っていないので描かれない。
-func buildOverview(b terrainSource, units []tactics.Unit, hints []tactics.ReinforcementHint, danger map[tactics.Pos]bool, pins []tactics.Pos, cam Camera) MapOverviewView {
-	v := MapOverviewView{Layout: overviewLayout(b.Width(), b.Height()), Panel: image.Rect(MapSize, 0, ScreenWidth, InfoHeight)}
-	v.Legend, v.Texts = overviewTexts()
-	v.Weapons = overviewWeaponLegend(len(v.Legend))
+func buildOverview(m Metrics, b terrainSource, units []tactics.Unit, hints []tactics.ReinforcementHint, danger map[tactics.Pos]bool, pins []tactics.Pos, cam Camera) MapOverviewView {
+	v := MapOverviewView{Layout: overviewLayout(m, b.Width(), b.Height()), Panel: image.Rect(m.Map, 0, m.ScreenW, InfoHeight)}
+	v.Legend, v.Texts = overviewTexts(m)
+	v.Weapons = overviewWeaponLegend(m, len(v.Legend))
 	l := v.Layout
 	if l.Cell == 0 {
 		return v
@@ -277,11 +272,11 @@ func (c *Controller) OverviewClick(x, y int) bool {
 		return false
 	}
 	pt := image.Pt(x, y)
-	if pt.In(overviewButtonRect) {
+	if pt.In(c.metrics.overviewButtonRect) {
 		c.nav.overview = false
 		return true
 	}
-	if p, ok := overviewLayout(c.battle.Width(), c.battle.Height()).CellAt(x, y); ok {
+	if p, ok := overviewLayout(c.metrics, c.battle.Width(), c.battle.Height()).CellAt(x, y); ok {
 		c.camera.CenterOn(p)
 		c.nav.overview = false
 	}
@@ -320,7 +315,7 @@ func (c *Controller) MapOverview() MapOverviewView {
 	if h := c.ReinforcementHintView(); h.Visible {
 		hints = h.Areas
 	}
-	return buildOverview(c.battle, c.Units(), hints, c.Danger(), c.WatchedPins(), c.camera)
+	return buildOverview(c.metrics, c.battle, c.Units(), hints, c.Danger(), c.WatchedPins(), c.camera)
 }
 
 // NavButtons は戦闘で描く「全体図」「次の味方 Z」のボタン（DES-UI-30）。再生中・勝敗の確定後・巻き戻しの一覧と確認の間は
@@ -331,8 +326,8 @@ func (c *Controller) NavButtons() []SceneButton {
 	}
 	on := c.navAccepts()
 	return []SceneButton{
-		{overviewButtonLabel, overviewButtonRect, on || c.OverviewOpen()},
-		{nextAllyButtonLabel, nextAllyButtonRect, on && !c.OverviewOpen()},
+		{overviewButtonLabel, c.metrics.overviewButtonRect, on || c.OverviewOpen()},
+		{nextAllyButtonLabel, c.metrics.nextAllyButtonRect, on && !c.OverviewOpen()},
 	}
 }
 
@@ -363,11 +358,11 @@ func (s *SceneController) DeployOverviewClick(x, y int) bool {
 	if !s.DeployOverviewOpen() {
 		return false
 	}
-	if image.Pt(x, y).In(overviewButtonRect) {
+	if image.Pt(x, y).In(s.metrics.overviewButtonRect) {
 		s.deployNav.overview = false
 		return true
 	}
-	if p, ok := overviewLayout(s.deployCamera.Width, s.deployCamera.Height).CellAt(x, y); ok {
+	if p, ok := overviewLayout(s.metrics, s.deployCamera.Width, s.deployCamera.Height).CellAt(x, y); ok {
 		s.deployCamera.CenterOn(p)
 		s.deployNav.overview = false
 	}
@@ -409,7 +404,7 @@ func (s *SceneController) DeployMapOverview() (MapOverviewView, bool) {
 	if d == nil || len(d.Terrain) == 0 {
 		return MapOverviewView{}, false
 	}
-	return buildOverview(gridTerrain(d.Terrain), d.Units, nil, d.Danger, nil, s.deployCamera), true
+	return buildOverview(s.metrics, gridTerrain(d.Terrain), d.Units, nil, d.Danger, nil, s.deployCamera), true
 }
 
 // DeployNavButtons は配置で描く「全体図」「次の味方 Z」のボタン（DES-UI-30）。全体図を出している間は次の味方を押せない。
@@ -418,8 +413,8 @@ func (s *SceneController) DeployNavButtons() []SceneButton {
 		return nil
 	}
 	return []SceneButton{
-		{overviewButtonLabel, overviewButtonRect, true},
-		{nextAllyButtonLabel, nextAllyButtonRect, !s.deployNav.overview},
+		{overviewButtonLabel, s.metrics.overviewButtonRect, true},
+		{nextAllyButtonLabel, s.metrics.nextAllyButtonRect, !s.deployNav.overview},
 	}
 }
 
@@ -443,13 +438,13 @@ type boardDrag struct {
 // update は 1 フレームの中ボタンの状態から、カメラを動かすマスの数を返す（DES-UI-30）。
 // 盤面の 512×512 の中で押し始めたときだけつかみ、離すと終える。つかんだ盤面をカーソルと同じ向きに動かすので、
 // カメラはカーソルの動きと逆へ動く。1 マスに満たない端数は次のフレームへ持ち越す。
-func (d *boardDrag) update(pressed, start bool, x, y int) (dx, dy int) {
+func (d *boardDrag) update(m Metrics, pressed, start bool, x, y int) (dx, dy int) {
 	if !pressed {
 		*d = boardDrag{}
 		return 0, 0
 	}
 	if !d.active {
-		if start && x >= 0 && y >= 0 && x < MapSize && y < MapSize {
+		if start && x >= 0 && y >= 0 && x < m.Map && y < m.Map {
 			*d = boardDrag{active: true, lastX: x, lastY: y}
 		}
 		return 0, 0
@@ -457,9 +452,9 @@ func (d *boardDrag) update(pressed, start bool, x, y int) (dx, dy int) {
 	d.accX += d.lastX - x
 	d.accY += d.lastY - y
 	d.lastX, d.lastY = x, y
-	dx, dy = d.accX/CellSize, d.accY/CellSize
-	d.accX -= dx * CellSize
-	d.accY -= dy * CellSize
+	dx, dy = d.accX/m.Cell, d.accY/m.Cell
+	d.accX -= dx * m.Cell
+	d.accY -= dy * m.Cell
 	return dx, dy
 }
 

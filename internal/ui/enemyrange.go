@@ -138,11 +138,6 @@ func (c *Controller) ClearWatched() {
 
 // 右欄の操作行の範囲の状態と「消す」ボタンの位置（DES-IT07 3.2・3.4 節）。
 // 範囲の状態は (520,304)〜(664,336) に「全敵 Q」と「固定 n」の 2 行、「消す」は操作行の右端 (752,304)〜(824,336)。
-// 位置は盤面の大きさに従う（DES-NG-10。recomputeMetrics が作る）。
-var (
-	rangeStatusRect image.Rectangle
-	rangeClearRect  image.Rectangle
-)
 
 // RangeStatusView は右欄の操作行に出す敵の範囲の状態（DES-UI-29）。
 type RangeStatusView struct {
@@ -203,16 +198,16 @@ func (c *Controller) RangeStatus() RangeStatusView {
 	}
 	n := c.WatchedCount()
 	return RangeStatusView{
-		Danger:  InfoText{X: rangeStatusRect.Min.X, Y: rangeStatusRect.Min.Y, Text: "全敵 Q " + state, Style: StyleLabel},
-		Watched: InfoText{X: rangeStatusRect.Min.X, Y: rangeStatusRect.Min.Y + lineHeight, Text: fmt.Sprintf("固定 %d", n), Style: StyleLabel},
-		Clear:   SceneButton{Label: "消す", Rect: rangeClearRect, Enabled: n > 0 && c.rangeAccepts()},
+		Danger:  InfoText{X: c.metrics.rangeStatusRect.Min.X, Y: c.metrics.rangeStatusRect.Min.Y, Text: "全敵 Q " + state, Style: StyleLabel},
+		Watched: InfoText{X: c.metrics.rangeStatusRect.Min.X, Y: c.metrics.rangeStatusRect.Min.Y + lineHeight, Text: fmt.Sprintf("固定 %d", n), Style: StyleLabel},
+		Clear:   SceneButton{Label: "消す", Rect: c.metrics.rangeClearRect, Enabled: n > 0 && c.rangeAccepts()},
 	}
 }
 
 // RangeClick は「消す」ボタンのクリックを受ける（DES-UI-29）。ボタンの中なら真を返し、盤面・情報欄には渡さない。
 // 巻き戻しの一覧の間は巻き戻しの操作を優先するので受けない（偽を返す）。
 func (c *Controller) RangeClick(x, y int) bool {
-	if c.rewind.open || !image.Pt(x, y).In(rangeClearRect) || c.RangeStatusIn(c.BattleInfoView(x, y)).HideClear {
+	if c.rewind.open || !image.Pt(x, y).In(c.metrics.rangeClearRect) || c.RangeStatusIn(c.BattleInfoView(x, y)).HideClear {
 		return false
 	}
 	c.ClearWatched()
@@ -243,8 +238,8 @@ func (c *Controller) cursorNameMark(v InfoView) (image.Rectangle, bool) {
 }
 
 // rangeFrameRect は、マスの画面の左上 pt に、内側へ inset だけ寄せた線の四角を返す（DES-UI-29）。
-func rangeFrameRect(pt image.Point, inset int) image.Rectangle {
-	return image.Rect(pt.X+inset, pt.Y+inset, pt.X+CellSize-inset, pt.Y+CellSize-inset)
+func rangeFrameRect(m Metrics, pt image.Point, inset int) image.Rectangle {
+	return image.Rect(pt.X+inset, pt.Y+inset, pt.X+m.Cell-inset, pt.Y+m.Cell-inset)
 }
 
 // dashedSegments は、四角 r の 4 辺を、長さ rangeDash・空き rangeGap の破線の線分に分けて返す（DES-UI-29）。
@@ -318,13 +313,13 @@ func minimapPins(l MinimapLayout, pins []tactics.Pos) []image.Rectangle {
 // pinShape は、固定した敵のマスの画面の左上 pt に描く金のピンの頭と軸の範囲を返す（DES-UI-29、DES-UI-33）。
 // 印の置き場所の分け方（指揮官は左上、固定は右上、装備は右下）に従い、右上に置く。
 // ボスは右上に ★ があるので、★ を隠さないよう、その左に置く。
-func pinShape(pt image.Point, boss bool) (head, stem image.Rectangle) {
-	x := pt.X + CellSize - scaled(9)
+func pinShape(m Metrics, pt image.Point, boss bool) (head, stem image.Rectangle) {
+	x := pt.X + m.Cell - m.scaled(9)
 	if boss {
 		// ★ の文字はマスの大きさに関わらず 12 px 幅なので、その分だけ左へ寄せる。
 		x -= 12
 	}
-	head = image.Rect(x, pt.Y+scaled(1), x+scaled(6), pt.Y+scaled(7))
-	stem = image.Rect(x+scaled(2), pt.Y+scaled(7), x+scaled(4), pt.Y+scaled(11))
+	head = image.Rect(x, pt.Y+m.scaled(1), x+m.scaled(6), pt.Y+m.scaled(7))
+	stem = image.Rect(x+m.scaled(2), pt.Y+m.scaled(7), x+m.scaled(4), pt.Y+m.scaled(11))
 	return head, stem
 }

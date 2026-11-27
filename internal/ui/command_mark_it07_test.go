@@ -64,7 +64,7 @@ func infoMarkAt(t *testing.T, c *Controller, p tactics.Pos) (InfoMark, InfoText,
 func TestCommandMarks(t *testing.T) {
 	t.Run("TC-FR-UNT-09-30 右欄の上下段に指揮の印と短い語を出す", func(t *testing.T) {
 		c := newIdleWith(t, commandSetup)
-		v := twoTierInfo(c.Units(), 1, 2, nil)
+		v := twoTierInfo(NewMetrics(BaseCellSize), c.Units(), 1, 2, nil)
 		for _, want := range []struct {
 			y    int
 			mark CommandMark
@@ -103,8 +103,8 @@ func TestCommandMarks(t *testing.T) {
 		}
 		// 32×32 の絵の左上に置き、ボスの ★（右上 x ≧ 20）、装備の印（右下 x, y = 22〜31。DES-IT07 3.6 節）、HP の棒（下 5 px）と重ねない。
 		cell := image.Pt(64, 96)
-		r := CommandMarkRect(cell).Sub(cell)
-		if !r.In(image.Rect(0, 0, CellSize/2, CellSize/2)) || r.Overlaps(image.Rect(CellSize-12, 0, CellSize, CellSize)) || r.Overlaps(image.Rect(22, 22, 32, 32)) || r.Overlaps(image.Rect(0, CellSize-5, CellSize, CellSize)) || r.Dx() < 8 {
+		r := CommandMarkRect(baseMetrics(), cell).Sub(cell)
+		if !r.In(image.Rect(0, 0, baseMetrics().Cell/2, baseMetrics().Cell/2)) || r.Overlaps(image.Rect(baseMetrics().Cell-12, 0, baseMetrics().Cell, baseMetrics().Cell)) || r.Overlaps(image.Rect(22, 22, 32, 32)) || r.Overlaps(image.Rect(0, baseMetrics().Cell-5, baseMetrics().Cell, baseMetrics().Cell)) || r.Dx() < 8 {
 			t.Fatalf("盤面の印の箱 %v（マスの左上からの相対）", r)
 		}
 		c := newIdleWith(t, commandSetup)
@@ -117,23 +117,23 @@ func TestCommandMarks(t *testing.T) {
 	t.Run("TC-FR-UNT-09-26 / TC-FR-UNT-09-30 同じユニットの指揮の印（左上）は、装備の印（右下）・固定のピン（右上）・HP の棒と重ならない", func(t *testing.T) {
 		c := newIdleWith(t, commandSetup)
 		cam := c.Camera()
-		marks := equipMarks(c.Units(), cam)
+		marks := equipMarks(baseMetrics(), c.Units(), cam)
 		checked := 0
 		for _, u := range c.Units() {
 			if CommandMarkOf(u) == NoCommandMark {
 				continue
 			}
-			pt := cam.Screen(u.Pos)
-			cmd := CommandMarkRect(pt)
+			pt := cam.Screen(baseMetrics(), u.Pos)
+			cmd := CommandMarkRect(baseMetrics(), pt)
 			var equip image.Rectangle
 			for _, m := range marks {
 				if m.Pos == u.Pos {
 					equip = m.Rect
 				}
 			}
-			head, stem := pinShape(pt, false)
-			if equip.Empty() || cmd.Overlaps(equip) || cmd.Overlaps(head) || cmd.Overlaps(stem) || cmd.Overlaps(unitHPBarRect(pt)) {
-				t.Fatalf("%s: 指揮の印 %v、装備の印 %v、ピン %v %v、HP の棒 %v", u.Name, cmd, equip, head, stem, unitHPBarRect(pt))
+			head, stem := pinShape(baseMetrics(), pt, false)
+			if equip.Empty() || cmd.Overlaps(equip) || cmd.Overlaps(head) || cmd.Overlaps(stem) || cmd.Overlaps(unitHPBarRect(baseMetrics(), pt)) {
+				t.Fatalf("%s: 指揮の印 %v、装備の印 %v、ピン %v %v、HP の棒 %v", u.Name, cmd, equip, head, stem, unitHPBarRect(baseMetrics(), pt))
 			}
 			checked++
 		}
@@ -157,7 +157,7 @@ func TestCommandMarks(t *testing.T) {
 				t.Fatalf("%s: 印 %v 名前 %q 語 %q", tc.name, m.Mark, name.Text, word.Text)
 			}
 			nameEnd := name.X + textWidth(name.Text)
-			if m.Rect.Min.X <= nameEnd || m.Rect.Dx() != commandMarkSize || word.X < m.Rect.Max.X || word.X+textWidth(word.Text) > ScreenWidth-infoMargin {
+			if m.Rect.Min.X <= nameEnd || m.Rect.Dx() != commandMarkSize || word.X < m.Rect.Max.X || word.X+textWidth(word.Text) > baseMetrics().ScreenW-infoMargin {
 				t.Fatalf("%s: 名前の右端 %d、印 %v、語 x=%d", tc.name, nameEnd, m.Rect, word.X)
 			}
 		}

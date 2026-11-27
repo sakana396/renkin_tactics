@@ -6,7 +6,7 @@
 - 対象: [DES-NG05](../03_design/design-ng05-prepare.md) v0.5（DES-NG-11）。[SRS-001](../02_requirements/srs.md) v0.9 の FR-CMP-12
 
 ケース ID は `TC-DES-NG-11-<連番 2 桁>`。表の列は、ID、対象、前提、入力・操作、期待結果、種別の 6 列。期待値は、設計書の座標・文言・規則と、定義データ（`data/alchemy`）の中身から手で決めた。
-高解像度の準備は 48 px のマスの窓（1088×832）を前提にするので、`useTestMetrics` を使い、`t.Parallel` を使わない。ebiten を読み込むテストは `xvfb-run -a go test ./...` で動かす。HiRes でない準備の既存のテスト（`prepare_*_test.go`）が、そのまま通ることも合格の条件にする。
+高解像度の準備は 48 px のマスの窓（1088×832）を前提にするので、`Config.HiRes` を真にした場面（`NewMetrics(HiResCellSize)` の値）で試験する。ebiten を読み込むテストは `xvfb-run -a go test ./...` で動かす。HiRes でない準備の既存のテスト（`prepare_*_test.go`）が、そのまま通ることも合格の条件にする。
 
 **種別の読み方（v0.4）。** 自動ケースは #207 で実装した。画面の目視と実操作は未実施。
 ## 1. 定義の形式（`internal/defload/goal_ng05_test.go`）

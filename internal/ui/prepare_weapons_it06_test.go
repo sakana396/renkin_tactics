@@ -155,7 +155,7 @@ func TestIT06PrepareWeaponView(t *testing.T) {
 			}
 		}
 		for i, r := range rects {
-			if !r.In(image.Rect(0, 0, ScreenWidth, ScreenHeight)) {
+			if !r.In(image.Rect(0, 0, baseMetrics().ScreenW, baseMetrics().ScreenH)) {
 				t.Fatal("窓外", r)
 			}
 			for _, o := range rects[i+1:] {

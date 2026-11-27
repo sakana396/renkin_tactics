@@ -115,12 +115,12 @@ func rows(v InfoView) []string {
 }
 
 // panelRows は、情報欄の中身の文の行を返す。ページは p.Page（既定は「能力」）。
-func panelRows(p Panel) []string { return rows(p.View()) }
+func panelRows(p Panel) []string { return rows(p.View(baseMetrics())) }
 
 // equipRows は、情報欄の「装備・スキル」のページの文の行を返す（DES-UI-28）。
 func equipRows(p Panel) []string {
 	p.Page = PageEquip
-	return rows(p.View())
+	return rows(p.View(baseMetrics()))
 }
 
 // 情報欄（DES-UI-01、DES-UI-06、FR-UNT-09、UC-04）を確かめる。
@@ -168,7 +168,7 @@ func TestInfoPanel(t *testing.T) {
 			last string
 		}{{PageStats, "移動 5"}, {PageEquip, leonEquip[5]}} {
 			p.Page = tc.page
-			v := p.View()
+			v := p.View(baseMetrics())
 			desc, terrain := textOf(t, v, tc.last), textOf(t, v, "地形: 平地")
 			if terrain.Y < desc.Y+2*lineHeight {
 				t.Errorf("ページ %d の地形の行の y = %d、%q の行 %d + %d 以上のはず", tc.page, terrain.Y, tc.last, desc.Y, 2*lineHeight)
@@ -288,7 +288,7 @@ func TestInfoPanel(t *testing.T) {
 			p  tactics.Pos
 			ok bool
 		}{{tactics.Pos{X: 2, Y: 3}, false}, {tactics.Pos{X: 7, Y: 0}, true}, {tactics.Pos{X: 0, Y: 7}, true}, {tactics.Pos{X: 0, Y: -1}, true}} {
-			if got := c.Panel(tc.p, tc.ok); got.Unit != nil || got.Terrain != nil || got.Forecast != nil || len(got.View().Texts) != 0 {
+			if got := c.Panel(tc.p, tc.ok); got.Unit != nil || got.Terrain != nil || got.Forecast != nil || len(got.View(baseMetrics()).Texts) != 0 {
 				t.Errorf("盤面の外 %v %v = %+v", tc.p, tc.ok, got)
 			}
 		}
@@ -373,7 +373,7 @@ func TestForecastPanel(t *testing.T) {
 		}
 		// 予測を開いている間は予測の表示を優先し、カーソルのあるユニット（相手）の情報とページの印は出さない（DES-IT06 12.2 節、DES-UI-28）。
 		p.Tabs = true
-		v := p.View()
+		v := p.View(baseMetrics())
 		for _, tx := range v.Texts {
 			if tx.Text == "ソルジャー 3　★ボス" || strings.HasPrefix(tx.Text, "地形") {
 				t.Errorf("予測と一緒に出した文 %+v", tx)

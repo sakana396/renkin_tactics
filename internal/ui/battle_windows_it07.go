@@ -18,13 +18,6 @@ type ForecastWindow struct {
 	Fallback bool
 }
 
-// 予測窓の大きさと置き場所の候補（DES-IT07 3.4 節）。盤面の四隅（既定は 512×512 の中）の 416×240 の 4 か所と、右欄の 320×360。
-// 盤面の大きさに従うので、useMetrics の中の recomputeMetrics が作る（DES-NG-10）。
-var (
-	forecastCandidates   [4]image.Rectangle
-	forecastFallbackRect image.Rectangle
-)
-
 // forecastLayout は窓の中の相対の配置（DES-IT07 3.4 節）。盤面の窓と右欄の窓で同じ文字の大きさのまま位置だけを変える。
 type forecastLayout struct {
 	// bannerBottom は撃破・危険の帯の下端。帯は (8,8) から窓の幅 −8 まで。
@@ -54,22 +47,22 @@ const forecastButtonWidth = 48
 
 // ForecastRect は予測窓の置き場所を返す（DES-UI-31、E-122）。相手 target と仮の移動先 dest の両マスに重ならない盤面の
 // 候補を、相手と反対側の上下から選ぶ（相手が盤面の上半分なら下の候補から）。どれも重なるときは右欄に収め直し、fallback が真。
-func ForecastRect(camera Camera, target, dest tactics.Pos) (r image.Rectangle, fallback bool) {
+func ForecastRect(m Metrics, camera Camera, target, dest tactics.Pos) (r image.Rectangle, fallback bool) {
 	cell := func(p tactics.Pos) image.Rectangle {
-		s := camera.Screen(p)
-		return image.Rect(s.X, s.Y, s.X+CellSize, s.Y+CellSize)
+		s := camera.Screen(m, p)
+		return image.Rect(s.X, s.Y, s.X+m.Cell, s.Y+m.Cell)
 	}
 	tr, dr := cell(target), cell(dest)
 	order := [4]int{2, 3, 0, 1}
-	if tr.Min.Y >= MapSize/2 {
+	if tr.Min.Y >= m.Map/2 {
 		order = [4]int{0, 1, 2, 3}
 	}
 	for _, i := range order {
-		if c := forecastCandidates[i]; !c.Overlaps(tr) && !c.Overlaps(dr) {
+		if c := m.forecastCandidates[i]; !c.Overlaps(tr) && !c.Overlaps(dr) {
 			return c, false
 		}
 	}
-	return forecastFallbackRect, true
+	return m.forecastFallbackRect, true
 }
 
 // ForecastWindow は攻撃・回復の予測を共通の窓にする（DES-UI-31、DES-UI-07 の改訂）。値は Battle.Forecast・HealForecast
@@ -84,7 +77,7 @@ func (c *Controller) ForecastWindow() (ForecastWindow, bool) {
 		return ForecastWindow{}, false
 	}
 	units := c.Units()
-	r, fallback := ForecastRect(c.Camera(), units[c.target].Pos, c.dest)
+	r, fallback := ForecastRect(c.metrics, c.Camera(), units[c.target].Pos, c.dest)
 	l := forecastBoardLayout
 	if fallback {
 		l = forecastFallbackLayout
@@ -294,13 +287,6 @@ const (
 	summaryTerrainY = infoControlTop - 3*lineHeight/2
 )
 
-// summaryX・summaryPortraitX・summaryNarrow は、盤面の大きさに従う右欄の段の配置（DES-NG-10）。
-// summaryX は段の文の左端、summaryPortraitX は段の右上に置くユニットの絵の左端、summaryNarrow は絵の横の文の幅の上限。
-var summaryX, summaryPortraitX, summaryNarrow int
-
-// detailButtonRect は操作行の「詳細 I」（DES-UI-31）。描画とクリックで同じ範囲を使う。右欄の中の位置は盤面の大きさに従う（DES-NG-10）。
-var detailButtonRect image.Rectangle
-
 // BattleInfoView は戦闘の右欄の上下 2 段を返す（DES-UI-31）。中身は y < 296 に収め、操作行（y = 304〜）の範囲の状態・詳細・
 // 消すは別に描く。
 // 上段はカーソルの下の生きているユニット（いなければ選択中）、下段は選択中のユニット。同じ人物なら下段は地形・スキルの要約。
@@ -308,8 +294,8 @@ var detailButtonRect image.Rectangle
 // カーソルが右欄の上にあるときは、直前に盤面で見ていたマスを使う（DES-UI-28）。
 func (c *Controller) BattleInfoView(x, y int) InfoView {
 	units := c.Units()
-	cell, onMap := c.Camera().CellAt(x, y)
-	if !onMap && image.Pt(x, y).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
+	cell, onMap := c.Camera().CellAt(c.metrics, x, y)
+	if !onMap && image.Pt(x, y).In(image.Rect(c.metrics.Map, 0, c.metrics.ScreenW, InfoHeight)) {
 		cell, onMap = c.lastCell, c.lastCellOK
 	}
 	upper := -1
@@ -328,10 +314,10 @@ func (c *Controller) BattleInfoView(x, y int) InfoView {
 		t := c.battle.TerrainAt(cell)
 		terrain = &t
 	}
-	v := twoTierInfo(units, upper, selected, terrain)
+	v := twoTierInfo(c.metrics, units, upper, selected, terrain)
 	if terrain != nil && hasZOCAt(c.battle.BoardView(), cell) {
 		// 上段の要約の下に置き、下段の地形と操作行を避ける（DES-UI-29、DES-UI-31）。
-		v.text(summaryX, infoLowerTop-lineHeight-8, zocNote, StyleLabel)
+		v.text(c.metrics.summaryX, infoLowerTop-lineHeight-8, zocNote, StyleLabel)
 	}
 	return v
 }
@@ -348,34 +334,34 @@ func liveUnitIndex(units []tactics.Unit, p tactics.Pos) int {
 
 // twoTierInfo は右欄の上下 2 段を作る（DES-UI-31）。戦闘と配置で共有する。upper・selected は units の添字（なければ −1）。
 // 上段がいなければ選択中を上段に出す。terrain が nil でなければ下段の最下行に出す。
-func twoTierInfo(units []tactics.Unit, upper, selected int, terrain *tactics.Terrain) InfoView {
+func twoTierInfo(m Metrics, units []tactics.Unit, upper, selected int, terrain *tactics.Terrain) InfoView {
 	var v InfoView
 	if upper < 0 {
 		upper = selected
 	}
 	if upper >= 0 {
-		v.addUnitSummary(units[upper], 0)
+		v.addUnitSummary(m, units[upper], 0)
 	}
 	switch {
 	case selected >= 0 && selected != upper:
-		v.addUnitSummary(units[selected], infoLowerTop)
+		v.addUnitSummary(m, units[selected], infoLowerTop)
 	case selected >= 0:
 		// 同じ人物: 下段は地形・スキルの要約にする。
 		y := infoLowerTop + infoMargin
-		v.text(summaryX, y, "地形・スキル", StyleLabel)
+		v.text(m.summaryX, y, "地形・スキル", StyleLabel)
 		skills := unitSkills(units[selected])
 		if len(skills) == 0 {
-			v.text(summaryX, y+lineHeight, "スキル なし", StylePlain)
+			v.text(m.summaryX, y+lineHeight, "スキル なし", StylePlain)
 		}
 		for i, sk := range skills {
 			if row := y + (i+1)*lineHeight; row+lineHeight <= summaryTerrainY {
-				v.text(summaryX, row, fitRewind(sk.Name+"　"+skillDescription(sk), summaryWide), StyleSkill)
+				v.text(m.summaryX, row, fitRewind(sk.Name+"　"+skillDescription(sk), summaryWide), StyleSkill)
 			}
 		}
 	}
 	if terrain != nil {
 		lines := TerrainLines(*terrain)
-		v.text(summaryX, summaryTerrainY, fitRewind(lines[0]+"　"+lines[1], summaryWide), StylePlain)
+		v.text(m.summaryX, summaryTerrainY, fitRewind(lines[0]+"　"+lines[1], summaryWide), StylePlain)
 	}
 	// 一番下は最下行（地形）の下端。配置のボタン（y = 296〜）とも重ならない。
 	v.Bottom = summaryTerrainY + lineHeight
@@ -384,11 +370,11 @@ func twoTierInfo(units []tactics.Unit, upper, selected int, terrain *tactics.Ter
 
 // addUnitSummary は段の上端 top から、名前・兵種と Lv・HP・装備の名前と種類（E 印）・力/魔力と守備/魔防・速さを
 // 1 行ずつ並べ、段の右上にユニットの絵を置く（DES-UI-31、DES-UI-33）。6 行は 96 px で、下段（128 px）の最下行の地形と重ならない。
-func (v *InfoView) addUnitSummary(u tactics.Unit, top int) {
+func (v *InfoView) addUnitSummary(m Metrics, u tactics.Unit, top int) {
 	y := top + infoMargin
-	v.Icons = append(v.Icons, InfoIcon{X: summaryPortraitX, Y: y, Size: PortraitSize, Tile: unitTile(u), Art: artKeyOf(u)})
+	v.Icons = append(v.Icons, InfoIcon{X: m.summaryPortraitX, Y: y, Size: PortraitSize, Tile: unitTile(u), Art: artKeyOf(u)})
 	// 上下段とも名前の横に指揮の印と短い語を置く（DES-UI-35）。
-	v.addCommandMark(u, summaryX, y, unitName(u))
+	v.addCommandMark(u, m.summaryX, y, unitName(u))
 	equip := "装備 なし"
 	if w := u.EquippedWeapon(); w.Name != "" {
 		equip = fmt.Sprintf("装備 %s %s（%s）", weaponRowMark, w.Name, weaponTypeName(w.Type))
@@ -407,13 +393,13 @@ func (v *InfoView) addUnitSummary(u tactics.Unit, top int) {
 	} {
 		width := summaryWide
 		if i < 4 {
-			width = summaryNarrow
+			width = m.summaryNarrow
 		}
 		text := row.text
 		if i > 0 {
 			// 名前は敵の範囲の印（nameMarkRect）が文の一致で探すので省かない。
 			text = fitRewind(text, width)
 		}
-		v.text(summaryX, y+i*lineHeight, text, row.st)
+		v.text(m.summaryX, y+i*lineHeight, text, row.st)
 	}
 }
