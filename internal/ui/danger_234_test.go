@@ -50,9 +50,32 @@ func TestDanger234(t *testing.T) {
 		if !reflect.DeepEqual(first, rowSet(1, 2, 3, 5, 6)) {
 			t.Fatal("古い結果が書き換わった")
 		}
-		s.resetDeploy()
-		if s.deployDangerCache != nil {
-			t.Fatal("配置終了後に残った")
+
+		// 占有枠同士の交換は結果が同じでもキャッシュを作り直す。
+		got[marker] = true
+		clickDeployCell(s, tactics.Pos{X: 1})
+		clickDeployCell(s, tactics.Pos{X: 0})
+		if actual := s.View().Deploy.Danger; !reflect.DeepEqual(actual, rowSet(0, 1, 2, 3, 4, 5, 6)) {
+			t.Fatalf("交換後: %v", actual)
 		}
+		clickSceneButton(t, s, "準備に戻る")
+		if s.Scene() != Prepare || s.deployDangerCache != nil {
+			t.Fatal("準備に戻った後のキャッシュ")
+		}
+		for _, row := range s.View().Rows {
+			if row.Member == 1 {
+				s.Click(row.Mark.Min.X, row.Mark.Min.Y)
+				break
+			}
+		}
+		if len(s.SelectedMembers()) != 1 {
+			t.Fatal("出撃者を変更できない")
+		}
+		clickSceneButton(t, s, "配置へ")
+		s.ToggleDeployDanger()
+		if actual := s.View().Deploy.Danger; !reflect.DeepEqual(actual, rowSet(1, 2, 3, 5, 6)) {
+			t.Fatalf("再配置後: %v", actual)
+		}
+
 	})
 }
