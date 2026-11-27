@@ -34,6 +34,13 @@ type smartFeatures struct {
 	// 倒れた仲間を倒れたマスに置かず、より用心させてやり直す。同じターンで 2 回やり直しても倒れるなら 1 つ前のターンに戻る。
 	// 1 ターンに 3 回まで。残りの 3 回は主人公が倒れて負けたときのために取っておく。乱数は戻した状態の続きで、先を覗かない。
 	Rewind bool
+	// Bait は、攻め手が止まっているとき（stalled）、仲間 1 人を釣り役にし、敵に狙われるマスへ入れて待ち構える敵を誘い出す（#235、DES-NG-23）。
+	// 釣り役は、狙われても許される（safeFor）マスへ動ける仲間のうち、倒れる確率がいちばん低い仲間（baitUnit）。
+	// 釣り役は、移動先を選ぶときに受けるダメージの見込みで減点せず、狙われるマスを優先する（倒れる確率の上限と減点は残す）。
+	// 偽なら、止まっていても全員が「受けるダメージの見込み × 0.3 ＋ 倒れる確率 × 100」で減点され、
+	// 進む得（隊の先頭より 2 マス先まで）を上回るので、待ち構える敵の届く範囲のすぐ外で釣り合って止まることがある（新作 3 章）。
+	// smartAll には入れない（反復 6・7 の測定の条件を保つ）。新作の測定（measure_it09_test.go）で使う。
+	Bait bool
 }
 
 // smartAll はすべての工夫を使う賢い打ち手。
@@ -41,7 +48,7 @@ var smartAll = smartFeatures{Weapons: true, Threat: true, Focus: true, Heal: tru
 
 // smartPlay は、賢い打ち手で戦闘を maxTurn ターンまで遊ぶ。plan の Routes・Order・Observe は autoPlay と同じ意味。
 func smartPlay(b *tactics.Battle, ids []string, plan autoPlan, f smartFeatures, maxTurn int) autoResult {
-	p := &smartPlayer{f: f}
+	p := &smartPlayer{f: f, bait: -1, baitFailed: map[int]bool{}}
 	p.autoPlayer = &autoPlayer{b: b, ids: ids, plan: plan, step: map[int]int{}, log: autoLog}
 	p.ban = map[int]map[int]map[tactics.Pos]bool{}
 	p.caution = map[int]map[int]bool{}
@@ -64,6 +71,7 @@ func smartPlay(b *tactics.Battle, ids []string, plan autoPlan, f smartFeatures, 
 		}
 		p.firstID, p.hasFirst, p.endPos = 0, false, map[int]tactics.Pos{}
 		p.phase()
+		bait := p.bait
 		rec.firstID, rec.hasFirst, rec.endPos = p.firstID, p.hasFirst, p.endPos
 		if !f.Rewind || len(p.deaths) == rec.deaths || b.RewindsLeft() < 1 {
 			continue
@@ -106,6 +114,9 @@ func smartPlay(b *tactics.Battle, ids []string, plan autoPlan, f smartFeatures, 
 			}
 		}
 		p.rewinds++
+		if bait >= 0 {
+			p.baitFailed[bait] = true
+		}
 		if p.log != nil {
 			p.log(fmt.Sprintf("T%d で倒れたので T%d に巻き戻す（残り %d 回）", turn, back, b.RewindsLeft()))
 		}
@@ -170,6 +181,11 @@ type smartPlayer struct {
 	engaged bool
 	// center は自軍の番の初めの、生きている自軍の位置の真ん中（待ち受けで固まる先）。
 	center tactics.Pos
+	// bait は、このターンの釣り役の添字（いなければ -1。工夫 Bait）。
+	bait int
+	// baitFailed は、釣り役を出したターンに仲間が倒れて巻き戻した釣り役。次に敵を倒すまで釣り役にしない（工夫 Bait）。
+	// 巻き戻しは乱数も戻すので（DES-RWD-03）、同じ釣り役が同じ動きをすると同じ結果になるため。巻き戻しでは戻さない。
+	baitFailed map[int]bool
 }
 
 // hit2 は、表示の命中率 r（0〜100）の攻撃が当たる本当の確率（0〜99 の乱数 2 つの和が 2r より小さい。DES-BTL-06）。
@@ -728,6 +744,13 @@ func (p *smartPlayer) bestTile(i int, tiles []tactics.Pos, hp int) tactics.Pos {
 			score += float64(3 * (front - c))
 		}
 		switch {
+		case p.f.Threat && p.stalled() && i == p.bait:
+			// 釣り役は、倒れる見込みが上限に収まる限り、受けるダメージを問わず敵に狙われるマスへ入って誘い出す（工夫 Bait）。
+			// 狙われるマスを、進む得（1 マス 1 点）より大きく優先する。
+			score += 100 * death
+			if attackers > 0 {
+				score -= baitBonus
+			}
 		case p.f.Threat && p.stalled():
 			// 攻め手が止まっているときは、受けられる範囲で前へ出る。
 			score += 0.3*expected + 100*death
@@ -789,6 +812,7 @@ func (p *smartPlayer) phase() {
 	}
 	if kills > p.kills || p.lastKill == 0 {
 		p.kills, p.lastKill = kills, turn
+		clear(p.baitFailed)
 	}
 
 	p.engaged = false
@@ -814,6 +838,10 @@ func (p *smartPlayer) phase() {
 				}
 			}
 		}
+	}
+	p.bait = -1
+	if p.f.Bait && p.stalled() {
+		p.bait = p.baitUnit()
 	}
 	p.advanceRoutes()
 	live := func() bool {
@@ -876,6 +904,42 @@ func (p *smartPlayer) phase() {
 		p.note(events)
 	}
 }
+
+// baitUnit は釣り役を選ぶ（工夫 Bait）。主人公と杖を装備した仲間と、巻き戻した釣り役（baitFailed）を除き、
+// 敵に狙われるマスのうち許される（safeFor）マスへ動ける仲間から、そのマスで倒れる確率がいちばん低い仲間を選ぶ。
+// 同じなら受けに強い仲間（守備 × 2 ＋ 今の HP。moveOrder と同じ）、それも同じなら添字の小さい仲間。いなければ -1。
+// 全員が釣り役で倒れて巻き戻したなら、一巡して選び直す。
+func (p *smartPlayer) baitUnit() int {
+	p.refresh()
+	best, bestDeath := -1, 0.0
+	units := p.b.Units()
+	for i, u := range units {
+		if !u.Alive || u.Side != tactics.Player || u.Lord || u.EquippedWeapon().Type == tactics.Staff || p.baitFailed[i] {
+			continue
+		}
+		death := math.Inf(1)
+		for _, t := range sortedTiles(p.b.Reachable(i)) {
+			ok, d, _, attackers := p.safeFor(i, t, u.EquippedWeapon(), -1, nil, u.HP)
+			if ok && attackers > 0 {
+				death = min(death, d)
+			}
+		}
+		if math.IsInf(death, 1) {
+			continue
+		}
+		if best < 0 || death < bestDeath || death == bestDeath && u.Stats.Def*2+u.HP > units[best].Stats.Def*2+units[best].HP {
+			best, bestDeath = i, death
+		}
+	}
+	if best < 0 && len(p.baitFailed) > 0 {
+		clear(p.baitFailed)
+		return p.baitUnit()
+	}
+	return best
+}
+
+// baitBonus は、釣り役が敵に狙われるマスを優先する点数（工夫 Bait）。
+const baitBonus = 10
 
 // healIf は、工夫 Heal を使うとき、回復役 i の回復の候補を返す。
 func (p *smartPlayer) healIf(i int) *smartOption {
