@@ -13,7 +13,7 @@
 | 企画 | 技術選定 ADR | [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 承認済み |
 | 設計 | ふしぎ錬金に戻す形 ADR | [adr/0002-return-to-fushigi.md](adr/0002-return-to-fushigi.md) | 承認済み |
 | 設計 | 定義データの形式 ADR | [adr/0003-definition-data-format.md](adr/0003-definition-data-format.md) | 承認済み |
-| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.12 承認（2026-11-25。#232、E-166、REV-129）。v0.11 承認（2026-11-19。#212、E-151、REV-123）。v0.10 承認（2026-11-18、#211。剛力薬・粘着瓶 FR-ITM-08〜11、E-149・E-150）。v0.9 承認（E-141、#202）。爆弾 FR-ITM-04〜07、FR-SYS-05〜09、FR-MAP-07、FR-CMP-12、FR-CMP-06・09 の主人公の例外（E-139・E-140）。v0.8 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。ZOC・小隊長・画面の操作を追記 |
+| 要求 | 要求仕様書 (SRS) | [02_requirements/srs.md](02_requirements/srs.md) | v0.13 承認（2026-11-25。#235、E-169、REV-131。とても弱い敵・敵の魔法使い・重装砕き）。v0.12 承認（2026-11-25。#232、E-166、REV-129）。v0.11 承認（2026-11-19。#212、E-151、REV-123）。v0.10 承認（2026-11-18、#211。剛力薬・粘着瓶 FR-ITM-08〜11、E-149・E-150）。v0.9 承認（E-141、#202）。爆弾 FR-ITM-04〜07、FR-SYS-05〜09、FR-MAP-07、FR-CMP-12、FR-CMP-06・09 の主人公の例外（E-139・E-140）。v0.8 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。ZOC・小隊長・画面の操作を追記 |
 | 要求 | ユースケース | [02_requirements/use-cases.md](02_requirements/use-cases.md) | v0.17 承認（2026-11-25。#232、E-166、REV-129）。v0.16 承認（2026-11-19。#212、E-151、REV-123）。v0.15 承認（2026-11-18、#211。UC-02 の 5j〜5n、UC-04・06）。v0.14 承認（E-141、#202）。UC-02 の爆弾、UC-11 の新作の準備の画面、UC-07・12 の同時に倒れたときと主人公、UC-08・09 の作品の選択とセーブ。v0.13（UC-02 の直接クリックの取消し、E-124）。v0.12 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。予測中の武器・予測窓・詳細画面・範囲・持ち物・ZOC・小隊長を追記 |
 | 計画 | 反復 1 計画書 | [iterations/it01/plan.md](iterations/it01/plan.md) | v0.2 承認済み |
 | 設計 | 設計書（反復 1） | [03_design/design-it01.md](03_design/design-it01.md) | v0.7 承認（2026-11-24、#210。1.1 節の注記に imagegen）。v0.6 承認（E-143、#203）。1.1 節に `internal/ui/audio`、3.10 節に爆弾のボス優先の勝ちを追記。v0.5 承認（E-122・E-123。DES-IT07 7 章の文面と補足、#164）。DES-BTL-03・AI-01・UI-07・08 の追記。v0.4 承認済み（E-40） |
@@ -67,6 +67,9 @@
 | 計画 | 反復 8 計画書（IT08-PLAN） | [iterations/it08/plan.md](iterations/it08/plan.md) | v0.4 承認（2026-11-25。#232、E-166、REV-129）。v0.3（承認（E-134）。REV-112 の指摘と E-135・E-136 を反映）。新作「古代都市の復旧」の試作ブランチの仕組みを取り込み、1〜3 章を作り直し、画像生成の環境、錬金アイテムの種類と調合、#190 の案 B（E-130〜E-136） |
 | 計画 | 反復 8 9 章の増援の案 B の測定 | [iterations/it08/ch09-candidate-b.md](iterations/it08/ch09-candidate-b.md) | #213。反復 7 の案 B の表と 120 試遊が一致 |
 | 計画 | 反復 8 の振り返り（IT08-RETRO） | [iterations/it08/retrospective.md](iterations/it08/retrospective.md) | v0.2 承認（2026-11-25、REV-127）。#214。#227 を足した。H-31・H-33 は今の 1〜3 章では成り立たなかった（E-160）、H-32 は一部（案）、H-28・H-29 は未検証。反復 9 の候補（敵の密度・敵の魔法使い・重装兵の強さほか） |
+| 設計 | 設計書（新作 NG08: 敵と測定） | [03_design/design-ng08-enemies.md](03_design/design-ng08-enemies.md) | v0.2 承認（2026-11-25。#235、E-167・E-168、REV-130）。基準（爆弾なし 5/20 以下・道具あり 15/20 以上）、とても弱い敵・敵の魔法使い・特効の槍、後半の作業 |
+| 試験 | 新作 NG08 の試験仕様 | [04_test/test-spec-ng08.md](04_test/test-spec-ng08.md) | #235 の測定 |
+| 制作 | 反復 9 手直し前の測定 | [iterations/it09/measure-before.md](iterations/it09/measure-before.md) | #235、1〜3章 |
 | 計画 | 反復 9 計画書（IT09-PLAN） | [iterations/it09/plan.md](iterations/it09/plan.md) | v0.2 承認（E-164）。1〜3 章を道具が要る章に手直し、仲間の全員に固有スキル、4 章（軽歩兵、古代の装置で門を開く）、画面と絵の持ち越し（E-161・E-162） |
 | 試験 | 反復 8 の試遊の記録（IT08-PLAYTEST） | [iterations/it08/playtest.md](iterations/it08/playtest.md) | v0.1 案（開発者の承認待ち）。#214。2026-11-23 の試遊（main 95c3d86）と 11-24 の #227 の版の確認、行動の記録（1〜3 章）、E-153〜E-160、#214 の申し送りの確かめ |
 | 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |

@@ -99,3 +99,33 @@ strikes = 1
 min_range = 1
 max_range = 1
 effective_tags = []
+
+# 弱い敵の武器（DES-NG-24）。
+[[weapons]]
+id = "crude_sword"
+name = "粗末な剣"
+type = "sword"
+damage_type = "physical"
+might = 3
+hit = 75
+crit = 0
+weight = 1
+strikes = 1
+min_range = 1
+max_range = 1
+effective_tags = []
+
+# 重装兵に特効を持つ槍（DES-NG-24）。
+[[weapons]]
+id = "armor_breaker"
+name = "重装砕き"
+type = "lance"
+damage_type = "physical"
+might = 5
+hit = 70
+crit = 0
+weight = 5
+strikes = 1
+min_range = 1
+max_range = 1
+effective_tags = ["armor"]

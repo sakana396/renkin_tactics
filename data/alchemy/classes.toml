@@ -58,3 +58,17 @@ id = "captain"
 name = "隊長"
 weapon_type = "lance"
 base = { hp = 24, str = 7, skl = 6, spd = 5, def = 5, mov = 5, lck = 3, mag = 0, res = 3 }
+
+# とても弱い敵（DES-NG-24）。絵は選定まで欠落時の代替表示を使う。
+[[classes]]
+id = "rabble"
+name = "弱い兵"
+weapon_type = "sword"
+base = { hp = 10, str = 0, skl = 0, spd = 3, def = 0, mov = 5, lck = 0, mag = 0, res = 0 }
+
+# 敵の魔道士（DES-NG-24）。絵は選定まで欠落時の代替表示を使う。
+[[classes]]
+id = "mage"
+name = "魔道士"
+weapon_types = ["magic"]
+base = { hp = 16, str = 1, skl = 5, spd = 5, def = 1, mov = 5, lck = 2, mag = 4, res = 3 }
