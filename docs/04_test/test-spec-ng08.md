@@ -8,8 +8,9 @@
 | TC-DES-NG-23-01 | DES-NG-23 案 | 新作の現状、直接開始、離脱、各章の既存進路と行動順、最大40ターン、Hold 無効の smartPlay | `RENKIN_IT09_MEASURE=1 go test ./internal/core -run '^TestIT09Measure$' -v -count=1` | 各章 seed 1〜20 の勝敗・倒れた人数・ターンと勝ち数を記録する。上限超過は 41 と記録 | 測定 |
 | TC-DES-NG-23-02 | DES-NG-23 案 | 01 と同じ。ただし3章は各人を別の隊とし進路を (12,2) とする | `RENKIN_IT09_MEASURE=1 go test ./internal/core -run '^TestIT09Measure$/^TC-DES-NG-23-02$' -v -count=1` | 各章20 seed の勝敗・倒れた人数・ターンと勝ち数を記録。上限超過は41 | 測定 |
 | TC-DES-NG-23-03 | DES-NG-23 案 | 01 と同じ（制作記録の進路）。打ち手に工夫 Bait（止まったときの釣り役）を足す | `RENKIN_IT09_MEASURE=1 go test ./internal/core -run '^TestIT09Measure$/^TC-DES-NG-23-03$' -v -count=1` | 各章20 seed の勝敗・倒れた人数・ターンと勝ち数・時間切れの数を記録。上限超過は41 | 測定 |
+| TC-DES-NG-23-04 | DES-NG-23 案 | 小さな盤面で釣り役候補の能力と巻き戻し済みを変える | `go test ./internal/core -run TestBaitUnit` | 主人公・杖装備・巻き戻し済みを除き、倒れる確率が最小、同点なら守備×2＋HP が最大、さらに同点なら添字が最小。候補が尽きたら一巡する | 自動 |
 
-TC-DES-NG-23-02 も観測用であり、測定記録と各セルを照合する。3章は時間切れが残る。TC-DES-NG-23-03 も観測用で、各セルを測定記録と照合する。時間切れはどの章も 0 だった。Bait の扱い（新作の測定だけで使うか）は DES-NG08 の判断が要る点で、開発者の承認待ち。
+TC-DES-NG-23-02 も観測用であり、測定記録と各セルを照合する。3章は時間切れが残る。TC-DES-NG-23-03 も観測用で、各セルを測定記録と照合する。時間切れはどの章も 0 だった。Bait は新作の測定だけで使う（E-171）。
 
 TC-DES-NG-23-01 は観測用で、各 seed の結果と測定記録の表の一致を自動判定しない。固定ループの測定数20の検査も結果の独立した期待値検証ではない。現行データで上記コマンドを実行し、ログの各章・各 seed の result・fallen・turns と勝ち数を [測定記録](../iterations/it09/measure-before.md) の全セルと照合する。記録の W・L・T はそれぞれ Won・Lost・時間切れに対応する。後半の道具選択・使用・巻き戻しは規則から導いた具体的な期待結果で別途検証する。
 
