@@ -1,7 +1,7 @@
 # REV-134: 新作 3 章で測定の打ち手が止まる原因を直す（#235 後半 2）
 
 - 日付: 2026-11-28
-- 対象: PR #248、ブランチ `it09/235-smart-ch03`（初回 `696e831`）。`internal/core/smart_autoplay_it06_test.go`（工夫 Bait）、`internal/core/measure_it09_test.go`（TC-DES-NG-23-02〜04）、`docs/03_design/design-ng08-enemies.md`（DES-NG08 v0.3 案）、`docs/iterations/it09/measure-before.md`、`docs/04_test/test-spec-ng08.md`、`docs/traceability.md`、`docs/README.md`
+- 対象: PR #248、ブランチ `it09/235-smart-ch03`（初回 `696e831`）。`internal/core/smart_autoplay_it06_test.go`（工夫 Bait）、`internal/core/measure_it09_test.go`（TC-DES-NG-23-02・03）、`internal/core/bait_it09_test.go`（TC-DES-NG-23-04）、`docs/03_design/design-ng08-enemies.md`（DES-NG08 v0.3 案）、`docs/iterations/it09/measure-before.md`、`docs/04_test/test-spec-ng08.md`、`docs/traceability.md`、`docs/README.md`
 - 方針・統合・記録: 管理役（Claude Code）
 - 実装: Codex（進路と隊分けの試案、TC-DES-NG-23-02 まで）→ Claude（Fable のサブエージェント。停止の原因の調査と工夫 Bait、TC-DES-NG-23-03）→ Codex（指摘の直し、TC-DES-NG-23-04）
 - 独立レビュー: Claude spec-reviewer（Opus、読み取り専用）
@@ -31,6 +31,27 @@
 | F-08 | 情報 | E-167 の 5/20 は「1 章 19・2 章 15」を前提に選ばれた。Bait で手直し前は 20・18・17 | 承認を求めるときに伝える |
 | F-09 | 情報 | 既存の Rewind は同じ盤面に戻って同じ結果を繰り返すことがある（基準を甘くする向き） | 直さない。#236 の開発者の試遊で補う |
 | F-10 | 情報 | 設計の「10 点を加点」は実際には点数から引く | 直した。「優先する（点数から 10 を引く）」 |
+
+## 再確認（`9c37ca0`）
+
+独立レビューが `git diff 696e831..HEAD` を読み、F-01〜F-10 の対応と新しい食い違いを確かめた。main から来た変更（#234 の `internal/ui`・DES-IT07・TST-IT07・REV-133、E-170・E-171 の行）は対象から除いた。`696e831..88bb7b1` で `internal/core`・`data`・`internal/defs`・`internal/defload` は変わっていない。打ち手の変更もコメント 1 行だけなので、測定（TC-DES-NG-23-01〜03）は再実行していない（初回の 140 セルの照合がそのまま有効）。
+
+検証: `gofmt -l .` 出力なし、`GOOS=windows go vet ./...` 成功、`go test -count=1 ./internal/core/... ./internal/defload/... ./internal/savefile/... ./tools/tccheck/...` 成功、`go run ./tools/tccheck` OK（警告 56 件）。
+
+- F-01: E-171 に、問い 3 つの文面と選択肢、答えの原文「111」、それを 3 問とも 1 番目と読んだことが書かれ、右の列は「開発者の確認待ち」。DES-NG08 の「Bait の扱い（決定。E-171）」と食い違わない
+- F-02: 4 か所が「新作の測定だけで使う（E-171）」にそろった
+- F-03〜F-05・F-10: 文面を確かめた
+- F-06: DES-NG-23 に「道具ありの打ち手も Hold なし・Bait ありを土台にする」が案として入った（開発者の承認に含める）
+- F-07: TC-DES-NG-23-04 の期待値を戦闘の規則から導き直した（敵の力 3、仲間の HP 5、守備ごとのダメージと倒れる確率）。`baitUnit` を 5 通りに壊すと、どれも失敗した
+- F-08・F-09: 方針どおり
+
+| ID | 重さ | 内容 | 対応 |
+|---|---|---|---|
+| R-01 | 低 | 対象の行で TC-DES-NG-23-04 の置き場所が分からない | 直した（`bait_it09_test.go` を書いた） |
+| R-02 | 情報 | 主人公・杖の除外を名前にした場合がない。期待値の根拠がコメントにない | 直さない |
+| R-03 | 情報 | 誰も釣り役になれないときの場合をテストしていない | 直さない |
+
+結論（再確認）: 承認。
 
 ## 開発者の承認
 
