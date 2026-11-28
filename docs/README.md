@@ -67,7 +67,7 @@
 | 計画 | 反復 8 計画書（IT08-PLAN） | [iterations/it08/plan.md](iterations/it08/plan.md) | v0.4 承認（2026-11-25。#232、E-166、REV-129）。v0.3（承認（E-134）。REV-112 の指摘と E-135・E-136 を反映）。新作「古代都市の復旧」の試作ブランチの仕組みを取り込み、1〜3 章を作り直し、画像生成の環境、錬金アイテムの種類と調合、#190 の案 B（E-130〜E-136） |
 | 計画 | 反復 8 9 章の増援の案 B の測定 | [iterations/it08/ch09-candidate-b.md](iterations/it08/ch09-candidate-b.md) | #213。反復 7 の案 B の表と 120 試遊が一致 |
 | 計画 | 反復 8 の振り返り（IT08-RETRO） | [iterations/it08/retrospective.md](iterations/it08/retrospective.md) | v0.2 承認（2026-11-25、REV-127）。#214。#227 を足した。H-31・H-33 は今の 1〜3 章では成り立たなかった（E-160）、H-32 は一部（案）、H-28・H-29 は未検証。反復 9 の候補（敵の密度・敵の魔法使い・重装兵の強さほか） |
-| 設計 | 設計書（新作 NG08: 敵と測定） | [03_design/design-ng08-enemies.md](03_design/design-ng08-enemies.md) | v0.2 承認（2026-11-25。#235、E-167・E-168、REV-130）。基準（爆弾なし 5/20 以下・道具あり 15/20 以上）、とても弱い敵・敵の魔法使い・特効の槍、後半の作業 |
+| 設計 | 設計書（新作 NG08: 敵と測定） | [03_design/design-ng08-enemies.md](03_design/design-ng08-enemies.md) | v0.3 承認（2026-11-28。#235 後半 2、E-171・E-172、REV-134。3 章の打ち手の停止の仕組みと釣り役（Bait、E-171））。v0.2 承認（2026-11-25。#235、E-167・E-168、REV-130）。基準（爆弾なし 5/20 以下・道具あり 15/20 以上）、とても弱い敵・敵の魔法使い・特効の槍、後半の作業 |
 | 試験 | 新作 NG08 の試験仕様 | [04_test/test-spec-ng08.md](04_test/test-spec-ng08.md) | #235 の測定 |
 | 制作 | 反復 9 手直し前の測定 | [iterations/it09/measure-before.md](iterations/it09/measure-before.md) | #235、1〜3章 |
 | 計画 | 反復 9 計画書（IT09-PLAN） | [iterations/it09/plan.md](iterations/it09/plan.md) | v0.2 承認（E-164）。1〜3 章を道具が要る章に手直し、仲間の全員に固有スキル、4 章（軽歩兵、古代の装置で門を開く）、画面と絵の持ち越し（E-161・E-162） |
