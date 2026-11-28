@@ -3,6 +3,7 @@ package core_test
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/sakana396/renkin_tactics/internal/core"
@@ -13,9 +14,9 @@ import (
 // TC-DES-NG-23-01 は制作記録の進路、02 は 3 章だけ進路と隊分けを変えた試案、03 は制作記録の進路で工夫 Bait を足した打ち手。
 func TestIT09Measure(t *testing.T) {
 	for _, tc := range []struct {
-		id            string
-		revised, bait bool
-	}{{"TC-DES-NG-23-01", false, false}, {"TC-DES-NG-23-02", true, false}, {"TC-DES-NG-23-03", false, true}} {
+		id                  string
+		revised, bait, bomb bool
+	}{{"TC-DES-NG-23-01", false, false, false}, {"TC-DES-NG-23-02", true, false, false}, {"TC-DES-NG-23-03", false, true, false}, {"TC-DES-NG-23-09", false, true, true}} {
 		revised := tc.revised
 		t.Run(tc.id, func(t *testing.T) {
 			if os.Getenv("RENKIN_IT09_MEASURE") == "" {
@@ -41,12 +42,23 @@ func TestIT09Measure(t *testing.T) {
 						f := smartAll
 						f.Hold = false
 						f.Bait = tc.bait
+						f.Bomb = tc.bomb
 						plan := autoPlan{Order: []string{"dain", "tori", "nemu", "aoi", "haru"}, Routes: [][]tactics.Pos{route}}
 						if revised && i == 2 {
 							plan.Groups = map[string]int{"dain": 0, "tori": 1, "nemu": 2, "aoi": 3, "haru": 4}
 							plan.Routes = [][]tactics.Pos{route, route, route, route, route}
 						}
+						if tc.bomb && os.Getenv("RENKIN_IT09_SCENES") != "" {
+							autoLog = func(line string) {
+								if strings.Contains(line, "爆弾") {
+									t.Logf("seed=%d %s", seed, line)
+								}
+							}
+						}
 						r := smartPlay(s.Battle, ids, plan, f, 40)
+						if tc.bomb && os.Getenv("RENKIN_IT09_SCENES") != "" {
+							autoLog = nil
+						}
 						measured++
 						switch r.Result {
 						case tactics.Won:
@@ -54,7 +66,7 @@ func TestIT09Measure(t *testing.T) {
 						case tactics.Ongoing:
 							timeouts++
 						}
-						t.Logf("seed=%d result=%v turns=%d fallen=%d %v", seed, r.Result, r.Turns, len(r.Fallen), r.Fallen)
+						t.Logf("seed=%d result=%v turns=%d fallen=%d %v bombs=%d bombkills=%d", seed, r.Result, r.Turns, len(r.Fallen), r.Fallen, r.BombUses, r.BombKills)
 					}
 					if measured != 20 {
 						t.Fatalf("測定数=%d、期待20", measured)

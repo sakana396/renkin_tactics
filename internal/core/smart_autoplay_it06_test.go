@@ -41,6 +41,8 @@ type smartFeatures struct {
 	// 進む得（隊の先頭より 2 マス先まで）を上回るので、待ち構える敵の届く範囲のすぐ外で釣り合って止まることがある（新作 3 章）。
 	// smartAll には入れない（反復 6・7 の測定の条件を保つ）。新作の測定（measure_it09_test.go）で使う。
 	Bait bool
+	// Bomb は撃破でき、味方を巻き込まない爆弾を通常攻撃と比較する（DES-NG-23）。
+	Bomb bool
 }
 
 // smartAll はすべての工夫を使う賢い打ち手。
@@ -56,7 +58,7 @@ func smartPlay(b *tactics.Battle, ids []string, plan autoPlan, f smartFeatures, 
 	records := map[int]*smartTurn{}
 	for b.Result == tactics.Ongoing && b.Turn <= maxTurn {
 		turn := b.Turn
-		rec := &smartTurn{step: map[int]int{}, lastKill: p.lastKill, kills: p.kills, deaths: len(p.deaths)}
+		rec := &smartTurn{step: map[int]int{}, lastKill: p.lastKill, kills: p.kills, deaths: len(p.deaths), bombUses: p.bombUses, bombKills: p.bombKills}
 		for g, n := range p.step {
 			rec.step[g] = n
 		}
@@ -104,7 +106,7 @@ func smartPlay(b *tactics.Battle, ids []string, plan autoPlan, f smartFeatures, 
 			plan.OnRewind(back)
 		}
 		tries[back]++
-		p.step, p.lastKill, p.kills, p.deaths = target.step, target.lastKill, target.kills, p.deaths[:target.deaths]
+		p.restoreTurn(target)
 		for t := range records {
 			if t > back {
 				delete(records, t)
@@ -121,7 +123,7 @@ func smartPlay(b *tactics.Battle, ids []string, plan autoPlan, f smartFeatures, 
 			p.log(fmt.Sprintf("T%d で倒れたので T%d に巻き戻す（残り %d 回）", turn, back, b.RewindsLeft()))
 		}
 	}
-	res := autoResult{Result: b.Result, Turns: b.Turn, Deaths: p.deaths, Rewinds: p.rewinds}
+	res := autoResult{Result: b.Result, Turns: b.Turn, Deaths: p.deaths, Rewinds: p.rewinds, BombUses: p.bombUses, BombKills: p.bombKills}
 	for _, u := range b.Units() {
 		if !u.Alive {
 			if u.Side == tactics.Player {
@@ -134,18 +136,25 @@ func smartPlay(b *tactics.Battle, ids []string, plan autoPlan, f smartFeatures, 
 	return res
 }
 
+// restoreTurn は巻き戻した盤面に対応する打ち手の記録を復元する（DES-NG-23）。
+func (p *smartPlayer) restoreTurn(target *smartTurn) {
+	p.step, p.lastKill, p.kills, p.deaths = target.step, target.lastKill, target.kills, p.deaths[:target.deaths]
+	p.bombUses, p.bombKills = target.bombUses, target.bombKills
+}
+
 // smartRewindReserve は、主人公が倒れたときのために取っておく巻き戻しの回数。
 var smartRewindReserve = 3
 
 // smartTurn は、巻き戻しのために覚えるターンの初めの打ち手の状態と、そのターンの行動（工夫 Rewind）。
 type smartTurn struct {
-	step            map[int]int
-	lastKill, kills int
-	deaths          int
-	alive           []int
-	firstID         uint64
-	hasFirst        bool
-	endPos          map[int]tactics.Pos
+	step                map[int]int
+	lastKill, kills     int
+	deaths              int
+	bombUses, bombKills int
+	alive               []int
+	firstID             uint64
+	hasFirst            bool
+	endPos              map[int]tactics.Pos
 }
 
 // avoid は、ターン turn をやり直すとき、自軍 i を endPos の i のマスに立たせず、用心させる。
@@ -165,7 +174,8 @@ func (p *smartPlayer) avoid(turn, i int, endPos map[int]tactics.Pos) {
 
 type smartPlayer struct {
 	*autoPlayer
-	f smartFeatures
+	f                   smartFeatures
+	bombUses, bombKills int
 	// zone は敵ごとに、武器の列の添字ごとの攻撃の届くマス（行動のたびに作り直す）。
 	zone map[int]map[int]map[tactics.Pos]bool
 	// firstID はこのターンの最初の自軍の行動の履歴 ID（巻き戻しの戻り先）。endPos は自軍がこのターンに最後に立ったマス。
@@ -601,6 +611,53 @@ func (p *smartPlayer) attackOption(i int) *smartOption {
 	return best
 }
 
+// bombOption は爆弾の移動先と爆心を列挙し、安全な撃破を評価する（DES-NG-23）。
+func (p *smartPlayer) bombOption(i int) *smartOption {
+	if !p.f.Bomb {
+		return nil
+	}
+	u := p.b.Units()[i]
+	var best *smartOption
+	for k, stack := range u.Items {
+		if !stack.Item.Bomb || stack.Count <= 0 {
+			continue
+		}
+		for _, to := range sortedTiles(p.b.Reachable(i)) {
+			for _, center := range p.b.CellsWithin(to, stack.Item.ThrowRange) {
+				c := center
+				cmd := tactics.Command{Unit: i, To: to, Action: tactics.UseItem, Item: k, Blast: &c}
+				f, err := p.b.BlastForecast(cmd)
+				if err != nil {
+					continue
+				}
+				kills, damage, friendly := 0, 0.0, false
+				for _, v := range f.Targets {
+					if v.Side == tactics.Player {
+						friendly = true
+						break
+					}
+					if v.Falls {
+						kills++
+					}
+					damage += float64(v.HP-v.After) / float64(p.b.Units()[v.Unit].Stats.HP)
+				}
+				if friendly || kills == 0 {
+					continue
+				}
+				ok, death, expected, attackers := p.safeFor(i, to, u.EquippedWeapon(), -1, nil, u.HP)
+				if !ok {
+					continue
+				}
+				score := 100*float64(kills) + 40*damage - 400*death - 30*expected/float64(u.Stats.HP) - 2*float64(attackers) - 20
+				if best == nil || score > best.score {
+					best = &smartOption{cmd: cmd, score: score, why: "爆弾"}
+				}
+			}
+		}
+	}
+	return best
+}
+
 func allowed(u tactics.Unit, t tactics.WeaponType) bool {
 	for _, a := range u.AllowedWeaponTypes {
 		if a == t {
@@ -666,13 +723,30 @@ func (p *smartPlayer) healOption(i int) *smartOption {
 func (p *smartPlayer) act(o *smartOption) error {
 	u := p.b.Units()[o.cmd.Unit]
 	turn := p.b.Turn
+	var bombKills int
+	var bombScene string
+	if o.cmd.Blast != nil {
+		if f, err := p.b.BlastForecast(o.cmd); err == nil {
+			bombScene = fmt.Sprintf(" 爆心%v 対象", f.Center)
+			for _, v := range f.Targets {
+				bombScene += fmt.Sprintf(" %s(HP%d→%d)", v.Name, v.HP, v.After)
+				if v.Side == tactics.Enemy && v.Falls {
+					bombKills++
+				}
+			}
+		}
+	}
 	events, err := p.b.Act(o.cmd)
+	if err == nil && o.cmd.Blast != nil {
+		p.bombUses++
+		p.bombKills += bombKills
+	}
 	if err == nil {
 		p.mark(turn, o.cmd.Unit, o.cmd.To)
 	}
 	p.note(events)
 	if p.log != nil {
-		p.log(fmt.Sprintf("T%d %s HP%d %v→%v %v 対象%d %s err=%v", p.b.Turn, u.Name, u.HP, u.Pos, o.cmd.To, o.cmd.Action, o.cmd.Target, o.why, err))
+		p.log(fmt.Sprintf("T%d %s HP%d %v→%v %v 対象%d %s err=%v", p.b.Turn, u.Name, u.HP, u.Pos, o.cmd.To, o.cmd.Action, o.cmd.Target, o.why+bombScene, err))
 	}
 	// 再移動は使わず、その場で終える（今の打ち手と同じ。再移動で下がる工夫は勝ち数が増えなかったので入れていない）。
 	if pc, ok := p.b.PendingCanto(); ok && err == nil {
@@ -870,7 +944,7 @@ func (p *smartPlayer) phase() {
 				if tried[i] {
 					continue
 				}
-				for _, o := range []*smartOption{p.healIf(i), p.attackOption(i)} {
+				for _, o := range []*smartOption{p.healIf(i), p.attackOption(i), p.bombOption(i)} {
 					if o != nil && (chosen == nil || o.score > chosen.score) {
 						chosen = o
 					}
@@ -881,6 +955,9 @@ func (p *smartPlayer) phase() {
 			chosen = p.healIf(i)
 			if chosen == nil {
 				chosen = p.attackOption(i)
+			}
+			if bomb := p.bombOption(i); bomb != nil && (chosen == nil || bomb.score > chosen.score) {
+				chosen = bomb
 			}
 			if chosen == nil {
 				chosen = p.moveOption(i)

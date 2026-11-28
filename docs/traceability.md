@@ -90,5 +90,5 @@
 
 | 対象 | Issue | 設計 | テストケース | 実装 | 状態 |
 |---|---|---|---|---|---|
-| Q-IT09-01 | #235 | DES-NG-23（案） | TC-DES-NG-23-01、TC-DES-NG-23-02、TC-DES-NG-23-03、TC-DES-NG-23-04 | `internal/core/measure_it09_test.go`、`internal/core/smart_autoplay_it06_test.go`、`internal/core/bait_it09_test.go` | 測定用。03（工夫 Bait）で各章の時間切れ 0。Bait は新作の測定だけで使う（E-171）。04 で釣り役の選択を検証 |
+| Q-IT09-01 | #235 | DES-NG-23（案） | TC-DES-NG-23-01、TC-DES-NG-23-02、TC-DES-NG-23-03、TC-DES-NG-23-04、TC-DES-NG-23-05、TC-DES-NG-23-06、TC-DES-NG-23-07、TC-DES-NG-23-08、TC-DES-NG-23-09、TC-DES-NG-23-10、TC-DES-NG-23-11 | `internal/core/measure_it09_test.go`、`internal/core/smart_autoplay_it06_test.go`、`internal/core/bait_it09_test.go`、`internal/core/bomb_player_it09_test.go` | 測定用。03（工夫 Bait）で各章の時間切れ 0。Bait は新作の測定だけで使う（E-171）。04 で釣り役の選択を検証 |
 | DES-NG-24 | #235（一部） | DES-NG-24 | TC-DES-NG-24-01、TC-DES-NG-24-02、TC-DES-NG-24-03、TC-DES-NG-24-04、TC-DES-NG-24-05、TC-DES-NG-24-06、TC-DES-NG-24-07、TC-DES-NG-24-08 | `data/alchemy/classes.toml`、`data/alchemy/weapons.toml`、`internal/core/enemies_ng08_test.go` | 兵種・武器の定義と戦闘予測を実装。SRS 改訂案は承認待ち。配置は #236 |
