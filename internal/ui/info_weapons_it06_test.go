@@ -50,7 +50,7 @@ func TestInfoWeaponRows(t *testing.T) {
 		}
 	}
 	plain := tactics.Terrain{Name: "平地"}
-	x := MapSize + infoMargin
+	x := baseMetrics().Map + infoMargin
 
 	t.Run("TC-FR-UNT-09-22 能力のページの下に、持っている武器を種類の絵と名前の短い行で並べ、装備中の武器に印を付ける。5 本でも欄・配置のボタン・印に重ならない", func(t *testing.T) {
 		five := []tactics.Weapon{ironSword, killer, ironAxe, ironBow, fire}
@@ -71,7 +71,7 @@ func TestInfoWeaponRows(t *testing.T) {
 		} {
 			u := unit(tc.weapons, tc.equipped)
 			// 戦闘の情報欄（地形とページの印あり）。
-			v := Panel{Unit: &u, Terrain: &plain, Tabs: true}.View()
+			v := Panel{Unit: &u, Terrain: &plain, Tabs: true}.View(baseMetrics())
 			texts := weaponRowTexts(v)
 			got := make([]string, len(texts))
 			for i, tx := range texts {
@@ -131,11 +131,11 @@ func TestInfoWeaponRows(t *testing.T) {
 			}
 			checkInfoArea(t, tc.name, v)
 			// 配置の画面（地形なし）では、ボタン（y = 296〜）より上に収まる。
-			if d := (Panel{Unit: &u, Tabs: true}).View(); d.Bottom > deployButtonTop {
+			if d := (Panel{Unit: &u, Tabs: true}).View(baseMetrics()); d.Bottom > deployButtonTop {
 				t.Errorf("%s: 配置の情報の一番下 %d がボタンの上端 %d を超える", tc.name, d.Bottom, deployButtonTop)
 			}
 			// 詳しい値とスキルは「装備・スキル」のページのままで、そちらには武器の行を足さない。
-			e := Panel{Unit: &u, Terrain: &plain, Page: PageEquip, Tabs: true}.View()
+			e := Panel{Unit: &u, Terrain: &plain, Page: PageEquip, Tabs: true}.View(baseMetrics())
 			if len(weaponRowIcons(e)) != 0 {
 				t.Errorf("%s: 装備・スキルのページに武器の行がある", tc.name)
 			}
@@ -148,14 +148,14 @@ func TestInfoWeaponRows(t *testing.T) {
 
 		// 武器を持たないユニットには、武器の行を足さない（移動のすぐあとに地形の空き行）。
 		none := unit(nil, 0)
-		if v := (Panel{Unit: &none, Terrain: &plain}).View(); len(weaponRowTexts(v)) != 0 || len(weaponRowIcons(v)) != 0 {
+		if v := (Panel{Unit: &none, Terrain: &plain}).View(baseMetrics()); len(weaponRowTexts(v)) != 0 || len(weaponRowIcons(v)) != 0 {
 			t.Errorf("武器なしで武器の行 %q", rows(v))
 		}
 
 		// 列の幅を超える長い名前は「…」で省き、全文は装備・スキルのページで読める。
 		long := tactics.Weapon{Name: "とてもとても長い名前の剣の武器", Type: tactics.Sword, Might: 5, Hit: 90, MinRange: 1, MaxRange: 1}
 		u := unit([]tactics.Weapon{ironSword, long}, 0)
-		v := Panel{Unit: &u, Terrain: &plain}.View()
+		v := Panel{Unit: &u, Terrain: &plain}.View(baseMetrics())
 		texts := weaponRowTexts(v)
 		got := texts[len(texts)-1]
 		if !strings.HasSuffix(got.Text, "…") || rectOfText(got.X, got.Y, got.Text, false).Max.X > x+2*152-4 {
@@ -169,13 +169,13 @@ func TestInfoWeaponRows(t *testing.T) {
 		// 回復の予測を開いている間は、予測を優先して武器の行を出さず、予測とユニットのページを欄に収める。
 		u = unit(five, 0)
 		h := Panel{Heal: &tactics.HealForecast{Healer: "リナ", Target: "レオン", HP: 10, MaxHP: 20, Amount: 10, After: 20, Uses: 15, MaxUses: 15},
-			Unit: &u, Terrain: &plain, Tabs: true}.View()
+			Unit: &u, Terrain: &plain, Tabs: true}.View(baseMetrics())
 		if len(weaponRowIcons(h)) != 0 || len(weaponRowTexts(h)) != 0 {
 			t.Errorf("回復の予測の間に武器の行 %q", rows(h))
 		}
 		checkInfoArea(t, "回復の予測", h)
 		// 攻撃の予測を開いている間は、今までどおり予測だけを出す。
-		a := Panel{Forecast: []ForecastRow{{"", "レオン", "ボス"}}, Unit: &u, Terrain: &plain, Tabs: true}.View()
+		a := Panel{Forecast: []ForecastRow{{"", "レオン", "ボス"}}, Unit: &u, Terrain: &plain, Tabs: true}.View(baseMetrics())
 		if len(weaponRowIcons(a)) != 0 || strings.Contains(strings.Join(rows(a), "|"), "鉄の斧") {
 			t.Errorf("攻撃の予測の間に武器の行 %q", rows(a))
 		}
@@ -197,7 +197,7 @@ func TestInfoWeaponRows(t *testing.T) {
 			{"自軍 Lv 3・経験 10 は今までどおり", unit([]tactics.Weapon{ironSword}, 0), "Lv 3　経験 10"},
 			{"レベル 0（試験の自軍）は出さない", func() tactics.Unit { u := unit([]tactics.Weapon{ironSword}, 0); u.Level = 0; return u }(), ""},
 		} {
-			v := Panel{Unit: &tc.u, Terrain: &plain, Tabs: true}.View()
+			v := Panel{Unit: &tc.u, Terrain: &plain, Tabs: true}.View(baseMetrics())
 			r := rows(v)
 			got := ""
 			if !strings.HasPrefix(r[2], "HP ") {

@@ -38,9 +38,9 @@ func ng05Scenes(t *testing.T, chapter string, hires bool) *SceneController {
 func TestPrepareHiResNG05(t *testing.T) {
 	win := image.Rect(0, 0, 1088, 832)
 	t.Run("TC-DES-NG-11-05 領域は窓 1088×832 に収まり、互いに重ならない", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
-		if ScreenWidth != 1088 || ScreenHeight != 832 {
-			t.Fatal(ScreenWidth, ScreenHeight)
+		mt := NewMetrics(HiResCellSize)
+		if mt.ScreenW != 1088 || mt.ScreenH != 832 {
+			t.Fatal(mt.ScreenW, mt.ScreenH)
 		}
 		regions := []image.Rectangle{hrHeader, hrRosterPanel, hrCenterPanel, hrHandPanel, hrStockPanel, hrChapterPanel, hrFooter}
 		for i, r := range regions {
@@ -68,7 +68,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-06 カードの縦の並びは 5 枚まで、左の欄に収まり、6 人以上はスクロールする", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch02", true)
 		v := s.prepareHiResView()
 		if len(v.Cards) != 5 || v.RosterUp.Label != "" {
@@ -104,7 +103,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-07 描くものはすべて窓に収まり、領域をはみ出さない（3 章・全員）", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		for _, ch := range []string{"ch01", "ch02", "ch03"} {
 			s := ng05Scenes(t, ch, true)
 			for _, i := range s.livingMembers() {
@@ -172,7 +170,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-08 カードのクリックで選び、チェックのクリックで出撃を切り替える（主人公は外せない）", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		v := s.prepareHiResView()
 		c1 := v.Cards[1]
@@ -214,7 +211,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-09 在庫の行を選び、空き枠をクリックで 1 個渡す", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.prepareMember = 1 // ダイン（手持ち 2/5）
 		before := itemCount(s.campaign.Roster[1].Items) + len(s.campaign.Roster[1].Weapons)
@@ -280,7 +276,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-10 手持ちの枠のクリックで在庫に戻す（最後の武器は戻せない）", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.prepareMember = 1
 		m := &s.campaign.Roster[1]
@@ -305,7 +300,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-11 手持ちが 5 枠なら渡せず、理由を案内欄に出す", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.prepareMember = 0 // アオイは 5/5
 		hv := s.prepareHiResView()
@@ -327,7 +321,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-12 手持ちの武器を右クリックで装備（先頭）にする", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.prepareMember = 0 // アオイ: ファイア、癒やしの杖、…
 		m := s.campaign.Roster[0]
@@ -370,7 +363,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-13 「配置へ」のボタン・Enter で配置へ進み、Esc は在庫の選択を外す", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.Click(hrDeployRect.Min.X+5, hrDeployRect.Min.Y+5)
 		if s.Scene() != Deploy {
@@ -449,7 +441,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-15 目的の文は goal があるときだけヘッダーに出す", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		for ch, goal := range map[string]string{"ch01": "目的　野盗の頭目を倒す", "ch02": "目的　公国の隊長を倒す", "ch03": "目的　施設の指揮官を倒す"} {
 			v := ng05Scenes(t, ch, true).prepareHiResView()
 			found := false
@@ -506,7 +497,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-17 HiRes でない準備は改修前と同じ SceneView を返し、窓の中央の層を使う", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", false)
 		if s.fullWindowPrepare() {
 			t.Fatal("HiRes でないのに全面")
@@ -555,7 +545,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-18 ↑↓ でキャラを選び、見える位置まで名簿を送る", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch02", true)
 		for range 4 {
 			s.campaign.Roster = append(s.campaign.Roster, core.Member{Character: "haru", Level: 1, Weapons: []string{"fire"}, Stats: tactics.Stats{HP: 10}, Alive: true})
@@ -598,7 +587,6 @@ func TestPrepareHiResNG05(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-11-19 手持ちの 5 枠と在庫の行は、それぞれの欄に収まり、重ならない。在庫は 3 行を超えるとスクロールする", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch03", true)
 		s.campaign.StockWeapons = append(s.campaign.StockWeapons, core.WeaponCount{Weapon: "iron_axe", Count: 1})
 		v := s.prepareHiResView()

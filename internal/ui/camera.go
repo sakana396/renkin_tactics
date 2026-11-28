@@ -31,17 +31,17 @@ func (c *Camera) Focus(p tactics.Pos) {
 }
 
 // CellAt は表示領域と盤内を検証して世界座標へ変換する（DES-UI-25）。
-func (c Camera) CellAt(x, y int) (tactics.Pos, bool) {
-	if x < 0 || y < 0 || x >= MapSize || y >= MapSize {
+func (c Camera) CellAt(m Metrics, x, y int) (tactics.Pos, bool) {
+	if x < 0 || y < 0 || x >= m.Map || y >= m.Map {
 		return tactics.Pos{}, false
 	}
-	p := tactics.Pos{X: x/CellSize + c.X, Y: y/CellSize + c.Y}
+	p := tactics.Pos{X: x/m.Cell + c.X, Y: y/m.Cell + c.Y}
 	return p, p.X >= 0 && p.Y >= 0 && p.X < c.Width && p.Y < c.Height
 }
 
 // Screen は世界座標の描画位置を返す（DES-UI-25）。
-func (c Camera) Screen(p tactics.Pos) image.Point {
-	return image.Pt((p.X-c.X)*CellSize, (p.Y-c.Y)*CellSize)
+func (c Camera) Screen(m Metrics, p tactics.Pos) image.Point {
+	return image.Pt((p.X-c.X)*m.Cell, (p.Y-c.Y)*m.Cell)
 }
 
 // Visible は盤面の表示対象を判定する（DES-UI-25）。
@@ -51,23 +51,20 @@ func (c Camera) Visible(p tactics.Pos) bool {
 
 // MenuRectsFor は、一覧の行 labels のいちばん長い文が収まる幅で MenuRects を返す。
 // 幅は既定の幅より狭くせず、盤面の幅を超えない。描画とクリックの判定の両方で使う（DES-UI-02、DES-NG-05）。
-func (c Camera) MenuRectsFor(p tactics.Pos, labels []string) []image.Rectangle {
+func (c Camera) MenuRectsFor(m Metrics, p tactics.Pos, labels []string) []image.Rectangle {
 	w := menuWidth
 	for _, l := range labels {
 		w = max(w, textWidth(l)+16)
 	}
-	return menuRectsWidth(tactics.Pos{X: p.X - c.X, Y: p.Y - c.Y}, len(labels), min(w, MapSize))
+	return menuRectsWidth(m, tactics.Pos{X: p.X - c.X, Y: p.Y - c.Y}, len(labels), min(w, m.Map))
 }
 
 // MenuRects は描画と入力で共通のメニュー矩形を返す（DES-UI-25）。
-func (c Camera) MenuRects(p tactics.Pos, n int) []image.Rectangle {
-	return MenuRects(tactics.Pos{X: p.X - c.X, Y: p.Y - c.Y}, n)
+func (c Camera) MenuRects(m Metrics, p tactics.Pos, n int) []image.Rectangle {
+	return MenuRects(m, tactics.Pos{X: p.X - c.X, Y: p.Y - c.Y}, n)
 }
 
 const cameraGuide = "矢印／ホイールで盤面移動"
-
-// cameraGuideY は案内の行の y（DES-NG-10。窓の高さに従う）。
-var cameraGuideY int
 
 // Camera は履歴閲覧中なら専用カメラを返す（DES-UI-25）。
 func (c *Controller) Camera() Camera {
@@ -111,11 +108,11 @@ func (c *Controller) Wheel(x, y int, delta float64, shift bool) bool {
 		c.ShiftForecastWeapon(step)
 		return true
 	}
-	if dx, dy, ok := boardWheel(x, y, delta, shift); ok {
+	if dx, dy, ok := boardWheel(c.metrics, x, y, delta, shift); ok {
 		c.Scroll(dx, dy)
 		return true
 	}
-	if c.rewind.open && x >= MapSize && x < ScreenWidth && y >= 0 && y < ScreenHeight {
+	if c.rewind.open && x >= c.metrics.Map && x < c.metrics.ScreenW && y >= 0 && y < c.metrics.ScreenH {
 		step := 1
 		if delta > 0 {
 			step = -1
@@ -127,8 +124,8 @@ func (c *Controller) Wheel(x, y int, delta float64, shift bool) bool {
 }
 
 // boardWheel は盤面上のホイールを1マスの移動へ変換する（DES-UI-25）。
-func boardWheel(x, y int, delta float64, shift bool) (dx, dy int, ok bool) {
-	if delta == 0 || x < 0 || x >= MapSize || y < 0 || y >= MapSize {
+func boardWheel(m Metrics, x, y int, delta float64, shift bool) (dx, dy int, ok bool) {
+	if delta == 0 || x < 0 || x >= m.Map || y < 0 || y >= m.Map {
 		return 0, 0, false
 	}
 	step := 1
@@ -152,7 +149,7 @@ func (s *SceneController) DeployScroll(dx, dy int) bool {
 
 // DeployWheel は配置の盤面上だけホイールを受け付ける（DES-UI-25）。
 func (s *SceneController) DeployWheel(x, y int, delta float64, shift bool) bool {
-	dx, dy, ok := boardWheel(x, y, delta, shift)
+	dx, dy, ok := boardWheel(s.metrics, x, y, delta, shift)
 	return ok && s.DeployScroll(dx, dy)
 }
 
@@ -229,15 +226,15 @@ func focusHistoryEntry(cam *Camera, e tactics.HistoryEntry, units []tactics.Unit
 }
 
 // Popup はマス上の文字を盤面内へ寄せる共通配置（DES-UI-25）。
-func (c Camera) Popup(p tactics.Pos, width int) (image.Point, bool) {
+func (c Camera) Popup(m Metrics, p tactics.Pos, width int) (image.Point, bool) {
 	if !c.Visible(p) {
 		return image.Point{}, false
 	}
-	pt := c.Screen(p)
-	x := max(0, min(pt.X+CellSize/2-width/2, MapSize-width))
+	pt := c.Screen(m, p)
+	x := max(0, min(pt.X+m.Cell/2-width/2, m.Map-width))
 	y := pt.Y - 16
 	if y < 0 {
-		y = pt.Y + CellSize
+		y = pt.Y + m.Cell
 	}
 	return image.Pt(x, y), true
 }

@@ -107,9 +107,9 @@ const (
 
 // CommandMarkRect は、マスの左上の画面の座標 cell に対する、盤面の印の箱を返す（DES-UI-35、DES-IT07 3.6 節）。
 // 印は絵の左上に置き、固定範囲（右上）・装備（右下）の印と分ける。
-func CommandMarkRect(cell image.Point) image.Rectangle {
-	min := cell.Add(image.Pt(scaled(commandMarkInset), scaled(commandMarkInset)))
-	size := scaled(commandMarkSize)
+func CommandMarkRect(m Metrics, cell image.Point) image.Rectangle {
+	min := cell.Add(image.Pt(m.scaled(commandMarkInset), m.scaled(commandMarkInset)))
+	size := m.scaled(commandMarkSize)
 	return image.Rectangle{Min: min, Max: min.Add(image.Pt(size, size))}
 }
 

@@ -232,7 +232,7 @@ func TestPrepare(t *testing.T) {
 		if s.campaign.Roster[1].Items[0].Count != 1 {
 			t.Fatal("控えに渡せない")
 		}
-		if v.Info.Bottom > ScreenHeight {
+		if v.Info.Bottom > baseMetrics().ScreenH {
 			t.Fatal("情報欄の下端", v.Info.Bottom)
 		}
 	})
@@ -285,7 +285,7 @@ func TestChapterResultView(t *testing.T) {
 				if tx.Big {
 					height = 32
 				}
-				if tx.Y+height > ScreenHeight || tx.X+textWidth(tx.Text)*height/16 > ScreenWidth {
+				if tx.Y+height > baseMetrics().ScreenH || tx.X+textWidth(tx.Text)*height/16 > baseMetrics().ScreenW {
 					t.Fatalf("結果が画面の外に出る: %+v", tx)
 				}
 			}

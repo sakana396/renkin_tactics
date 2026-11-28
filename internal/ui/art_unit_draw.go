@@ -17,7 +17,7 @@ func (g *Game) drawUnitArt(dst *ebiten.Image, key ArtKey, x, y int, scale float3
 		return false
 	}
 	b := img.Bounds()
-	r := unitArtRect(x, y, CellSize, b.Dx(), b.Dy())
+	r := unitArtRect(x, y, g.metrics.Cell, b.Dx(), b.Dy())
 	op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear}
 	op.GeoM.Scale(float64(r.Dx())/float64(b.Dx()), float64(r.Dy())/float64(b.Dy()))
 	op.GeoM.Translate(float64(r.Min.X), float64(r.Min.Y))

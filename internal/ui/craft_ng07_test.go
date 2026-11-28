@@ -12,7 +12,6 @@ import (
 
 func TestCraftWindowNG07(t *testing.T) {
 	t.Run("TC-DES-NG-20-01 不足と失敗を表示し閉じる", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.campaign.Materials = map[string]int{"ore": 0, "catalyst": 0}
 		b := s.prepareHiResView().Craft
@@ -45,7 +44,6 @@ func TestCraftWindowNG07(t *testing.T) {
 		}
 	})
 	t.Run("TC-DES-NG-20-02 背後の操作を遮り押下ごとに一個", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.campaign.Materials = map[string]int{"ore": 10, "catalyst": 10}
 		stock := s.prepareHiResView().Stock
@@ -85,7 +83,6 @@ func TestCraftWindowNG07(t *testing.T) {
 
 func TestCraftReturnFromDeployNG07(t *testing.T) {
 	t.Run("TC-DES-NG-19-04 調合後に配置から戻っても在庫を保持", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.campaign.Materials = map[string]int{"ore": 5, "catalyst": 4}
 		button := s.prepareHiResView().Craft
@@ -132,7 +129,6 @@ func TestCraftReturnFromDeployNG07(t *testing.T) {
 
 func TestCraftLongMaterialsNG07(t *testing.T) {
 	t.Run("TC-DES-NG-20-03 長い名前と多数の材料を送り表示", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		recipes := s.cfg.Catalog.Recipes()
 		recipe := recipes[0]
@@ -185,10 +181,9 @@ func TestCraftLongMaterialsNG07(t *testing.T) {
 
 func TestCraftSceneInputNG07(t *testing.T) {
 	t.Run("TC-DES-NG-20-02 キー入力", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.campaign.Materials = map[string]int{"ore": 10, "catalyst": 10}
-		g := &Game{scenes: s}
+		g := &Game{metrics: s.metrics, scenes: s}
 		b := s.prepareHiResView().Craft
 		g.sceneInput(sceneKeys{Left: true}, b.Rect.Min.X+1, b.Rect.Min.Y+1)
 		page := s.infoPage
@@ -216,7 +211,6 @@ func TestCraftSceneInputNG07(t *testing.T) {
 
 func TestCraftRewardNameNG07(t *testing.T) {
 	t.Run("TC-DES-NG-21-01 勝利画面の材料名", func(t *testing.T) {
-		useTestMetrics(t, HiResCellSize)
 		s := ng05Scenes(t, "ch01", true)
 		s.scene = Result
 		s.result.Reward = []defs.ItemCount{{Material: "ore", Count: 5}, {Material: "catalyst", Count: 4}}

@@ -438,13 +438,13 @@ func TestRewindPreviewLayout(t *testing.T) {
 			c.EndPhase()
 			playOut(c)
 		}
-		right := image.Rect(MapSize, 0, ScreenWidth, ScreenHeight)
+		right := image.Rect(baseMetrics().Map, 0, baseMetrics().ScreenW, baseMetrics().ScreenH)
 		checkView := func(step string) {
 			t.Helper()
 			v := c.RewindView()
 			for _, tx := range v.Texts {
 				r := image.Rect(tx.X, tx.Y, tx.X+textWidth(tx.Text), tx.Y+lineHeight)
-				if !r.In(right) || tx.X < rewindLeft || r.Max.X > rewindRight {
+				if !r.In(right) || tx.X < baseMetrics().rewindLeft || r.Max.X > baseMetrics().rewindRight {
 					t.Fatalf("%s: 文が右欄の外 %v %q", step, r, tx.Text)
 				}
 			}
@@ -473,7 +473,7 @@ func TestRewindPreviewLayout(t *testing.T) {
 				t.Fatalf("%s: 下の案内が %d 行", step, len(lines))
 			}
 			for _, line := range lines {
-				if 8+textWidth(line) > MapSize {
+				if 8+textWidth(line) > baseMetrics().Map {
 					t.Fatalf("%s: 下の案内が盤面の幅を超える %q", step, line)
 				}
 			}

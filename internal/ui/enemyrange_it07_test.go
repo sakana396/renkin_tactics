@@ -91,7 +91,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 
 	t.Run("TC-FR-UNT-09-27 全敵は塗り、固定は橙の実線・破線と金のピン、カーソルは青白の実線・破線。塗り → 固定 → カーソルの順。右欄に「全敵 Q」「固定 n」、「消す」で一括解除。Selected の敵クリックは固定を変えない", func(t *testing.T) {
 		c := newIdle(t)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		status := func(what, danger, watched string, enabled bool) {
 			t.Helper()
 			v := c.RangeStatus()
@@ -113,7 +113,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 		if v.Clear.Rect != image.Rect(752, 304, 824, 336) || v.Clear.Label != "消す" {
 			t.Errorf("消すボタン %+v", v.Clear)
 		}
-		guide := InfoTabGuide()
+		guide := InfoTabGuide(baseMetrics())
 		guideRect := rectOfText(guide.X, guide.Y, guide.Text, false)
 		for _, tx := range []InfoText{v.Danger, v.Watched} {
 			for _, label := range []string{tx.Text, "全敵 Q OFF", "固定 99"} {
@@ -121,17 +121,17 @@ func TestEnemyRangeIT07(t *testing.T) {
 				if !r.In(image.Rect(520, 304, 664, 336)) {
 					t.Errorf("%q %v が範囲の状態の欄 (520,304)〜(664,336) からはみ出す", label, r)
 				}
-				if r.Overlaps(v.Clear.Rect) || r.Overlaps(MinimapRect()) {
+				if r.Overlaps(v.Clear.Rect) || r.Overlaps(MinimapRect(baseMetrics())) {
 					t.Errorf("%q %v がボタン・ミニマップと重なる", label, r)
 				}
-				for _, tab := range InfoTabRects() {
+				for _, tab := range InfoTabRects(baseMetrics()) {
 					if r.Overlaps(tab) {
 						t.Errorf("%q %v がページの印 %v と重なる", label, r, tab)
 					}
 				}
 			}
 		}
-		for _, tab := range append(InfoTabRects(), guideRect, MinimapRect()) {
+		for _, tab := range append(InfoTabRects(baseMetrics()), guideRect, MinimapRect(baseMetrics())) {
 			if v.Clear.Rect.Overlaps(tab) {
 				t.Errorf("消すボタンが %v と重なる", tab)
 			}
@@ -185,7 +185,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 		if wantMark := image.Rect(name.X+textWidth(name.Text)+4, name.Y+3, name.X+textWidth(name.Text)+14, name.Y+13); !ok || mark != wantMark {
 			t.Errorf("名前の横の印 %v %v、want %v", mark, ok, wantMark)
 		}
-		if !mark.In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
+		if !mark.In(image.Rect(baseMetrics().Map, 0, baseMetrics().ScreenW, InfoHeight)) {
 			t.Errorf("名前の横の印 %v が情報欄の外", mark)
 		}
 		c.SetCursor(cellCenter(empty))
@@ -267,7 +267,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 
 		// 入力を待つ状態はすべて固定を出す（E-124）: ItemMenu・Targeting（相手を選んだ予測を含む）。
 		d := damaged(t)
-		dg := &Game{ctrl: d}
+		dg := &Game{metrics: d.metrics, ctrl: d}
 		dg.leftClick(cellCenter(boss))
 		d.Click(tactics.Pos{X: 0, Y: 0})
 		d.Click(tactics.Pos{X: 0, Y: 1})
@@ -367,7 +367,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 		// 武器 5 本のレオン（平地）にカーソルを合わせる。右欄は上下 2 段で y < 296 に収まる（#166、DES-UI-31）ので、
 		// 範囲の状態と「消す」をすべて描いて重ならない。
 		c := newIdleWith(t, five)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		hx, hy := cellCenter(tactics.Pos{X: 0, Y: 0})
 		c.SetCursor(hx, hy)
 		v := c.BattleInfoView(hx, hy)
@@ -414,10 +414,10 @@ func TestEnemyRangeIT07(t *testing.T) {
 
 	t.Run("TC-FR-UNT-09-27 線とピンの形: 固定は内側 3 px、カーソルは内側 8 px。破線は 4 px の線と 3 px の空き。ピンは右上で、ボスの ★ を隠さない", func(t *testing.T) {
 		pt := image.Pt(64, 32)
-		if r := rangeFrameRect(pt, watchedInset); r != image.Rect(67, 35, 93, 61) {
+		if r := rangeFrameRect(baseMetrics(), pt, watchedInset); r != image.Rect(67, 35, 93, 61) {
 			t.Errorf("固定の線 %v", r)
 		}
-		if r := rangeFrameRect(pt, cursorInset); r != image.Rect(72, 40, 88, 56) {
+		if r := rangeFrameRect(baseMetrics(), pt, cursorInset); r != image.Rect(72, 40, 88, 56) {
 			t.Errorf("カーソルの線 %v", r)
 		}
 		// 26 px の辺は 0〜4、7〜11、14〜18、21〜25 の 4 本。4 辺で 16 本。
@@ -437,13 +437,13 @@ func TestEnemyRangeIT07(t *testing.T) {
 		if len(short) != 12 || short[2] != [2]image.Point{{86, 40}, {88, 40}} {
 			t.Errorf("16 px の破線 %v", short)
 		}
-		head, stem := pinShape(pt, false)
+		head, stem := pinShape(baseMetrics(), pt, false)
 		if head != image.Rect(87, 33, 93, 39) || stem != image.Rect(89, 39, 91, 43) {
 			t.Errorf("ピン %v %v", head, stem)
 		}
 		// ボスの ★ はマスの x = 20〜 に描く。ピンはその左、マスの右半分寄りに置く。
-		bossHead, _ := pinShape(pt, true)
-		if bossHead.Max.X > pt.X+CellSize-12 || bossHead.Min.X < pt.X+8 {
+		bossHead, _ := pinShape(baseMetrics(), pt, true)
+		if bossHead.Max.X > pt.X+baseMetrics().Cell-12 || bossHead.Min.X < pt.X+8 {
 			t.Errorf("ボスのピン %v", bossHead)
 		}
 	})
@@ -477,7 +477,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 		}
 
 		k := newIdleWith(t, killSetup)
-		g := &Game{ctrl: k}
+		g := &Game{metrics: k.metrics, ctrl: k}
 		k.ToggleDanger()
 		k.SetCursor(-1, -1)
 		g.leftClick(cellCenter(tactics.Pos{X: 1}))
@@ -540,7 +540,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 
 		// 位置が変わる盤面（通路）: 固定・カーソル・全敵のどれも、今の盤面の core の到達と射程に一致する。
 		c := newIdleWith(t, corridorSetup)
-		g = &Game{ctrl: c}
+		g = &Game{metrics: c.metrics, ctrl: c}
 		c.ToggleDanger()
 		c.SetCursor(-1, -1)
 		g.leftClick(cellCenter(tactics.Pos{X: 4}))
@@ -602,7 +602,7 @@ func TestEnemyRangeIT07(t *testing.T) {
 			boss := tactics.UnitSetup{Name: "ボス", Side: tactics.Enemy, Level: 1, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 5, Y: 0}, Weapon: testSword, Boss: true, AI: tactics.Hold}
 			return tactics.Setup{Terrain: field(6, 3), Units: []tactics.UnitSetup{{Name: "主人公", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, Pos: tactics.Pos{X: 5, Y: 2}, Weapon: testSword, Lord: true}, armor, enemy, boss}}
 		})
-		gz := &Game{ctrl: z}
+		gz := &Game{metrics: z.metrics, ctrl: z}
 		z.ToggleDanger()
 		z.SetCursor(-1, -1)
 		gz.leftClick(cellCenter(tactics.Pos{X: 0, Y: 1}))

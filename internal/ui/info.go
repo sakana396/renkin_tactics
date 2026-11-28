@@ -66,8 +66,8 @@ const (
 )
 
 // InfoTabRects はページの印の範囲を、ページの順に返す（DES-UI-28）。
-func InfoTabRects() []image.Rectangle {
-	x := MapSize + infoMargin
+func InfoTabRects(m Metrics) []image.Rectangle {
+	x := m.Map + infoMargin
 	return []image.Rectangle{
 		image.Rect(x, infoTabTop, x+80, infoTabTop+infoTabHeight),
 		image.Rect(x+84, infoTabTop, x+204, infoTabTop+infoTabHeight),
@@ -75,8 +75,8 @@ func InfoTabRects() []image.Rectangle {
 }
 
 // infoTabs はページの印を返す（DES-UI-28）。
-func infoTabs(page InfoPage) []InfoTab {
-	rects := InfoTabRects()
+func infoTabs(m Metrics, page InfoPage) []InfoTab {
+	rects := InfoTabRects(m)
 	tabs := []InfoTab{
 		{Rect: rects[0], Label: "能力", Page: PageStats},
 		{Rect: rects[1], Label: "装備・スキル", Page: PageEquip},
@@ -88,13 +88,13 @@ func infoTabs(page InfoPage) []InfoTab {
 }
 
 // InfoTabGuide はページの印の右に出す Tab キーの案内（DES-UI-28）。印と一緒に描く。
-func InfoTabGuide() InfoText {
-	return InfoText{X: InfoTabRects()[1].Max.X + 8, Y: infoTabTop + 2, Text: "Tab: 切替", Style: StyleLabel}
+func InfoTabGuide(m Metrics) InfoText {
+	return InfoText{X: InfoTabRects(m)[1].Max.X + 8, Y: infoTabTop + 2, Text: "Tab: 切替", Style: StyleLabel}
 }
 
 // HitInfoTab は、画面の座標がページの印のどれかにあればそのページを返す（DES-UI-28）。
-func HitInfoTab(x, y int) (InfoPage, bool) {
-	for i, r := range InfoTabRects() {
+func HitInfoTab(m Metrics, x, y int) (InfoPage, bool) {
+	for i, r := range InfoTabRects(m) {
 		if image.Pt(x, y).In(r) {
 			return InfoPage(i), true
 		}
@@ -148,7 +148,7 @@ func (c *Controller) Panel(cursor tactics.Pos, onMap bool) Panel {
 
 // infoCell は、カーソルの画面の座標 (x, y) で情報を出すマスを返す（DES-UI-27、DES-UI-28）。どれもなければ ok が偽。
 func (c *Controller) infoCell(x, y int) (tactics.Pos, bool) {
-	cell, onMap := c.Camera().CellAt(x, y)
+	cell, onMap := c.Camera().CellAt(c.metrics, x, y)
 	if onMap && c.liveUnitAt(cell) {
 		return cell, true
 	}
@@ -158,7 +158,7 @@ func (c *Controller) infoCell(x, y int) (tactics.Pos, bool) {
 	if onMap {
 		return cell, true
 	}
-	if image.Pt(x, y).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) {
+	if image.Pt(x, y).In(image.Rect(c.metrics.Map, 0, c.metrics.ScreenW, InfoHeight)) {
 		return c.lastCell, c.lastCellOK
 	}
 	return tactics.Pos{}, false
@@ -188,7 +188,7 @@ func (c *Controller) liveUnitAt(p tactics.Pos) bool {
 // InfoClick は右欄の操作行の「詳細 I」のクリックを受ける（DES-UI-31）。ボタンの中なら真を返し、盤面に渡さない。
 // 巻き戻しの一覧の間は受けない。予測を右欄に収め直している間は、予測の窓が先に受ける（ForecastClick）。
 func (c *Controller) InfoClick(x, y int) bool {
-	if c.rewind.open || !image.Pt(x, y).In(detailButtonRect) {
+	if c.rewind.open || !image.Pt(x, y).In(c.metrics.detailButtonRect) {
 		return false
 	}
 	c.OpenDetail()
@@ -291,8 +291,8 @@ type InfoView struct {
 
 // View は、情報欄に描くものと位置を返す（DES-UI-01、DES-UI-06、DES-UI-07）。
 // 予測の表があれば上に置き、ユニットと地形はその下（見出し・武器の絵・表・空き 1 行のあと）から並べる。
-func (p Panel) View() InfoView {
-	x := MapSize + infoMargin
+func (p Panel) View(m Metrics) InfoView {
+	x := m.Map + infoMargin
 	y := infoMargin
 	var v InfoView
 	if p.Heal != nil {
@@ -318,7 +318,7 @@ func (p Panel) View() InfoView {
 		return v
 	}
 	if p.Tabs {
-		v.Tabs = infoTabs(p.Page)
+		v.Tabs = infoTabs(m, p.Page)
 	}
 	if p.Unit != nil {
 		if p.Page == PageEquip {

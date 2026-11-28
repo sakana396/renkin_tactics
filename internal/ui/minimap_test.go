@@ -64,7 +64,7 @@ func TestMinimap(t *testing.T) {
 			// 5×3: 25 px。幅 125・高さ 75 で、左に 1、上に 26 の余白。
 			{5, 3, 25, image.Rect(609, 402, 734, 477)},
 		} {
-			l := minimapLayout(tc.w, tc.h)
+			l := minimapLayout(baseMetrics(), tc.w, tc.h)
 			if l.Cell != tc.cell || l.Area != tc.area {
 				t.Errorf("%d×%d: 1 マス %d、本体 %v。%d と %v のはず", tc.w, tc.h, l.Cell, l.Area, tc.cell, tc.area)
 			}
@@ -73,11 +73,11 @@ func TestMinimap(t *testing.T) {
 			}
 		}
 		// 欄は x = 512〜831、y = 360〜511。本体の左右に 96 px、上に見出しの 16 px、下に 8 px の余白がある。
-		if MinimapRect() != image.Rect(512, 360, 832, 512) || box.Min.X-512 != 96 || 832-box.Max.X != 96 || box.Min.Y-360 != 16 || 512-box.Max.Y != 8 {
-			t.Errorf("欄 %v と本体 %v の余白", MinimapRect(), box)
+		if MinimapRect(baseMetrics()) != image.Rect(512, 360, 832, 512) || box.Min.X-512 != 96 || 832-box.Max.X != 96 || box.Min.Y-360 != 16 || 512-box.Max.Y != 8 {
+			t.Errorf("欄 %v と本体 %v の余白", MinimapRect(baseMetrics()), box)
 		}
 		// 盤面がないときは本体を作らない。
-		if l := minimapLayout(0, 0); l.Cell != 0 || !l.Area.Empty() {
+		if l := minimapLayout(baseMetrics(), 0, 0); l.Cell != 0 || !l.Area.Empty() {
 			t.Errorf("空の盤面 = %+v", l)
 		}
 	})
@@ -108,7 +108,7 @@ func TestMinimap(t *testing.T) {
 			{"20×16 左の余白", 20, 16, 611, 400, tactics.Pos{}, false},
 			{"20×16 右端", 20, 16, 731, 487, tactics.Pos{X: 19, Y: 15}, true},
 		} {
-			p, ok := minimapLayout(tc.w, tc.h).CellAt(tc.x, tc.y)
+			p, ok := minimapLayout(baseMetrics(), tc.w, tc.h).CellAt(tc.x, tc.y)
 			if ok != tc.wantOK || ok && p != tc.want {
 				t.Errorf("%s: (%d, %d) → %v %v。%v %v のはず", tc.name, tc.x, tc.y, p, ok, tc.want, tc.wantOK)
 			}
@@ -277,7 +277,7 @@ func TestMinimap(t *testing.T) {
 	t.Run("TC-FR-MAP-06-05 戦闘のクリック: 地図だけカメラを動かし、余白と再生中は無視し、選択・乱数・履歴・敵の範囲を変えない", func(t *testing.T) {
 		c := newIdleWith(t, minimapSetup)
 		control := newIdleWith(t, minimapSetup)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		// ボスをクリックして範囲を出し、Q も出しておく。
 		for _, k := range []*Controller{c, control} {
 			k.Click(tactics.Pos{X: 30, Y: 30})
@@ -486,7 +486,7 @@ func rectOfText(x, y int, s string, big bool) image.Rectangle {
 // checkInfoArea は、情報欄に描くものがすべて右上の 320×360 に収まり、ページの印が中身と重ならないことを確かめる（DES-UI-28）。
 func checkInfoArea(t *testing.T, step string, v InfoView) {
 	t.Helper()
-	area := image.Rect(MapSize, 0, ScreenWidth, InfoHeight)
+	area := image.Rect(baseMetrics().Map, 0, baseMetrics().ScreenW, InfoHeight)
 	for _, tx := range v.Texts {
 		if r := rectOfText(tx.X, tx.Y, tx.Text, tx.Big); !r.In(area) {
 			t.Errorf("%s: 文 %q %v が情報欄の外", step, tx.Text, r)
@@ -521,7 +521,7 @@ func checkInfoArea(t *testing.T, step string, v InfoView) {
 		}
 	}
 	if len(v.Tabs) > 0 {
-		g := InfoTabGuide()
+		g := InfoTabGuide(baseMetrics())
 		if r := rectOfText(g.X, g.Y, g.Text, false); !r.In(area) || r.Overlaps(v.Tabs[1].Rect) {
 			t.Errorf("%s: Tab の案内 %v", step, r)
 		}
@@ -540,21 +540,21 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 		for _, l := range v.Legend {
 			r := rectOfText(l.Text.X, l.Text.Y, l.Text.Text, false)
-			if !r.In(MinimapRect()) || r.Overlaps(box) || !l.Swatch.In(MinimapRect()) || l.Swatch.Overlaps(box) || l.Swatch.Overlaps(r) {
+			if !r.In(MinimapRect(baseMetrics())) || r.Overlaps(box) || !l.Swatch.In(MinimapRect(baseMetrics())) || l.Swatch.Overlaps(box) || l.Swatch.Overlaps(r) {
 				t.Errorf("凡例 %q %v、印 %v", l.Text.Text, r, l.Swatch)
 			}
 		}
 		for _, tx := range v.Texts {
-			if r := rectOfText(tx.X, tx.Y, tx.Text, false); !r.In(MinimapRect()) || r.Overlaps(box) {
+			if r := rectOfText(tx.X, tx.Y, tx.Text, false); !r.In(MinimapRect(baseMetrics())) || r.Overlaps(box) {
 				t.Errorf("文 %q %v", tx.Text, r)
 			}
 		}
 		// 本体の外側 1 px の枠も欄の中に収まる。
-		if !v.Layout.Area.Inset(-1).In(MinimapRect()) {
+		if !v.Layout.Area.Inset(-1).In(MinimapRect(baseMetrics())) {
 			t.Errorf("本体の枠 %v", v.Layout.Area.Inset(-1))
 		}
 		// 盤面を表示できない下見では、見出しと知らせだけで、古い地図を残さない。
-		u := unavailableMinimap()
+		u := unavailableMinimap(baseMetrics())
 		if u.Available || len(u.Cells) != 0 || len(u.Units) != 0 || len(u.Texts) != 2 || u.Texts[0].Text != "ミニマップ" {
 			t.Errorf("表示できないとき = %+v", u)
 		}
@@ -562,7 +562,7 @@ func TestInfoPagesLayout(t *testing.T) {
 
 	t.Run("TC-FR-MAP-06-07 戦闘の右欄の上下 2 段は、カーソルだけ・選択と相手・回復の予測で y < 296 に収まり、ページの印を出さない（DES-UI-31）", func(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
-		top := image.Rect(MapSize, 0, ScreenWidth, infoControlTop)
+		top := image.Rect(baseMetrics().Map, 0, baseMetrics().ScreenW, infoControlTop)
 		fits := func(step string, v InfoView) {
 			t.Helper()
 			checkInfoArea(t, step, v)
@@ -580,7 +580,7 @@ func TestInfoPagesLayout(t *testing.T) {
 		two := tactics.Unit{Name: "エルザ", ClassName: "騎兵", Side: tactics.Player, Stats: tactics.Stats{HP: 20}, HP: 20, Weapons: []tactics.Weapon{testLance}, Alive: true,
 			Skill: tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}, ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}},
 			Items: []tactics.ItemStack{{Item: potion, Count: 2}}}
-		fits("2 つのスキル", twoTierInfo([]tactics.Unit{two}, 0, 0, &forest))
+		fits("2 つのスキル", twoTierInfo(NewMetrics(BaseCellSize), []tactics.Unit{two}, 0, 0, &forest))
 		c.Click(tactics.Pos{X: 2, Y: 3})
 		fits("選択と相手", c.BattleInfoView(cellCenter(tactics.Pos{X: 3, Y: 3})))
 		// 盤面の外（ミニマップの上）では選んでいるユニットを出す。
@@ -604,7 +604,7 @@ func TestInfoPagesLayout(t *testing.T) {
 	})
 
 	t.Run("TC-FR-MAP-06-07 能力の 7 つの棒、武器と杖の行の桁、5 本の武器と 2 つのスキル（開発者の確認（2026-11-01）で直した）", func(t *testing.T) {
-		x0 := MapSize + infoMargin
+		x0 := baseMetrics().Map + infoMargin
 		u := tactics.Unit{Name: "ノエル", ClassName: "錬金術師", Side: tactics.Player, Alive: true, HP: 20,
 			Stats: tactics.Stats{HP: 20, Str: 4, Mag: 7, Skl: 5, Spd: 6, Lck: 9, Def: 3, Res: 8, Mov: 5},
 			Weapons: []tactics.Weapon{
@@ -617,7 +617,7 @@ func TestInfoPagesLayout(t *testing.T) {
 			Skill: tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}, ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}},
 			Items: []tactics.ItemStack{{Item: potion, Count: 2}}}
 		// 「能力」のページ: HP の枠のほかに、力・魔力・技・速さ・幸運・守備・魔防の 7 本を同じ左端・同じ式で 1 列に並べる。
-		v := Panel{Unit: &u, Terrain: &forest, Tabs: true}.View()
+		v := Panel{Unit: &u, Terrain: &forest, Tabs: true}.View(baseMetrics())
 		checkInfoArea(t, "能力", v)
 		var prevY int
 		for i, tc := range []struct {
@@ -639,7 +639,7 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 		// 「装備・スキル」のページ: 2 回攻撃の武器は「必殺 0 ×2」、2 行目の 3 つの値は決まった桁。
 		u.Equipped = 0
-		v = Panel{Unit: &u, Terrain: &forest, Page: PageEquip, Tabs: true}.View()
+		v = Panel{Unit: &u, Terrain: &forest, Page: PageEquip, Tabs: true}.View(baseMetrics())
 		checkInfoArea(t, "5 本と 2 つのスキル", v)
 		if tx := textOf(t, v, "必殺 0 ×2"); tx.X != x0+weaponSideX {
 			t.Errorf("必殺の x = %d", tx.X)
@@ -662,10 +662,10 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 		// 攻撃の回数が 1 の武器は「×1」を省き、杖は必殺と回数を出さずに回復・射程・残りを同じ桁に置く。
 		u.Equipped = 3
-		v = Panel{Unit: &u, Page: PageEquip}.View()
+		v = Panel{Unit: &u, Page: PageEquip}.View(baseMetrics())
 		textOf(t, v, "必殺 30")
 		u.Equipped = 4
-		v = Panel{Unit: &u, Page: PageEquip}.View()
+		v = Panel{Unit: &u, Page: PageEquip}.View(baseMetrics())
 		staff := textOf(t, v, "武器: 癒やしの杖（杖）")
 		for i, s := range []string{"回復 10", "射程 1", "残り 15/15"} {
 			if tx := textOf(t, v, s); tx.X != x0+weaponCols[i] || tx.Y != staff.Y+lineHeight {
@@ -697,8 +697,8 @@ func TestInfoPagesLayout(t *testing.T) {
 
 	t.Run("TC-FR-MAP-06-07 カーソルが情報欄の上にあるときは、選んでいるユニットか直前に盤面で見ていたマスを出し続け、「詳細 I」で同じ人物を開く", func(t *testing.T) {
 		c := newIdleWith(t, example1Setup)
-		g := &Game{ctrl: c}
-		r := detailButtonRect
+		g := &Game{metrics: c.metrics, ctrl: c}
+		r := baseMetrics().detailButtonRect
 		tx, ty := r.Min.X+2, r.Min.Y+2
 		// 何も見ていなければ空で、「詳細 I」は押せず、押しても開かない。
 		if v := c.BattleInfoView(tx, ty); len(v.Texts) != 0 || c.DetailButton().Enabled {
@@ -747,7 +747,7 @@ func TestInfoPagesLayout(t *testing.T) {
 
 	t.Run("TC-FR-MAP-06-07 Tab は詳しい画面の節だけを送り、選択・カメラ・敵の範囲は変えない（E-120）", func(t *testing.T) {
 		c := newIdleWith(t, minimapSetup)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		c.Click(tactics.Pos{X: 20, Y: 20})
 		if c.State() != Selected {
 			t.Fatal("前提: 選択")
@@ -757,7 +757,7 @@ func TestInfoPagesLayout(t *testing.T) {
 		if c.DetailInput(true, false) || c.DetailOpen() {
 			t.Error("詳しい画面がないのに Tab を受けた")
 		}
-		g.leftClick(detailButtonRect.Min.X+2, detailButtonRect.Min.Y+2)
+		g.leftClick(baseMetrics().detailButtonRect.Min.X+2, baseMetrics().detailButtonRect.Min.Y+2)
 		if !c.DetailOpen() || c.detailSection != SectionStats {
 			t.Fatalf("詳細のクリック: 開く %v、節 %d", c.DetailOpen(), c.detailSection)
 		}
@@ -777,7 +777,7 @@ func TestInfoPagesLayout(t *testing.T) {
 		c.Cancel()
 		c.Click(tactics.Pos{X: 30, Y: 30})
 		c.camera.Focus(tactics.Pos{X: 30, Y: 30})
-		ep := c.Camera().Screen(tactics.Pos{X: 30, Y: 30})
+		ep := c.Camera().Screen(baseMetrics(), tactics.Pos{X: 30, Y: 30})
 		c.SetCursor(ep.X+16, ep.Y+16)
 		if !c.OpenDetail() || c.detailUnit != 2 {
 			t.Fatalf("敵の詳しい画面: %d", c.detailUnit)
@@ -789,7 +789,7 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 		// 巻き戻しの一覧を開いている間は、詳しい画面を開かず、「詳細 I」のクリックも受けない。
 		c.OpenRewind()
-		if c.OpenDetail() || c.InfoClick(detailButtonRect.Min.X+2, detailButtonRect.Min.Y+2) || c.DetailOpen() {
+		if c.OpenDetail() || c.InfoClick(baseMetrics().detailButtonRect.Min.X+2, baseMetrics().detailButtonRect.Min.Y+2) || c.DetailOpen() {
 			t.Error("一覧の間に詳しい画面を開いた")
 		}
 	})
@@ -804,7 +804,7 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 		checkInfoArea(t, "配置", *v.Info)
 		for i, b := range v.Buttons {
-			if !b.Rect.In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight)) || b.Rect.Min.Y < v.Info.Bottom {
+			if !b.Rect.In(image.Rect(baseMetrics().Map, 0, baseMetrics().ScreenW, InfoHeight)) || b.Rect.Min.Y < v.Info.Bottom {
 				t.Errorf("ボタン %q %v（情報の下 %d）", b.Label, b.Rect, v.Info.Bottom)
 			}
 			for _, other := range v.Buttons[i+1:] {
@@ -814,13 +814,13 @@ func TestInfoPagesLayout(t *testing.T) {
 			}
 		}
 		for _, tx := range v.Texts {
-			if rectOfText(tx.X, tx.Y, tx.Text, tx.Big).Overlaps(MinimapRect()) {
+			if rectOfText(tx.X, tx.Y, tx.Text, tx.Big).Overlaps(MinimapRect(baseMetrics())) {
 				t.Errorf("配置の文 %q がミニマップに重なる", tx.Text)
 			}
 		}
 		// 元の印の位置のクリックと Tab は、配置の選択と枠を変えない。
 		slots := append([]int(nil), s.deploySlots...)
-		r := InfoTabRects()[1]
+		r := InfoTabRects(baseMetrics())[1]
 		s.Click(r.Min.X+2, r.Min.Y+2)
 		s.ToggleInfoPage()
 		if s.infoPage != PageStats || s.deploySelected != 0 || !reflect.DeepEqual(s.deploySlots, slots) || s.Scene() != Deploy {
@@ -835,7 +835,7 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 		// 準備の情報欄は右列 (416,56)〜(816,472) にずらす（DES-UI-32）。印も同じだけずれる。
 		pr := v.Info.Tabs[1].Rect
-		if pr != r.Add(image.Pt(416-MapSize, 56)) {
+		if pr != r.Add(image.Pt(416-baseMetrics().Map, 56)) {
 			t.Errorf("準備の印 %v", pr)
 		}
 		p.Click(r.Min.X+2, r.Min.Y+2)
@@ -880,7 +880,7 @@ func TestInfoPagesLayout(t *testing.T) {
 			t.Error("Over で「詳細 I」を押せる")
 		}
 		old, before := c.Battle(), c.Battle().Units()
-		r := detailButtonRect
+		r := baseMetrics().detailButtonRect
 		s.Click(r.Min.X+2, r.Min.Y+2)
 		if c.DetailOpen() || c.OpenDetail() {
 			t.Error("Over で詳しい画面を開いた")
@@ -889,7 +889,7 @@ func TestInfoPagesLayout(t *testing.T) {
 			t.Error("Over の「詳細 I」のクリックで場面か戦闘が変わった")
 		}
 		// ボタンの外の Over のクリックは、今までどおり勝敗の帯で次へ進む。
-		e := BattleEndRect()
+		e := BattleEndRect(baseMetrics())
 		s.Click(e.Min.X+2, e.Min.Y+2)
 		if s.Scene() == Battle {
 			t.Error("勝敗の帯のクリックで次へ進まない")
@@ -912,7 +912,7 @@ func TestInfoPagesLayout(t *testing.T) {
 			hint := false
 			for _, tx := range v.Texts {
 				r := rectOfText(tx.X, tx.Y, tx.Text, false)
-				if r.Overlaps(MinimapRect()) || r.Max.X > ScreenWidth {
+				if r.Overlaps(MinimapRect(baseMetrics())) || r.Max.X > baseMetrics().ScreenW {
 					t.Errorf("%s: 文 %q %v がミニマップに重なる", step, tx.Text, r)
 				}
 				hint = hint || strings.HasPrefix(tx.Text, hintText)
@@ -929,12 +929,12 @@ func TestInfoPagesLayout(t *testing.T) {
 				t.Errorf("%s: 気配の案内がない", step)
 			}
 			for _, row := range v.Rows {
-				if row.Rect.Overlaps(MinimapRect()) {
+				if row.Rect.Overlaps(MinimapRect(baseMetrics())) {
 					t.Errorf("%s: 行 %v", step, row.Rect)
 				}
 			}
 			for _, b := range v.Buttons {
-				if b.Rect.Overlaps(MinimapRect()) || !b.Rect.In(image.Rect(0, 0, ScreenWidth, ScreenHeight)) {
+				if b.Rect.Overlaps(MinimapRect(baseMetrics())) || !b.Rect.In(image.Rect(0, 0, baseMetrics().ScreenW, baseMetrics().ScreenH)) {
 					t.Errorf("%s: ボタン %q %v", step, b.Label, b.Rect)
 				}
 			}
@@ -943,7 +943,7 @@ func TestInfoPagesLayout(t *testing.T) {
 		// 一覧の詳細は最大 5 行（DES-UI-21、DES-IT04 7.1 節。REV-071 F-03 案 B）で、y = 228 から 16 px ごと。
 		var detail []int
 		for _, tx := range c.RewindView().Texts {
-			if tx.X == rewindLeft && tx.Y >= 228 && tx.Y < 310 {
+			if tx.X == baseMetrics().rewindLeft && tx.Y >= 228 && tx.Y < 310 {
 				detail = append(detail, tx.Y)
 			}
 		}
@@ -952,7 +952,7 @@ func TestInfoPagesLayout(t *testing.T) {
 		}
 		// 気配の案内は下の行の「戻る」「決定」の下（y = 560）。
 		for _, tx := range c.RewindView().Texts {
-			if strings.HasPrefix(tx.Text, hintText) && (tx.Y != 560 || tx.X != rewindLeft) {
+			if strings.HasPrefix(tx.Text, hintText) && (tx.Y != 560 || tx.X != baseMetrics().rewindLeft) {
 				t.Errorf("気配の案内の位置 (%d, %d)", tx.X, tx.Y)
 			}
 		}
@@ -968,8 +968,8 @@ func TestInfoPagesLayout(t *testing.T) {
 		c.Cancel()
 		c.Cancel()
 		// 盤面の外の予兆の案内（下の行の右）もミニマップと重ならない。
-		hv := Camera{Width: 32, Height: 32}.hintView(HintView{Visible: true, Areas: []tactics.ReinforcementHint{area(20, 20, 23, 23)}, Text: SceneText{Text: hintText}})
-		if r := rectOfText(hv.Text.X, hv.Text.Y, hv.Text.Text, false); r.Overlaps(MinimapRect()) || r.Max.X > ScreenWidth || r.Max.Y > ScreenHeight {
+		hv := Camera{Width: 32, Height: 32}.hintView(baseMetrics(), HintView{Visible: true, Areas: []tactics.ReinforcementHint{area(20, 20, 23, 23)}, Text: SceneText{Text: hintText}})
+		if r := rectOfText(hv.Text.X, hv.Text.Y, hv.Text.Text, false); r.Overlaps(MinimapRect(baseMetrics())) || r.Max.X > baseMetrics().ScreenW || r.Max.Y > baseMetrics().ScreenH {
 			t.Errorf("画面外の気配の案内 %v", r)
 		}
 	})

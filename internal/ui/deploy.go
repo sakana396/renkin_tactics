@@ -121,14 +121,14 @@ func (s *SceneController) SetDeployCursor(x, y int) {
 	if s.scene != Deploy {
 		return
 	}
-	p, ok := s.deployCamera.CellAt(x, y)
+	p, ok := s.deployCamera.CellAt(s.metrics, x, y)
 	if !ok {
 		p = tactics.Pos{X: -1, Y: -1}
 	} else {
 		s.deployLastCell, s.deployLastOK = p, true
 	}
 	s.deployCursor = p
-	s.deployOnInfo = image.Pt(x, y).In(image.Rect(MapSize, 0, ScreenWidth, InfoHeight))
+	s.deployOnInfo = image.Pt(x, y).In(image.Rect(s.metrics.Map, 0, s.metrics.ScreenW, InfoHeight))
 }
 
 // deployInfoUnit は、配置の情報欄に出すユニットの添字を units から返す（DES-UI-27、DES-IT06 12.4 節）。なければ -1。
@@ -231,35 +231,35 @@ func (s *SceneController) deployView() SceneView {
 	}
 	// ボタンは情報欄（y < 360）の中、ページの印の上に横に並べ、右下のミニマップと重ねない（DES-UI-28）。
 	v := SceneView{Deploy: d, Buttons: []SceneButton{
-		{"戦闘開始", image.Rect(MapSize+16, deployButtonTop, MapSize+156, deployButtonTop+32), true},
-		{"準備に戻る", image.Rect(MapSize+164, deployButtonTop, MapSize+304, deployButtonTop+32), true},
-		{"詳細 I", deployDetailButtonRect, s.deployInfoUnit(d.Units, d.Selected) >= 0},
+		{"戦闘開始", image.Rect(s.metrics.Map+16, deployButtonTop, s.metrics.Map+156, deployButtonTop+32), true},
+		{"準備に戻る", image.Rect(s.metrics.Map+164, deployButtonTop, s.metrics.Map+304, deployButtonTop+32), true},
+		{"詳細 I", s.metrics.deployDetailButtonRect, s.deployInfoUnit(d.Units, d.Selected) >= 0},
 	}, Texts: []SceneText{
-		{Text: "左クリック: 味方を選ぶ・交換・空き出撃マスへ移す", X: 16, Y: MapSize + 4, Style: StyleLabel},
-		{Text: "右クリック・Esc: 選択を解除／未選択なら準備に戻る", X: 16, Y: MapSize + 22, Style: StyleLabel},
+		{Text: "左クリック: 味方を選ぶ・交換・空き出撃マスへ移す", X: 16, Y: s.metrics.Map + 4, Style: StyleLabel},
+		{Text: "右クリック・Esc: 選択を解除／未選択なら準備に戻る", X: 16, Y: s.metrics.Map + 22, Style: StyleLabel},
 	}}
 	mm := s.deployMinimap(d)
 	v.Minimap = &mm
 	if i := s.deployInfoUnit(d.Units, d.Selected); i >= 0 {
 		// 配置でも上段をカーソルの下、下段を選択中にする（DES-UI-31）。まだ出ていない増援は配置の盤面にいない。
-		info := twoTierInfo(d.Units, i, d.Selected, deployTerrain(d, s.deployCursor, i))
+		info := twoTierInfo(s.metrics, d.Units, i, d.Selected, deployTerrain(d, s.deployCursor, i))
 		v.Info = &info
 		if u := d.Units[i]; u.Side == tactics.Enemy && u.Pos == s.deployCursor && d.Blue != nil {
 			// カーソルの敵の範囲を出しているとき、その敵の名前の横に同じ青白の印を置く（DES-UI-29）。
 			d.NameMark, _ = nameMarkRect(info, unitName(u))
 		}
 	} else {
-		v.Texts = append(v.Texts, SceneText{Text: "配置する味方を選んでください", X: MapSize + 16, Y: 24, Style: StyleLabel})
+		v.Texts = append(v.Texts, SceneText{Text: "配置する味方を選んでください", X: s.metrics.Map + 16, Y: 24, Style: StyleLabel})
 	}
 	state := "OFF"
 	if s.deployDanger {
 		state = "ON"
 	}
-	v.Texts = append(v.Texts, SceneText{Text: cameraGuide, X: MapSize + 16, Y: MapSize + 8, Style: StyleLabel})
-	v.Texts = append(v.Texts, SceneText{Text: "Q: 敵の危険範囲 " + state, X: 16, Y: MapSize + 40, Style: StyleLabel})
+	v.Texts = append(v.Texts, SceneText{Text: cameraGuide, X: s.metrics.Map + 16, Y: s.metrics.Map + 8, Style: StyleLabel})
+	v.Texts = append(v.Texts, SceneText{Text: "Q: 敵の危険範囲 " + state, X: 16, Y: s.metrics.Map + 40, Style: StyleLabel})
 	// 配置の情報欄には地形の行がないので、カーソルの下の移動費の説明は案内欄の Q の右に出す（DES-UI-29、DES-IT07 3.8 節）。
 	if err == nil && hasZOCAt(board, s.deployCursor) {
-		v.Texts = append(v.Texts, SceneText{Text: zocNote, X: deployZOCNoteX, Y: MapSize + 40, Style: StyleLabel})
+		v.Texts = append(v.Texts, SceneText{Text: zocNote, X: deployZOCNoteX, Y: s.metrics.Map + 40, Style: StyleLabel})
 	}
 	return v
 }

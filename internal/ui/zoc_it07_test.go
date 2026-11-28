@@ -77,11 +77,11 @@ func TestZOCMarks(t *testing.T) {
 			enemyMark(64, 96), enemyMark(128, 96), // (2,3)・(4,3)
 			enemyMark(96, 128), // (3,4)
 		)
-		if got := zocMarkLines(b, Camera{Width: 6, Height: 6}); !reflect.DeepEqual(got, want) {
+		if got := zocMarkLines(baseMetrics(), b, Camera{Width: 6, Height: 6}); !reflect.DeepEqual(got, want) {
 			t.Errorf("角印\n got %v\nwant %v", got, want)
 		}
 		// カメラの外のマスは返さず、画面の座標はカメラの位置からずらす。
-		if got, want := zocMarkLines(b, Camera{Y: 3, Width: 6, Height: 6}), joinMarks(enemyMark(64, 0), enemyMark(128, 0), enemyMark(96, 32)); !reflect.DeepEqual(got, want) {
+		if got, want := zocMarkLines(baseMetrics(), b, Camera{Y: 3, Width: 6, Height: 6}), joinMarks(enemyMark(64, 0), enemyMark(128, 0), enemyMark(96, 32)); !reflect.DeepEqual(got, want) {
 			t.Errorf("カメラ (0,3) の角印\n got %v\nwant %v", got, want)
 		}
 		// 危険範囲を下、角印を上に描く（DES-IT07 3.8 節）。角印はユニットの上で、固定のピンより先。
@@ -91,11 +91,11 @@ func TestZOCMarks(t *testing.T) {
 		}
 		// 角印はユニットのいるマスでも、装備の印・HP の棒・固定のピン（ボスの印の左を含む）と重ならない。
 		pt := image.Pt(0, 0)
-		head, _ := pinShape(pt, false)
-		bossHead, _ := pinShape(pt, true)
+		head, _ := pinShape(baseMetrics(), pt, false)
+		bossHead, _ := pinShape(baseMetrics(), pt, true)
 		for _, l := range joinMarks(playerMark(0, 0), enemyMark(0, 0)) {
 			r := markRect(l)
-			for _, other := range []image.Rectangle{equipMarkRect(pt), unitHPBarRect(pt), head, bossHead} {
+			for _, other := range []image.Rectangle{equipMarkRect(baseMetrics(), pt), unitHPBarRect(baseMetrics(), pt), head, bossHead} {
 				if r.Overlaps(other) {
 					t.Errorf("角印 %v が %v と重なる", r, other)
 				}
@@ -112,10 +112,10 @@ func TestZOCMarks(t *testing.T) {
 			{tactics.Pos{X: 0, Y: 5}, false},
 			{tactics.Pos{X: 4, Y: 1}, false},
 		} {
-			if got := hasText(c.Panel(tc.p, true).View(), zocNote); got != tc.want {
+			if got := hasText(c.Panel(tc.p, true).View(baseMetrics()), zocNote); got != tc.want {
 				t.Errorf("%v の説明 = %v, want %v", tc.p, got, tc.want)
 			}
-			pt := c.Camera().Screen(tc.p)
+			pt := c.Camera().Screen(baseMetrics(), tc.p)
 			v := c.BattleInfoView(pt.X+2, pt.Y+2)
 			if got := hasText(v, zocNote); got != tc.want {
 				t.Errorf("%v の新しい右欄の説明 = %v, want %v", tc.p, got, tc.want)
@@ -142,7 +142,7 @@ func TestZOCMarks(t *testing.T) {
 		})
 		cam := Camera{Width: 6, Height: 6}
 		alive := joinMarks(enemyMark(0, 0), enemyMark(64, 0), enemyMark(32, 32)) // (0,0)・(2,0)・(1,1)
-		if got := zocMarkLines(k.Battle().BoardView(), cam); !reflect.DeepEqual(got, alive) {
+		if got := zocMarkLines(baseMetrics(), k.Battle().BoardView(), cam); !reflect.DeepEqual(got, alive) {
 			t.Fatalf("前提: 倒す前の角印 %v", got)
 		}
 		k.Click(tactics.Pos{X: 0})
@@ -154,7 +154,7 @@ func TestZOCMarks(t *testing.T) {
 		if k.Battle().Units()[2].Alive || k.State() != Idle {
 			t.Fatalf("前提: 重騎士が倒れていない、状態 %v", k.State())
 		}
-		if got := zocMarkLines(k.Battle().BoardView(), cam); len(got) != 0 {
+		if got := zocMarkLines(baseMetrics(), k.Battle().BoardView(), cam); len(got) != 0 {
 			t.Errorf("戦死した重騎士の角印が残る %v", got)
 		}
 		k.OpenRewind()
@@ -163,7 +163,7 @@ func TestZOCMarks(t *testing.T) {
 		if !v.Available {
 			t.Fatal("下見の盤面がない")
 		}
-		if got := zocMarkLines(v.Board, k.Camera()); !reflect.DeepEqual(got, alive) {
+		if got := zocMarkLines(baseMetrics(), v.Board, k.Camera()); !reflect.DeepEqual(got, alive) {
 			t.Errorf("下見の角印\n got %v\nwant %v", got, alive)
 		}
 		// 下見は、ユニット → 角印 → 行動したユニットの枠の順に描く。
@@ -199,7 +199,7 @@ func deployZOCScenes(t *testing.T) *SceneController {
 func TestZOCDeploy(t *testing.T) {
 	t.Run("TC-FR-CMP-11-13 配置でも ZOC の角印を範囲の上に描き、入れ替えごとに求め直し、カーソルの下の移動費の説明を案内欄に出す", func(t *testing.T) {
 		s := deployZOCScenes(t)
-		marks := func() []zocMarkLine { return zocMarkLines(s.View().Deploy.Board, s.deployCamera) }
+		marks := func() []zocMarkLine { return zocMarkLines(baseMetrics(), s.View().Deploy.Board, s.deployCamera) }
 		// 自軍の重騎士 (0,1) の隣は (0,0)・(1,1)、敵軍の重騎士 (4,0) の隣は (3,0)・(5,0)・(4,1)。
 		want := joinMarks(playerMark(0, 0), enemyMark(96, 0), enemyMark(160, 0), playerMark(32, 32), enemyMark(128, 32))
 		if got := marks(); !reflect.DeepEqual(got, want) {
@@ -236,7 +236,7 @@ func TestZOCDeploy(t *testing.T) {
 				t.Errorf("説明 %v が Q の状態と重なる", r)
 			}
 		}
-		if tx.Y != 552 || r.Min.X < 0 || r.Max.X > MapSize {
+		if tx.Y != 552 || r.Min.X < 0 || r.Max.X > baseMetrics().Map {
 			t.Errorf("説明の位置 %v", r)
 		}
 		// 全敵の塗りを下、角印を上、選んだ味方の枠を最後に描く。

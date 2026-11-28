@@ -31,10 +31,10 @@ func checkForecastWindow(t *testing.T, step string, w ForecastWindow) {
 		if w.Rect != image.Rect(512, 0, 832, 360) {
 			t.Errorf("%s: 右欄の窓 %v", step, w.Rect)
 		}
-	} else if w.Rect.Dx() != 416 || w.Rect.Dy() != 240 || !w.Rect.In(image.Rect(0, 0, MapSize, MapSize)) {
+	} else if w.Rect.Dx() != 416 || w.Rect.Dy() != 240 || !w.Rect.In(image.Rect(0, 0, baseMetrics().Map, baseMetrics().Map)) {
 		t.Errorf("%s: 盤面の窓 %v", step, w.Rect)
 	}
-	if w.Rect.Overlaps(MinimapRect()) {
+	if w.Rect.Overlaps(MinimapRect(baseMetrics())) {
 		t.Errorf("%s: 窓 %v がミニマップに重なる", step, w.Rect)
 	}
 	if b := w.View.Banner; b != nil && !b.Rect.In(w.Rect) {
@@ -105,14 +105,14 @@ func TestIT07BattleWindows(t *testing.T) {
 			// 隣り合う: 相手 (160,224)〜(192,256) が上の 2 つに、移動先 (160,256)〜(192,288) が下の 2 つに重なる。
 			{"上下とも塞ぐ", tactics.Pos{X: 5, Y: 7}, tactics.Pos{X: 5, Y: 8}, right},
 		} {
-			r, fallback := ForecastRect(camera, tc.target, tc.dest)
+			r, fallback := ForecastRect(baseMetrics(), camera, tc.target, tc.dest)
 			if r != tc.want || fallback != (tc.want == right) {
 				t.Errorf("%s: 窓 %v、右欄 %v（%v のはず）", tc.name, r, fallback, tc.want)
 			}
 		}
 		// カメラを動かしたときは画面の座標で避ける。カメラ y = 8 なら (1, 9) は (32,32) に描くので、下の候補を選ぶ。
 		scrolled := Camera{Width: 32, Height: 32, Y: 8}
-		if r, _ := ForecastRect(scrolled, tactics.Pos{X: 1, Y: 9}, tactics.Pos{X: 1, Y: 10}); r != bottom {
+		if r, _ := ForecastRect(baseMetrics(), scrolled, tactics.Pos{X: 1, Y: 9}, tactics.Pos{X: 1, Y: 10}); r != bottom {
 			t.Errorf("カメラを動かしたとき: %v", r)
 		}
 		_ = topR
@@ -402,7 +402,7 @@ func TestIT07BattleWindows(t *testing.T) {
 		}
 		// 武器を持たないユニットは「装備 なし」。
 		bare := tactics.Unit{Name: "兵", Alive: true, HP: 10, Stats: tactics.Stats{HP: 10}, Equipped: -1}
-		if got := rows(twoTierInfo([]tactics.Unit{bare}, 0, -1, nil)); len(got) < 4 || got[3] != "装備 なし" {
+		if got := rows(twoTierInfo(NewMetrics(BaseCellSize), []tactics.Unit{bare}, 0, -1, nil)); len(got) < 4 || got[3] != "装備 なし" {
 			t.Errorf("武器なし: %q", got)
 		}
 	})
@@ -490,7 +490,7 @@ func TestIT07BattleWindows(t *testing.T) {
 			Equipped: 1,
 			Skill:    tactics.Skill{Name: "怒り", Effect: tactics.Wrath, Chance: 50}, ClassSkills: []tactics.Skill{{Name: "再移動", Effect: tactics.Canto}},
 			Items: []tactics.ItemStack{{Item: potion, Count: 1}}}
-		v := DetailView(u, SectionWeapons)
+		v := DetailView(baseMetrics(), u, SectionWeapons)
 		all := strings.Join(rows(v), "\n")
 		// 能力 9 種（ラベルと値）。
 		for _, s := range []string{"HP 18/20", "力 4", "魔力 7", "技 5", "速さ 6", "幸運 9", "守備 3", "魔防 8", "移動 5"} {
@@ -534,7 +534,7 @@ func TestIT07BattleWindows(t *testing.T) {
 			SectionWeapons: {"　能力", "▶手持ち 5 枠・全武器", "　スキル"},
 			SectionSkills:  {"　能力", "　手持ち 5 枠・全武器", "▶スキル"},
 		} {
-			got := strings.Join(rows(DetailView(u, sec)), "\n")
+			got := strings.Join(rows(DetailView(baseMetrics(), u, sec)), "\n")
 			for _, h := range heads {
 				if !strings.Contains(got, h) {
 					t.Errorf("節 %d に %q がない", sec, h)
@@ -542,7 +542,7 @@ func TestIT07BattleWindows(t *testing.T) {
 			}
 		}
 		// 一画面 (0,0)〜(832,512) に収まり、文と絵が重ならない。
-		area := image.Rect(0, 0, ScreenWidth, MapSize)
+		area := image.Rect(0, 0, baseMetrics().ScreenW, baseMetrics().Map)
 		for i, a := range v.Texts {
 			ra := rectOfText(a.X, a.Y, a.Text, a.Big)
 			if !ra.In(area) {
@@ -564,12 +564,12 @@ func TestIT07BattleWindows(t *testing.T) {
 		for range 6 {
 			long.ClassSkills = append(long.ClassSkills, tactics.Skill{Name: "再移動", Effect: tactics.Canto})
 		}
-		lv := DetailView(long, SectionSkills)
+		lv := DetailView(baseMetrics(), long, SectionSkills)
 		if !strings.Contains(strings.Join(rows(lv), "\n"), "…") {
 			t.Error("あふれたスキルを「…」で止めない")
 		}
 		for _, tx := range lv.Texts {
-			if rectOfText(tx.X, tx.Y, tx.Text, tx.Big).Max.Y > MapSize {
+			if rectOfText(tx.X, tx.Y, tx.Text, tx.Big).Max.Y > baseMetrics().Map {
 				t.Errorf("%q が下にあふれる", tx.Text)
 			}
 		}
@@ -605,7 +605,7 @@ func TestIT07BattleWindows(t *testing.T) {
 	t.Run("TC-IF-01-46 クリックは 詳しい画面 → 予測の窓 → ミニマップ → 情報欄 → 盤面 の順に 1 か所だけが受け、再生中・Over は新しい操作を受けない。T は巻き戻しの一覧を先に開き、取消しで重ね表示と仮選択に戻り、成功で消す", func(t *testing.T) {
 		// 右欄に収め直した窓: 窓が「詳細 I」「消す」の位置を受け、詳しい画面も固定の解除もしない。
 		c := newIdleWith(t, fallbackSetup)
-		g := &Game{ctrl: c}
+		g := &Game{metrics: c.metrics, ctrl: c}
 		g.leftClick(cellCenter(tactics.Pos{X: 15, Y: 15})) // ボスを固定する
 		if c.WatchedCount() != 1 {
 			t.Fatalf("前提: 固定 %d", c.WatchedCount())
@@ -613,8 +613,8 @@ func TestIT07BattleWindows(t *testing.T) {
 		target(t, c, tactics.Pos{X: 5, Y: 8}, tactics.Pos{X: 5, Y: 7})
 		// 「詳細 I」(672,304) は窓の武器送りの行（右欄の窓では (16,304)〜(304,328)）の ▶ に当たり、武器 1 本なので何もしない。
 		// 「消す」の下の端 (754,330) は窓の行の外で、窓が受けて何もしない。
-		g.leftClick(detailButtonRect.Min.X+2, detailButtonRect.Min.Y+2)
-		g.leftClick(rangeClearRect.Min.X+2, rangeClearRect.Max.Y-4)
+		g.leftClick(baseMetrics().detailButtonRect.Min.X+2, baseMetrics().detailButtonRect.Min.Y+2)
+		g.leftClick(baseMetrics().rangeClearRect.Min.X+2, baseMetrics().rangeClearRect.Max.Y-4)
 		if c.DetailOpen() || c.WatchedCount() != 1 || c.State() != Targeting || c.target != 1 {
 			t.Errorf("右欄の窓の下に渡した: 詳しい画面 %v、固定 %d、状態 %v", c.DetailOpen(), c.WatchedCount(), c.State())
 		}
@@ -631,7 +631,7 @@ func TestIT07BattleWindows(t *testing.T) {
 
 		// 盤面の窓: 窓の中の盤面のマスは窓が受け、窓の外の盤面は盤面が受ける。
 		b := newIdleWith(t, example1Setup)
-		bg := &Game{ctrl: b}
+		bg := &Game{metrics: b.metrics, ctrl: b}
 		target(t, b, tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3})
 		w, _ := b.ForecastWindow()
 		inside := image.Pt(w.Rect.Min.X+200, w.Rect.Min.Y+100)
@@ -651,7 +651,7 @@ func TestIT07BattleWindows(t *testing.T) {
 
 		// 詳しい画面の間は、窓・盤面・右欄のどこをクリックしても受けない。
 		d := newIdleWith(t, example1Setup)
-		dg := &Game{ctrl: d}
+		dg := &Game{metrics: d.metrics, ctrl: d}
 		target(t, d, tactics.Pos{X: 2, Y: 3}, tactics.Pos{X: 3, Y: 3})
 		d.SetCursor(cellCenter(tactics.Pos{X: 3, Y: 3}))
 		d.OpenDetail()
@@ -719,7 +719,7 @@ func TestIT07PriorityAndDeployDetail(t *testing.T) {
 		if !c.OpenDetail() {
 			t.Fatal("詳細を開けない")
 		}
-		g := &Game{scenes: &SceneController{scene: Battle, battle: c}}
+		g := &Game{metrics: c.metrics, scenes: &SceneController{metrics: c.metrics, scene: Battle, battle: c}}
 		if !g.priorityInput(priorityKeys{Rewind: true, Close: true}) || !c.rewind.open || !c.DetailOpen() {
 			t.Fatalf("T と Esc: 一覧 %v、詳細 %v", c.rewind.open, c.DetailOpen())
 		}
@@ -727,7 +727,7 @@ func TestIT07PriorityAndDeployDetail(t *testing.T) {
 	t.Run("TC-IF-01-46 配置の I とクリック・Q は詳細だけを受ける", func(t *testing.T) {
 		for _, other := range []string{"クリック", "Q"} {
 			s := deployRangeScenes(t)
-			g := &Game{scenes: s}
+			g := &Game{metrics: s.metrics, scenes: s}
 			x, y := cellCenter(tactics.Pos{X: 4})
 			before := append([]int(nil), s.deploySlots...)
 			k := priorityKeys{Detail: true, X: x, Y: y}
@@ -751,7 +751,7 @@ func TestIT07PriorityAndDeployDetail(t *testing.T) {
 		if !c.OpenOverview() {
 			t.Fatal("全体図を開けない")
 		}
-		g := &Game{scenes: &SceneController{scene: Battle, battle: c}}
+		g := &Game{metrics: c.metrics, scenes: &SceneController{metrics: c.metrics, scene: Battle, battle: c}}
 		if g.priorityInput(priorityKeys{Detail: true, X: c.cursorX, Y: c.cursorY}) || c.DetailOpen() {
 			t.Error("全体図の間に詳細を開いた")
 		}
@@ -761,7 +761,7 @@ func TestIT07PriorityAndDeployDetail(t *testing.T) {
 		s.SetDeployCursor(cellCenter(tactics.Pos{X: 4}))
 		v := s.View()
 		button := v.Buttons[2]
-		if button.Label != "詳細 I" || button.Rect != deployDetailButtonRect || !button.Enabled {
+		if button.Label != "詳細 I" || button.Rect != baseMetrics().deployDetailButtonRect || !button.Enabled {
 			t.Fatalf("詳細のボタン %+v", button)
 		}
 		for _, b := range v.Buttons[:2] {

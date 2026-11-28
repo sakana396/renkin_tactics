@@ -17,7 +17,7 @@ func TestCameraCoordinates(t *testing.T) {
 			{0, 0, 0, 0, 0, 0}, {7, 9, 32, 64, 8, 11}, {16, 16, 0, 0, 16, 16}, {16, 16, 511, 511, 31, 31},
 		} {
 			c := Camera{X: tt.ox, Y: tt.oy, Width: 32, Height: 32}
-			p, ok := c.CellAt(tt.x, tt.y)
+			p, ok := c.CellAt(baseMetrics(), tt.x, tt.y)
 			if !ok || p != (tactics.Pos{X: tt.wx, Y: tt.wy}) {
 				t.Fatalf("座標: %v %v", p, ok)
 			}
@@ -40,7 +40,7 @@ func TestCameraCoordinates(t *testing.T) {
 			}
 		}
 		c = Camera{X: 16, Y: 16, Width: 32, Height: 32}
-		if c.Screen(tactics.Pos{X: 31, Y: 31}) != image.Pt(480, 480) || c.Visible(tactics.Pos{}) || !c.Visible(tactics.Pos{X: 31, Y: 31}) {
+		if c.Screen(baseMetrics(), tactics.Pos{X: 31, Y: 31}) != image.Pt(480, 480) || c.Visible(tactics.Pos{}) || !c.Visible(tactics.Pos{X: 31, Y: 31}) {
 			t.Fatal("既知描画位置と表示範囲")
 		}
 		c = Camera{Width: 32, Height: 18}
@@ -50,7 +50,7 @@ func TestCameraCoordinates(t *testing.T) {
 		}
 		c = Camera{Width: 3, Height: 2}
 		for _, p := range []image.Point{image.Pt(-1, 0), image.Pt(0, -1), image.Pt(512, 0), image.Pt(0, 512), image.Pt(96, 0), image.Pt(0, 64), image.Pt(600, 20)} {
-			if _, ok := c.CellAt(p.X, p.Y); ok {
+			if _, ok := c.CellAt(baseMetrics(), p.X, p.Y); ok {
 				t.Fatal(p)
 			}
 		}
@@ -79,10 +79,10 @@ func TestCameraInput(t *testing.T) {
 		c := newIdleWith(t, wideSetup)
 		c.camera = Camera{X: 7, Y: 9, Width: 32, Height: 32}
 		p := tactics.Pos{X: 8, Y: 11}
-		if c.camera.Screen(p) != image.Pt(32, 64) {
+		if c.camera.Screen(baseMetrics(), p) != image.Pt(32, 64) {
 			t.Fatal("描画変換")
 		}
-		r := c.camera.MenuRects(tactics.Pos{X: 22, Y: 24}, 3)
+		r := c.camera.MenuRects(baseMetrics(), tactics.Pos{X: 22, Y: 24}, 3)
 		if r[0] != image.Rect(312, 446, 480, 468) || HitMenu(r, 313, 447) != 0 {
 			t.Fatal("メニュー", r)
 		}
@@ -91,7 +91,7 @@ func TestCameraInput(t *testing.T) {
 		if c.hoveredEnemy() != 3 {
 			t.Fatal("画面座標のホバー")
 		}
-		panel := c.Panel(c.Camera().CellAt(176, 144))
+		panel := c.Panel(c.Camera().CellAt(baseMetrics(), 176, 144))
 		if panel.Unit == nil || panel.Unit.Name != "ファイター" {
 			t.Fatal(panel)
 		}
@@ -138,17 +138,17 @@ func TestCameraInput(t *testing.T) {
 	})
 	t.Run("TC-FR-MAP-06-02 / TC-FR-MAP-03-11 予兆とポップアップの表示境界", func(t *testing.T) {
 		cam := Camera{X: 16, Y: 16, Width: 32, Height: 32}
-		if pt, ok := cam.Popup(tactics.Pos{X: 16, Y: 16}, 40); !ok || pt != image.Pt(0, 32) {
+		if pt, ok := cam.Popup(baseMetrics(), tactics.Pos{X: 16, Y: 16}, 40); !ok || pt != image.Pt(0, 32) {
 			t.Fatal(pt, ok)
 		}
-		if pt, ok := cam.Popup(tactics.Pos{X: 31, Y: 31}, 80); !ok || pt != image.Pt(432, 464) {
+		if pt, ok := cam.Popup(baseMetrics(), tactics.Pos{X: 31, Y: 31}, 80); !ok || pt != image.Pt(432, 464) {
 			t.Fatal(pt, ok)
 		}
-		if _, ok := cam.Popup(tactics.Pos{}, 40); ok {
+		if _, ok := cam.Popup(baseMetrics(), tactics.Pos{}, 40); ok {
 			t.Fatal("画面外ポップアップ")
 		}
 		areas := []tactics.ReinforcementHint{{Min: tactics.Pos{X: 12, Y: 12}, Max: tactics.Pos{X: 19, Y: 19}}}
-		ds, ms := cam.hintShapes(areas)
+		ds, ms := cam.hintShapes(baseMetrics(), areas)
 		if len(ds) == 0 {
 			t.Fatal("交差部分なし")
 		}
@@ -163,15 +163,15 @@ func TestCameraInput(t *testing.T) {
 				t.Fatal(p)
 			}
 		}
-		v := cam.hintView(HintView{Visible: true, Areas: areas, Text: SceneText{Text: hintText}})
+		v := cam.hintView(baseMetrics(), HintView{Visible: true, Areas: areas, Text: SceneText{Text: hintText}})
 		if v.Text.Text != "付近に気配… 画面外にも気配" || len(v.Areas) != 1 {
 			t.Fatal(v)
 		}
-		if v.Text.X+textWidth(v.Text.Text) > ScreenWidth {
+		if v.Text.X+textWidth(v.Text.Text) > baseMetrics().ScreenW {
 			t.Fatal("案内幅")
 		}
 		inside := []tactics.ReinforcementHint{{Min: tactics.Pos{X: 16, Y: 16}, Max: tactics.Pos{X: 19, Y: 19}}}
-		if v := cam.hintView(HintView{Visible: true, Areas: inside, Text: SceneText{Text: hintText}}); v.Text.Text != hintText {
+		if v := cam.hintView(baseMetrics(), HintView{Visible: true, Areas: inside, Text: SceneText{Text: hintText}}); v.Text.Text != hintText {
 			t.Fatal(v)
 		}
 	})
@@ -479,11 +479,11 @@ func TestCameraGuideLayout(t *testing.T) {
 		p := c.Panel(tactics.Pos{X: 2, Y: 2}, true)
 		p.Unit.Level, p.Unit.Exp = 2, 40
 		cam := Camera{Width: 32, Height: 32}
-		hv := cam.hintView(HintView{Visible: true, Areas: []tactics.ReinforcementHint{{Min: tactics.Pos{X: 28, Y: 28}, Max: tactics.Pos{X: 31, Y: 31}}}, Text: SceneText{Text: hintText, Y: 546}})
-		guides := []image.Rectangle{image.Rect(rewindLeft, cameraGuideY, rewindLeft+textWidth(cameraGuide), cameraGuideY+lineHeight), image.Rect(hv.Text.X, hv.Text.Y, hv.Text.X+textWidth(hv.Text.Text), hv.Text.Y+lineHeight)}
+		hv := cam.hintView(baseMetrics(), HintView{Visible: true, Areas: []tactics.ReinforcementHint{{Min: tactics.Pos{X: 28, Y: 28}, Max: tactics.Pos{X: 31, Y: 31}}}, Text: SceneText{Text: hintText, Y: 546}})
+		guides := []image.Rectangle{image.Rect(baseMetrics().rewindLeft, baseMetrics().cameraGuideY, baseMetrics().rewindLeft+textWidth(cameraGuide), baseMetrics().cameraGuideY+lineHeight), image.Rect(hv.Text.X, hv.Text.Y, hv.Text.X+textWidth(hv.Text.Text), hv.Text.Y+lineHeight)}
 		for _, e := range []ForecastEmphasis{ForecastNormal, ForecastDanger, ForecastDefeat} {
 			p.Emphasis = e
-			v := p.View()
+			v := p.View(baseMetrics())
 			for _, r := range guides {
 				if !r.In(image.Rect(512, 0, 832, 576)) {
 					t.Fatal("案内が欄外", r)

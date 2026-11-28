@@ -58,6 +58,7 @@ const (
 
 // SceneController は描画や OS 入力から独立した場面の進行（DES-UI-09）。
 type SceneController struct {
+	metrics          Metrics
 	cfg              Config
 	art              *ArtStore
 	scene            Scene
@@ -111,7 +112,7 @@ type SceneController struct {
 
 // NewSceneController はタイトルでセーブを調べる（DES-UI-10）。
 func NewSceneController(cfg Config) *SceneController {
-	s := &SceneController{cfg: cfg, art: NewArtStore(cfg.Media, cfg.Stderr, cfg.Catalog)}
+	s := &SceneController{metrics: metricsForConfig(cfg), cfg: cfg, art: NewArtStore(cfg.Media, cfg.Stderr, cfg.Catalog)}
 	s.enterTitle("")
 	return s
 }
@@ -396,6 +397,7 @@ func (s *SceneController) startDeployedBattle() {
 		s.message = err.Error()
 		return
 	}
+	ctrl.metrics = s.metrics
 	ctrl.itemHelp = s.cfg.HiRes
 	// 行動の記録は、戦闘を作れたあとに始める。作れなくても遊べる（DES-LOG-02）。
 	if s.cfg.PlayLog != nil {

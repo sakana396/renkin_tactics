@@ -41,7 +41,7 @@ func TestGrowthReplay(t *testing.T) {
 					t.Fatalf("再生の写し=%+v", u)
 				}
 				if tc.kind == tactics.EventExp || tc.kind == tactics.EventLevelUp {
-					textOf(t, c.Panel(tactics.Pos{}, true).View(), "Lv 2　経験 10")
+					textOf(t, c.Panel(tactics.Pos{}, true).View(baseMetrics()), "Lv 2　経験 10")
 					if c.Guide()[1] != EventText(e) || c.Guide()[1] == "" {
 						t.Fatal("案内欄に成長の文がない")
 					}
@@ -75,7 +75,7 @@ func TestGrowthReplay(t *testing.T) {
 			if !v.Visible || v.Text != tc.popup || v.Band != tc.band || (!v.Band && v.Pos != units[0].Pos) {
 				t.Errorf("描画=%+v", v)
 			}
-			if textWidth(v.Text) > MapSize-16 {
+			if textWidth(v.Text) > baseMetrics().Map-16 {
 				t.Errorf("帯の幅が盤面を超える: %q", v.Text)
 			}
 		}
@@ -145,7 +145,7 @@ func TestLevelInfo(t *testing.T) {
 			{tactics.Enemy, 0, 0, ""}, {tactics.Player, 0, 0, ""},
 		} {
 			u := tactics.Unit{Name: "レオン", ClassName: "ロード", Side: tc.side, Level: tc.level, Exp: tc.exp, Stats: leonStats, HP: 20, Weapons: []tactics.Weapon{ironSword}}
-			v := (Panel{Unit: &u}).View()
+			v := (Panel{Unit: &u}).View(baseMetrics())
 			var got []string
 			for _, tx := range v.Texts {
 				if strings.HasPrefix(tx.Text, "Lv ") {

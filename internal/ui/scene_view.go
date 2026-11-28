@@ -238,8 +238,8 @@ func (s *SceneController) View() SceneView {
 		y := 424
 		if s.scene == Deploy {
 			// 注意文は盤面の下の案内欄の 3 行目に置く。x は既定の 280 とし、文が窓の右端を越えるときは左へ寄せる（DES-NG-10）。
-			x := max(16, min(280, ScreenWidth-16-textWidth(s.message)))
-			add(s.message, x, MapSize+40, false, StyleBad)
+			x := max(16, min(280, s.metrics.ScreenW-16-textWidth(s.message)))
+			add(s.message, x, s.metrics.Map+40, false, StyleBad)
 		} else {
 			lines(s.message, y, StyleBad)
 		}
@@ -264,7 +264,7 @@ func (s *SceneController) Click(x, y int) {
 	if s.scene == Battle && s.battle != nil && s.battle.State() == Over && s.battle.InfoClick(x, y) {
 		return
 	}
-	if s.scene == Battle && !image.Pt(x, y).In(BattleEndRect()) {
+	if s.scene == Battle && !image.Pt(x, y).In(BattleEndRect(s.metrics)) {
 		return
 	}
 	if s.scene == Deploy {
@@ -272,7 +272,7 @@ func (s *SceneController) Click(x, y int) {
 		if s.deployMinimapClick(x, y) || s.infoTabClick(x, y) {
 			return
 		}
-		if image.Pt(x, y).In(deployDetailButtonRect) {
+		if image.Pt(x, y).In(s.metrics.deployDetailButtonRect) {
 			s.OpenDeployDetail()
 			return
 		}
@@ -282,7 +282,7 @@ func (s *SceneController) Click(x, y int) {
 				return
 			}
 		}
-		if p, ok := s.deployCamera.CellAt(x, y); ok {
+		if p, ok := s.deployCamera.CellAt(s.metrics, x, y); ok {
 			s.clickDeploy(p)
 		}
 		return
