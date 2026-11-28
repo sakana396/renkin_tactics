@@ -185,3 +185,168 @@ func TestBombOption(t *testing.T) {
 		})
 	}
 }
+
+// smallBoard は、ch01 の自軍・敵の 1 体ずつを型にした、平地 8×3 の小さな盤面を作る（爆弾の打ち手の試験用）。
+// 自軍は主人公で動かず、剣（射程 1〜3、威力 0、力 0）を持つ。敵は動かない。
+func smallBoard(t *testing.T) (setup tactics.Setup, player, enemy tactics.UnitSetup) {
+	t.Helper()
+	s, err := core.NewSetup(baseCatalog(t), "ch01")
+	if err != nil {
+		t.Fatal(err)
+	}
+	setup = s
+	for _, u := range setup.Units {
+		if u.Side == tactics.Player && len(u.Weapons) > 0 {
+			player = u
+		}
+		if u.Side == tactics.Enemy && len(u.Weapons) > 0 {
+			enemy = u
+		}
+	}
+	setup.Terrain = make([][]tactics.Terrain, 3)
+	for y := range setup.Terrain {
+		setup.Terrain[y] = make([]tactics.Terrain, 8)
+		for x := range setup.Terrain[y] {
+			setup.Terrain[y][x] = tactics.Terrain{Name: "平地", Cost: 1}
+		}
+	}
+	player.Pos = tactics.Pos{X: 0, Y: 1}
+	player.Lord = true
+	player.Stats.Mov = 0
+	player.Weapons = append([]tactics.Weapon(nil), player.Weapons...)
+	player.Weapons[0].Type = tactics.Sword
+	player.Weapons[0].Heal, player.Weapons[0].Uses, player.Weapons[0].MaxUses = 0, 0, 0
+	player.AllowedWeaponTypes = []tactics.WeaponType{tactics.Sword}
+	player.Weapons[0].MinRange, player.Weapons[0].MaxRange, player.Weapons[0].Might = 1, 3, 0
+	player.Stats.Str, player.Stats.Mag = 0, 0
+	enemy.Stats.Mov = 0
+	enemy.Boss, enemy.Commander = false, false
+	setup.Reinforcements = nil
+	setup.Events = nil
+	return setup, player, enemy
+}
+
+var testBomb = tactics.Item{ID: "bomb", Name: "爆弾", Bomb: true, BlastDamage: 8, BlastRadius: 1, ThrowRange: 3}
+
+// TestBombBossIgnoresSafety は、ボスを倒す爆弾が投げる人の安全を問わないことを確かめる（DES-NG-23）。
+// 主人公 (0,1) の隣 (1,1) に、主人公を確実に倒せる強い敵（HP99）を置く。主人公は動けないので、どの行動でも
+// 次の敵の番に倒れる見込みが主人公の上限 1% を超え、safeFor は許さない。HP8 のボス (4,1) は威力 8 の爆弾で倒れ、
+// 爆発のあとボスの撃破で勝つ（DES-NG01）。従って爆弾の候補があり、phase で使って勝つのが期待値。
+// ボスでなければ（HP8 の普通の敵と離れたボス）、同じ盤面で候補はない（安全を問う）。
+func TestBombBossIgnoresSafety(t *testing.T) {
+	for _, tc := range []struct {
+		id      string
+		boss    bool
+		want    bool
+		wantWon bool
+	}{
+		{"TC-DES-NG-23-15 ボスを倒す爆弾は危険でも使う", true, true, true},
+		{"TC-DES-NG-23-15 ボスでなければ危険なら使わない", false, false, false},
+	} {
+		t.Run(tc.id, func(t *testing.T) {
+			setup, player, enemy := smallBoard(t)
+			player.Items = []tactics.ItemStack{{Item: testBomb, Count: 1}}
+			strong := enemy
+			strong.ID = "strong"
+			strong.Pos = tactics.Pos{X: 1, Y: 1}
+			strong.Stats.HP, strong.Stats.Str, strong.Stats.Skl, strong.Stats.Spd = 99, 60, 60, 30
+			strong.AI = tactics.Hold
+			strong.Weapons = append([]tactics.Weapon(nil), strong.Weapons...)
+			strong.Weapons[0].MinRange, strong.Weapons[0].MaxRange, strong.Weapons[0].Hit = 1, 1, 100
+			target := enemy
+			target.ID = "target"
+			target.Pos = tactics.Pos{X: 4, Y: 1}
+			target.Stats.HP = 8
+			target.Boss = tc.boss
+			setup.Units = []tactics.UnitSetup{player, strong, target}
+			if !tc.boss {
+				far := enemy
+				far.ID = "far-boss"
+				far.Pos = tactics.Pos{X: 7, Y: 1}
+				far.Stats.HP = 99
+				far.Boss = true
+				setup.Units = append(setup.Units, far)
+			}
+			b, _, err := tactics.New(setup, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := &smartPlayer{autoPlayer: &autoPlayer{b: b, ids: make([]string, len(setup.Units)), step: map[int]int{}}, f: smartFeatures{Bomb: true, Threat: true, Focus: true}}
+			p.refresh()
+			u := b.Units()[0]
+			if ok, death, _, _ := p.safeFor(0, u.Pos, u.EquippedWeapon(), -1, nil, u.HP); ok || death <= p.riskLimit(u) {
+				t.Fatalf("前提: 主人公の今のマスは危険のはず（許す %v、倒れる %.3f）", ok, death)
+			}
+			o := p.bombOption(0)
+			if (o != nil) != tc.want {
+				t.Fatalf("爆弾候補 = %v、期待 %v", o, tc.want)
+			}
+			if !tc.want {
+				return
+			}
+			p.phase()
+			if p.bombUses != 1 || p.bombKills != 1 || b.Result != tactics.Won {
+				t.Fatalf("使用・撃破・結果 = %d・%d・%v、期待 1・1・勝ち", p.bombUses, p.bombKills, b.Result)
+			}
+		})
+	}
+}
+
+// TestPotionSkipsBomb は、道具ありの打ち手が回復しない道具を薬として選ばないことを確かめる（DES-NG-23）。
+// 2 人目の自軍が主人公の隣で威力 8 の爆弾を投げ、主人公（最大 HP の 6 割未満になる HP）を巻き込んで減らす（DES-NG01 の固定ダメージ）。
+// 主人公の持ち物が [爆弾, 薬] なら、道具ありは薬（添字 1）を、道具なし（Bomb が偽）は今の動きのまま先頭の爆弾（添字 0）を選ぶ。
+// 持ち物が爆弾だけなら、道具ありは薬の候補なし、道具なしは爆弾（添字 0）。
+func TestPotionSkipsBomb(t *testing.T) {
+	potion := tactics.Item{ID: "potion", Name: "薬", Heal: 10}
+	for _, tc := range []struct {
+		id       string
+		bomb     bool
+		potion   bool
+		wantItem int // -1 は候補なし
+	}{
+		{"TC-DES-NG-23-16 道具ありは爆弾を飛ばして薬", true, true, 1},
+		{"TC-DES-NG-23-16 道具ありで爆弾だけなら候補なし", true, false, -1},
+		{"TC-DES-NG-23-16 道具なしは先頭の爆弾（既知の不具合を保つ）", false, true, 0},
+		{"TC-DES-NG-23-16 道具なしで爆弾だけでも爆弾", false, false, 0},
+	} {
+		t.Run(tc.id, func(t *testing.T) {
+			setup, player, enemy := smallBoard(t)
+			player.Stats.HP = 15
+			player.Items = []tactics.ItemStack{{Item: testBomb, Count: 1}}
+			if tc.potion {
+				player.Items = append(player.Items, tactics.ItemStack{Item: potion, Count: 1})
+			}
+			ally := player
+			ally.ID, ally.Name, ally.Lord = "ally", "仲間", false
+			ally.Pos = tactics.Pos{X: 1, Y: 1}
+			ally.Stats.Mov = 0
+			ally.Items = []tactics.ItemStack{{Item: testBomb, Count: 1}}
+			enemy.Pos = tactics.Pos{X: 7, Y: 1}
+			enemy.Boss = true
+			enemy.Stats.HP = 99
+			setup.Units = []tactics.UnitSetup{player, ally, enemy}
+			b, _, err := tactics.New(setup, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			c := tactics.Pos{X: 0, Y: 1}
+			if _, err := b.Act(tactics.Command{Unit: 1, To: ally.Pos, Action: tactics.UseItem, Item: 0, Blast: &c}); err != nil {
+				t.Fatal(err)
+			}
+			u := b.Units()[0]
+			if u.HP != 15-8 || u.HP*10 >= u.Stats.HP*6 {
+				t.Fatalf("前提: 主人公の HP = %d/%d、期待 7/15", u.HP, u.Stats.HP)
+			}
+			p := &smartPlayer{autoPlayer: &autoPlayer{b: b, ids: make([]string, len(setup.Units)), step: map[int]int{}}, f: smartFeatures{Bomb: tc.bomb, Threat: true}}
+			p.refresh()
+			o := p.potion(0)
+			got := -1
+			if o != nil {
+				got = o.cmd.Item
+			}
+			if got != tc.wantItem {
+				t.Fatalf("薬の候補の持ち物 = %d、期待 %d", got, tc.wantItem)
+			}
+		})
+	}
+}
