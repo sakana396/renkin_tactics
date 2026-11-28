@@ -72,7 +72,7 @@
 | 制作 | 反復 9 手直し前の測定 | [iterations/it09/measure-before.md](iterations/it09/measure-before.md) | #235、1〜3章 |
 | 計画 | 反復 9 計画書（IT09-PLAN） | [iterations/it09/plan.md](iterations/it09/plan.md) | v0.2 承認（E-164）。1〜3 章を道具が要る章に手直し、仲間の全員に固有スキル、4 章（軽歩兵、古代の装置で門を開く）、画面と絵の持ち越し（E-161・E-162） |
 | 試験 | 反復 8 の試遊の記録（IT08-PLAYTEST） | [iterations/it08/playtest.md](iterations/it08/playtest.md) | v0.1 案（開発者の承認待ち）。#214。2026-11-23 の試遊（main 95c3d86）と 11-24 の #227 の版の確認、行動の記録（1〜3 章）、E-153〜E-160、#214 の申し送りの確かめ |
-| 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
+| 設計 | 設計書（反復 7） | [03_design/design-it07.md](03_design/design-it07.md) | v0.8 承認（2026-11-28。#234、E-171、REV-133）。3.2 節に描く順と配置の Q の再利用を追記）。v0.7（3.4・3.8 節に E-127 を反映）。v0.6（3.1・3.3 節に E-126（番を終える確認の間の M・Z）を反映）。v0.5（3.2・3.5 節に E-124 を反映）。v0.4 承認（E-122）。未決事項は E-120・E-121 で決定。REV-091 を反映。画面・指揮官・重騎士の ZOC |
 | 設計 | ch09「ヴァルトの門」の制作記録（反復 5） | [iterations/it05/map-ch09.md](iterations/it05/map-ch09.md) | v0.2（#102、#104 で E-52 の強化。開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch04 の制作記録（反復 5） | [iterations/it05/map-ch04.md](iterations/it05/map-ch04.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |
 | 制作 | ch05 の制作記録（反復 5） | [iterations/it05/map-ch05.md](iterations/it05/map-ch05.md) | v0.1（#103。自動試遊は実施、開発者の試遊は #105 で実施（6 章、TST-IT05 3.10 節）） |

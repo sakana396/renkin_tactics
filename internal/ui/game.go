@@ -360,7 +360,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.drawCamera = g.ctrl.Camera()
 	board := screen.SubImage(image.Rect(0, 0, g.metrics.Map, g.metrics.Map)).(*ebiten.Image)
 	g.drawTerrain(board)
-	g.drawOverlay(board)
+	for _, l := range battleUnderlayLayers(g.ctrl.state) {
+		switch l {
+		case layerDangerFill:
+			g.drawEnemyRanges(board, enemyRangeLayers(danger, nil, nil, nil, nil))
+		case layerOverlay:
+			g.drawOverlay(board)
+		}
+	}
 	hint := g.ctrl.ReinforcementHintView()
 	g.drawHint(board, hint)
 	for _, l := range battleLayers {
@@ -368,7 +375,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		case layerUnits:
 			g.drawUnits(board)
 		case layerEnemyRanges:
-			g.drawEnemyRanges(board, g.ctrl.enemyRangeLayersWithDanger(danger))
+			if g.ctrl.state == Selected || g.ctrl.state == Canto {
+				g.drawEnemyRanges(board, g.ctrl.enemyRangeLayersWithDanger(nil))
+			} else {
+				g.drawEnemyRanges(board, g.ctrl.enemyRangeLayersWithDanger(danger))
+			}
 		case layerZOC:
 			g.drawZOC(board, g.ctrl.battle.BoardView())
 		case layerEquipMarks:
