@@ -41,7 +41,7 @@ type smartFeatures struct {
 	// 進む得（隊の先頭より 2 マス先まで）を上回るので、待ち構える敵の届く範囲のすぐ外で釣り合って止まることがある（新作 3 章）。
 	// smartAll には入れない（反復 6・7 の測定の条件を保つ）。新作の測定（measure_it09_test.go）で使う。
 	Bait bool
-	// Bomb は撃破でき、味方を巻き込まない爆弾を通常攻撃と比較する（DES-NG-23）。
+	// Bomb は、味方を巻き込まず、2 体以上かボスを倒す爆弾を、攻撃・回復と点数で比べて使う（DES-NG-23。pickBomb）。
 	Bomb bool
 }
 
@@ -514,6 +514,10 @@ type smartOption struct {
 	cmd   tactics.Command
 	score float64
 	why   string
+	// decisive は、2 体以上かボスを倒す爆弾か（爆弾の候補だけが使う。DES-NG-23）。
+	decisive bool
+	// bossKill は、攻撃でボスを倒す見込み（攻撃の候補だけが使う。DES-NG-23）。
+	bossKill float64
 }
 
 // attackOption は自軍 i の攻撃の候補のうち最もよいものを返す。
@@ -604,6 +608,9 @@ func (p *smartPlayer) attackOption(i int) *smartOption {
 				}
 				if best == nil || score > best.score {
 					best = &smartOption{cmd: cmd, score: score, why: fmt.Sprintf("攻撃 倒す%.0f%% 倒れる%.1f%% 受ける%.1f", killP*100, death*100, expected)}
+					if o.Boss {
+						best.bossKill = killP
+					}
 				}
 			}
 		}
@@ -612,6 +619,8 @@ func (p *smartPlayer) attackOption(i int) *smartOption {
 }
 
 // bombOption は爆弾の移動先と爆心を列挙し、安全な撃破を評価する（DES-NG-23）。
+// 投げる人の安全は、倒す敵の脅威も残して見積もる（安全側）。ボスを倒す爆弾は勝ちが決まるので安全を問わず、攻撃と同じくボスの加点を足す。
+// 2 体以上かボスを倒す候補（decisive）を、そうでない候補より優先して返す。使うかどうかは pickBomb が決める。
 func (p *smartPlayer) bombOption(i int) *smartOption {
 	if !p.f.Bomb {
 		return nil
@@ -630,7 +639,7 @@ func (p *smartPlayer) bombOption(i int) *smartOption {
 				if err != nil {
 					continue
 				}
-				kills, damage, friendly := 0, 0.0, false
+				kills, damage, friendly, boss := 0, 0.0, false, false
 				for _, v := range f.Targets {
 					if v.Side == tactics.Player {
 						friendly = true
@@ -638,6 +647,7 @@ func (p *smartPlayer) bombOption(i int) *smartOption {
 					}
 					if v.Falls {
 						kills++
+						boss = boss || p.b.Units()[v.Unit].Boss
 					}
 					damage += float64(v.HP-v.After) / float64(p.b.Units()[v.Unit].Stats.HP)
 				}
@@ -645,17 +655,41 @@ func (p *smartPlayer) bombOption(i int) *smartOption {
 					continue
 				}
 				ok, death, expected, attackers := p.safeFor(i, to, u.EquippedWeapon(), -1, nil, u.HP)
+				if boss {
+					// ボスを倒せば爆発のあと勝ちが決まる（DES-NG01）ので、投げる人の安全は問わない。
+					ok, death, expected, attackers = true, 0, 0, 0
+				}
 				if !ok {
 					continue
 				}
 				score := 100*float64(kills) + 40*damage - 400*death - 30*expected/float64(u.Stats.HP) - 2*float64(attackers) - 20
-				if best == nil || score > best.score {
-					best = &smartOption{cmd: cmd, score: score, why: "爆弾"}
+				if boss {
+					score += 1050
+				}
+				decisive := kills >= 2 || boss
+				if best == nil || decisive && !best.decisive || decisive == best.decisive && score > best.score {
+					best = &smartOption{cmd: cmd, score: score, why: "爆弾", decisive: decisive}
 				}
 			}
 		}
 	}
 	return best
+}
+
+// pickBomb は、攻撃・回復のいちばんよい候補 chosen と爆弾の候補 bombs から選ぶ（DES-NG-23）。
+// 爆弾は使うと得になるときだけ使う。2 体以上かボスを倒す爆弾（decisive）だけを、点数で攻撃・回復と比べる。
+// 1 体だけ倒す爆弾は使わない（通常攻撃で倒せる敵の撃破と経験を仲間から奪い、ボスに使える在庫を減らす。手直し前の 3 章の調査）。
+// 攻撃でボスを 9 割以上の見込みで倒せるなら、爆弾は得にならないので使わない。
+func pickBomb(chosen *smartOption, bombs []*smartOption) *smartOption {
+	if chosen != nil && chosen.bossKill >= 0.9 {
+		return chosen
+	}
+	for _, b := range bombs {
+		if b.decisive && (chosen == nil || b.score > chosen.score) {
+			chosen = b
+		}
+	}
+	return chosen
 }
 
 func allowed(u tactics.Unit, t tactics.WeaponType) bool {
@@ -938,26 +972,31 @@ func (p *smartPlayer) phase() {
 		}
 		p.refresh()
 		var chosen *smartOption
+		var bombs []*smartOption
 		if p.f.Focus {
 			// 全員の攻撃・回復の候補から、いちばんよいものを選ぶ。
 			for _, i := range r {
 				if tried[i] {
 					continue
 				}
-				for _, o := range []*smartOption{p.healIf(i), p.attackOption(i), p.bombOption(i)} {
+				for _, o := range []*smartOption{p.healIf(i), p.attackOption(i)} {
 					if o != nil && (chosen == nil || o.score > chosen.score) {
 						chosen = o
 					}
 				}
+				if o := p.bombOption(i); o != nil {
+					bombs = append(bombs, o)
+				}
 			}
+			chosen = pickBomb(chosen, bombs)
 		} else {
 			i := r[0]
 			chosen = p.healIf(i)
 			if chosen == nil {
 				chosen = p.attackOption(i)
 			}
-			if bomb := p.bombOption(i); bomb != nil && (chosen == nil || bomb.score > chosen.score) {
-				chosen = bomb
+			if bomb := p.bombOption(i); bomb != nil {
+				chosen = pickBomb(chosen, []*smartOption{bomb})
 			}
 			if chosen == nil {
 				chosen = p.moveOption(i)
