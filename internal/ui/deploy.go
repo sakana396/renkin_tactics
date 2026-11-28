@@ -86,6 +86,7 @@ func (s *SceneController) clickDeploy(p tactics.Pos) {
 	}
 	selected := s.deploySelected
 	if occupant != selected {
+		s.deployDangerCache = nil
 		if occupant >= 0 {
 			s.deploySlots[occupant] = s.deploySlots[selected]
 		}
@@ -113,6 +114,7 @@ func (s *SceneController) resetDeploy() {
 	s.deployCursor = tactics.Pos{X: -1, Y: -1}
 	s.deployLastCell, s.deployLastOK, s.deployOnInfo = tactics.Pos{}, false, false
 	s.deployDanger = false
+	s.deployDangerCache = nil
 	s.deployNav = deployNav{}
 }
 
@@ -187,6 +189,7 @@ func (s *SceneController) deployView() SceneView {
 	board, err := s.campaign.DeploymentView(s.deployMembers, s.deploySlots)
 	if err != nil {
 		s.message = err.Error()
+		s.deployDangerCache = nil
 	} else {
 		d.Board = board
 		d.Selected = s.deploySelected
@@ -198,36 +201,30 @@ func (s *SceneController) deployView() SceneView {
 			}
 			d.Terrain = append(d.Terrain, row)
 		}
+		if s.deployDanger && s.deployDangerCache == nil {
+			s.deployDangerCache = deployDangerRange(board, d.Units)
+		}
+		if s.deployDanger {
+			d.Danger = s.deployDangerCache
+		}
 		for i, u := range d.Units {
-			if !u.Alive || u.Side != tactics.Enemy {
+			if !u.Alive || u.Side != tactics.Enemy || u.Pos != s.deployCursor {
 				continue
 			}
-			hovered := u.Pos == s.deployCursor
-			if !hovered && !s.deployDanger {
-				continue
-			}
+			d.Blue, d.Red = map[tactics.Pos]bool{}, map[tactics.Pos]bool{}
 			reach := board.Reachable(i)
-			if hovered {
-				d.Blue = map[tactics.Pos]bool{}
-				d.Red = map[tactics.Pos]bool{}
-				for p := range reach {
-					d.Blue[p] = true
-				}
-			}
-			if s.deployDanger && d.Danger == nil {
-				d.Danger = map[tactics.Pos]bool{}
+			for p := range reach {
+				d.Blue[p] = true
 			}
 			for p := range reach {
 				for _, q := range board.AttackRange(i, p) {
-					if hovered && !d.Blue[q] {
+					if !d.Blue[q] {
 						d.Red[q] = true
-					}
-					if s.deployDanger {
-						d.Danger[q] = true
 					}
 				}
 			}
 		}
+
 	}
 	// ボタンは情報欄（y < 360）の中、ページの印の上に横に並べ、右下のミニマップと重ねない（DES-UI-28）。
 	v := SceneView{Deploy: d, Buttons: []SceneButton{
@@ -262,4 +259,20 @@ func (s *SceneController) deployView() SceneView {
 		v.Texts = append(v.Texts, SceneText{Text: zocNote, X: deployZOCNoteX, Y: s.metrics.Map + 40, Style: StyleLabel})
 	}
 	return v
+}
+
+// deployDangerRange は配置盤面の全敵の攻撃可能なマスを合わせる（DES-UI-29、DES-IT07 3.2 節）。
+func deployDangerRange(board tactics.BoardView, units []tactics.Unit) map[tactics.Pos]bool {
+	out := map[tactics.Pos]bool{}
+	for i, u := range units {
+		if !u.Alive || u.Side != tactics.Enemy {
+			continue
+		}
+		for p := range board.Reachable(i) {
+			for _, q := range board.AttackRange(i, p) {
+				out[q] = true
+			}
+		}
+	}
+	return out
 }

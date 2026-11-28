@@ -64,8 +64,12 @@ func hasZOCAt(board tactics.BoardView, p tactics.Pos) bool {
 type boardLayer int
 
 const (
+	// layerDangerFill は全敵の危険範囲の塗り。
+	layerDangerFill boardLayer = iota
+	// layerOverlay は移動・攻撃などの範囲の塗り。
+	layerOverlay
 	// layerUnits はユニットの絵。
-	layerUnits boardLayer = iota
+	layerUnits
 	// layerEnemyRanges は敵の範囲（全敵の塗り → 固定の縁 → カーソルの縁）。
 	layerEnemyRanges
 	// layerZOC は重騎士の ZOC の角印。
@@ -87,3 +91,11 @@ var (
 	// rewindLayers は巻き戻しの下見の盤面の順。下見側の盤面の生存者で角印を描く。
 	rewindLayers = []boardLayer{layerUnits, layerZOC, layerEquipMarks, layerFrame}
 )
+
+// battleUnderlayLayers は移動範囲を出す間だけ危険の塗りを先に描く（DES-IT07 3.2 節）。
+func battleUnderlayLayers(state State) []boardLayer {
+	if state == Selected || state == Canto {
+		return []boardLayer{layerDangerFill, layerOverlay}
+	}
+	return []boardLayer{layerOverlay}
+}
