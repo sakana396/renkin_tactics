@@ -889,6 +889,11 @@ func (p *smartPlayer) potion(i int) *smartOption {
 		if it.Count <= 0 {
 			continue
 		}
+		// 道具ありの打ち手は、回復しない道具（爆弾など）を薬として使おうとしない（#235 後半 3a）。
+		// 道具なしの打ち手（Bomb が偽）は、反復 6〜9 の測定の動きを保つため、この確かめをしない（薬が尽きると爆弾を選んで失敗し、その場で待つ）。
+		if p.f.Bomb && it.Item.Heal <= 0 {
+			continue
+		}
 		to := p.bestTile(i, sortedTiles(p.b.Reachable(i)), min(u.Stats.HP, u.HP+it.Item.Heal))
 		return &smartOption{cmd: tactics.Command{Unit: i, To: to, Action: tactics.UseItem, Item: k}, why: "薬"}
 	}
